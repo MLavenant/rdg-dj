@@ -667,7 +667,7 @@ textarea#fldNote:focus{border-color:var(--blue)}
   <!-- VIP -->
   <div id="view-vip" style="display:none">
     <div class="pg-section" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-      <div><div class="pg-title2">&#10022; VIP Recap</div><div id="vipMeta" style="font-size:10px;color:var(--ink3)">Casa Neos Beach Club — Last Week</div></div>
+      <div><div class="pg-title2">&#10022; VIP Recap</div><div id="vipMeta" style="font-size:10px;color:var(--ink3)">All Venues — Last Week</div></div>
     </div>
     <div id="vipBody" class="vip-wrap"></div>
   </div>
@@ -2439,7 +2439,9 @@ function setAcctStatusFilter(status){
    VIP DATA — last week per-show / per-tier breakdown
    Pulled live from Toast. Updated each Monday by the AI assistant.
    ═══════════════════════════════════════════════════════════════ */
-var VIP_DATA = {
+/* ─── VIP multi-venue data ─────────────────────────────────────── */
+var VIP_VENUES = [
+{
   "venue":   "Casa Neos Beach Club",
   "weekOf":  "Jul 4 – Jul 5, 2026",
   "weekKey": "2026-W27",
@@ -2489,56 +2491,191 @@ var VIP_DATA = {
       ]
     }
   ]
-};
+},
+/* ─── Casa Neos Lounge ──────────────────────────────────────────── */
+{
+  "venue":   "Casa Neos Lounge",
+  "weekOf":  "Jul 2 – Jul 5, 2026",
+  "weekKey": "2026-W27",
+  "shows": [
+    {
+      "date":"2026-07-02","label":"Wednesday, Jul 2",
+      "dj":"BARUT","fee":1000,
+      "bsActual":28750,"bsMin":25000,
+      "tablesActual":21,"tablesBudget":20,
+      "tiers":{
+        "Diamond": {"soldTables":6,"totalTables":6,"totalSales":13170,"avgPerTable":2195,"minPerTable":2000,"color":"#b9f2ff","textColor":"#0a4a6e"},
+        "Platinum":{"soldTables":4,"totalTables":9,"totalSales":3314, "avgPerTable":828, "minPerTable":1500,"color":"#e8e8e8","textColor":"#2d2d2d"},
+        "Gold":    {"soldTables":2,"totalTables":5,"totalSales":2254, "avgPerTable":1127,"minPerTable":1000,"color":"#fff3cd","textColor":"#7d5a00"},
+        "Lounge":  {"soldTables":9,"totalTables":24,"totalSales":4171,"avgPerTable":463, "minPerTable":500, "color":"#d4edda","textColor":"#155724"}
+      }
+    },
+    {
+      "date":"2026-07-03","label":"Thursday, Jul 3",
+      "dj":"ONOMA","fee":500,
+      "bsActual":13130,"bsMin":45000,
+      "tablesActual":12,"tablesBudget":20,
+      "tiers":{
+        "Diamond": {"soldTables":4,"totalTables":6,"totalSales":7868,"avgPerTable":1967,"minPerTable":2000,"color":"#b9f2ff","textColor":"#0a4a6e"},
+        "Platinum":{"soldTables":1,"totalTables":9,"totalSales":1750,"avgPerTable":1750,"minPerTable":1500,"color":"#e8e8e8","textColor":"#2d2d2d"},
+        "Gold":    {"soldTables":1,"totalTables":5,"totalSales":43,  "avgPerTable":43,  "minPerTable":1000,"color":"#fff3cd","textColor":"#7d5a00"},
+        "Lounge":  {"soldTables":6,"totalTables":24,"totalSales":1565,"avgPerTable":260,"minPerTable":500, "color":"#d4edda","textColor":"#155724"}
+      }
+    },
+    {
+      "date":"2026-07-04","label":"Friday, Jul 4",
+      "dj":"AMOG","fee":2000,
+      "bsActual":28522,"bsMin":45000,
+      "tablesActual":16,"tablesBudget":20,
+      "tiers":{
+        "Diamond": {"soldTables":5,"totalTables":6,"totalSales":11058,"avgPerTable":2211,"minPerTable":2000,"color":"#b9f2ff","textColor":"#0a4a6e"},
+        "Platinum":{"soldTables":3,"totalTables":9,"totalSales":6464, "avgPerTable":2154,"minPerTable":1500,"color":"#e8e8e8","textColor":"#2d2d2d"},
+        "Gold":    {"soldTables":1,"totalTables":5,"totalSales":4140, "avgPerTable":4140,"minPerTable":1000,"color":"#fff3cd","textColor":"#7d5a00"},
+        "Lounge":  {"soldTables":7,"totalTables":24,"totalSales":3100,"avgPerTable":442, "minPerTable":500, "color":"#d4edda","textColor":"#155724"}
+      }
+    },
+    {
+      "date":"2026-07-05","label":"Saturday, Jul 5",
+      "dj":"AFTERDARK","fee":1000,
+      "bsActual":32187,"bsMin":20000,
+      "tablesActual":24,"tablesBudget":20,
+      "tiers":{
+        "Diamond": {"soldTables":6,"totalTables":6,"totalSales":13629,"avgPerTable":2271,"minPerTable":2000,"color":"#b9f2ff","textColor":"#0a4a6e"},
+        "Platinum":{"soldTables":5,"totalTables":9,"totalSales":8060, "avgPerTable":1612,"minPerTable":1500,"color":"#e8e8e8","textColor":"#2d2d2d"},
+        "Gold":    {"soldTables":4,"totalTables":5,"totalSales":3588, "avgPerTable":897, "minPerTable":1000,"color":"#fff3cd","textColor":"#7d5a00"},
+        "Lounge":  {"soldTables":9,"totalTables":24,"totalSales":3048,"avgPerTable":338, "minPerTable":500, "color":"#d4edda","textColor":"#155724"}
+      }
+    }
+  ]
+},
+/* ─── MILA Lounge ───────────────────────────────────────────────── */
+{
+  "venue":   "MILA Lounge",
+  "weekOf":  "Jul 1 – Jul 4, 2026",
+  "weekKey": "2026-W27",
+  "shows": [
+    {
+      "date":"2026-07-01","label":"Wednesday, Jul 1",
+      "dj":"—","fee":0,
+      "bsActual":12561,"bsMin":1800,
+      "tablesActual":17,"tablesBudget":18,
+      "tiers":{
+        "Diamond": {"soldTables":3,"totalTables":9, "totalSales":4266,"avgPerTable":1422,"minPerTable":2000,"color":"#b9f2ff","textColor":"#0a4a6e"},
+        "Gold":    {"soldTables":1,"totalTables":8, "totalSales":783, "avgPerTable":783, "minPerTable":1000,"color":"#fff3cd","textColor":"#7d5a00"},
+        "Booths":  {"soldTables":12,"totalTables":24,"totalSales":1834,"avgPerTable":152,"minPerTable":500, "color":"#ffeaa7","textColor":"#6c4f00"},
+        "Seating": {"soldTables":1,"totalTables":31,"totalSales":48,  "avgPerTable":48,  "minPerTable":200, "color":"#dfe6e9","textColor":"#2d3436"}
+      }
+    },
+    {
+      "date":"2026-07-02","label":"Thursday, Jul 2",
+      "dj":"DIMITRIOS","fee":1000,
+      "bsActual":26625,"bsMin":25000,
+      "tablesActual":32,"tablesBudget":18,
+      "tiers":{
+        "Diamond": {"soldTables":4,"totalTables":9, "totalSales":5877, "avgPerTable":1469,"minPerTable":2000,"color":"#b9f2ff","textColor":"#0a4a6e"},
+        "Prestige":{"soldTables":1,"totalTables":2, "totalSales":2076, "avgPerTable":2076,"minPerTable":3000,"color":"#e8d5ff","textColor":"#4a0080"},
+        "Gold":    {"soldTables":6,"totalTables":8, "totalSales":7895, "avgPerTable":1315,"minPerTable":1000,"color":"#fff3cd","textColor":"#7d5a00"},
+        "Booths":  {"soldTables":16,"totalTables":24,"totalSales":5167,"avgPerTable":322, "minPerTable":500, "color":"#ffeaa7","textColor":"#6c4f00"},
+        "Seating": {"soldTables":5,"totalTables":31,"totalSales":542,  "avgPerTable":108, "minPerTable":200, "color":"#dfe6e9","textColor":"#2d3436"}
+      }
+    },
+    {
+      "date":"2026-07-03","label":"Friday, Jul 3",
+      "dj":"JUANY BRAVO","fee":3500,
+      "bsActual":27477,"bsMin":45000,
+      "tablesActual":29,"tablesBudget":18,
+      "tiers":{
+        "Diamond": {"soldTables":5,"totalTables":9, "totalSales":9435, "avgPerTable":1887,"minPerTable":2000,"color":"#b9f2ff","textColor":"#0a4a6e"},
+        "Prestige":{"soldTables":1,"totalTables":2, "totalSales":4522, "avgPerTable":4522,"minPerTable":3000,"color":"#e8d5ff","textColor":"#4a0080"},
+        "Gold":    {"soldTables":5,"totalTables":8, "totalSales":5909, "avgPerTable":1181,"minPerTable":1000,"color":"#fff3cd","textColor":"#7d5a00"},
+        "Booths":  {"soldTables":15,"totalTables":24,"totalSales":3202,"avgPerTable":213, "minPerTable":500, "color":"#ffeaa7","textColor":"#6c4f00"},
+        "Seating": {"soldTables":3,"totalTables":31,"totalSales":240,  "avgPerTable":80,  "minPerTable":200, "color":"#dfe6e9","textColor":"#2d3436"}
+      }
+    },
+    {
+      "date":"2026-07-04","label":"Saturday, Jul 4",
+      "dj":"ONOMA","fee":1000,
+      "bsActual":34180,"bsMin":45000,
+      "tablesActual":31,"tablesBudget":18,
+      "tiers":{
+        "Diamond": {"soldTables":4,"totalTables":9, "totalSales":18089,"avgPerTable":4522,"minPerTable":2000,"color":"#b9f2ff","textColor":"#0a4a6e"},
+        "Prestige":{"soldTables":1,"totalTables":2, "totalSales":2821, "avgPerTable":2821,"minPerTable":3000,"color":"#e8d5ff","textColor":"#4a0080"},
+        "Gold":    {"soldTables":4,"totalTables":8, "totalSales":5746, "avgPerTable":1436,"minPerTable":1000,"color":"#fff3cd","textColor":"#7d5a00"},
+        "Booths":  {"soldTables":15,"totalTables":24,"totalSales":2142,"avgPerTable":142, "minPerTable":500, "color":"#ffeaa7","textColor":"#6c4f00"},
+        "Seating": {"soldTables":7,"totalTables":31,"totalSales":762,  "avgPerTable":108, "minPerTable":200, "color":"#dfe6e9","textColor":"#2d3436"}
+      }
+    }
+  ]
+}
+];
+
+/* backward-compat alias for any legacy references */
+var VIP_DATA = VIP_VENUES[0];
 
 var TIER_COLORS = {
   Diamond:"#b9f2ff",Prestige:"#e8d5ff",Platinum:"#e8e8e8",
-  Gold:"#fff3cd",Riverwalk:"#d4edda",Cabana:"#ffeaa7",Deck:"#dfe6e9"
+  Gold:"#fff3cd",Riverwalk:"#d4edda",Cabana:"#ffeaa7",Deck:"#dfe6e9",
+  Lounge:"#d4edda",Booths:"#ffeaa7",Seating:"#dfe6e9"
 };
 var TIER_TEXT = {
   Diamond:"#0a4a6e",Prestige:"#4a0080",Platinum:"#2d2d2d",
-  Gold:"#7d5a00",Riverwalk:"#155724",Cabana:"#6c4f00",Deck:"#2d3436"
+  Gold:"#7d5a00",Riverwalk:"#155724",Cabana:"#6c4f00",Deck:"#2d3436",
+  Lounge:"#155724",Booths:"#6c4f00",Seating:"#2d3436"
 };
-var TIER_ORDER = ['Diamond','Prestige','Platinum','Gold','Riverwalk','Cabana','Deck'];
+var TIER_ORDER = ['Diamond','Prestige','Platinum','Gold','Riverwalk','Cabana','Deck','Lounge','Booths','Seating'];
 
 function $kv(v){ if(!v&&v!==0) return '—'; return '$'+(Math.round(v)).toLocaleString(); }
 
-function renderVIP(){
-  var d = VIP_DATA;
-  if(!d||!d.shows||!d.shows.length){
-    document.getElementById('vipBody').innerHTML='<div class="empty">No VIP data loaded. Ask the assistant to pull last week\'s numbers.</div>';
+var _vipActiveVenue = 0;
+
+function renderVIP(venueIdx){
+  if(venueIdx!==undefined) _vipActiveVenue = venueIdx;
+  var venues = VIP_VENUES;
+  if(!venues||!venues.length){
+    document.getElementById('vipBody').innerHTML='<div class="empty">No VIP data loaded.</div>';
     return;
   }
-  document.getElementById('vipMeta').textContent = d.venue + ' — ' + d.weekOf;
+  var d = venues[_vipActiveVenue];
+  document.getElementById('vipMeta').textContent = d.weekOf;
 
-  var totalBS  = d.shows.reduce(function(s,sh){return s+sh.bsActual;},0);
-  var totalMin = d.shows.reduce(function(s,sh){return s+sh.bsMin;},0);
-  var allBeat  = d.shows.every(function(sh){return sh.bsActual>=sh.bsMin;});
   var h = '';
 
+  /* ── Venue tab bar ── */
+  h += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">';
+  venues.forEach(function(v,i){
+    var active = i===_vipActiveVenue;
+    h += '<button onclick="renderVIP('+i+')" style="padding:6px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;border:'+(active?'none':'0.5px solid var(--rule)')+';background:'+(active?'var(--ink)':'var(--card2)')+';color:'+(active?'#fff':'var(--ink2)')+'">'+v.venue+'</button>';
+  });
+  h += '</div>';
+
   /* ── Week summary strip ── */
+  var totalBS   = d.shows.reduce(function(s,sh){return s+sh.bsActual;},0);
+  var totalMin  = d.shows.reduce(function(s,sh){return s+sh.bsMin;},0);
+  var beatCount = d.shows.filter(function(sh){return sh.bsActual>=sh.bsMin;}).length;
+  var beatPct   = d.shows.length>0 ? Math.round(beatCount/d.shows.length*100) : 0;
+  var totalTables = d.shows.reduce(function(s,sh){return s+sh.tablesActual;},0);
+  var overallBeat = beatPct >= 50;
+
   h += '<div class="vip-summary-row">';
   h += '<div class="vip-sum-box"><div class="vip-sum-lbl">Week BS Total</div>'
-     + '<div class="vip-sum-val '+(allBeat?'beat':'miss')+'">'+$kv(totalBS)+'</div>'
-     + '<div class="vip-sum-sub">Min target '+$kv(totalMin)+' · '+(allBeat?'✓ All shows beat':'⚠ Check details')+'</div></div>';
+     + '<div class="vip-sum-val '+(overallBeat?'beat':'miss')+'">'+$kv(totalBS)+'</div>'
+     + '<div class="vip-sum-sub">Min '+$kv(totalMin)+' · '+(overallBeat?'✓ '+beatCount+'/'+d.shows.length+' shows beat':'⚠ '+beatCount+'/'+d.shows.length+' shows beat')+'</div></div>';
   h += '<div class="vip-sum-box"><div class="vip-sum-lbl">Shows</div>'
      + '<div class="vip-sum-val">'+d.shows.length+'</div>'
      + '<div class="vip-sum-sub">'+d.weekOf+'</div></div>';
-  var totalTables = d.shows.reduce(function(s,sh){return s+sh.tablesActual;},0);
-  h += '<div class="vip-sum-box"><div class="vip-sum-lbl">Total Tables Sold</div>'
+  h += '<div class="vip-sum-box"><div class="vip-sum-lbl">Tables Sold</div>'
      + '<div class="vip-sum-val">'+totalTables+'</div>'
-     + '<div class="vip-sum-sub">Avg '+$kv(Math.round(totalBS/totalTables))+' / table</div></div>';
+     + '<div class="vip-sum-sub">Avg '+$kv(totalTables?Math.round(totalBS/totalTables):0)+' / table</div></div>';
   h += '</div>';
 
   /* ── Per-show sections ── */
   d.shows.forEach(function(sh){
-    var beat = sh.bsActual >= sh.bsMin;
-    var var_bs = sh.bsActual - sh.bsMin;
+    var beat    = sh.bsActual >= sh.bsMin;
+    var var_bs  = sh.bsActual - sh.bsMin;
     var var_tbl = sh.tablesActual - sh.tablesBudget;
 
     h += '<div class="vip-section-hd">'+sh.label+' — '+sh.dj+'</div>';
 
-    /* Show summary row */
     h += '<div class="vip-summary-row">';
     h += '<div class="vip-sum-box"><div class="vip-sum-lbl">BS Actual</div>'
        + '<div class="vip-sum-val '+(beat?'beat':'miss')+'">'+$kv(sh.bsActual)+'</div>'
@@ -2547,73 +2684,49 @@ function renderVIP(){
        + '<div class="vip-sum-val">'+sh.tablesActual+'<span style="font-size:11px;font-weight:400;color:var(--ink3)"> / '+sh.tablesBudget+'</span></div>'
        + '<div class="vip-sum-sub"><span class="'+(var_tbl>=0?'beat':'miss')+'">'+(var_tbl>=0?'+':'')+var_tbl+'</span> vs budget</div></div>';
     h += '<div class="vip-sum-box"><div class="vip-sum-lbl">Avg / Table</div>'
-       + '<div class="vip-sum-val">'+$kv(Math.round(sh.bsActual/sh.tablesActual))+'</div>'
+       + '<div class="vip-sum-val">'+$kv(sh.tablesActual?Math.round(sh.bsActual/sh.tablesActual):0)+'</div>'
        + '<div class="vip-sum-sub">DJ fee '+$kv(sh.fee)+'</div></div>';
     h += '</div>';
 
-    /* Tier breakdown for this show */
     h += '<div class="vip-tier-grid">';
     TIER_ORDER.forEach(function(tname){
       var t = sh.tiers[tname]; if(!t) return;
-      var beatT = t.soldTables>0 && t.avgPerTable >= t.minPerTable;
-      var noSales = t.soldTables === 0;
+      var beatT  = t.soldTables>0 && t.avgPerTable >= t.minPerTable;
+      var noSales = t.soldTables===0;
       var fillPct = t.totalTables>0 ? Math.min(100,Math.round(t.totalSales/(t.totalTables*t.minPerTable)*100)) : 0;
-      h += '<div class="vip-tier-card" style="border-left-color:'+t.color+(noSales?';opacity:.45':'') +'">';
+      h += '<div class="vip-tier-card" style="border-left-color:'+t.color+(noSales?';opacity:.45':'')+'">';
       h += '<div style="display:flex;align-items:center;justify-content:space-between">'
          + '<span class="vip-tier-name" style="color:'+t.textColor+'">'+tname+'</span>'
-         + '<span style="font-size:9px;color:var(--ink3)">'+t.soldTables+'/'+t.totalTables+'</span>'
-         + '</div>';
+         + '<span style="font-size:9px;color:var(--ink3)">'+t.soldTables+'/'+t.totalTables+'</span></div>';
       h += '<div class="vip-tier-sales '+(noSales?'':beatT?'beat':'miss')+'">'+$kv(t.totalSales)+'</div>';
       h += '<div class="vip-tier-bar"><div class="vip-tier-fill" style="width:'+fillPct+'%;background:'+(beatT?'var(--beat)':'var(--miss)')+'"></div></div>';
       h += '<div class="vip-tier-meta"><span>Avg '+$kv(t.avgPerTable)+'/tbl</span><span style="color:var(--ink3)">Min '+$kv(t.minPerTable)+'</span></div>';
       h += '</div>';
     });
     h += '</div>';
+
+    /* Per-table detail (Beach Club only — has tableDetail) */
+    if(sh.tableDetail&&sh.tableDetail.length){
+      h += '<div class="vip-section-hd" style="font-size:10px;margin-top:8px">Table Detail — '+sh.label.split(',')[0]+'</div>';
+      h += '<div class="tbl-wrap" style="margin:0 0 12px"><table class="vip-tbl"><thead><tr>'
+         + '<th>Table</th><th>Tier</th><th class="r">Sales</th><th class="r">Min/Tbl</th><th class="r">vs Min</th>'
+         + '</tr></thead><tbody>';
+      var tdetail = sh.tableDetail.slice().sort(function(a,b){return (b.sales||0)-(a.sales||0);});
+      tdetail.forEach(function(row){
+        var minPT=0; if(sh.tiers[row.tier])minPT=sh.tiers[row.tier].minPerTable;
+        var diff=(row.sales||0)-minPT, zero=!row.sales;
+        h += '<tr'+(zero?' class="zero-row"':'')+'>'+
+             '<td><b>'+row.table+'</b></td>'+
+             '<td><span class="tier-badge" style="background:'+(TIER_COLORS[row.tier]||'#eee')+';color:'+(TIER_TEXT[row.tier]||'#333')+'">'+row.tier+'</span></td>'+
+             '<td class="r">'+(zero?'—':$kv(row.sales))+'</td>'+
+             '<td class="r" style="color:var(--ink3)">'+(minPT?$kv(minPT):'—')+'</td>';
+        if(zero) h+='<td class="r" style="color:var(--ink4)">—</td>';
+        else h+='<td class="r '+(diff>=0?'beat':'miss')+'">'+(diff>=0?'+':'')+$kv(diff)+'</td>';
+        h += '</tr>';
+      });
+      h += '</tbody></table></div>';
+    }
   });
-
-  /* ── Combined per-table detail ── */
-  h += '<div class="vip-section-hd">Full Table Detail — Both Shows</div>';
-  h += '<div class="tbl-wrap" style="margin:0"><table class="vip-tbl"><thead><tr>'
-     + '<th>Table</th><th>Tier</th>'
-     + '<th class="r">'+d.shows[0].label.split(',')[0]+'</th>'
-     + '<th class="r">'+d.shows[1].label.split(',')[0]+'</th>'
-     + '<th class="r">Total</th><th class="r">Min/Tbl</th><th class="r">vs Min</th>'
-     + '</tr></thead><tbody>';
-
-  /* Build combined table map */
-  var tableMap = {};
-  d.shows.forEach(function(sh,si){
-    (sh.tableDetail||[]).forEach(function(row){
-      if(!tableMap[row.table]) tableMap[row.table]={tier:row.tier,sales:[0,0]};
-      tableMap[row.table].sales[si]=row.sales||0;
-    });
-  });
-
-  /* Sort by total descending */
-  var rows = Object.keys(tableMap).map(function(t){
-    var m=tableMap[t];
-    return {table:t,tier:m.tier,s0:m.sales[0],s1:m.sales[1],total:m.sales[0]+m.sales[1]};
-  }).sort(function(a,b){return b.total-a.total;});
-
-  rows.forEach(function(row){
-    var minPT = (sh&&sh.tiers&&sh.tiers[row.tier]) ? sh.tiers[row.tier].minPerTable : 0;
-    /* find min from first show's tiers */
-    var minPT2 = 0;
-    d.shows.forEach(function(sh){if(sh.tiers[row.tier])minPT2=sh.tiers[row.tier].minPerTable;});
-    var diff = row.total - minPT2;
-    var zero = row.total===0;
-    h += '<tr'+(zero?' class="zero-row"':'')+' style="'+(zero?'':'')+ '">';
-    h += '<td><b>'+row.table+'</b></td>';
-    h += '<td><span class="tier-badge" style="background:'+(TIER_COLORS[row.tier]||'#eee')+';color:'+(TIER_TEXT[row.tier]||'#333')+'">'+row.tier+'</span></td>';
-    h += '<td class="r">'+(row.s0?$kv(row.s0):'—')+'</td>';
-    h += '<td class="r">'+(row.s1?$kv(row.s1):'—')+'</td>';
-    h += '<td class="r"><b>'+(zero?'—':$kv(row.total))+'</b></td>';
-    h += '<td class="r" style="color:var(--ink3)">'+(minPT2?$kv(minPT2):'—')+'</td>';
-    if(zero){ h += '<td class="r" style="color:var(--ink4)">—</td>'; }
-    else { h += '<td class="r '+(diff>=0?'beat':'miss')+'">'+(diff>=0?'+':'')+$kv(diff)+'</td>'; }
-    h += '</tr>';
-  });
-  h += '</tbody></table></div>';
 
   document.getElementById('vipBody').innerHTML = h;
 }
@@ -2630,51 +2743,69 @@ function getISOWeek(d){
 }
 
 function checkNewWeekPopup(){
-  if(!VIP_DATA||!VIP_DATA.shows||!VIP_DATA.shows.length) return;
+  if(!VIP_VENUES||!VIP_VENUES.length) return;
   var nowWeek = getISOWeek(new Date());
   var seenKey = 'vip_seen_'+nowWeek;
   if(localStorage.getItem(seenKey)) return;
   localStorage.setItem(seenKey,'1');
-  /* Only show if VIP data is from last week */
-  var dataWeek = VIP_DATA.weekKey||'';
+  var dataWeek = (VIP_VENUES[0]||{}).weekKey||'';
   if(dataWeek===nowWeek) return;
   showVIPPopup();
 }
 
 function showVIPPopup(){
-  var d = VIP_DATA;
-  var allBeat = d.shows.every(function(sh){return sh.bsActual>=sh.bsMin;});
-  var totalBS = d.shows.reduce(function(s,sh){return s+sh.bsActual;},0);
+  /* aggregate all shows across all venues */
+  var allShows = [];
+  VIP_VENUES.forEach(function(v){ v.shows.forEach(function(sh){ allShows.push({show:sh,venue:v.venue}); }); });
+  if(!allShows.length) return;
+
+  var totalBS    = allShows.reduce(function(s,r){return s+r.show.bsActual;},0);
+  var beatCount  = allShows.filter(function(r){return r.show.bsActual>=r.show.bsMin;}).length;
+  var beatPct    = Math.round(beatCount/allShows.length*100);
+  var crushIt    = beatPct >= 50;
 
   var pop = document.createElement('div');
   pop.id = 'vipPopup';
-  pop.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:200';
+  pop.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:200;overflow-y:auto;padding:20px 0';
 
-  var showRows = d.shows.map(function(sh){
-    var b=sh.bsActual>=sh.bsMin;
-    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--hair)">'
-      +'<div><div style="font-size:11px;font-weight:700">'+sh.label+'</div><div style="font-size:10px;color:var(--ink3)">'+sh.dj+'</div></div>'
-      +'<div style="text-align:right"><div style="font-size:13px;font-weight:800;color:'+(b?'var(--beat)':'var(--miss)')+'">'+$kv(sh.bsActual)+'</div>'
-      +'<div style="font-size:9px;color:var(--ink3)">min '+$kv(sh.bsMin)+'</div></div>'
-      +'</div>';
+  var venueBlocks = VIP_VENUES.map(function(v){
+    var vTotal = v.shows.reduce(function(s,sh){return s+sh.bsActual;},0);
+    var vBeat  = v.shows.filter(function(sh){return sh.bsActual>=sh.bsMin;}).length;
+    var vOver  = vBeat>=Math.ceil(v.shows.length/2);
+    var rows   = v.shows.map(function(sh){
+      var b=sh.bsActual>=sh.bsMin;
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:0.5px solid var(--hair)">'
+        +'<div><div style="font-size:10px;font-weight:700">'+sh.label.split(',')[0]+' — '+sh.dj+'</div></div>'
+        +'<div style="text-align:right"><div style="font-size:12px;font-weight:800;color:'+(b?'var(--beat)':'var(--miss)')+'">'+$kv(sh.bsActual)+'</div>'
+        +'<div style="font-size:9px;color:var(--ink3)">min '+$kv(sh.bsMin)+'</div></div></div>';
+    }).join('');
+    return '<div style="background:var(--card2);border-radius:12px;padding:12px 14px;margin-bottom:10px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+      +'<span style="font-size:11px;font-weight:900;letter-spacing:-.2px">'+v.venue+'</span>'
+      +'<span style="font-size:13px;font-weight:900;color:'+(vOver?'var(--beat)':'var(--miss)')+'">'+$kv(vTotal)+'</span></div>'
+      +rows+'</div>';
   }).join('');
 
-  pop.innerHTML = (allBeat?'<canvas id="fwCanvas" style="position:absolute;inset:0;pointer-events:none;z-index:0"></canvas>':'')+
-    '<div style="background:var(--card);border-radius:20px;padding:24px 28px;width:360px;max-width:92vw;position:relative;z-index:1;box-shadow:0 20px 60px rgba(0,0,0,.25)">'
-    +(allBeat?'<div style="font-size:28px;text-align:center;margin-bottom:4px">🎆</div>':'')
-    +'<div style="font-size:15px;font-weight:900;letter-spacing:-.4px;margin-bottom:2px">'+(allBeat?'Both shows crushed it!':'Last Week Recap')+'</div>'
-    +'<div style="font-size:10px;color:var(--ink3);margin-bottom:14px">'+d.weekOf+' · '+d.venue+'</div>'
-    +showRows
-    +'<div style="margin-top:14px;padding:10px 14px;background:var(--card2);border-radius:10px;display:flex;justify-content:space-between;align-items:center">'
-    +'<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3)">Week Total BS</span>'
-    +'<span style="font-size:16px;font-weight:900;color:'+(allBeat?'var(--beat)':'var(--miss)')+'">'+$kv(totalBS)+'</span></div>'
+  var headTitle = crushIt ? '🎆 Week Crushed It!' : '⚠ Room to Grow';
+  var headSub   = crushIt
+    ? beatCount+' of '+allShows.length+' shows beat target — great week!'
+    : 'Only '+beatCount+' of '+allShows.length+' shows beat target this week.';
+
+  pop.innerHTML = (crushIt?'<canvas id="fwCanvas" style="position:fixed;inset:0;pointer-events:none;z-index:199"></canvas>':'')+
+    '<div style="background:var(--card);border-radius:20px;padding:24px 28px;width:400px;max-width:94vw;position:relative;z-index:200;box-shadow:0 20px 60px rgba(0,0,0,.3)">'
+    +'<div style="font-size:16px;font-weight:900;letter-spacing:-.4px;margin-bottom:2px">'+headTitle+'</div>'
+    +'<div style="font-size:10px;color:var(--ink3);margin-bottom:14px">'+headSub+'</div>'
+    +venueBlocks
+    +'<div style="margin-top:6px;padding:10px 14px;background:var(--card2);border-radius:10px;display:flex;justify-content:space-between;align-items:center">'
+    +'<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3)">All Venues BS Total</span>'
+    +'<span style="font-size:16px;font-weight:900;color:'+(crushIt?'var(--beat)':'var(--miss)')+'">'+$kv(totalBS)+'</span></div>'
     +'<div style="display:flex;gap:8px;margin-top:16px">'
     +'<button onclick="document.getElementById(\'vipPopup\').remove()" style="flex:1;padding:9px;border-radius:10px;border:0.5px solid var(--rule);background:var(--card);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:var(--ink2)">Dismiss</button>'
-    +'<button onclick="setView(\'vip\');document.getElementById(\'vipPopup\').remove()" style="flex:2;padding:9px;border-radius:10px;border:none;background:var(--ink);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">View Full VIP Recap →</button>'
+    +'<button onclick="setView(\'vip\');document.getElementById(\'vipPopup\').remove()" style="flex:2;padding:9px;border-radius:10px;border:none;background:var(--ink);color:#fff;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Full VIP Recap →</button>'
     +'</div></div>';
 
   document.body.appendChild(pop);
-  if(allBeat) launchFireworks();
+  if(crushIt) launchFireworks();
 }
 
 function launchFireworks(){
