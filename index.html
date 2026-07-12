@@ -882,7 +882,13 @@ function buildSidebar() {
     {id:'leaderboard',ic:'&#9650;',  lb:'ROI Ranking'},
     {id:'budget',     ic:'&#36;',    lb:'Budget'},
     {id:'accounting', ic:'&#9998;',  lb:'Accounting'},
-    {id:'vip',        ic:'&#10022;', lb:'VIP'},
+  ].forEach(function(b) {
+    html += '<button class="sb-btn" data-view="'+b.id+'" onclick="setView(\''+b.id+'\')">'
+          + '<span class="sb-ic">'+b.ic+'</span>'+b.lb+'</button>';
+  });
+  html += '<div class="sb-section-lbl" style="margin-top:8px">Forecasting &amp; Results</div>';
+  [
+    {id:'vip',        ic:'&#10022;', lb:'VIP Recap'},
     {id:'forecast',   ic:'&#9650;',  lb:'Forecast'},
   ].forEach(function(b) {
     html += '<button class="sb-btn" data-view="'+b.id+'" onclick="setView(\''+b.id+'\')">'
@@ -2740,195 +2746,316 @@ function _generateInsight(d){
    ═══════════════════════════════════════════════════════════════════ */
 var FORECAST_DATA = [
   // ── MILA Lounge ──────────────────────────────────────────────────
-  {"venue":"MILA Lounge","date":"2026-07-15","dj":"ONOMA","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"MILA Lounge","date":"2026-07-16","dj":"DARMON","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"MILA Lounge","date":"2026-07-17","dj":"K.O.B.A","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"MILA Lounge","date":"2026-07-17","dj":"LAZARE","bookedTables":1,"totalTables":13,"totalRevenue":3500,"tierSummary":{"DIAMOND":{"total":7,"booked":1,"revenue":3500},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"MILA Lounge","date":"2026-07-18","dj":"ANGELOS","bookedTables":0,"totalTables":13,"totalRevenue":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"MILA Lounge","date":"2026-07-22","dj":"AXEL BECA","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"MILA Lounge","date":"2026-07-22","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"MILA Lounge","date":"2026-07-23","dj":"BARON","bookedTables":1,"totalTables":13,"totalRevenue":2500,"tierSummary":{"DIAMOND":{"total":7,"booked":1,"revenue":2500},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"MILA Lounge","date":"2026-07-24","dj":"XINOBI","bookedTables":0,"totalTables":13,"totalRevenue":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"MILA Lounge","date":"2026-07-25","dj":"DARMON","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"MILA Lounge","date":"2026-07-29","dj":"AXEL BECA","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"MILA Lounge","date":"2026-07-29","dj":"AXEL BECA","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"MILA Lounge","date":"2026-07-30","dj":"SIS","bookedTables":1,"totalTables":13,"totalRevenue":2000,"tierSummary":{"DIAMOND":{"total":7,"booked":1,"revenue":2000},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"MILA Lounge","date":"2026-07-31","dj":"NICO DE ANDREA","bookedTables":0,"totalTables":13,"totalRevenue":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"MILA Lounge","date":"2026-08-05","dj":"TBA","bookedTables":0,"totalTables":14,"totalRevenue":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":5,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"MILA Lounge","date":"2026-08-08","dj":"MARCO LYS","bookedTables":0,"totalTables":13,"totalRevenue":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"MILA Lounge","date":"2026-08-12","dj":"TBA","bookedTables":0,"totalTables":14,"totalRevenue":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":5,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"MILA Lounge","date":"2026-08-13","dj":"TOM & COLLINS","bookedTables":0,"totalTables":13,"totalRevenue":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"MILA Lounge","date":"2026-08-14","dj":"NICO BERNARDINI","bookedTables":0,"totalTables":13,"totalRevenue":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"MILA Lounge","date":"2026-08-19","dj":"TBA","bookedTables":0,"totalTables":14,"totalRevenue":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":5,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"MILA Lounge","date":"2026-08-21","dj":"AUGUSTO YEPES","bookedTables":0,"totalTables":13,"totalRevenue":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"MILA Lounge","date":"2026-08-22","dj":"AJNA","bookedTables":0,"totalTables":13,"totalRevenue":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"MILA Lounge","date":"2026-08-26","dj":"TBA","bookedTables":0,"totalTables":14,"totalRevenue":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":5,"booked":0,"revenue":0}},"hasData":true},
+  // bsTarget = BS minimum from FLASH LEX tab | djCost from FLASH LEX
+  {"venue":"MILA Lounge","date":"2026-07-15","dj":"ONOMA","bookedTables":0,"totalTables":0,"totalRevenue":3500,"bsTarget":45000,"djCost":500,"tierSummary":{},"hasData":false},
+  {"venue":"MILA Lounge","date":"2026-07-16","dj":"DARMON","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":25000,"djCost":4000,"tierSummary":{},"hasData":false},
+  {"venue":"MILA Lounge","date":"2026-07-17","dj":"K.O.B.A","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":25000,"djCost":3000,"tierSummary":{},"hasData":false},
+  {"venue":"MILA Lounge","date":"2026-07-17","dj":"LAZARE","bookedTables":1,"totalTables":13,"totalRevenue":3500,"bsTarget":45000,"djCost":4000,"tierSummary":{"DIAMOND":{"total":7,"booked":1,"revenue":3500},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"MILA Lounge","date":"2026-07-18","dj":"ANGELOS","bookedTables":0,"totalTables":13,"totalRevenue":0,"bsTarget":45000,"djCost":3500,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"MILA Lounge","date":"2026-07-22","dj":"AXEL BECA","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":25000,"djCost":3000,"tierSummary":{},"hasData":false},
+  {"venue":"MILA Lounge","date":"2026-07-22","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":55000,"djCost":500,"tierSummary":{},"hasData":false},
+  {"venue":"MILA Lounge","date":"2026-07-23","dj":"BARON","bookedTables":1,"totalTables":13,"totalRevenue":2500,"bsTarget":25000,"djCost":4500,"tierSummary":{"DIAMOND":{"total":7,"booked":1,"revenue":2500},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"MILA Lounge","date":"2026-07-24","dj":"XINOBI","bookedTables":0,"totalTables":13,"totalRevenue":0,"bsTarget":45000,"djCost":5000,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"MILA Lounge","date":"2026-07-25","dj":"DARMON","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":25000,"djCost":4000,"tierSummary":{},"hasData":false},
+  {"venue":"MILA Lounge","date":"2026-07-29","dj":"AXEL BECA","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":25000,"djCost":3000,"tierSummary":{},"hasData":false},
+  {"venue":"MILA Lounge","date":"2026-07-30","dj":"SIS","bookedTables":1,"totalTables":13,"totalRevenue":2000,"bsTarget":25000,"djCost":3000,"tierSummary":{"DIAMOND":{"total":7,"booked":1,"revenue":2000},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"MILA Lounge","date":"2026-07-31","dj":"NICO DE ANDREA","bookedTables":0,"totalTables":13,"totalRevenue":0,"bsTarget":25000,"djCost":3000,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"MILA Lounge","date":"2026-08-05","dj":"TBA","bookedTables":0,"totalTables":14,"totalRevenue":0,"bsTarget":45000,"djCost":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":5,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"MILA Lounge","date":"2026-08-08","dj":"MARCO LYS","bookedTables":0,"totalTables":13,"totalRevenue":0,"bsTarget":45000,"djCost":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"MILA Lounge","date":"2026-08-12","dj":"TBA","bookedTables":0,"totalTables":14,"totalRevenue":0,"bsTarget":45000,"djCost":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":5,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"MILA Lounge","date":"2026-08-13","dj":"TOM & COLLINS","bookedTables":0,"totalTables":13,"totalRevenue":0,"bsTarget":45000,"djCost":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"MILA Lounge","date":"2026-08-14","dj":"NICO BERNARDINI","bookedTables":0,"totalTables":13,"totalRevenue":0,"bsTarget":45000,"djCost":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"MILA Lounge","date":"2026-08-19","dj":"TBA","bookedTables":0,"totalTables":14,"totalRevenue":0,"bsTarget":45000,"djCost":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":5,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"MILA Lounge","date":"2026-08-21","dj":"AUGUSTO YEPES","bookedTables":0,"totalTables":13,"totalRevenue":0,"bsTarget":45000,"djCost":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"MILA Lounge","date":"2026-08-22","dj":"AJNA","bookedTables":0,"totalTables":13,"totalRevenue":0,"bsTarget":45000,"djCost":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":4,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"MILA Lounge","date":"2026-08-26","dj":"TBA","bookedTables":0,"totalTables":14,"totalRevenue":0,"bsTarget":45000,"djCost":0,"tierSummary":{"DIAMOND":{"total":7,"booked":0,"revenue":0},"PRESTIGE":{"total":2,"booked":0,"revenue":0},"GOLD":{"total":5,"booked":0,"revenue":0}},"hasData":true},
   // ── Casa Neos Beach Club ─────────────────────────────────────────
-  {"venue":"Casa Neos Beach Club","date":"2026-07-12","dj":"JOEZI","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"Casa Neos Beach Club","date":"2026-07-18","dj":"VITO (UK)","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"Casa Neos Beach Club","date":"2026-07-19","dj":"KAZ JAMES","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"Casa Neos Beach Club","date":"2026-07-25","dj":"MARIAN","bookedTables":8,"totalTables":25,"totalRevenue":6000,"tierSummary":{"DIAMOND":{"total":3,"booked":0,"revenue":0},"PRESTIGE":{"total":1,"booked":0,"revenue":0},"PLATINUM":{"total":9,"booked":3,"revenue":3000},"GOLD":{"total":3,"booked":0,"revenue":0},"RIVERWALK":{"total":7,"booked":5,"revenue":3000},"SLIP":{"total":2,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"Casa Neos Beach Club","date":"2026-07-26","dj":"AMOG","bookedTables":2,"totalTables":26,"totalRevenue":2000,"tierSummary":{"DIAMOND":{"total":3,"booked":1,"revenue":0},"PRESTIGE":{"total":1,"booked":0,"revenue":0},"PLATINUM":{"total":12,"booked":1,"revenue":2000},"GOLD":{"total":3,"booked":0,"revenue":0},"RIVERWALK":{"total":5,"booked":0,"revenue":0},"SLIP":{"total":2,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"Casa Neos Beach Club","date":"2026-08-01","dj":"TBA","bookedTables":0,"totalTables":29,"totalRevenue":0,"tierSummary":{"DIAMOND":{"total":3,"booked":0,"revenue":0},"PRESTIGE":{"total":1,"booked":0,"revenue":0},"PLATINUM":{"total":15,"booked":0,"revenue":0},"GOLD":{"total":3,"booked":0,"revenue":0},"RIVERWALK":{"total":5,"booked":0,"revenue":0},"SLIP":{"total":2,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"Casa Neos Beach Club","date":"2026-08-02","dj":"TBA","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"Casa Neos Beach Club","date":"2026-08-08","dj":"TBA","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Beach Club","date":"2026-07-12","dj":"JOEZI","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":80000,"djCost":5000,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Beach Club","date":"2026-07-18","dj":"VITO (UK)","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":80000,"djCost":5000,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Beach Club","date":"2026-07-19","dj":"KAZ JAMES","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":80000,"djCost":5000,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Beach Club","date":"2026-07-25","dj":"MARIAN","bookedTables":8,"totalTables":25,"totalRevenue":6000,"bsTarget":80000,"djCost":3000,"tierSummary":{"DIAMOND":{"total":3,"booked":0,"revenue":0},"PRESTIGE":{"total":1,"booked":0,"revenue":0},"PLATINUM":{"total":9,"booked":3,"revenue":3000},"GOLD":{"total":3,"booked":0,"revenue":0},"RIVERWALK":{"total":7,"booked":5,"revenue":3000},"SLIP":{"total":2,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"Casa Neos Beach Club","date":"2026-07-26","dj":"AMOG","bookedTables":2,"totalTables":26,"totalRevenue":2000,"bsTarget":80000,"djCost":3000,"tierSummary":{"DIAMOND":{"total":3,"booked":1,"revenue":0},"PRESTIGE":{"total":1,"booked":0,"revenue":0},"PLATINUM":{"total":12,"booked":1,"revenue":2000},"GOLD":{"total":3,"booked":0,"revenue":0},"RIVERWALK":{"total":5,"booked":0,"revenue":0},"SLIP":{"total":2,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"Casa Neos Beach Club","date":"2026-08-01","dj":"TBA","bookedTables":0,"totalTables":29,"totalRevenue":0,"bsTarget":80000,"djCost":0,"tierSummary":{"DIAMOND":{"total":3,"booked":0,"revenue":0},"PRESTIGE":{"total":1,"booked":0,"revenue":0},"PLATINUM":{"total":15,"booked":0,"revenue":0},"GOLD":{"total":3,"booked":0,"revenue":0},"RIVERWALK":{"total":5,"booked":0,"revenue":0},"SLIP":{"total":2,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"Casa Neos Beach Club","date":"2026-08-02","dj":"TBA","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":80000,"djCost":0,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Beach Club","date":"2026-08-08","dj":"TBA","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":80000,"djCost":0,"tierSummary":{},"hasData":false},
   // ── Casa Neos Lounge ─────────────────────────────────────────────
-  {"venue":"Casa Neos Lounge","date":"2026-07-12","dj":"JOEZI | EXTENDED SET","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"Casa Neos Lounge","date":"2026-07-16","dj":"BEN STERLING","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"Casa Neos Lounge","date":"2026-07-17","dj":"LUCH","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"Casa Neos Lounge","date":"2026-07-18","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"Casa Neos Lounge","date":"2026-07-19","dj":"AFTERDARK","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"Casa Neos Lounge","date":"2026-07-23","dj":"ONOMA","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"Casa Neos Lounge","date":"2026-07-24","dj":"Malóne Morez","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"Casa Neos Lounge","date":"2026-07-25","dj":"AMOG","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"Casa Neos Lounge","date":"2026-07-26","dj":"AFTERDARK","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"Casa Neos Lounge","date":"2026-07-30","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"Casa Neos Lounge","date":"2026-07-31","dj":"BHASKAR","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"Casa Neos Lounge","date":"2026-08-01","dj":"ONOMA","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"Casa Neos Lounge","date":"2026-08-02","dj":"AFTERDARK","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"Casa Neos Lounge","date":"2026-08-06","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false},
-  {"venue":"Casa Neos Lounge","date":"2026-08-07","dj":"AMOG","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false}
+  {"venue":"Casa Neos Lounge","date":"2026-07-12","dj":"JOEZI | EXTENDED SET","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":25000,"djCost":3000,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Lounge","date":"2026-07-16","dj":"BEN STERLING","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":25000,"djCost":5000,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Lounge","date":"2026-07-17","dj":"LUCH","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":15000,"djCost":2000,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Lounge","date":"2026-07-18","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":25000,"djCost":3000,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Lounge","date":"2026-07-19","dj":"AFTERDARK","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":25000,"djCost":1500,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Lounge","date":"2026-07-23","dj":"ONOMA","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":25000,"djCost":3000,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Lounge","date":"2026-07-24","dj":"Malóne Morez","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":15000,"djCost":2000,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Lounge","date":"2026-07-25","dj":"AMOG","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":25000,"djCost":3000,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Lounge","date":"2026-07-26","dj":"AFTERDARK","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":25000,"djCost":1500,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Lounge","date":"2026-07-30","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":25000,"djCost":3000,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Lounge","date":"2026-07-31","dj":"BHASKAR","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":25000,"djCost":4000,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Lounge","date":"2026-08-01","dj":"ONOMA","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":25000,"djCost":3000,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Lounge","date":"2026-08-02","dj":"AFTERDARK","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":25000,"djCost":1500,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Lounge","date":"2026-08-06","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":25000,"djCost":3000,"tierSummary":{},"hasData":false},
+  {"venue":"Casa Neos Lounge","date":"2026-08-07","dj":"AMOG","bookedTables":0,"totalTables":0,"totalRevenue":0,"bsTarget":25000,"djCost":3000,"tierSummary":{},"hasData":false}
 ];
 
 var _fcastActiveVenue = 0;
+var _fcastActiveView = 'venue'; // 'venue' or 'all'
 var FCAST_VENUES = ['Casa Neos Beach Club','MILA Lounge','Casa Neos Lounge'];
 
 function _fmtK(n){ return n>=1000?'$'+(n/1000).toFixed(1)+'k':'$'+n; }
+function _fmtMoney(n){ return n?'$'+n.toLocaleString():'—'; }
+function _daysTo(dateStr){
+  var now = new Date(); now.setHours(0,0,0,0);
+  var d = new Date(dateStr+'T12:00:00'); d.setHours(0,0,0,0);
+  return Math.round((d-now)/86400000);
+}
 
-function renderForecast(venueIdx){
+function renderForecast(venueIdx, view){
   if(venueIdx!==undefined) _fcastActiveVenue = venueIdx;
-  var vname = FCAST_VENUES[_fcastActiveVenue];
-  var events = FORECAST_DATA.filter(function(e){ return e.venue===vname; })
-    .sort(function(a,b){ return a.date<b.date?-1:a.date>b.date?1:0; });
+  if(view!==undefined) _fcastActiveView = view;
 
-  // Collect all tiers for this venue
-  var allTiers = [];
-  events.forEach(function(e){
-    Object.keys(e.tierSummary).forEach(function(t){
-      if(allTiers.indexOf(t)<0) allTiers.push(t);
-    });
-  });
-  var TIER_ORDER_FC = ['DIAMOND','PRESTIGE','PLATINUM','GOLD','RIVERWALK','SLIP','LOUNGE','BOOTHS','SEATING','Other'];
-  allTiers.sort(function(a,b){ var ai=TIER_ORDER_FC.indexOf(a),bi=TIER_ORDER_FC.indexOf(b); return (ai<0?99:ai)-(bi<0?99:bi); });
-
-  // Tier colors
   var TCOL = {DIAMOND:'#b9f2ff',PRESTIGE:'#c8b4e8',PLATINUM:'#e8e8e8',GOLD:'#ffe082',RIVERWALK:'#b2dfdb',SLIP:'#ffccbc',LOUNGE:'#c8e6c9',BOOTHS:'#fff9c4',SEATING:'#f0f4c3',Other:'#eeeeee'};
   var TTXT = {DIAMOND:'#0a4a6e',PRESTIGE:'#4a1a7a',PLATINUM:'#2d2d2d',GOLD:'#7d5a00',RIVERWALK:'#00574b',SLIP:'#7d3000',LOUNGE:'#155724',BOOTHS:'#666000',SEATING:'#4a5400',Other:'#555'};
+  var TIER_ORDER_FC = ['DIAMOND','PRESTIGE','PLATINUM','GOLD','RIVERWALK','SLIP','LOUNGE','BOOTHS','SEATING','Other'];
+  var now = new Date(); now.setHours(0,0,0,0);
+  var todayStr = now.toISOString().split('T')[0];
 
   var h = '';
 
-  // ── Venue tab bar ────────────────────────────────────────────────
-  h += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px">';
-  FCAST_VENUES.forEach(function(vn,i){
-    var on = i===_fcastActiveVenue;
-    h += '<button onclick="renderForecast('+i+')" style="padding:6px 16px;border-radius:20px;font-size:11px;font-weight:700;'
-       + 'border:1.5px solid '+(on?'var(--acc)':'var(--hair)')
-       + ';background:'+(on?'var(--acc)':'var(--card)')
-       + ';color:'+(on?'#fff':'var(--ink2)')
-       + ';cursor:pointer">'+vn+'</button>';
+  // ── Top controls ─────────────────────────────────────────────────
+  h += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">';
+
+  // View toggle
+  h += '<div style="display:flex;gap:0;border:1.5px solid var(--hair);border-radius:20px;overflow:hidden">';
+  ['venue','all'].forEach(function(v){
+    var on = _fcastActiveView===v;
+    var lbl = v==='venue'?'By Venue':'All Venues';
+    h += '<button onclick="renderForecast(undefined,\''+v+'\')" style="padding:5px 14px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:'+(on?'var(--acc)':'transparent')+';color:'+(on?'#fff':'var(--ink2)')+'">'+lbl+'</button>';
   });
   h += '</div>';
 
-  // ── Summary stats ────────────────────────────────────────────────
-  var totalEvts  = events.length;
-  var evtsData   = events.filter(function(e){return e.hasData;}).length;
-  var totalBooked= events.reduce(function(s,e){return s+e.bookedTables;},0);
-  var totalRev   = events.reduce(function(s,e){return s+e.totalRevenue;},0);
-  h += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:4px">';
-  [
-    {label:'Upcoming Events', val:totalEvts},
-    {label:'Events w/ Bookings', val:events.filter(function(e){return e.bookedTables>0;}).length},
-    {label:'Tables Committed', val:totalBooked},
-    {label:'Revenue Committed', val:'$'+totalRev.toLocaleString()},
-  ].forEach(function(s){
-    h += '<div style="background:var(--card);border-radius:10px;padding:10px 16px;min-width:120px">'
-       + '<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)">'+s.label+'</div>'
-       + '<div style="font-size:20px;font-weight:900;letter-spacing:-.5px">'+s.val+'</div>'
-       + '</div>';
-  });
+  if(_fcastActiveView==='venue'){
+    // Venue tabs
+    FCAST_VENUES.forEach(function(vn,i){
+      var on = i===_fcastActiveVenue;
+      h += '<button onclick="renderForecast('+i+')" style="padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;'
+         + 'border:1.5px solid '+(on?'var(--acc)':'var(--hair)')
+         + ';background:'+(on?'var(--acc)':'var(--card)')
+         + ';color:'+(on?'#fff':'var(--ink2)')
+         + ';cursor:pointer">'+vn+'</button>';
+    });
+  }
   h += '</div>';
 
-  // ── Bar chart ────────────────────────────────────────────────────
-  var evtsForChart = events.filter(function(e){return e.hasData;}).slice(0,16);
-  if(evtsForChart.length > 0){
-    var maxTotal = Math.max.apply(null, evtsForChart.map(function(e){return e.totalTables||1;}));
-    var barH = 110;
-    h += '<div class="fcast-chart-wrap">';
-    h += '<div class="fcast-chart-title">Table Bookings — Upcoming Events ('+evtsData+' scheduled)</div>';
-    h += '<div class="fcast-bars">';
-    evtsForChart.forEach(function(e){
-      var pct = e.totalTables>0 ? e.bookedTables/e.totalTables : 0;
-      var barFull = Math.round((e.totalTables/maxTotal)*barH);
-      var barBooked = Math.round(pct*barFull);
-      var col = pct>=0.7?'#22c55e':pct>=0.3?'#f59e0b':'#94a3b8';
-      var dateLabel = e.date.slice(5).replace('-','/');
-      h += '<div class="fcast-bar-group">';
-      if(e.totalRevenue>0) h += '<div class="fcast-bar-rev">'+_fmtK(e.totalRevenue)+'</div>';
-      h += '<div class="fcast-bar-bg" style="height:'+barFull+'px">';
-      h += '<div class="fcast-bar-fg" style="height:'+barBooked+'px;background:'+col+'"></div>';
+  if(_fcastActiveView==='all'){
+    // ── ALL VENUES SUMMARY ─────────────────────────────────────────
+    var allEvts = FORECAST_DATA.slice().sort(function(a,b){ return a.date<b.date?-1:a.date>b.date?1:0; });
+    // Top KPI strip
+    var totalRev = allEvts.reduce(function(s,e){return s+e.totalRevenue;},0);
+    var totalTarget = allEvts.reduce(function(s,e){return s+(e.bsTarget||0);},0);
+    var totalPct = totalTarget>0?Math.round(totalRev/totalTarget*100):0;
+    h += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">';
+    [{lbl:'Total Shows',val:allEvts.length},{lbl:'With Bookings',val:allEvts.filter(function(e){return e.totalRevenue>0;}).length},
+     {lbl:'Revenue Committed',val:'$'+totalRev.toLocaleString()},{lbl:'Total Target',val:'$'+totalTarget.toLocaleString()},
+     {lbl:'Overall % Complete',val:totalPct+'%',col:totalPct>=50?'#22c55e':totalPct>=20?'#f59e0b':'#ef4444'}
+    ].forEach(function(s){
+      h += '<div style="background:var(--card);border-radius:10px;padding:9px 14px;min-width:110px">'
+         + '<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)">'+s.lbl+'</div>'
+         + '<div style="font-size:18px;font-weight:900;letter-spacing:-.5px;color:'+(s.col||'inherit')+'">'+s.val+'</div>'
+         + '</div>';
+    });
+    h += '</div>';
+
+    // All-venues table
+    h += '<div class="fcast-tbl-wrap"><table class="fcast-tbl">';
+    h += '<thead><tr>'
+       + '<th class="left">Date</th><th class="left">Venue</th><th class="left">Artist</th>'
+       + '<th>BS Actual</th><th style="background:#FFF2CC;color:#7D5A00">BS Target</th>'
+       + '<th>% Complete</th><th>Pickup Pace</th><th>Tables</th><th>Days Out</th>'
+       + '</tr></thead><tbody>';
+
+    allEvts.forEach(function(e){
+      var days = _daysTo(e.date);
+      if(days < -1) return; // skip past events
+      var pct = e.bsTarget>0?Math.round(e.totalRevenue/e.bsTarget*100):0;
+      var pctCol = pct>=70?'#22c55e':pct>=30?'#f59e0b':'#ef4444';
+      if(pct===0&&e.totalRevenue===0) pctCol='#94a3b8';
+      var dateObj = new Date(e.date+'T12:00:00');
+      var dateFmt = dateObj.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+      // Pickup pace: pct per week assuming scrape was done 0 days ago (Jul 11)
+      // Days elapsed since event was last updated = 0 (just scraped)
+      // Weeks to event:
+      var weeksLeft = Math.max(1, Math.ceil(days/7));
+      var neededPerWeek = e.bsTarget>0 ? Math.round((e.bsTarget-e.totalRevenue)/weeksLeft) : 0;
+      var paceStr = (days>0 && e.bsTarget>0) ? '+'+_fmtK(neededPerWeek)+'/wk needed' : '—';
+      var vShort = e.venue==='Casa Neos Beach Club'?'BC':e.venue==='MILA Lounge'?'MILA':'Lounge';
+      h += '<tr>';
+      h += '<td class="left" style="font-size:10px;color:var(--ink3)">'+dateFmt+'</td>';
+      h += '<td class="left"><span style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:20px;background:var(--hair);color:var(--ink2)">'+vShort+'</span></td>';
+      h += '<td class="left" style="font-weight:700">'+e.dj+'</td>';
+      h += '<td style="font-weight:700">'+(e.totalRevenue>0?'$'+e.totalRevenue.toLocaleString():'—')+'</td>';
+      h += '<td style="background:#FFF2CC;color:#7D5A00;font-weight:700">'+(e.bsTarget?'$'+e.bsTarget.toLocaleString():'—')+'</td>';
+      h += '<td>';
+      if(e.bsTarget>0){
+        h += '<div style="display:flex;align-items:center;gap:5px">'
+           + '<b style="color:'+pctCol+'">'+pct+'%</b>'
+           + '<div style="width:50px;height:6px;background:var(--hair);border-radius:3px;overflow:hidden"><div style="width:'+Math.min(100,pct)+'%;height:100%;background:'+pctCol+';border-radius:3px"></div></div>'
+           + '</div>';
+      } else { h += '—'; }
+      h += '</td>';
+      h += '<td style="font-size:10px;color:'+(neededPerWeek>0?'#f59e0b':'var(--ink3)')+'">'+paceStr+'</td>';
+      h += '<td>'+(e.totalTables>0?'<b>'+e.bookedTables+'</b><span style="color:var(--ink3)">/'+e.totalTables+'</span>':'—')+'</td>';
+      h += '<td style="font-size:10px;color:'+(days<=7?'#ef4444':days<=14?'#f59e0b':'var(--ink3)')+'">'+days+'d</td>';
+      h += '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+  } else {
+    // ── SINGLE VENUE VIEW ──────────────────────────────────────────
+    var vname = FCAST_VENUES[_fcastActiveVenue];
+    var events = FORECAST_DATA.filter(function(e){ return e.venue===vname; })
+      .sort(function(a,b){ return a.date<b.date?-1:a.date>b.date?1:0; });
+
+    // Collect tiers
+    var allTiers = [];
+    events.forEach(function(e){ Object.keys(e.tierSummary).forEach(function(t){ if(allTiers.indexOf(t)<0) allTiers.push(t); }); });
+    allTiers.sort(function(a,b){ var ai=TIER_ORDER_FC.indexOf(a),bi=TIER_ORDER_FC.indexOf(b); return (ai<0?99:ai)-(bi<0?99:bi); });
+
+    // KPI strip
+    var totalRev = events.reduce(function(s,e){return s+e.totalRevenue;},0);
+    var totalTarget = events.reduce(function(s,e){return s+(e.bsTarget||0);},0);
+    var totalPct = totalTarget>0?Math.round(totalRev/totalTarget*100):0;
+    h += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">';
+    [{lbl:'Upcoming Shows',val:events.length},{lbl:'Revenue Committed',val:'$'+totalRev.toLocaleString()},
+     {lbl:'Total Target',val:'$'+totalTarget.toLocaleString()},
+     {lbl:'Overall % Complete',val:totalPct+'%',col:totalPct>=50?'#22c55e':totalPct>=20?'#f59e0b':'#ef4444'}
+    ].forEach(function(s){
+      h += '<div style="background:var(--card);border-radius:10px;padding:9px 14px;min-width:110px">'
+         + '<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)">'+s.lbl+'</div>'
+         + '<div style="font-size:18px;font-weight:900;letter-spacing:-.5px;color:'+(s.col||'inherit')+'">'+s.val+'</div>'
+         + '</div>';
+    });
+    h += '</div>';
+
+    // ── Bar chart: BS Actual vs Target ─────────────────────────────
+    var chartEvts = events.filter(function(e){return e.bsTarget>0;}).slice(0,14);
+    if(chartEvts.length>0){
+      var maxTarget = Math.max.apply(null, chartEvts.map(function(e){return e.bsTarget||0;}));
+      var barH = 100;
+      h += '<div class="fcast-chart-wrap">';
+      h += '<div class="fcast-chart-title">BS Actual vs BS Target — Upcoming Events</div>';
+      h += '<div class="fcast-bars" style="height:150px;padding-bottom:36px">';
+      chartEvts.forEach(function(e){
+        var pct = e.bsTarget>0?e.totalRevenue/e.bsTarget:0;
+        var targetH = Math.round((e.bsTarget/maxTarget)*barH);
+        var actualH = Math.round(pct*targetH);
+        var col = pct>=0.7?'#22c55e':pct>=0.3?'#f59e0b':'#3b82f6';
+        if(e.totalRevenue===0) col='#cbd5e1';
+        var days = _daysTo(e.date);
+        var dateLabel = e.date.slice(5).replace('-','/');
+        h += '<div class="fcast-bar-group" style="min-width:46px">';
+        if(e.totalRevenue>0) h += '<div class="fcast-bar-rev">'+_fmtK(e.totalRevenue)+'</div>';
+        // Target bar (ghost)
+        h += '<div style="width:32px;height:'+targetH+'px;background:var(--hair);border-radius:4px 4px 0 0;position:relative">';
+        // Actual bar inside
+        h += '<div style="position:absolute;bottom:0;left:0;width:100%;height:'+actualH+'px;background:'+col+';border-radius:4px 4px 0 0"></div>';
+        // Target line at top
+        h += '<div style="position:absolute;top:0;left:-2px;right:-2px;height:2px;background:#7D5A00;border-radius:2px"></div>';
+        h += '</div>';
+        h += '<div style="font-size:8px;color:var(--ink3);text-align:center;margin-top:2px">'+(Math.round(pct*100))+'%</div>';
+        h += '<div class="fcast-bar-lbl">'+dateLabel+'<br><span style="font-weight:700">'+e.dj.slice(0,9)+'</span></div>';
+        h += '</div>';
+      });
       h += '</div>';
-      h += '<div style="font-size:8px;font-weight:700;color:var(--ink2);margin-top:2px">'+e.bookedTables+'/'+(e.totalTables||'?')+'</div>';
-      h += '<div class="fcast-bar-lbl">'+dateLabel+'<br><span style="font-weight:700">'+e.dj.slice(0,10)+'</span></div>';
+      h += '<div style="display:flex;gap:14px;margin-top:6px;font-size:9px;color:var(--ink3)">'
+         + '<span style="display:flex;align-items:center;gap:4px"><div style="width:14px;height:3px;background:#7D5A00;border-radius:1px"></div> BS Target</span>'
+         + '<span style="color:#22c55e">&#9646; 70%+ complete</span>'
+         + '<span style="color:#f59e0b">&#9646; 30–70%</span>'
+         + '<span style="color:#3b82f6">&#9646; &lt;30%</span>'
+         + '</div>';
+      h += '</div>';
+    }
+
+    // ── Pickup pace section ────────────────────────────────────────
+    h += '<div class="fcast-chart-wrap">';
+    h += '<div class="fcast-chart-title">&#9201; Pickup Pace — How Fast Are We Filling Up?</div>';
+    h += '<div style="font-size:10px;color:var(--ink3);margin-bottom:8px">Based on current bookings vs days remaining. Brown bar = target. Colored fill = actual committed.</div>';
+    h += '<div style="display:flex;flex-direction:column;gap:6px">';
+    events.filter(function(e){return e.bsTarget>0;}).slice(0,12).forEach(function(e){
+      var days = _daysTo(e.date);
+      if(days<-1) return;
+      var pct = e.bsTarget>0?Math.min(1,e.totalRevenue/e.bsTarget):0;
+      var pctDisplay = Math.round(pct*100);
+      var col = pct>=0.7?'#22c55e':pct>=0.3?'#f59e0b':pct>0?'#3b82f6':'#cbd5e1';
+      var weeksLeft = Math.max(1,Math.ceil(days/7));
+      var needed = e.bsTarget>0?e.bsTarget-e.totalRevenue:0;
+      var needPerWk = Math.round(needed/weeksLeft);
+      var dateObj = new Date(e.date+'T12:00:00');
+      var dateFmt = dateObj.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      // Pace verdict
+      var verdict = '', verdictCol='';
+      if(days<=0){ verdict='Event today/past'; verdictCol='#94a3b8'; }
+      else if(pct>=1){ verdict='Target met!'; verdictCol='#22c55e'; }
+      else if(days<=7&&pct<0.5){ verdict='Urgent — 1 week out'; verdictCol='#ef4444'; }
+      else if(needPerWk>0){ verdict='Need '+_fmtK(needPerWk)+'/wk'; verdictCol=needPerWk<5000?'#f59e0b':'#ef4444'; }
+      h += '<div style="display:flex;align-items:center;gap:10px">';
+      h += '<div style="width:120px;font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+dateFmt+' · '+e.dj.slice(0,10)+'</div>';
+      h += '<div style="flex:1;position:relative;height:14px;background:var(--hair);border-radius:7px;overflow:hidden">';
+      h += '<div style="position:absolute;left:0;top:0;height:100%;width:'+Math.min(100,pctDisplay)+'%;background:'+col+';border-radius:7px;transition:width .4s"></div>';
+      h += '</div>';
+      h += '<div style="width:38px;text-align:right;font-size:10px;font-weight:800;color:'+col+'">'+pctDisplay+'%</div>';
+      h += '<div style="width:70px;font-size:9px;font-weight:700;color:'+verdictCol+'">'+verdict+'</div>';
+      h += '<div style="width:70px;font-size:9px;color:var(--ink3);text-align:right">'+days+'d · $'+e.bsTarget.toLocaleString()+'</div>';
       h += '</div>';
     });
-    h += '</div>'; // fcast-bars
-    h += '<div style="display:flex;gap:14px;margin-top:8px;font-size:9px;color:var(--ink3)">'
-       + '<span>&#9632; <span style="color:#22c55e">&#9646;</span> 70%+ fill</span>'
-       + '<span><span style="color:#f59e0b">&#9646;</span> 30–70%</span>'
-       + '<span><span style="color:#94a3b8">&#9646;</span> &lt;30%</span>'
-       + '</div>';
-    h += '</div>'; // chart-wrap
+    h += '</div></div>';
+
+    // ── Detailed table ─────────────────────────────────────────────
+    h += '<div class="fcast-tbl-wrap"><table class="fcast-tbl">';
+    h += '<thead><tr>'
+       + '<th class="left">Date</th><th class="left">Artist</th>'
+       + '<th>BS Actual</th><th style="background:#FFF2CC;color:#7D5A00">BS Target</th>'
+       + '<th>% Complete</th><th>Tables</th>';
+    allTiers.forEach(function(t){
+      var bg=TCOL[t]||'#eee', tx=TTXT[t]||'#333';
+      h += '<th style="background:'+bg+';color:'+tx+'">'+t+'</th>';
+    });
+    h += '</tr></thead><tbody>';
+
+    events.forEach(function(e){
+      var days = _daysTo(e.date);
+      var pct = e.bsTarget>0?Math.round(e.totalRevenue/e.bsTarget*100):0;
+      var pctCol = pct>=70?'#22c55e':pct>=30?'#f59e0b':'#ef4444';
+      if(pct===0&&!e.totalRevenue) pctCol='#94a3b8';
+      var dateObj = new Date(e.date+'T12:00:00');
+      var dateFmt = dateObj.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+      var urgentStyle = days<=7&&days>0?'background:rgba(239,68,68,.05)':'';
+      h += '<tr style="'+urgentStyle+'">';
+      h += '<td class="left" style="font-size:10px;color:var(--ink3)">'+dateFmt+(days<=7&&days>0?' <span style="color:#ef4444;font-weight:800">⚑</span>':'')+'</td>';
+      h += '<td class="left" style="font-weight:700">'+e.dj+'</td>';
+      h += '<td style="font-weight:700">'+(e.totalRevenue>0?'$'+e.totalRevenue.toLocaleString():'—')+'</td>';
+      h += '<td style="background:#FFF2CC;color:#7D5A00;font-weight:700">'+(e.bsTarget?'$'+e.bsTarget.toLocaleString():'—')+'</td>';
+      if(e.bsTarget>0){
+        h += '<td><div style="display:flex;align-items:center;gap:5px"><b style="color:'+pctCol+'">'+pct+'%</b>'
+           + '<div style="width:40px;height:5px;background:var(--hair);border-radius:3px;overflow:hidden"><div style="width:'+Math.min(100,pct)+'%;height:100%;background:'+pctCol+';border-radius:3px"></div></div>'
+           + '</div></td>';
+      } else { h += '<td style="color:var(--ink3)">—</td>'; }
+      h += '<td>'+(e.totalTables>0?'<b>'+e.bookedTables+'</b><span style="color:var(--ink3)">/'+e.totalTables+'</span>':'—')+'</td>';
+      if(e.hasData){
+        allTiers.forEach(function(t){
+          var ts=e.tierSummary[t];
+          if(ts){ var bg=TCOL[t]||'#eee',tx=TTXT[t]||'#333';
+            h+='<td style="background:'+bg+'20;color:'+tx+'"><b>'+ts.booked+'</b><span style="color:var(--ink3)">/'+ts.total+'</span>'+(ts.revenue>0?'<div style="font-size:9px">'+_fmtK(ts.revenue)+'</div>':'')+'</td>';
+          } else { h+='<td style="color:var(--ink3)">—</td>'; }
+        });
+      } else {
+        h += '<td colspan="'+(allTiers.length)+'" style="color:var(--ink3);font-style:italic;font-size:10px">Floor plan not set up in FourVenues</td>';
+      }
+      h += '</tr>';
+    });
+    h += '</tbody></table></div>';
   }
 
-  // ── Events table ─────────────────────────────────────────────────
-  h += '<div class="fcast-tbl-wrap"><table class="fcast-tbl">';
-  h += '<thead><tr>'
-     + '<th class="left">Date</th>'
-     + '<th class="left">Artist</th>'
-     + '<th>Tables</th>'
-     + '<th>% Fill</th>'
-     + '<th>Revenue</th>';
-  allTiers.forEach(function(t){
-    var bg = TCOL[t]||'#eee'; var tx = TTXT[t]||'#333';
-    h += '<th style="background:'+bg+';color:'+tx+'">'+t+'</th>';
-  });
-  h += '</tr></thead><tbody>';
-
-  events.forEach(function(e){
-    var pct = e.totalTables>0 ? Math.round(e.bookedTables/e.totalTables*100) : 0;
-    var fillCol = pct>=70?'#22c55e':pct>=30?'#f59e0b':'#94a3b8';
-    var dateObj = new Date(e.date+'T12:00:00');
-    var dateFmt = dateObj.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-    h += '<tr>';
-    h += '<td class="left" style="font-size:10px;color:var(--ink3)">'+dateFmt+'</td>';
-    h += '<td class="left" style="font-weight:700">'+e.dj+'</td>';
-    if(e.hasData){
-      h += '<td><b>'+e.bookedTables+'</b><span style="color:var(--ink3)">/'+e.totalTables+'</span></td>';
-      h += '<td><span style="color:'+fillCol+';font-weight:700">'+pct+'%</span>'
-         + '<div class="fcast-fill-bar"><div class="fcast-fill-bar-inner" style="width:'+pct+'%;background:'+fillCol+'"></div></div>'
-         + '</td>';
-      h += '<td style="font-weight:700">'+(e.totalRevenue>0?'$'+e.totalRevenue.toLocaleString():'—')+'</td>';
-      allTiers.forEach(function(t){
-        var ts = e.tierSummary[t];
-        if(ts){
-          var bg = TCOL[t]||'#eee'; var tx = TTXT[t]||'#333';
-          h += '<td style="background:'+bg+'20;color:'+tx+'">';
-          h += '<b>'+ts.booked+'</b><span style="color:var(--ink3)">/'+ts.total+'</span>';
-          if(ts.revenue>0) h += '<div style="font-size:9px">'+_fmtK(ts.revenue)+'</div>';
-          h += '</td>';
-        } else {
-          h += '<td style="color:var(--ink3)">—</td>';
-        }
-      });
-    } else {
-      h += '<td colspan="'+(3+allTiers.length)+'" style="color:var(--ink3);font-style:italic;font-size:10px">Floor plan not configured in FourVenues yet</td>';
-    }
-    h += '</tr>';
-  });
-  h += '</tbody></table></div>';
-
   document.getElementById('fcastBody').innerHTML = h;
-  document.getElementById('fcastMeta').textContent = 'Live from FourVenues — Scraped '+new Date('2026-07-11').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})+' — '+totalEvts+' upcoming events';
+  document.getElementById('fcastMeta').textContent = 'Live from FourVenues · Scraped Jul 11 · Click "All Venues" for cross-venue summary';
 }
 
 function renderVIP(venueIdx){
