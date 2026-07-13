@@ -711,7 +711,12 @@ textarea#fldNote:focus{border-color:var(--blue)}
   <!-- VIP -->
   <div id="view-vip" style="display:none">
     <div class="pg-section" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-      <div><div class="pg-title2">&#10022; VIP Recap</div><div id="vipMeta" style="font-size:10px;color:var(--ink3)">All Venues — Last Week</div></div>
+      <div><div class="pg-title2">&#10022; VIP Recap</div><div id="vipMeta" style="font-size:10px;color:var(--ink3)">All Venues &#8212; Last Week</div></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button id="vipPrevBtn" onclick="vipWeekNav(1)" style="padding:5px 12px;border-radius:8px;border:0.5px solid var(--rule);background:var(--card2);color:var(--ink2);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">&#8592; Prev</button>
+        <span id="vipWeekLabel" style="font-size:11px;font-weight:700;color:var(--ink2);white-space:nowrap;min-width:80px;text-align:center">Last Week</span>
+        <button id="vipNextBtn" onclick="vipWeekNav(-1)" style="padding:5px 12px;border-radius:8px;border:0.5px solid var(--rule);background:var(--card2);color:var(--ink2);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;opacity:0.3" disabled>Next &#8594;</button>
+      </div>
     </div>
     <div id="vipBody" class="vip-wrap"></div>
   </div>
@@ -2686,6 +2691,7 @@ var TIER_ORDER = ['Diamond','Prestige','Platinum','Gold','Riverwalk','Cabana','D
 function $kv(v){ if(!v&&v!==0) return '—'; return '$'+(Math.round(v)).toLocaleString(); }
 
 var _vipActiveVenue = 0;
+var _vipWeekOffset = 0; // 0=last week, 1=2 weeks ago, 2=3 weeks ago
 
 function _fmtVar(v){
   if(v===0) return '<span style="color:var(--ink3)">—</span>';
@@ -3084,15 +3090,108 @@ function renderForecast(venueIdx, view){
   document.getElementById('fcastMeta').textContent = 'Live from FourVenues · Scraped Jul 11 · Click "All Venues" for cross-venue summary';
 }
 
+
+/* ---------------------------------------------------------------
+   VIP WEEK NAVIGATION - week offset navigation
+   --------------------------------------------------------------- */
+function _vipShiftDate(dateStr, days) {
+  var d = new Date(dateStr + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function getVipWeekRange(weeksBack) {
+  // weeksBack=0 = last complete week, weeksBack=1 = 2 weeks ago, etc.
+  var nowMs = Date.now() - 4 * 60 * 60 * 1000;
+  var todayStr = new Date(nowMs).toISOString().slice(0, 10);
+  var dow = new Date(todayStr + 'T12:00:00Z').getUTCDay();
+  var daysToLastMon = dow === 0 ? 6 : dow + 6;
+  var lastMon = _vipShiftDate(todayStr, -daysToLastMon);
+  var targetMon = _vipShiftDate(lastMon, -weeksBack * 7);
+  var targetSun = _vipShiftDate(targetMon, 6);
+  return { mon: targetMon, sun: targetSun };
+}
+
+function _fmtVipWeekLabel(weeksBack) {
+  if (weeksBack === 0) return 'Last Week';
+  var r = getVipWeekRange(weeksBack);
+  var opts = { month: 'short', day: 'numeric', timeZone: 'UTC' };
+  var ms = new Date(r.mon + 'T12:00:00Z').toLocaleDateString('en-US', opts);
+  var ss = new Date(r.sun + 'T12:00:00Z').toLocaleDateString('en-US', opts);
+  return ms + ' \u2013 ' + ss;
+}
+
+function vipWeekNav(delta) {
+  var newOffset = _vipWeekOffset + delta;
+  if (newOffset < 0) return; // can't go forward past "last week"
+  var range = getVipWeekRange(newOffset);
+  var hasData = SCHED.some(function(e) { return e.d >= range.mon && e.d <= range.sun && e.bs_a; });
+  if (!hasData && delta > 0) return; // no data further back
+  _vipWeekOffset = newOffset;
+  renderVIP(_vipActiveVenue);
+}
+
+/* Build VIP venue data from SCHED for a given week range (used for historical weeks) */
+function buildVipFromSched(mon, sun) {
+  var venueMap = {};
+  var opts = { month: 'short', day: 'numeric', timeZone: 'UTC' };
+  var weekLabel = new Date(mon + 'T12:00:00Z').toLocaleDateString('en-US', opts)
+                + ' \u2013 ' + new Date(sun + 'T12:00:00Z').toLocaleDateString('en-US', opts);
+  var dateOpts = { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' };
+  SCHED.forEach(function(e) {
+    if (e.d < mon || e.d > sun) return;
+    var vn = e.venue || e.v || '';
+    if (!vn) return;
+    if (!venueMap[vn]) venueMap[vn] = { venue: vn, weekOf: weekLabel, weekKey: '', shows: [] };
+    venueMap[vn].shows.push({
+      date:         e.d,
+      label:        new Date(e.d + 'T12:00:00Z').toLocaleDateString('en-US', dateOpts),
+      dj:           e.dj || '',
+      fee:          e.fee || 0,
+      bsActual:     e.bs_a || 0,
+      bsMin:        e.bs_m || 0,
+      tablesActual: null,
+      tablesBudget: null,
+      tiers:        {},
+      roiActual:    e.roi_a || (e.fee > 0 ? Math.round((e.bs_a||0) / e.fee * 100) / 100 : 0),
+      roiTarget:    e.roi_t || 0
+    });
+  });
+  var order = ['Casa Neos Beach Club', 'MILA Lounge', 'Casa Neos Lounge'];
+  var result = [];
+  order.forEach(function(vn) { if (venueMap[vn]) result.push(venueMap[vn]); });
+  Object.keys(venueMap).forEach(function(vn) { if (order.indexOf(vn) === -1) result.push(venueMap[vn]); });
+  return result;
+}
+
 function renderVIP(venueIdx){
   if(venueIdx!==undefined) _vipActiveVenue = venueIdx;
-  var venues = VIP_VENUES;
+
+  // Determine data source: VIP_VENUES (last week, rich tier data) vs SCHED (historical)
+  var venues;
+  var range = getVipWeekRange(_vipWeekOffset);
+  var vipWkKey = (VIP_VENUES && VIP_VENUES[0]) ? (VIP_VENUES[0].weekKey || '') : '';
+  var rangeWkKey = getISOWeek(new Date(range.mon + 'T12:00:00Z'));
+  if (VIP_VENUES && VIP_VENUES.length && vipWkKey === rangeWkKey) {
+    venues = VIP_VENUES;
+  } else {
+    venues = buildVipFromSched(range.mon, range.sun);
+  }
+
   if(!venues||!venues.length){
-    document.getElementById('vipBody').innerHTML='<div class="empty">No VIP data loaded.</div>';
+    document.getElementById('vipBody').innerHTML='<div class="empty" style="padding:40px;text-align:center;color:var(--ink3)">No VIP data for this week.</div>';
     return;
   }
+  if(_vipActiveVenue >= venues.length) _vipActiveVenue = 0;
   var d = venues[_vipActiveVenue];
-  document.getElementById('vipMeta').textContent = d.weekOf;
+
+  // Update week nav UI
+  var wkLbl = document.getElementById('vipWeekLabel');
+  if(wkLbl) wkLbl.textContent = _fmtVipWeekLabel(_vipWeekOffset);
+  var nextBtn = document.getElementById('vipNextBtn');
+  if(nextBtn){ nextBtn.disabled = _vipWeekOffset===0; nextBtn.style.opacity = _vipWeekOffset===0?'0.3':'1'; }
+
+  document.getElementById('vipMeta').textContent = (d.weekOf||_fmtVipWeekLabel(_vipWeekOffset)) + ' ? ' + d.venue;
 
   var h = '';
 
