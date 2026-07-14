@@ -2714,8 +2714,8 @@ function _generateInsight(d){
   var beat=shows.filter(function(s){return s.bsActual>=s.bsMin;}), miss=shows.filter(function(s){return s.bsActual<s.bsMin;});
   var totBS=shows.reduce(function(s,sh){return s+sh.bsActual;},0);
   var totMin=shows.reduce(function(s,sh){return s+sh.bsMin;},0);
-  var totTbl=shows.reduce(function(s,sh){return s+sh.tablesActual;},0);
-  var totBudget=shows.reduce(function(s,sh){return s+sh.tablesBudget;},0);
+  var totTbl=shows.reduce(function(s,sh){return s+(sh.tablesActual||0);},0);
+  var totBudget=shows.reduce(function(s,sh){return s+(sh.tablesBudget||0);},0);
   var beatPct=Math.round(beat.length/n*100);
   var avgPerTbl=totTbl?Math.round(totBS/totTbl):0;
   /* sentiment */
@@ -2725,14 +2725,14 @@ function _generateInsight(d){
   var beatNames=beat.map(function(s){return s.dj;}).join(' & ');
   var missNames=miss.map(function(s){return s.dj;}).join(' & ');
   /* table volume */
-  var tblFillPct=Math.round(totTbl/totBudget*100);
+  var tblFillPct = (totTbl&&totBudget) ? Math.round(totTbl/totBudget*100) : null;
   /* build sentence */
   var s = opener+d.venue+'. ';
   if(beat.length===n) s += 'All '+n+' shows exceeded their BS target';
   else if(beat.length===0) s += 'None of the '+n+' shows met their BS target';
   else s += (beatNames?beatNames+' beat':'Beat shows beat')+' target'+(missNames?' while '+missNames+' fell short':'');
   s += ', delivering '+$kv(totBS)+' total bottle service (vs '+$kv(totMin)+' combined min). ';
-  s += 'Table volume was '+tblFillPct+'% of budget ('+totTbl+'/'+totBudget+' tables sold), with an avg of '+$kv(avgPerTbl)+' per table. ';
+  if(tblFillPct!=null) s += 'Table volume was '+tblFillPct+'% of budget ('+totTbl+'/'+totBudget+' tables sold), with an avg of '+$kv(avgPerTbl)+' per table. ';
   /* tier insight */
   var tierSetC={};
   shows.forEach(function(sh){Object.keys(sh.tiers).forEach(function(t){
@@ -3193,35 +3193,71 @@ function vipWeekNav(delta) {
 }
 
 /* Build VIP venue data from SCHED for a given week range (used for historical weeks) */
+/* Build a floor-plan reference (totalTables per tier, tablesBudget) from VIP_VENUES data.
+   This is stable  the floor plan doesn't change week to week. */
+var _vipFloorPlan = (function(){
+  var fp = {};
+  (VIP_VENUES||[]).forEach(function(v){
+    if(fp[v.venue]) return; // use first/most recent entry per venue
+    var budget = 0;
+    var tierRef = {};
+    (v.shows||[]).forEach(function(sh){
+      Object.keys(sh.tiers||{}).forEach(function(t){
+        var td = sh.tiers[t];
+        if(!tierRef[t]) tierRef[t] = { total: td.totalTables||0, min: td.minPerTable||0, color: td.color||'#eee', textColor: td.textColor||'#333' };
+        budget = Math.max(budget, Object.values(sh.tiers).reduce(function(s,x){ return s+(x.totalTables||0); },0));
+      });
+    });
+    fp[v.venue] = { budget: budget, tiers: tierRef };
+  });
+  return fp;
+})();
+
 function buildVipFromSched(mon, sun) {
   var venueMap = {};
-  var opts = { month: 'short', day: 'numeric', timeZone: 'UTC' };
-  var weekLabel = new Date(mon + 'T12:00:00Z').toLocaleDateString('en-US', opts)
-                + ' \u2013 ' + new Date(sun + 'T12:00:00Z').toLocaleDateString('en-US', opts);
+  var opts     = { month: 'short', day: 'numeric', timeZone: 'UTC' };
+  var weekLabel = new Date(mon+'T12:00:00Z').toLocaleDateString('en-US', opts)
+                + ' \u2013 ' + new Date(sun+'T12:00:00Z').toLocaleDateString('en-US', opts);
   var dateOpts = { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' };
+
   SCHED.forEach(function(e) {
     if (e.d < mon || e.d > sun) return;
     var vn = e.venue || e.v || '';
     if (!vn) return;
     if (!venueMap[vn]) venueMap[vn] = { venue: vn, weekOf: weekLabel, weekKey: '', shows: [] };
+
+    // Pull floor plan reference for this venue
+    var fp      = _vipFloorPlan[vn] || {};
+    var budget  = fp.budget || null;
+    // Build empty tier structure from floor plan so the tier columns appear
+    var tierRef = {};
+    Object.keys(fp.tiers||{}).forEach(function(t){
+      tierRef[t] = {
+        soldTables: 0, totalTables: fp.tiers[t].total,
+        totalSales: 0, avgPerTable: 0,
+        minPerTable: fp.tiers[t].min,
+        color: fp.tiers[t].color, textColor: fp.tiers[t].textColor
+      };
+    });
+
     venueMap[vn].shows.push({
       date:         e.d,
-      label:        new Date(e.d + 'T12:00:00Z').toLocaleDateString('en-US', dateOpts),
+      label:        new Date(e.d+'T12:00:00Z').toLocaleDateString('en-US', dateOpts),
       dj:           e.dj || '',
       fee:          e.fee || 0,
       bsActual:     e.bs_a || 0,
       bsMin:        e.bs_m || 0,
-      tablesActual: null,
-      tablesBudget: null,
-      tiers:        {},
-      roiActual:    e.roi_a || (e.fee > 0 ? Math.round((e.bs_a||0) / e.fee * 100) / 100 : 0),
+      tablesActual: null,          // not available from SCHED; shown as 
+      tablesBudget: budget,        // from floor plan reference
+      tiers:        tierRef,
+      roiActual:    e.roi_a || (e.fee > 0 ? Math.round((e.bs_a||0)/e.fee*100)/100 : 0),
       roiTarget:    e.roi_t || 0
     });
   });
-  var order = ['Casa Neos Beach Club', 'MILA Lounge', 'Casa Neos Lounge'];
+  var order = ['Casa Neos Beach Club','MILA Lounge','Casa Neos Lounge'];
   var result = [];
-  order.forEach(function(vn) { if (venueMap[vn]) result.push(venueMap[vn]); });
-  Object.keys(venueMap).forEach(function(vn) { if (order.indexOf(vn) === -1) result.push(venueMap[vn]); });
+  order.forEach(function(vn){ if(venueMap[vn]) result.push(venueMap[vn]); });
+  Object.keys(venueMap).forEach(function(vn){ if(order.indexOf(vn)<0) result.push(venueMap[vn]); });
   return result;
 }
 
@@ -3293,11 +3329,11 @@ function renderVIP(venueIdx){
   var totBS=0,totMin=0,totTbl=0,totBudget=0,totFee=0;
   d.shows.forEach(function(sh){
     var b=sh.bsActual>=sh.bsMin;
-    var vbs=sh.bsActual-sh.bsMin, vtbl=sh.tablesActual-sh.tablesBudget;
-    var avg=sh.tablesActual?Math.round(sh.bsActual/sh.tablesActual):0;
+    var vbs=sh.bsActual-sh.bsMin, vtbl=(sh.tablesActual!=null&&sh.tablesBudget!=null)?sh.tablesActual-sh.tablesBudget:null;
+    var avg=(sh.tablesActual||0)?Math.round(sh.bsActual/sh.tablesActual):0;
     var roiA=_fmtROI(sh.bsActual,sh.fee), roiT=_fmtROI(sh.bsMin,sh.fee);
     var roiBeat=sh.fee>0&&sh.bsActual>=sh.bsMin;
-    totBS+=sh.bsActual; totMin+=sh.bsMin; totTbl+=sh.tablesActual; totBudget+=sh.tablesBudget; totFee+=sh.fee;
+    totBS+=sh.bsActual; totMin+=sh.bsMin; totTbl+=(sh.tablesActual||0); totBudget+=(sh.tablesBudget||0); totFee+=sh.fee;
     h += '<tr>'
        + '<td class="l"><b>'+sh.dj+'</b><br><span style="font-size:9px;color:var(--ink3)">'+sh.label+'</span></td>'
        + '<td>'+$kv(sh.fee)+'</td>'
@@ -3306,10 +3342,10 @@ function renderVIP(venueIdx){
        + '<td>'+_fmtVar(vbs)+'</td>'
        + '<td class="'+(roiBeat?'beat':sh.fee>0?'miss':'')+'" style="font-weight:700">'+roiA+'</td>'
        + '<td style="'+_TARGET_BG+'">'+roiT+'</td>'
-       + '<td>'+sh.tablesActual+'</td>'
-       + '<td style="'+_TARGET_BG+'">'+sh.tablesBudget+'</td>'
-       + '<td>'+_fmtVarN(vtbl)+'</td>'
-       + '<td>'+$kv(avg)+'</td>'
+       + '<td>'+(sh.tablesActual!=null?sh.tablesActual:'\u2014')+'</td>'
+       + '<td style="'+_TARGET_BG+'">'+(sh.tablesBudget!=null?sh.tablesBudget:'\u2014')+'</td>'
+       + '<td>'+(vtbl!=null?_fmtVarN(vtbl):'\u2014')+'</td>'
+       + '<td>'+(avg?$kv(avg):'\u2014')+'</td>'
        + '</tr>';
   });
   /* Totals row */
@@ -3324,9 +3360,9 @@ function renderVIP(venueIdx){
      + '<td>'+_fmtVar(totVbs)+'</td>'
      + '<td class="'+(totVbs>=0?'beat':'miss')+'" style="font-weight:700">'+totROIA+'</td>'
      + '<td style="'+_TARGET_BG+'">'+totROIT+'</td>'
-     + '<td>'+totTbl+'</td>'
-     + '<td style="'+_TARGET_BG+'">'+totBudget+'</td>'
-     + '<td>'+_fmtVarN(totVtbl)+'</td>'
+     + '<td>'+(totTbl||'\u2014')+'</td>'
+     + '<td style="'+_TARGET_BG+'">'+(totBudget||'\u2014')+'</td>'
+     + '<td>'+(totBudget?_fmtVarN(totVtbl):'\u2014')+'</td>'
      + '<td>'+$kv(totAvg)+'</td>'
      + '</tr>';
   h += '</tbody></table></div></div>';
