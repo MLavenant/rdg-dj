@@ -2993,43 +2993,78 @@ function renderForecast(venueIdx, view){
     h += '</div>';
 
     // -- Bar chart: BS Actual vs Target -----------------------------
-    events.forEach(function(e){ if(!e.bsTarget&&e.djCost){ var r=venueRoiLookup(e.venue,e.date,e.djCost); if(r) e._computedTarget=r.bsTarget; } });
-    var chartEvts = events.filter(function(e){return (e.bsTarget||e._computedTarget)>0;}).slice(0,14);
+    var chartEvts = events.filter(function(e){ return e.bsTarget>0; }).slice(0,14);
     if(chartEvts.length>0){
-      var maxTarget = Math.max.apply(null, chartEvts.map(function(e){return e.bsTarget||0;}));
-      var barH = 100;
+      var CHART_H = 120; // px height of chart area
+      var maxTarget = Math.max.apply(null, chartEvts.map(function(e){ return e.bsTarget||0; }));
+
       h += '<div class="fcast-chart-wrap">';
-      h += '<div class="fcast-chart-title">BS Actual vs BS Target ? Upcoming Events</div>';
-      h += '<div class="fcast-bars" style="height:150px;padding-bottom:36px">';
+      h += '<div class="fcast-chart-title">BS Actual vs BS Target &mdash; Upcoming Events</div>';
+
+      // Chart container
+      h += '<div style="position:relative;margin-top:8px">';
+
+      // Y-axis grid lines (25%, 50%, 75%, 100%)
+      h += '<div style="position:relative;height:'+CHART_H+'px;border-bottom:1.5px solid var(--rule)">';
+      [100,75,50,25].forEach(function(p){
+        var yPct = (100-p)/100;
+        var yPx = Math.round(yPct * CHART_H);
+        var isFull = p===100;
+        h += '<div style="position:absolute;top:'+yPx+'px;left:0;right:0;border-top:'+(isFull?'1.5px solid var(--rule)':'0.5px dashed var(--hair)')+';display:flex;align-items:center">'
+           + '<span style="font-size:8px;color:var(--ink3);background:var(--bg);padding-right:4px;margin-top:-6px">'+p+'%</span>'
+           + '</div>';
+      });
+
+      // Bars
+      h += '<div style="position:absolute;bottom:0;left:28px;right:0;height:'+CHART_H+'px;display:flex;align-items:flex-end;gap:6px;overflow-x:auto">';
       chartEvts.forEach(function(e){
-        var pct = e.bsTarget>0?e.totalRevenue/e.bsTarget:0;
-        var targetH = Math.round((e.bsTarget/maxTarget)*barH);
-        var actualH = Math.round(pct*targetH);
-        var col = pct>=0.7?'#22c55e':pct>=0.3?'#f59e0b':'#3b82f6';
-        if(e.totalRevenue===0) col='#cbd5e1';
-        var days = _daysTo(e.date);
+        var dispAct = (e._toastActual!=null) ? e._toastActual : e.totalRevenue;
+        var pct     = Math.min(1, dispAct / e.bsTarget);
+        var targPct = e.bsTarget / maxTarget;
+        var targPx  = Math.round(targPct * CHART_H);
+        var actPx   = Math.round(pct * targPx);
+        var col     = pct>=0.7?'#22c55e':pct>=0.3?'#f59e0b':dispAct>0?'#3b82f6':'#e2e8f0';
+        var urgent  = _daysTo(e.date)<=7 && _daysTo(e.date)>0;
         var dateLabel = e.date.slice(5).replace('-','/');
-        h += '<div class="fcast-bar-group" style="min-width:46px">';
-        if(e.totalRevenue>0) h += '<div class="fcast-bar-rev">'+_fmtK(e.totalRevenue)+'</div>';
-        // Target bar (ghost)
-        h += '<div style="width:32px;height:'+targetH+'px;background:var(--hair);border-radius:4px 4px 0 0;position:relative">';
-        // Actual bar inside
-        h += '<div style="position:absolute;bottom:0;left:0;width:100%;height:'+actualH+'px;background:'+col+';border-radius:4px 4px 0 0"></div>';
-        // Target line at top
-        h += '<div style="position:absolute;top:0;left:-2px;right:-2px;height:2px;background:#7D5A00;border-radius:2px"></div>';
+        var djShort = e.dj.split(' ')[0].slice(0,8);
+
+        h += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:52px;max-width:80px">';
+        // Value labels above bar
+        h += '<div style="font-size:8px;text-align:center;color:var(--ink3);min-height:28px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:3px">';
+        if(dispAct>0) h += '<span style="font-weight:800;color:'+col+'">'+_fmtK(dispAct)+'</span>';
+        h += '<span style="color:var(--ink3)">/ '+_fmtK(e.bsTarget)+'</span>';
         h += '</div>';
-        h += '<div style="font-size:8px;color:var(--ink3);text-align:center;margin-top:2px">'+(Math.round(pct*100))+'%</div>';
-        h += '<div class="fcast-bar-lbl">'+dateLabel+'<br><span style="font-weight:700">'+e.dj.slice(0,9)+'</span></div>';
+
+        // Bar wrapper (full height = target)
+        h += '<div style="position:relative;width:100%;height:'+targPx+'px;background:#f1f5f9;border-radius:6px 6px 0 0;overflow:hidden;border:1px solid var(--hair)">';
+        // Actual fill
+        if(actPx>0){
+          h += '<div style="position:absolute;bottom:0;left:0;right:0;height:'+actPx+'px;background:'+col+';border-radius:'+(actPx>=targPx?'6px 6px':'0')+' 0 0;transition:height .4s"></div>';
+        }
+        // Urgent pulse
+        if(urgent) h += '<div style="position:absolute;top:3px;right:3px;width:6px;height:6px;border-radius:50%;background:#ef4444"></div>';
+        h += '</div>';
+        // Pct label
+        h += '<div style="font-size:8px;font-weight:700;color:'+col+';margin-top:2px">'+(Math.round(pct*100))+'%</div>';
+        // Date + DJ label
+        h += '<div style="font-size:8px;text-align:center;color:var(--ink3);line-height:1.3;margin-top:2px">'+dateLabel+'<br><b style="color:var(--ink2)">'+djShort+'</b></div>';
         h += '</div>';
       });
-      h += '</div>';
-      h += '<div style="display:flex;gap:14px;margin-top:6px;font-size:9px;color:var(--ink3)">'
-         + '<span style="display:flex;align-items:center;gap:4px"><div style="width:14px;height:3px;background:#7D5A00;border-radius:1px"></div> BS Target</span>'
-         + '<span style="color:#22c55e">&#9646; 70%+ complete</span>'
-         + '<span style="color:#f59e0b">&#9646; 30?70%</span>'
-         + '<span style="color:#3b82f6">&#9646; &lt;30%</span>'
+      h += '</div>'; // bars flex
+
+      h += '</div>'; // height container
+      h += '</div>'; // position:relative
+
+      // Legend
+      h += '<div style="display:flex;gap:16px;margin-top:8px;font-size:9px;color:var(--ink3);flex-wrap:wrap">'
+         + '<span style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;background:#f1f5f9;border:1px solid var(--hair);border-radius:3px"></div>Full bar = BS Target</span>'
+         + '<span style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;background:#22c55e;border-radius:3px"></div>&#8805;70% committed</span>'
+         + '<span style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;background:#f59e0b;border-radius:3px"></div>30&ndash;70%</span>'
+         + '<span style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;background:#3b82f6;border-radius:3px"></div>&lt;30%</span>'
+         + '<span style="display:flex;align-items:center;gap:4px"><div style="width:6px;height:6px;border-radius:50%;background:#ef4444"></div>Urgent (&lt;7 days)</span>'
          + '</div>';
-      h += '</div>';
+
+      h += '</div>'; // fcast-chart-wrap
     }
 
     // -- Pickup pace section ----------------------------------------
