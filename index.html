@@ -2675,7 +2675,6 @@ var VIP_VENUES = [
     }
   ]
 }
-]
 ];
 
 /* backward-compat alias for any legacy references */
@@ -3268,14 +3267,13 @@ function buildVipFromSched(mon, sun) {
 function renderVIP(venueIdx){
   if(venueIdx!==undefined) _vipActiveVenue = venueIdx;
 
-  // Determine data source: VIP_VENUES (rich tier/table data) vs SCHED (historical fallback)
+  // Determine data source: VIP_VENUES (last week, rich tier data) vs SCHED (historical)
   var venues;
-  var range      = getVipWeekRange(_vipWeekOffset);
+  var range = getVipWeekRange(_vipWeekOffset);
+  var vipWkKey = (VIP_VENUES && VIP_VENUES[0]) ? (VIP_VENUES[0].weekKey || '') : '';
   var rangeWkKey = getISOWeek(new Date(range.mon + 'T12:00:00Z'));
-  // VIP_VENUES may contain multiple weeks — find venues matching this week key
-  var vipForWeek = (VIP_VENUES||[]).filter(function(v){ return v.weekKey === rangeWkKey; });
-  if (vipForWeek.length) {
-    venues = vipForWeek;
+  if (VIP_VENUES && VIP_VENUES.length && vipWkKey === rangeWkKey) {
+    venues = VIP_VENUES;
   } else {
     venues = buildVipFromSched(range.mon, range.sun);
   }
