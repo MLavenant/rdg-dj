@@ -3799,8 +3799,8 @@ function _renderSwList(){
       +'<div><div style="font-size:11px;font-weight:700">'+sw.label+'</div>'
       +'<div style="font-size:9px;color:var(--ink3)">'+monthName+' '+sw.yr+' &nbsp;&#183;&nbsp; Day '+sw.startDay+(sw.endDay!==sw.startDay?' ? '+sw.endDay:'')+'</div></div>'
       +'<div style="display:flex;gap:4px">'
-      +'<button onclick="_swEdit(''+i+'')" style="padding:3px 9px;border-radius:6px;border:0.5px solid var(--rule);background:var(--card2);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">Edit</button>'
-      +'<button onclick="_swDelete(''+i+'')" style="padding:3px 9px;border-radius:6px;border:none;background:#faeaea;color:#8b2020;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">Delete</button>'
+      +'<button onclick="_swEdit('+i+')" style="padding:3px 9px;border-radius:6px;border:0.5px solid var(--rule);background:var(--card2);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">Edit</button>'
+      +'<button onclick="_swDelete('+i+')" style="padding:3px 9px;border-radius:6px;border:none;background:#faeaea;color:#8b2020;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">Delete</button>'
       +'</div></div>';
   });
   h += '</div>';
@@ -3833,9 +3833,7 @@ function _swDelete(idx){
   var all = container._swAll||[];
   var sw = all[parseInt(idx)];
   if(!sw) return;
-  if(!confirm('Delete special period "'+sw.label+'"?
-
-This cannot be undone.')) return;
+  if(!confirm('Delete special period "'+sw.label+'"?\n\nThis cannot be undone.')) return;
   // Remove from specialWeeks
   if(specialWeeks[sw.key]){
     specialWeeks[sw.key] = specialWeeks[sw.key].filter(function(s){ return s.label!==sw.label||s.startDay!==sw.startDay; });
