@@ -2834,21 +2834,22 @@ function _daysTo(dateStr){
   return Math.round((d-now)/86400000);
 }
 
-/* For a forecast event, get fee from SCHED and compute bsTarget via ROI rules */
+/* For a forecast event, get fee + dj name from SCHED and compute bsTarget via ROI rules */
 function _fcastEnrich(e){
   if(e._enriched) return e;
-  // Look up matching SCHED entry for fee
-  var match = SCHED.filter(function(r){ return r.v===e.venue && r.d===e.date; })[0];
+  // Look up matching SCHED entry for fee and DJ name
+  var matches = SCHED.filter(function(r){ return r.v===e.venue && r.d===e.date; });
+  var match = matches[0];
   var fee = (match && (match.fee||match.cost)) || e.djCost || 0;
   e.djCost = fee;
-  if(!e.bsTarget && fee){
-    var roi = venueRoiLookup(e.venue, e.date, fee);
-    if(roi) e.bsTarget = roi.bsTarget;
+  // Prefer SCHED DJ name over FourVenues (which can be blank/garbled)
+  if(match && match.dj && (!e.dj || /^\?+$/.test(e.dj) || e.dj==='TBD' || e.dj==='TBA')){
+    e.dj = match.dj;
   }
-  // If still no target, try with a default fee (used for TBA shows)
+  // Compute bsTarget from ROI rules using actual fee
   if(!e.bsTarget){
-    var roi2 = venueRoiLookup(e.venue, e.date, 0);
-    if(roi2) e.bsTarget = roi2.bsTarget;
+    var roi = venueRoiLookup(e.venue, e.date, fee);
+    if(roi && roi.bsTarget) e.bsTarget = roi.bsTarget;
   }
   // For past shows, prefer Toast bs_a if available
   if(match && match.bs_a != null) e._toastActual = match.bs_a;
