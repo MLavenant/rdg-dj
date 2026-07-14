@@ -3414,7 +3414,7 @@ function showVIPPopup(){
       var pct = sh.bsMin>0 ? Math.min(100,Math.round(sh.bsActual/sh.bsMin*100)) : 100;
       return '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)">'
         +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
-        +'<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.85)">'+sh.label.split(',')[0]+' ? '+sh.dj+'</div>'
+        +'<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.85)">'+sh.label.split(',')[0]+' &mdash; '+sh.dj+'</div>'
         +'<div style="font-size:12px;font-weight:900;color:'+(b?'#22c55e':'#ef4444')+'">'+$kv(sh.bsActual)+'</div></div>'
         +'<div style="display:flex;align-items:center;gap:6px">'
         +'<div style="flex:1;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden">'
@@ -3430,9 +3430,9 @@ function showVIPPopup(){
       +rows+'</div>';
   }).join('');
 
-  var headTitle = crushIt ? '? Week Crushed It!' : '? Room to Grow';
+  var headTitle = crushIt ? '&#127881; Week Crushed It!' : '&#128200; Room to Grow';
   var headSub   = crushIt
-    ? beatCount+' of '+allShows.length+' shows beat target ? great week!'
+    ? beatCount+' of '+allShows.length+' shows beat target &mdash; great week!'
     : 'Only '+beatCount+' of '+allShows.length+' shows beat target this week.';
 
   var accentColor = crushIt ? '#22c55e' : '#ef4444';
@@ -3797,7 +3797,7 @@ function _renderSwList(){
     var monthName = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(sw.mm,10)-1];
     h += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--card);border-radius:8px;margin-bottom:4px;border:0.5px solid var(--hair)">'
       +'<div><div style="font-size:11px;font-weight:700">'+sw.label+'</div>'
-      +'<div style="font-size:9px;color:var(--ink3)">'+monthName+' '+sw.yr+' &nbsp;&#183;&nbsp; Day '+sw.startDay+(sw.endDay!==sw.startDay?' ? '+sw.endDay:'')+'</div></div>'
+      +'<div style="font-size:9px;color:var(--ink3)">'+monthName+' '+sw.yr+' &nbsp;&#183;&nbsp; Day '+sw.startDay+(sw.endDay!==sw.startDay?' &ndash; '+sw.endDay:'')+'</div></div>'
       +'<div style="display:flex;gap:4px">'
       +'<button onclick="_swEdit('+i+')" style="padding:3px 9px;border-radius:6px;border:0.5px solid var(--rule);background:var(--card2);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">Edit</button>'
       +'<button onclick="_swDelete('+i+')" style="padding:3px 9px;border-radius:6px;border:none;background:#faeaea;color:#8b2020;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">Delete</button>'
