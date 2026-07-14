@@ -2797,7 +2797,7 @@ var FORECAST_DATA = [
   {"venue":"Casa Neos Lounge","date":"2026-07-18","dj":"BARUT","bookedTables":0,"totalTables":15,"totalRevenue":0,"tierSummary":{"GOLD":{"total":2,"booked":0,"revenue":0},"PLATINUM":{"total":7,"booked":0,"revenue":0},"DIAMOND":{"total":6,"booked":0,"revenue":0}},"hasData":true},
   {"venue":"Casa Neos Lounge","date":"2026-07-19","dj":"AFTERDARK","bookedTables":0,"totalTables":15,"totalRevenue":0,"tierSummary":{"GOLD":{"total":2,"booked":0,"revenue":0},"PLATINUM":{"total":7,"booked":0,"revenue":0},"DIAMOND":{"total":6,"booked":0,"revenue":0}},"hasData":true},
   {"venue":"Casa Neos Lounge","date":"2026-07-23","dj":"ONOMA","bookedTables":0,"totalTables":15,"totalRevenue":0,"tierSummary":{"GOLD":{"total":2,"booked":0,"revenue":0},"PLATINUM":{"total":7,"booked":0,"revenue":0},"DIAMOND":{"total":6,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"Casa Neos Lounge","date":"2026-07-24","dj":"MalÛne Morez","bookedTables":0,"totalTables":15,"totalRevenue":0,"tierSummary":{"GOLD":{"total":2,"booked":0,"revenue":0},"PLATINUM":{"total":8,"booked":0,"revenue":0},"DIAMOND":{"total":5,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"Casa Neos Lounge","date":"2026-07-24","dj":"Malùne Morez","bookedTables":0,"totalTables":15,"totalRevenue":0,"tierSummary":{"GOLD":{"total":2,"booked":0,"revenue":0},"PLATINUM":{"total":8,"booked":0,"revenue":0},"DIAMOND":{"total":5,"booked":0,"revenue":0}},"hasData":true},
   {"venue":"Casa Neos Lounge","date":"2026-07-25","dj":"AMOG","bookedTables":0,"totalTables":15,"totalRevenue":0,"tierSummary":{"GOLD":{"total":2,"booked":0,"revenue":0},"PLATINUM":{"total":7,"booked":0,"revenue":0},"DIAMOND":{"total":6,"booked":0,"revenue":0}},"hasData":true},
   {"venue":"Casa Neos Lounge","date":"2026-07-26","dj":"AFTERDARK","bookedTables":0,"totalTables":15,"totalRevenue":0,"tierSummary":{"GOLD":{"total":2,"booked":0,"revenue":0},"PLATINUM":{"total":7,"booked":0,"revenue":0},"DIAMOND":{"total":6,"booked":0,"revenue":0}},"hasData":true},
   {"venue":"Casa Neos Lounge","date":"2026-07-30","dj":"BARUT","bookedTables":0,"totalTables":16,"totalRevenue":0,"tierSummary":{"GOLD":{"total":3,"booked":0,"revenue":0},"PLATINUM":{"total":7,"booked":0,"revenue":0},"DIAMOND":{"total":6,"booked":0,"revenue":0}},"hasData":true},
@@ -3799,8 +3799,9 @@ function deleteEvent(){
    SPECIAL WEEK
                                                                   */
 /* ?? Special Week management ?? */
-var _swEditKey  = null; // key of the entry being edited
+var _swEditKey   = null;
 var _swEditLabel = null;
+var _swEditSrc   = null;
 
 function _renderSwList(){
   var container = document.getElementById('swExistingList');
@@ -3838,7 +3839,7 @@ function _renderSwList(){
       +'<div><div style="font-size:11px;font-weight:700">'+sw.label+'</div>'
       +'<div style="font-size:9px;color:var(--ink3)">'+subtitle+(sw.src==='sched'?' &nbsp;<span style="opacity:.5">(from schedule)</span>':'')+'</div></div>'
       +'<div style="display:flex;gap:4px">'
-      +(sw.src==='sw'?'<button onclick="_swEdit('+i+')" style="padding:3px 9px;border-radius:6px;border:0.5px solid var(--rule);background:var(--card2);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">Edit</button>':'')
+      +'<button onclick="_swEdit('+i+')" style="padding:3px 9px;border-radius:6px;border:0.5px solid var(--rule);background:var(--card2);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">Edit</button>'
       +'<button onclick="_swDelete('+i+')" style="padding:3px 9px;border-radius:6px;border:none;background:#faeaea;color:#8b2020;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">Delete</button>'
       +'</div></div>';
   });
@@ -3852,18 +3853,23 @@ function _swEdit(idx){
   var all = container._swAll||[];
   var sw = all[parseInt(idx)];
   if(!sw) return;
-  _swEditKey   = sw.key;
+  _swEditKey   = sw.key || null;
   _swEditLabel = sw.label;
-  document.getElementById('swLabel').value     = sw.label;
+  _swEditSrc   = sw.src;
+  document.getElementById('swLabel').value = sw.label;
   document.getElementById('swModalTitle').textContent = 'Edit Special Period';
   document.getElementById('swFormLabel').textContent  = 'Edit Period';
   document.getElementById('swSaveBtn').textContent    = 'Save Changes';
-  // Build date strings
-  var mm2 = sw.mm, yr2 = sw.yr;
-  var startStr = yr2+'-'+mm2+'-'+(sw.startDay<10?'0':'')+sw.startDay;
-  var endStr   = yr2+'-'+mm2+'-'+(sw.endDay  <10?'0':'')+sw.endDay;
-  document.getElementById('swStartDate').value = startStr;
-  document.getElementById('swEndDate').value   = endStr;
+  if(sw.src === 'sw'){
+    var mm2 = sw.mm, yr2 = sw.yr;
+    document.getElementById('swStartDate').value = yr2+'-'+mm2+'-'+(sw.startDay<10?'0':'')+sw.startDay;
+    document.getElementById('swEndDate').value   = yr2+'-'+mm2+'-'+(sw.endDay  <10?'0':'')+sw.endDay;
+  } else {
+    // SCHED-based: fill dates from first/last show
+    var dates = sw.dates.slice().sort();
+    document.getElementById('swStartDate').value = dates[0]||'';
+    document.getElementById('swEndDate').value   = dates[dates.length-1]||'';
+  }
   document.getElementById('swLabel').focus();
 }
 
@@ -3930,7 +3936,7 @@ function openAddSpecialWeek(){
 }
 function closeSwModal(){
   document.getElementById('swModal').classList.add('hidden');
-  _swEditKey = null; _swEditLabel = null;
+  _swEditKey = null; _swEditLabel = null; _swEditSrc = null;
 }
 function saveSpecialWeek(){
   var label=(document.getElementById('swLabel').value||'').trim();
@@ -3939,12 +3945,20 @@ function saveSpecialWeek(){
   if(!label||!startStr||!endStr) return;
   var sd=new Date(startStr+'T12:00:00'), ed=new Date(endStr+'T12:00:00');
   if(sd>ed) return;
-  /* If editing, remove the old entry first */
+  /* If editing a SCHED-based label, just rename the ev field across all records */
+  if(_swEditSrc === 'sched' && _swEditLabel){
+    SCHED.forEach(function(r){ if(r.v===curV && r.ev===_swEditLabel) r.ev=label; });
+    _swEditKey=null; _swEditLabel=null; _swEditSrc=null;
+    _renderSwList();
+    go();
+    return;
+  }
+  /* If editing a runtime specialWeek, remove old entry first */
   if(_swEditKey && _swEditLabel){
     if(specialWeeks[_swEditKey]){
       specialWeeks[_swEditKey]=specialWeeks[_swEditKey].filter(function(s){return s.label!==_swEditLabel;});
     }
-    _swEditKey=null; _swEditLabel=null;
+    _swEditKey=null; _swEditLabel=null; _swEditSrc=null;
   }
   /* store per month (can span multiple months) */
   var cur=new Date(sd);
