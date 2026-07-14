@@ -91,7 +91,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .sc-beat-icon{font-size:7px;font-weight:700;display:inline;margin-left:2px}
 /* Cells */
 .sc-ev-cell{border-right:1px solid var(--rule);vertical-align:top;padding:5px 6px!important;background:var(--card2)}
-.sc-ev-label{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#fff;background:var(--amb);padding:2px 5px;border-radius:3px;display:inline-block;white-space:nowrap}
+.sc-ev-label{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#fff;background:var(--amb);padding:2px 5px;border-radius:3px;display:inline-block;white-space:nowrap;transition:opacity .15s}
+.sc-ev-label:hover{opacity:.75}
 .sc-date-cell{white-space:nowrap;color:var(--ink2);border-right:0.5px solid var(--hair)}
 .dj-name{font-size:11px;font-weight:700}
 .sc-empty-day{color:var(--ink4)}
@@ -2055,7 +2056,7 @@ function renderCal(){
 
     if(!shows.length){
       h+='<tr class="'+dc+'">';
-      h+='<td class="sc-ev-cell">'+(evLabel?'<span class="sc-ev-label">'+evLabel+'</span>':'')+'</td>';
+      h+='<td class="sc-ev-cell">'+(evLabel?'<span class="sc-ev-label" onclick="openEditSpecialWeek(\''+evLabel.replace(/'/g,"\\'")+'\')" title="Edit/delete this period" style="cursor:pointer">'+evLabel+'</span>':'')+'</td>';
       h+='<td class="sc-date-cell">'+dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
       h+='<td colspan="6" class="sc-empty-day"></td>';
       h+='<td class="sc-sep"></td>';
@@ -2076,7 +2077,7 @@ function renderCal(){
         h+='<tr class="'+dc+' sc-'+st+'">';
         if(ri===0){
           h+='<td class="sc-ev-cell" rowspan="'+nrows+'">'
-            +(evLabel?'<span class="sc-ev-label">'+evLabel+'</span>':'')+'</td>';
+            +(evLabel?'<span class="sc-ev-label" onclick="openEditSpecialWeek(\''+evLabel.replace(/'/g,"\\'")+'\')" title="Edit/delete this period" style="cursor:pointer">'+evLabel+'</span>':'')+'</td>';
           h+='<td class="sc-date-cell" rowspan="'+nrows+'">'
             +dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
         }
@@ -3577,7 +3578,7 @@ function renderAccounting(){
       if(_acctStatusFilter) continue; /* empty days never match a status filter */
       h+='<tr class="'+dc+'">';
       h+='<td class="sc-date-cell">'+dateStr+'</td>';
-      h+='<td class="sc-ev-cell">'+(evLabel?'<span class="sc-ev-label">'+evLabel+'</span>':'')+'</td>';
+      h+='<td class="sc-ev-cell">'+(evLabel?'<span class="sc-ev-label" onclick="openEditSpecialWeek(\''+evLabel.replace(/'/g,"\\'")+'\')" title="Edit/delete this period" style="cursor:pointer">'+evLabel+'</span>':'')+'</td>';
       h+='<td colspan="4" class="sc-empty-day"></td>';
       h+='<td></td><td></td>';
       h+='<td class="sc-act"><button class="sc-add-btn" data-ds="'+ds+'" data-action="add">+</button></td>';
@@ -3602,7 +3603,7 @@ function renderAccounting(){
         h+='<td class="sc-date-cell" rowspan="'+nrows+'">'+dateStr
           +(isToday?'<span class="sc-today-badge"> Today</span>':'')
           +'</td>';
-        h+='<td class="sc-ev-cell" rowspan="'+nrows+'">'+(evLabel?'<span class="sc-ev-label">'+evLabel+'</span>':'')+'</td>';
+        h+='<td class="sc-ev-cell" rowspan="'+nrows+'">'+(evLabel?'<span class="sc-ev-label" onclick="openEditSpecialWeek(\''+evLabel.replace(/'/g,"\\'")+'\')" title="Edit/delete this period" style="cursor:pointer">'+evLabel+'</span>':'')+'</td>';
       }
       h+='<td class="sc-dj-cell"><b>'+nm+'</b>'+(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')+'</td>';
       h+='<td class="sc-num acct-col-fee">'+$k(r.fee||r.cost||null)+'</td>';
@@ -3841,6 +3842,32 @@ function _swDelete(idx){
   }
   _renderSwList();
   go();
+}
+
+function openEditSpecialWeek(label){
+  /* Find this label in specialWeeks and pre-populate the edit form */
+  var found = null;
+  Object.keys(specialWeeks).forEach(function(k){
+    if(!k.startsWith(curV+'|')) return;
+    (specialWeeks[k]||[]).forEach(function(sw){
+      if(sw.label===label) found={ key:k, sw:sw };
+    });
+  });
+  document.getElementById('swModal').classList.remove('hidden');
+  _renderSwList();
+  document.getElementById('swModalTitle').textContent = 'Manage Special Periods';
+  document.getElementById('swFormLabel').textContent  = found ? 'Edit Period' : 'New Period';
+  document.getElementById('swSaveBtn').textContent    = found ? 'Save Changes' : 'Add Period';
+  document.getElementById('swLabel').value = label;
+  if(found){
+    _swEditKey   = found.key;
+    _swEditLabel = found.sw.label;
+    var parts = found.key.split('|'); // venue|yr|mm
+    var yr2=parts[1], mm2=parts[2];
+    document.getElementById('swStartDate').value = yr2+'-'+mm2+'-'+(found.sw.startDay<10?'0':'')+found.sw.startDay;
+    document.getElementById('swEndDate').value   = yr2+'-'+mm2+'-'+(found.sw.endDay  <10?'0':'')+found.sw.endDay;
+  }
+  document.getElementById('swLabel').focus();
 }
 
 function openAddSpecialWeek(){
