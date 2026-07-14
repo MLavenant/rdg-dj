@@ -2026,6 +2026,13 @@ var SCHED_BAKED = SCHED.map(function(r){ return Object.assign({},r); }); // immu
       if(el){ el.style.background='#22c55e'; el.title='Live sync active'; }
     }
   });
+
+  /* ?? Pacing history listener (separate ref, read-only) ????????????????????? */
+  window._pacingData = {};  // { "venue_YYYY-MM-DD": { "2026-07-10": {tables,revenue}, ... } }
+  window._fbDb.ref('rdg/pacing').on('value', function(snap){
+    window._pacingData = snap.val() || {};
+    if(window._fbReady && curView==='forecast') renderForecast();
+  });
 })();
 var calViewMode = 'list';
 function toggleCalView(v){ calViewMode=v; go(); }
@@ -2968,6 +2975,40 @@ function _fcastEnrich(e){
   return e;
 }
 
+/* ?? Pacing sparkline ??????????????????????????????????????????????????????
+   pacingObj: { "YYYY-MM-DD": {tables, revenue}, ... }
+   capacity:  totalTables for the event (cap line)
+   Returns an inline SVG string (80ù30px).
+   ?????????????????????????????????????????????????????????????????????????? */
+function _sparkline(pacingObj, capacity){
+  if(!pacingObj) return '<span style="color:var(--ink4);font-size:9px">No data yet</span>';
+  var days = Object.keys(pacingObj).sort();
+  if(!days.length) return '<span style="color:var(--ink4);font-size:9px">No data yet</span>';
+  var vals = days.map(function(d){ return (pacingObj[d]&&pacingObj[d].tables)||0; });
+  var maxV = capacity || Math.max.apply(null,vals) || 1;
+  var W=84, H=30, pad=3;
+  var w=W-pad*2, h=H-pad*2;
+  var n=vals.length;
+  // X positions: evenly spaced, right-aligned so latest is at far right
+  function px(i){ return pad + (n===1?w/2:i/(n-1)*w); }
+  function py(v){ return pad+h - Math.min(1,v/maxV)*h; }
+  // capacity line
+  var capY = py(maxV);
+  var pts = vals.map(function(v,i){ return px(i)+','+py(v); }).join(' ');
+  var col = vals[vals.length-1]>=maxV*0.8?'#22c55e':vals[vals.length-1]>=maxV*0.4?'#f59e0b':'#60a5fa';
+  var svg = '<svg width="'+W+'" height="'+H+'" style="vertical-align:middle">'
+    + '<line x1="'+pad+'" y1="'+capY+'" x2="'+(W-pad)+'" y2="'+capY+'" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="2,2"/>'
+    + '<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>';
+  // dots
+  vals.forEach(function(v,i){
+    svg += '<circle cx="'+px(i)+'" cy="'+py(v)+'" r="2" fill="'+col+'"/>';
+  });
+  // latest value label
+  svg += '<text x="'+(W-pad)+'" y="'+(H-1)+'" text-anchor="end" font-size="7" fill="'+col+'">'+vals[vals.length-1]+(capacity?'/'+capacity:'')+'</text>';
+  svg += '</svg>';
+  return svg;
+}
+
 function renderForecast(venueIdx, view){
   if(venueIdx!==undefined) _fcastActiveVenue = venueIdx;
   if(view!==undefined) _fcastActiveView = view;
@@ -3009,6 +3050,7 @@ function renderForecast(venueIdx, view){
        + '<th class="left">Date</th><th class="left">Venue</th><th class="left">Artist</th>'
        + '<th>BS Actual</th><th style="background:#FFF2CC;color:#7D5A00">BS Target</th>'
        + '<th>% Complete</th><th>Pickup Pace</th><th>Tables</th><th>Days Out</th>'
+       + '<th>Booking Pace</th>'
        + '</tr></thead><tbody>';
 
     allEvts.forEach(function(e){
@@ -3046,6 +3088,10 @@ function renderForecast(venueIdx, view){
       h += '<td style="font-size:10px;color:'+(neededPerWeek>0?'#f59e0b':'var(--ink3)')+'">'+paceStr+'</td>';
       h += '<td>'+(e.totalTables>0?'<b>'+e.bookedTables+'</b><span style="color:var(--ink3)">/'+e.totalTables+'</span>':'?')+'</td>';
       h += '<td style="font-size:10px;color:'+(days<=7?'#ef4444':days<=14?'#f59e0b':'var(--ink3)')+'">'+days+'d</td>';
+      // Pacing sparkline
+      var _pk = (e.venue+'_'+e.date).replace(/[^a-zA-Z0-9_-]/g,'_');
+      var _ph = window._pacingData ? window._pacingData[_pk] : null;
+      h += '<td>'+_sparkline(_ph, e.totalTables)+'</td>';
       h += '</tr>';
     });
     h += '</tbody></table></div>';
