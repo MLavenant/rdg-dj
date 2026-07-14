@@ -3780,33 +3780,46 @@ var _swEditLabel = null;
 function _renderSwList(){
   var container = document.getElementById('swExistingList');
   if(!container) return;
-  // Collect all special weeks for current venue (all months/years)
   var all = [];
+  // 1. specialWeeks runtime entries
   Object.keys(specialWeeks).forEach(function(k){
     if(!k.startsWith(curV+'|')) return;
-    var parts = k.split('|'); // venue|yr|mm
+    var parts = k.split('|');
     var yr2 = parts[1], mm2 = parts[2];
     (specialWeeks[k]||[]).forEach(function(sw){
-      all.push({ key:k, label:sw.label, startDay:sw.startDay, endDay:sw.endDay, yr:yr2, mm:mm2 });
+      all.push({ key:k, label:sw.label, startDay:sw.startDay, endDay:sw.endDay, yr:yr2, mm:mm2, src:'sw' });
     });
   });
-  all.sort(function(a,b){ return (a.yr+a.mm).localeCompare(b.yr+b.mm) || a.startDay-b.startDay; });
+  // 2. SCHED ev-field labels for current venue (grouped by label)
+  var schedLabels = {};
+  SCHED.forEach(function(r){
+    if(r.v!==curV || !r.ev) return;
+    if(!schedLabels[r.ev]) schedLabels[r.ev]={ label:r.ev, dates:[] };
+    schedLabels[r.ev].dates.push(r.d);
+  });
+  Object.keys(schedLabels).forEach(function(lbl){
+    var dates = schedLabels[lbl].dates.sort();
+    all.push({ label:lbl, src:'sched', dates:dates });
+  });
+  all.sort(function(a,b){ return a.label.localeCompare(b.label); });
   if(!all.length){ container.innerHTML='<div style="font-size:10px;color:var(--ink3);margin-bottom:8px">No special periods added yet.</div>'; return; }
   var h = '<div style="margin-bottom:10px">'
     +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin-bottom:6px">Existing Periods</div>';
   all.forEach(function(sw, i){
-    var monthName = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(sw.mm,10)-1];
+    var subtitle = sw.src==='sched'
+      ? sw.dates.length+' show'+(sw.dates.length>1?'s':'')
+      : (['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(sw.mm,10)-1]+' '+sw.yr+' &nbsp;&#183;&nbsp; Day '+sw.startDay+(sw.endDay!==sw.startDay?' &ndash; '+sw.endDay:''));
     h += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--card);border-radius:8px;margin-bottom:4px;border:0.5px solid var(--hair)">'
       +'<div><div style="font-size:11px;font-weight:700">'+sw.label+'</div>'
-      +'<div style="font-size:9px;color:var(--ink3)">'+monthName+' '+sw.yr+' &nbsp;&#183;&nbsp; Day '+sw.startDay+(sw.endDay!==sw.startDay?' &ndash; '+sw.endDay:'')+'</div></div>'
+      +'<div style="font-size:9px;color:var(--ink3)">'+subtitle+(sw.src==='sched'?' &nbsp;<span style="opacity:.5">(from schedule)</span>':'')+'</div></div>'
       +'<div style="display:flex;gap:4px">'
-      +'<button onclick="_swEdit('+i+')" style="padding:3px 9px;border-radius:6px;border:0.5px solid var(--rule);background:var(--card2);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">Edit</button>'
+      +(sw.src==='sw'?'<button onclick="_swEdit('+i+')" style="padding:3px 9px;border-radius:6px;border:0.5px solid var(--rule);background:var(--card2);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">Edit</button>':'')
       +'<button onclick="_swDelete('+i+')" style="padding:3px 9px;border-radius:6px;border:none;background:#faeaea;color:#8b2020;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">Delete</button>'
       +'</div></div>';
   });
   h += '</div>';
   container.innerHTML = h;
-  container._swAll = all; // store for edit/delete lookup
+  container._swAll = all;
 }
 
 function _swEdit(idx){
@@ -3835,10 +3848,15 @@ function _swDelete(idx){
   var sw = all[parseInt(idx)];
   if(!sw) return;
   if(!confirm('Delete special period "'+sw.label+'"?\n\nThis cannot be undone.')) return;
-  // Remove from specialWeeks
-  if(specialWeeks[sw.key]){
-    specialWeeks[sw.key] = specialWeeks[sw.key].filter(function(s){ return s.label!==sw.label||s.startDay!==sw.startDay; });
-    if(!specialWeeks[sw.key].length) delete specialWeeks[sw.key];
+  if(sw.src==='sw'){
+    // Remove from specialWeeks runtime object
+    if(specialWeeks[sw.key]){
+      specialWeeks[sw.key] = specialWeeks[sw.key].filter(function(s){ return s.label!==sw.label||s.startDay!==sw.startDay; });
+      if(!specialWeeks[sw.key].length) delete specialWeeks[sw.key];
+    }
+  } else {
+    // Remove ev field from all matching SCHED entries
+    SCHED.forEach(function(r){ if(r.v===curV && r.ev===sw.label) r.ev=null; });
   }
   _renderSwList();
   go();
@@ -3856,8 +3874,8 @@ function openEditSpecialWeek(label){
   document.getElementById('swModal').classList.remove('hidden');
   _renderSwList();
   document.getElementById('swModalTitle').textContent = 'Manage Special Periods';
-  document.getElementById('swFormLabel').textContent  = found ? 'Edit Period' : 'New Period';
-  document.getElementById('swSaveBtn').textContent    = found ? 'Save Changes' : 'Add Period';
+  document.getElementById('swFormLabel').textContent  = 'New Period';
+  document.getElementById('swSaveBtn').textContent    = 'Add Period';
   document.getElementById('swLabel').value = label;
   if(found){
     _swEditKey   = found.key;
