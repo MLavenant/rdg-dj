@@ -915,6 +915,9 @@ function selVenue(v) {
   buildVenTabs();
   buildSidebar();
   go();
+  /* Re-render venue-driven tabs if active */
+  if(curView==='vip')      renderVIP();
+  if(curView==='forecast') renderForecast();
 }
 
 /*    Venue tabs                                                  */
@@ -2874,33 +2877,10 @@ function renderForecast(venueIdx, view){
 
   var h = '';
 
-  // -- Top controls -------------------------------------------------
-  h += '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">';
+  // No separate venue tabs ù Forecast follows the global venue selector (curV)
 
-  // View toggle
-  h += '<div style="display:flex;gap:0;border:1.5px solid var(--hair);border-radius:20px;overflow:hidden">';
-  ['venue','all'].forEach(function(v){
-    var on = _fcastActiveView===v;
-    var lbl = v==='venue'?'By Venue':'All Venues';
-    h += '<button onclick="renderForecast(undefined,\''+v+'\')" style="padding:5px 14px;font-size:11px;font-weight:700;border:none;cursor:pointer;background:'+(on?'var(--acc)':'transparent')+';color:'+(on?'#fff':'var(--ink2)')+'">'+lbl+'</button>';
-  });
-  h += '</div>';
-
-  if(_fcastActiveView==='venue'){
-    // Venue tabs
-    FCAST_VENUES.forEach(function(vn,i){
-      var on = i===_fcastActiveVenue;
-      h += '<button onclick="renderForecast('+i+')" style="padding:5px 14px;border-radius:20px;font-size:11px;font-weight:700;'
-         + 'border:1.5px solid '+(on?'var(--acc)':'var(--hair)')
-         + ';background:'+(on?'var(--acc)':'var(--card)')
-         + ';color:'+(on?'#fff':'var(--ink2)')
-         + ';cursor:pointer">'+vn+'</button>';
-    });
-  }
-  h += '</div>';
-
-  if(_fcastActiveView==='all'){
-    // -- ALL VENUES SUMMARY -----------------------------------------
+  if(false && _fcastActiveView==='all'){
+    // -- ALL VENUES SUMMARY (disabled ù venue now driven by global selector) ---
     var allEvts = FORECAST_DATA.slice().sort(function(a,b){ return a.date<b.date?-1:a.date>b.date?1:0; });
     // Top KPI strip
     var totalRev = allEvts.reduce(function(s,e){return s+e.totalRevenue;},0);
@@ -2966,8 +2946,8 @@ function renderForecast(venueIdx, view){
     h += '</tbody></table></div>';
 
   } else {
-    // -- SINGLE VENUE VIEW ------------------------------------------
-    var vname = FCAST_VENUES[_fcastActiveVenue];
+    // -- SINGLE VENUE VIEW ù follows global venue selector (curV) ---
+    var vname = curV;
     var events = FORECAST_DATA.filter(function(e){ return e.venue===vname; })
       .sort(function(a,b){ return a.date<b.date?-1:a.date>b.date?1:0; });
 
@@ -3282,8 +3262,9 @@ function renderVIP(venueIdx){
     document.getElementById('vipBody').innerHTML='<div class="empty" style="padding:40px;text-align:center;color:var(--ink3)">No VIP data for this week.</div>';
     return;
   }
-  if(_vipActiveVenue >= venues.length) _vipActiveVenue = 0;
-  var d = venues[_vipActiveVenue];
+  // VIP follows the global venue selector (curV) ù no separate tab bar
+  var d = venues.find(function(v){ return v.venue===curV; }) || venues[0];
+  if(!d){ document.getElementById('vipBody').innerHTML='<div class="empty" style="padding:40px;text-align:center;color:var(--ink3)">No VIP data for '+curV+' this week.</div>'; return; }
 
   // Update week nav UI
   var wkLbl = document.getElementById('vipWeekLabel');
@@ -3294,16 +3275,6 @@ function renderVIP(venueIdx){
   document.getElementById('vipMeta').textContent = (d.weekOf||_fmtVipWeekLabel(_vipWeekOffset)) + ' \u2014 ' + d.venue;
 
   var h = '';
-
-  /* -- Venue tab bar -- */
-  h += '<div style="display:flex;gap:6px;flex-wrap:wrap">';
-  venues.forEach(function(v,i){
-    var a = i===_vipActiveVenue;
-    var bc=v.shows.filter(function(s){return s.bsActual>=s.bsMin;}).length;
-    var dot=bc===v.shows.length?'&#10003;':bc===0?'&#10007;':'&#9900;';
-    h += '<button onclick="renderVIP('+i+')" style="padding:6px 16px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;border:'+(a?'none':'0.5px solid var(--rule)')+';background:'+(a?'var(--ink)':'var(--card2)')+';color:'+(a?'#fff':'var(--ink2)')+'">'+dot+' '+v.venue+'</button>';
-  });
-  h += '</div>';
 
   /* -- Insight sentence -- */
   var insight = _generateInsight(d);
