@@ -251,18 +251,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .fcast-wrap{padding:14px 16px;display:flex;flex-direction:column;gap:18px}
 .fcast-chart-wrap{background:var(--card);border-radius:12px;padding:16px;overflow-x:auto}
 .fcast-chart-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:12px}
-.fcast-bars{display:flex;align-items:flex-end;gap:14px;height:168px;padding:8px 8px 36px;position:relative;border-bottom:1px solid var(--hair);overflow-x:auto}
-.fcast-bar-group{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:72px;position:relative;flex:0 0 auto}
-.fcast-bar-pair{display:flex;align-items:flex-end;gap:4px;height:120px}
-.fcast-bar-col{width:22px;border-radius:4px 4px 0 0;position:relative;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.04);height:100%}
-.fcast-bar-fill{width:100%;border-radius:4px 4px 0 0;min-height:2px;transition:height .35s ease}
+.fcast-bars{display:flex;flex-direction:column;gap:10px;padding:4px 16px 14px}
+.fcast-hbar-row{display:grid;grid-template-columns:minmax(120px,180px) 1fr minmax(88px,110px);gap:12px;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--hair)}
+.fcast-hbar-meta{min-width:0}
+.fcast-hbar-name{font-size:12px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fcast-hbar-sub{font-size:10px;color:var(--ink4);margin-top:2px}
+.fcast-hbar-tracks{display:flex;flex-direction:column;gap:5px;min-width:0}
+.fcast-hbar-track{display:grid;grid-template-columns:54px 1fr 64px;gap:8px;align-items:center}
+.fcast-hbar-lbl{font-size:9px;font-weight:700;color:var(--ink4);text-transform:uppercase}
+.fcast-hbar-rail{height:12px;background:rgba(0,0,0,.05);border-radius:6px;overflow:hidden;position:relative}
+.fcast-hbar-fill{height:100%;border-radius:6px;min-width:2px;transition:width .35s ease}
 .fcast-bar-tgt{background:#E8B923}
 .fcast-bar-act-hi{background:#22c55e}
 .fcast-bar-act-lo{background:#ef4444}
 .fcast-bar-act-zero{background:#94a3b8}
-.fcast-bar-val{font-size:8px;font-weight:800;position:absolute;top:-14px;left:50%;transform:translateX(-50%);white-space:nowrap;color:var(--ink2)}
-.fcast-bar-lbl{font-size:9px;font-weight:800;text-align:center;max-width:76px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
-.fcast-bar-sub{font-size:8px;color:var(--ink4);text-align:center}
+.fcast-hbar-amt{font-size:11px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2)}
+.fcast-hbar-amt.tgt{color:#7d5a00}
+.fcast-hbar-amt.act-hi{color:#15803d}
+.fcast-hbar-amt.act-lo{color:#dc2626}
+.fcast-hbar-pct{text-align:right}
+.fcast-hbar-pct b{display:block;font-size:16px;font-weight:900;letter-spacing:-.3px;line-height:1.1}
+.fcast-hbar-pct span{font-size:9px;color:var(--ink4);font-weight:700;text-transform:uppercase}
 .fcast-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--ink3);padding:0 16px 10px}
 .fcast-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
 .fcast-pill-row{display:flex;gap:6px;flex-wrap:wrap;padding:0 16px 10px}
@@ -3332,16 +3341,20 @@ function _fcastBarChartHtml(rows){
     + '</div>';
   h += '<div class="fcast-bars">';
   rows.forEach(function(r){
-    var th = Math.max(2, Math.round(((r.tgt||0)/maxV)*110));
-    var ah = Math.max(r.act?2:0, Math.round(((r.act||0)/maxV)*110));
-    var actCls = _fcastActColor(r.act||0, r.tgt||0);
-    h += '<div class="fcast-bar-group" title="'+(r.tip||'')+'">';
-    h += '<div class="fcast-bar-pair">';
-    h += '<div class="fcast-bar-col"><div class="fcast-bar-fill fcast-bar-tgt" style="height:'+th+'px"><span class="fcast-bar-val">'+(r.tgt?_fmtK(r.tgt):'\u2014')+'</span></div></div>';
-    h += '<div class="fcast-bar-col"><div class="fcast-bar-fill '+actCls+'" style="height:'+ah+'px"><span class="fcast-bar-val">'+(r.act?_fmtK(r.act):'$0')+'</span></div></div>';
+    var act = r.act||0, tgt = r.tgt||0;
+    var pct = tgt>0 ? Math.round(act/tgt*100) : (act>0?100:0);
+    var pctCol = !act ? '#94a3b8' : (pct>=100 ? '#15803d' : pct>=30 ? '#f59e0b' : '#dc2626');
+    var actCls = _fcastActColor(act, tgt);
+    var tw = Math.max(2, Math.round((tgt/maxV)*100));
+    var aw = Math.max(act?2:0, Math.round((act/maxV)*100));
+    var actAmtCls = !act ? '' : (act>=tgt && tgt ? 'act-hi' : 'act-lo');
+    h += '<div class="fcast-hbar-row" title="'+(r.tip||'')+'">';
+    h += '<div class="fcast-hbar-meta"><div class="fcast-hbar-name">'+(r.label||'')+'</div><div class="fcast-hbar-sub">'+(r.sub||'')+'</div></div>';
+    h += '<div class="fcast-hbar-tracks">';
+    h += '<div class="fcast-hbar-track"><div class="fcast-hbar-lbl">Target</div><div class="fcast-hbar-rail"><div class="fcast-hbar-fill fcast-bar-tgt" style="width:'+tw+'%"></div></div><div class="fcast-hbar-amt tgt">'+(tgt?'$'+tgt.toLocaleString():'\u2014')+'</div></div>';
+    h += '<div class="fcast-hbar-track"><div class="fcast-hbar-lbl">Actual</div><div class="fcast-hbar-rail"><div class="fcast-hbar-fill '+actCls+'" style="width:'+aw+'%"></div></div><div class="fcast-hbar-amt '+actAmtCls+'">'+(act?'$'+act.toLocaleString():'$0')+'</div></div>';
     h += '</div>';
-    h += '<div class="fcast-bar-lbl">'+(r.label||'')+'</div>';
-    h += '<div class="fcast-bar-sub">'+(r.sub||'')+'</div>';
+    h += '<div class="fcast-hbar-pct"><b style="color:'+pctCol+'">'+pct+'%</b><span>complete</span></div>';
     h += '</div>';
   });
   h += '</div>';
@@ -3486,15 +3499,15 @@ function renderForecast(venueIdx, view){
 
     var upcoming = events.filter(function(e){ return _daysTo(e.date)>=-1; });
     var viewRows = (_fcastRangeMode==='3d')
-      ? upcoming.filter(function(e){ var d=_daysTo(e.date); return d>=-1 && d<=3; }).slice(0,8)
-      : upcoming.slice(0,12);
+      ? upcoming.filter(function(e){ var d=_daysTo(e.date); return d>=-1 && d<=3; })
+      : upcoming.slice();
 
     // ============================================================
-    // 1) RESULTS ? bar chart Actual vs Target
+    // 1) RESULTS — horizontal bars (stacked vertically) + $ + %
     // ============================================================
     h += '<div class="fcast-chart-wrap" style="padding:0;overflow:hidden">';
     h += '<div class="fcast-chart-title" style="padding:12px 16px 0">1. Results &mdash; Actual vs Target</div>';
-    h += '<div style="padding:4px 16px 6px;font-size:10px;color:var(--ink3)">Yellow = BS Target &middot; Green = at/above target &middot; Red = below target'+( _fcastRangeMode==='3d' ? ' &middot; Next 3 days' : '')+'</div>';
+    h += '<div style="padding:4px 16px 6px;font-size:10px;color:var(--ink3)">One show per row &middot; yellow target / red-green actual &middot; $ amounts + % complete'+( _fcastRangeMode==='3d' ? ' &middot; Next 3 days' : '')+'</div>';
     if(!viewRows.length){
       h += '<div style="padding:16px;color:var(--ink3)">No shows in this window.</div>';
     } else {
@@ -3504,35 +3517,39 @@ function renderForecast(venueIdx, view){
         var dateObj = new Date(e.date+'T12:00:00');
         var dateFmt = dateObj.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
         var djLabel = _fcastDjName(e.dj) || 'TBD';
-        return { act:act, tgt:tgt, label:djLabel, sub:dateFmt+' \u00b7 '+_daysTo(e.date)+'d', tip:djLabel+' \u2014 Actual $'+act.toLocaleString()+' / Target $'+(tgt||0).toLocaleString() };
+        var pct = tgt>0?Math.round(act/tgt*100):0;
+        return { act:act, tgt:tgt, label:djLabel, sub:dateFmt+' \u00b7 '+_daysTo(e.date)+'d out', tip:djLabel+' \u2014 Actual $'+act.toLocaleString()+' / Target $'+(tgt||0).toLocaleString()+' ('+pct+'%)' };
       });
       h += _fcastBarChartHtml(chartRows);
     }
     h += '</div>';
 
     // ============================================================
-    // 2) PICK UP PACE ? 3-day focus + % of gap closed
+    // 2) PICK UP PACE — all performances
     // ============================================================
     h += '<div class="fcast-chart-wrap" style="padding:0;overflow:hidden">';
     h += '<div class="fcast-chart-title" style="padding:12px 16px 0">2. Pick up Pace &mdash; How Fast We\u2019re Closing the Gap</div>';
-    h += '<div style="padding:4px 16px 10px;font-size:10px;color:var(--ink3)">Pickup % = yesterday\u2019s $ gain as a share of remaining gap to target. Focused on the next 3 days'+( _fcastRangeMode==='all' ? ' (toggle above) plus near-term shows' : '')+'.</div>';
-    var paceFocus = upcoming.filter(function(e){ var d=_daysTo(e.date); return d>=-1 && d<=3; }).slice(0,8);
-    if(!paceFocus.length) paceFocus = viewRows.slice(0,6);
+    h += '<div style="padding:4px 16px 10px;font-size:10px;color:var(--ink3)">All upcoming shows &middot; Pickup % = yesterday\u2019s $ gain as a share of remaining gap to target.</div>';
+    var paceFocus = upcoming.slice();
     h += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
     h += '<thead><tr>'
        + '<th style="text-align:left;padding:8px 16px;border-bottom:1px solid var(--rule);color:var(--ink3);font-size:10px">Date / Artist</th>'
        + '<th style="text-align:right;padding:8px 10px;border-bottom:1px solid var(--rule);color:var(--ink3);font-size:10px">Yesterday</th>'
        + '<th style="text-align:right;padding:8px 10px;border-bottom:1px solid var(--rule);color:#0f766e;font-size:10px">Today</th>'
        + '<th style="text-align:right;padding:8px 10px;border-bottom:1px solid var(--rule);color:var(--ink3);font-size:10px">&Delta; $</th>'
+       + '<th style="text-align:right;padding:8px 10px;border-bottom:1px solid var(--rule);color:#7d5a00;font-size:10px">Target</th>'
+       + '<th style="text-align:right;padding:8px 10px;border-bottom:1px solid var(--rule);color:var(--ink3);font-size:10px">% Complete</th>'
        + '<th style="text-align:right;padding:8px 16px;border-bottom:1px solid var(--rule);color:var(--ink3);font-size:10px">Pickup %</th>'
        + '</tr></thead><tbody>';
     if(!paceFocus.length){
-      h += '<tr><td colspan="5" style="padding:14px 16px;color:var(--ink3)">No shows in the next 3 days</td></tr>';
+      h += '<tr><td colspan="7" style="padding:14px 16px;color:var(--ink3)">No upcoming shows</td></tr>';
     }
     paceFocus.forEach(function(e){
       var tgt = e.bsTarget || (function(){ var r=venueRoiLookup(e.venue,e.date,e.djCost||0); return r?r.bsTarget:0; })();
       var dlt = _fcastDayDelta(e.venue, e.date, e.totalRevenue||0, e.bookedTables||0);
       var pct = _fcastPickupPct(dlt, tgt);
+      var donePct = tgt>0 ? Math.round((e.totalRevenue||0)/tgt*100) : 0;
+      var doneCol = !(e.totalRevenue) ? '#94a3b8' : (donePct>=100 ? '#15803d' : donePct>=30 ? '#f59e0b' : '#dc2626');
       var dateObj = new Date(e.date+'T12:00:00');
       var dateFmt = dateObj.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
       var djLabel = _fcastDjName(e.dj);
@@ -3545,14 +3562,13 @@ function renderForecast(venueIdx, view){
       h += '<td style="padding:10px 10px;border-bottom:0.5px solid var(--hair);text-align:right;color:var(--ink3)">'+(dlt.hasPrev?'$'+dlt.prevRev.toLocaleString():'\u2014')+'</td>';
       h += '<td style="padding:10px 10px;border-bottom:0.5px solid var(--hair);text-align:right;font-weight:800;color:#0f766e">$'+dlt.todayRev.toLocaleString()+'</td>';
       h += '<td style="padding:10px 10px;border-bottom:0.5px solid var(--hair);text-align:right;font-weight:800;color:'+dRevCol+'">'+dRevStr+'</td>';
+      h += '<td style="padding:10px 10px;border-bottom:0.5px solid var(--hair);text-align:right;font-weight:800;color:#7d5a00;background:#FFF2CC">'+(tgt?'$'+tgt.toLocaleString():'\u2014')+'</td>';
+      h += '<td style="padding:10px 10px;border-bottom:0.5px solid var(--hair);text-align:right;font-weight:900;color:'+doneCol+'">'+donePct+'%</td>';
       h += '<td style="padding:10px 16px;border-bottom:0.5px solid var(--hair);text-align:right;font-weight:900;color:'+pctCol+'">'+pctStr+'</td>';
       h += '</tr>';
     });
     h += '</tbody></table></div>';
 
-    // ============================================================
-    // 3) BREAKDOWN BY TABLES (placeholder continues below)
-    // ============================================================
     // ============================================================
     // 3) BREAKDOWN BY TABLES
     // ============================================================
@@ -4648,13 +4664,6 @@ var EGG_PLAYLIST = [
   { title: 'Hugo M. \u2014 Baoli Miami 2012', src: 'assets/easter/hugo-baoli-miami-2012.mp3' }
 ];
 function openHelp(ev){
-  ev = ev || window.event;
-  if(ev && (ev.shiftKey || ev.altKey)){
-    if(ev.preventDefault) ev.preventDefault();
-    if(ev.stopPropagation) ev.stopPropagation();
-    triggerHelpBoothEgg();
-    return false;
-  }
   document.getElementById('helpModal').classList.remove('hidden');
   renderHelpFaq('');
 }
@@ -4758,10 +4767,12 @@ function _wireHelpEggClick(){
   btn.addEventListener('click', function(e){
     if(e.shiftKey || e.altKey){
       e.preventDefault();
-      e.stopPropagation();
+      e.stopImmediatePropagation();
       triggerHelpBoothEgg();
+      return;
     }
-  }, true);
+    openHelp();
+  });
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', _wireHelpEggClick);
 else _wireHelpEggClick();
