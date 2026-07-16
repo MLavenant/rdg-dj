@@ -706,7 +706,7 @@ textarea#fldNote:focus{border-color:var(--blue)}
     <div class="pg-section" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div>
         <div class="pg-title2">&#9650; Forecast</div>
-        <div id="fcastMeta" style="font-size:10px;color:var(--ink3)">Live from FourVenues ? Upcoming bookings</div>
+        <div id="fcastMeta" style="font-size:10px;color:var(--ink3)">BS Actual = FourVenues accepted Base price &middot; Target from Venue ROI rules</div>
       </div>
     </div>
     <div id="fcastBody" class="fcast-wrap"></div>
@@ -3188,16 +3188,47 @@ function renderForecast(venueIdx, view){
     },0);
     var totalPct = totalTarget>0?Math.round(totalRev/totalTarget*100):0;
     h += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">';
-    [{lbl:'Upcoming Shows',val:events.length},{lbl:'Revenue Committed',val:'$'+totalRev.toLocaleString()},
-     {lbl:'Total Target',val:'$'+totalTarget.toLocaleString()},
-     {lbl:'Overall % Complete',val:totalPct+'%',col:totalPct>=50?'#22c55e':totalPct>=20?'#f59e0b':'#ef4444'}
+    [{lbl:'Upcoming Shows',val:events.length},
+     {lbl:'BS Actual (sold)',val:'$'+totalRev.toLocaleString(),col:'#0f766e'},
+     {lbl:'BS Target',val:'$'+totalTarget.toLocaleString(),col:'#7d5a00'},
+     {lbl:'% of Target',val:totalPct+'%',col:totalPct>=50?'#22c55e':totalPct>=20?'#f59e0b':'#ef4444'}
     ].forEach(function(s){
-      h += '<div style="background:var(--card);border-radius:10px;padding:9px 14px;min-width:110px">'
-         + '<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)">'+s.lbl+'</div>'
-         + '<div style="font-size:18px;font-weight:900;letter-spacing:-.5px;color:'+(s.col||'inherit')+'">'+s.val+'</div>'
+      h += '<div style="background:var(--card);border-radius:10px;padding:12px 16px;min-width:130px;flex:1">'
+         + '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)">'+s.lbl+'</div>'
+         + '<div style="font-size:22px;font-weight:900;letter-spacing:-.5px;margin-top:2px;color:'+(s.col||'inherit')+'">'+s.val+'</div>'
          + '</div>';
     });
     h += '</div>';
+
+    // -- Clear Actual vs Target table (most readable) ---------------
+    h += '<div class="fcast-chart-wrap" style="padding:0;overflow:hidden">';
+    h += '<div class="fcast-chart-title" style="padding:12px 16px 0">Actual vs Target by Show</div>';
+    h += '<div style="padding:4px 16px 10px;font-size:10px;color:var(--ink3)">BS Actual = FourVenues accepted reservations (Base price). Target = Venue ROI rules.</div>';
+    h += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+    h += '<thead><tr>'
+       + '<th style="text-align:left;padding:8px 16px;border-bottom:1px solid var(--rule);color:var(--ink3);font-size:10px">Date / Artist</th>'
+       + '<th style="text-align:right;padding:8px 12px;border-bottom:1px solid var(--rule);color:#0f766e;font-size:10px">BS Actual</th>'
+       + '<th style="text-align:right;padding:8px 12px;border-bottom:1px solid var(--rule);background:#FFF2CC;color:#7D5A00;font-size:10px">BS Target</th>'
+       + '<th style="text-align:right;padding:8px 16px;border-bottom:1px solid var(--rule);color:var(--ink3);font-size:10px">Gap</th>'
+       + '<th style="text-align:right;padding:8px 16px;border-bottom:1px solid var(--rule);color:var(--ink3);font-size:10px">%</th>'
+       + '</tr></thead><tbody>';
+    events.filter(function(e){ return _daysTo(e.date)>=-1; }).slice(0,16).forEach(function(e){
+      var act = e.totalRevenue||0;
+      var tgt = e.bsTarget || (function(){ var r=venueRoiLookup(e.venue,e.date,e.djCost||0); return r?r.bsTarget:0; })();
+      var pct = tgt>0?Math.round(act/tgt*100):0;
+      var gap = tgt-act;
+      var col = pct>=70?'#22c55e':pct>=30?'#f59e0b':act>0?'#3b82f6':'#94a3b8';
+      var dateObj = new Date(e.date+'T12:00:00');
+      var dateFmt = dateObj.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+      h += '<tr>';
+      h += '<td style="padding:10px 16px;border-bottom:0.5px solid var(--hair)"><div style="font-weight:800">'+e.dj+'</div><div style="font-size:10px;color:var(--ink3)">'+dateFmt+' &middot; '+_daysTo(e.date)+'d out</div></td>';
+      h += '<td style="padding:10px 12px;border-bottom:0.5px solid var(--hair);text-align:right;font-size:16px;font-weight:900;color:#0f766e">'+(act?'$'+act.toLocaleString():'$0')+'</td>';
+      h += '<td style="padding:10px 12px;border-bottom:0.5px solid var(--hair);text-align:right;font-size:16px;font-weight:900;background:#FFF2CC;color:#7D5A00">'+(tgt?'$'+tgt.toLocaleString():'\u2014')+'</td>';
+      h += '<td style="padding:10px 16px;border-bottom:0.5px solid var(--hair);text-align:right;font-weight:700;color:'+(gap>0?'#ef4444':'#22c55e')+'">'+(tgt?(gap>0?'-$'+gap.toLocaleString():'Met'):'\u2014')+'</td>';
+      h += '<td style="padding:10px 16px;border-bottom:0.5px solid var(--hair);text-align:right;font-weight:900;color:'+col+'">'+pct+'%</td>';
+      h += '</tr>';
+    });
+    h += '</tbody></table></div>';
 
     // -- Bar chart: BS Actual vs Target -----------------------------
     var chartEvts = events.filter(function(e){ return e.bsTarget>0; }).slice(0,14);
@@ -3235,11 +3266,11 @@ function renderForecast(venueIdx, view){
         var dateLabel = e.date.slice(5).replace('-','/');
         var djShort = e.dj.split(' ')[0].slice(0,8);
 
-        h += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:52px;max-width:80px">';
-        // Value labels above bar
-        h += '<div style="font-size:8px;text-align:center;color:var(--ink3);min-height:28px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:3px">';
-        if(dispAct>0) h += '<span style="font-weight:800;color:'+col+'">'+_fmtK(dispAct)+'</span>';
-        h += '<span style="color:var(--ink3)">/ '+_fmtK(e.bsTarget)+'</span>';
+        h += '<div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:64px;max-width:90px">';
+        // Value labels above bar — Actual big, Target yellow
+        h += '<div style="text-align:center;min-height:36px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:3px;line-height:1.15">';
+        h += '<span style="font-size:11px;font-weight:900;color:'+(dispAct>0?col:'#94a3b8')+'">'+(dispAct>0?_fmtK(dispAct):'$0')+'</span>';
+        h += '<span style="font-size:9px;font-weight:800;color:#7d5a00;background:#FFF2CC;padding:1px 4px;border-radius:3px;margin-top:2px">'+_fmtK(e.bsTarget)+'</span>';
         h += '</div>';
 
         // Bar wrapper (full height = target)
@@ -3264,11 +3295,12 @@ function renderForecast(venueIdx, view){
 
       // Legend
       h += '<div style="display:flex;gap:16px;margin-top:8px;font-size:9px;color:var(--ink3);flex-wrap:wrap">'
-         + '<span style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;background:#f1f5f9;border:1px solid var(--hair);border-radius:3px"></div>Full bar = BS Target</span>'
-         + '<span style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;background:#22c55e;border-radius:3px"></div>&#8805;70% committed</span>'
+         + '<span style="display:flex;align-items:center;gap:4px"><b style="color:#0f766e">Bold $</b> = BS Actual (accepted Base price)</span>'
+         + '<span style="display:flex;align-items:center;gap:4px"><span style="background:#FFF2CC;color:#7d5a00;padding:1px 5px;border-radius:3px;font-weight:800">Yellow $</span> = BS Target</span>'
+         + '<span style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;background:#f1f5f9;border:1px solid var(--hair);border-radius:3px"></div>Bar height = Target</span>'
+         + '<span style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;background:#22c55e;border-radius:3px"></div>&#8805;70%</span>'
          + '<span style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;background:#f59e0b;border-radius:3px"></div>30&ndash;70%</span>'
          + '<span style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;background:#3b82f6;border-radius:3px"></div>&lt;30%</span>'
-         + '<span style="display:flex;align-items:center;gap:4px"><div style="width:6px;height:6px;border-radius:50%;background:#ef4444"></div>Urgent (&lt;7 days)</span>'
          + '</div>';
 
       h += '</div>'; // fcast-chart-wrap
@@ -3277,8 +3309,8 @@ function renderForecast(venueIdx, view){
     // -- Pickup pace section ----------------------------------------
     h += '<div class="fcast-chart-wrap">';
     h += '<div class="fcast-chart-title">&#9201; Pickup Pace ? How Fast Are We Filling Up?</div>';
-    h += '<div style="font-size:10px;color:var(--ink3);margin-bottom:8px">Based on current bookings vs days remaining. Brown bar = target. Colored fill = actual committed.</div>';
-    h += '<div style="display:flex;flex-direction:column;gap:6px">';
+    h += '<div style="font-size:10px;color:var(--ink3);margin-bottom:8px">Colored fill = BS Actual. Grey track = path to Target.</div>';
+    h += '<div style="display:flex;flex-direction:column;gap:8px">';
     events.filter(function(e){return e.bsTarget>0;}).slice(0,12).forEach(function(e){
       var days = _daysTo(e.date);
       if(days<-1) return;
@@ -3297,11 +3329,16 @@ function renderForecast(venueIdx, view){
       else if(days<=7&&pct<0.5){ verdict='Urgent ? 1 week out'; verdictCol='#ef4444'; }
       else if(needPerWk>0){ verdict='Need '+_fmtK(needPerWk)+'/wk'; verdictCol=needPerWk<5000?'#f59e0b':'#ef4444'; }
       h += '<div style="display:flex;align-items:center;gap:10px">';
-      h += '<div style="width:120px;font-size:10px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+dateFmt+' ? '+e.dj.slice(0,10)+'</div>';
+      h += '<div style="width:130px;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+dateFmt+' ? '+e.dj.slice(0,12)+'</div>';
+      h += '<div style="width:150px;text-align:right;font-size:12px;white-space:nowrap">'
+         + '<b style="color:#0f766e">$'+(e.totalRevenue||0).toLocaleString()+'</b>'
+         + '<span style="color:var(--ink3)"> / </span>'
+         + '<b style="color:#7d5a00;background:#FFF2CC;padding:1px 4px;border-radius:3px">$'+(e.bsTarget||0).toLocaleString()+'</b>'
+         + '</div>';
       h += '<div style="flex:1;position:relative;height:14px;background:var(--hair);border-radius:7px;overflow:hidden">';
       h += '<div style="position:absolute;left:0;top:0;height:100%;width:'+Math.min(100,pctDisplay)+'%;background:'+col+';border-radius:7px;transition:width .4s"></div>';
       h += '</div>';
-      h += '<div style="width:38px;text-align:right;font-size:10px;font-weight:800;color:'+col+'">'+pctDisplay+'%</div>';
+      h += '<div style="width:38px;text-align:right;font-size:11px;font-weight:800;color:'+col+'">'+pctDisplay+'%</div>';
       h += '<div style="width:70px;font-size:9px;font-weight:700;color:'+verdictCol+'">'+verdict+'</div>';
       h += '<div style="width:70px;font-size:9px;color:var(--ink3);text-align:right">'+days+'d ? $'+e.bsTarget.toLocaleString()+'</div>';
       h += '</div>';
