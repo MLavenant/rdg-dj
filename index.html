@@ -724,6 +724,15 @@ textarea#fldNote:focus{border-color:var(--blue)}
     </div>
     <div id="vipBody" class="vip-wrap"></div>
   </div>
+
+  <!-- SYSTEM / HEALTH -->
+  <div id="view-system" style="display:none">
+    <div class="pg-section">
+      <div class="pg-title2">System Status</div>
+      <div style="font-size:10px;color:var(--ink3);margin-top:2px">Scrape health, sync, and schedule</div>
+    </div>
+    <div id="systemBody" style="padding:14px 16px;display:flex;flex-direction:column;gap:14px"></div>
+  </div>
 </main>
 </div>
 
@@ -903,6 +912,9 @@ function buildSidebar() {
     html += '<button class="sb-btn" data-view="'+b.id+'" onclick="setView(\''+b.id+'\')">'
           + '<span class="sb-ic">'+b.ic+'</span>'+b.lb+'</button>';
   });
+  html += '<div class="sb-section-lbl" style="margin-top:8px">Admin</div>';
+  html += '<button class="sb-btn" data-view="system" onclick="setView(\'system\')">'
+        + '<span class="sb-ic">&#9881;</span>System Status</button>';
   html += '<div class="sb-section-lbl">Venues</div>';
   venues.forEach(function(v) {
     var c=venueColor(v);
@@ -921,6 +933,7 @@ function selVenue(v) {
   /* Re-render venue-driven tabs if active */
   if(curView==='vip')      renderVIP();
   if(curView==='forecast') renderForecast();
+  if(curView==='system')   renderSystem();
 }
 
 /*    Venue tabs                                                  */
@@ -956,7 +969,7 @@ function selYr(yr) {
 var _budgetInited = false;
 function setView(v) {
   curView = v;
-  ['calendar','summary','allshows','leaderboard','budget','accounting','vip','forecast'].forEach(function(id){
+  ['calendar','summary','allshows','leaderboard','budget','accounting','vip','forecast','system'].forEach(function(id){
     var el = document.getElementById('view-'+id);
     if (el) el.style.display = id===v ? '' : 'none';
   });
@@ -984,6 +997,10 @@ function setView(v) {
   }
   if (v === 'forecast') {
     renderForecast();
+    return;
+  }
+  if (v === 'system') {
+    renderSystem();
     return;
   }
   go();
@@ -2012,11 +2029,12 @@ var SCHED_BAKED = SCHED.map(function(r){ return Object.assign({},r); }); // immu
     if(window._fbReady){
       if(curView==='vip')           renderVIP();
       else if(curView==='forecast') renderForecast();
+      else if(curView==='system')   renderSystem();
       else                          go();
     }
   };
 
-  /* ?? Live listener ù fires immediately on load and on any change ? */
+  /* ?? Live listener ÔøΩ fires immediately on load and on any change ? */
   window._fbRef.on('value', function(snap){
     window._fbApply(snap.val());
     if(!window._fbReady){
@@ -2032,6 +2050,12 @@ var SCHED_BAKED = SCHED.map(function(r){ return Object.assign({},r); }); // immu
   window._fbDb.ref('rdg/pacing').on('value', function(snap){
     window._pacingData = snap.val() || {};
     if(window._fbReady && curView==='forecast') renderForecast();
+  });
+
+  window._scrapeStatus = {};
+  window._fbDb.ref('rdg/scrapeStatus').on('value', function(snap){
+    window._scrapeStatus = snap.val() || {};
+    if(window._fbReady && curView==='system') renderSystem();
   });
 })();
 var calViewMode = 'list';
@@ -2915,7 +2939,7 @@ var FORECAST_DATA = [
   {"venue":"Casa Neos Lounge","date":"2026-07-18","dj":"BARUT","bookedTables":0,"totalTables":15,"totalRevenue":0,"tierSummary":{"GOLD":{"total":2,"booked":0,"revenue":0},"PLATINUM":{"total":7,"booked":0,"revenue":0},"DIAMOND":{"total":6,"booked":0,"revenue":0}},"hasData":true},
   {"venue":"Casa Neos Lounge","date":"2026-07-19","dj":"AFTERDARK","bookedTables":0,"totalTables":15,"totalRevenue":0,"tierSummary":{"GOLD":{"total":2,"booked":0,"revenue":0},"PLATINUM":{"total":7,"booked":0,"revenue":0},"DIAMOND":{"total":6,"booked":0,"revenue":0}},"hasData":true},
   {"venue":"Casa Neos Lounge","date":"2026-07-23","dj":"ONOMA","bookedTables":0,"totalTables":15,"totalRevenue":0,"tierSummary":{"GOLD":{"total":2,"booked":0,"revenue":0},"PLATINUM":{"total":7,"booked":0,"revenue":0},"DIAMOND":{"total":6,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"Casa Neos Lounge","date":"2026-07-24","dj":"Malùne Morez","bookedTables":0,"totalTables":15,"totalRevenue":0,"tierSummary":{"GOLD":{"total":2,"booked":0,"revenue":0},"PLATINUM":{"total":8,"booked":0,"revenue":0},"DIAMOND":{"total":5,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"Casa Neos Lounge","date":"2026-07-24","dj":"MalÔøΩne Morez","bookedTables":0,"totalTables":15,"totalRevenue":0,"tierSummary":{"GOLD":{"total":2,"booked":0,"revenue":0},"PLATINUM":{"total":8,"booked":0,"revenue":0},"DIAMOND":{"total":5,"booked":0,"revenue":0}},"hasData":true},
   {"venue":"Casa Neos Lounge","date":"2026-07-25","dj":"AMOG","bookedTables":0,"totalTables":15,"totalRevenue":0,"tierSummary":{"GOLD":{"total":2,"booked":0,"revenue":0},"PLATINUM":{"total":7,"booked":0,"revenue":0},"DIAMOND":{"total":6,"booked":0,"revenue":0}},"hasData":true},
   {"venue":"Casa Neos Lounge","date":"2026-07-26","dj":"AFTERDARK","bookedTables":0,"totalTables":15,"totalRevenue":0,"tierSummary":{"GOLD":{"total":2,"booked":0,"revenue":0},"PLATINUM":{"total":7,"booked":0,"revenue":0},"DIAMOND":{"total":6,"booked":0,"revenue":0}},"hasData":true},
   {"venue":"Casa Neos Lounge","date":"2026-07-30","dj":"BARUT","bookedTables":0,"totalTables":16,"totalRevenue":0,"tierSummary":{"GOLD":{"total":3,"booked":0,"revenue":0},"PLATINUM":{"total":7,"booked":0,"revenue":0},"DIAMOND":{"total":6,"booked":0,"revenue":0}},"hasData":true},
@@ -2978,7 +3002,7 @@ function _fcastEnrich(e){
 /* ?? Pacing sparkline ??????????????????????????????????????????????????????
    pacingObj: { "YYYY-MM-DD": {tables, revenue}, ... }
    capacity:  totalTables for the event (cap line)
-   Returns an inline SVG string (80ù30px).
+   Returns an inline SVG string (80ÔøΩ30px).
    ?????????????????????????????????????????????????????????????????????????? */
 function _sparkline(pacingObj, capacity){
   if(!pacingObj) return '<span style="color:var(--ink4);font-size:9px">No data yet</span>';
@@ -3009,6 +3033,55 @@ function _sparkline(pacingObj, capacity){
   return svg;
 }
 
+function renderSystem(){
+  var el = document.getElementById('systemBody');
+  if(!el) return;
+  var st = window._scrapeStatus || {};
+  var fv = st.fourvenues || null;
+  var toast = st.toast || null;
+  var fbOk = !!window._fbReady;
+
+  function card(title, schedule, data){
+    var ok = data && data.ok;
+    var never = !data;
+    var badge = never ? '#94a3b8' : (ok ? '#22c55e' : '#ef4444');
+    var label = never ? 'No run yet' : (ok ? 'OK' : 'FAILED');
+    var when = data && (data.atLocal || data.at) ? (data.atLocal || data.at) : '\u2014';
+    var msg  = data && data.message ? data.message : '';
+    return '<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid '+badge+'">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'
+      + '<div style="font-size:13px;font-weight:800">'+title+'</div>'
+      + '<span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px;background:'+badge+';color:#fff">'+label+'</span>'
+      + '</div>'
+      + '<div style="margin-top:8px;font-size:11px;color:var(--ink3)">Schedule: <b style="color:var(--ink2)">'+schedule+'</b></div>'
+      + '<div style="margin-top:4px;font-size:11px;color:var(--ink3)">Last run: <b style="color:var(--ink2)">'+when+'</b></div>'
+      + (msg ? '<div style="margin-top:6px;font-size:11px;color:var(--ink2)">'+msg+'</div>' : '')
+      + '</div>';
+  }
+
+  var h = '';
+  h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid '+(fbOk?'#22c55e':'#f59e0b')+'">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center">'
+    + '<div style="font-size:13px;font-weight:800">Live sync (Firebase)</div>'
+    + '<span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px;background:'+(fbOk?'#22c55e':'#f59e0b')+';color:#fff">'+(fbOk?'Connected':'Connecting...')+'</span>'
+    + '</div>'
+    + '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">Edits (shows, special weeks, ROI rules, budgets) sync to all browsers instantly.</div>'
+    + '</div>';
+
+  h += card('FourVenues scrape', 'Daily at 8:30 AM', fv);
+  h += card('Toast scrape', 'Mondays at 8:30 AM', toast);
+
+  h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px">'
+    + '<div style="font-size:13px;font-weight:800;margin-bottom:6px">How updates work</div>'
+    + '<div style="font-size:11px;color:var(--ink3);line-height:1.55">'
+    + '<b style="color:var(--ink2)">Website:</b> nightly/weekly scrapes update index.html and push to GitHub Pages.<br>'
+    + '<b style="color:var(--ink2)">People edits:</b> saved to Firebase &mdash; everyone sees them live.<br>'
+    + '<b style="color:var(--ink2)">Laptop:</b> scrapes currently run on this PC via Task Scheduler (must be on at 8:30).'
+    + '</div></div>';
+
+  el.innerHTML = h;
+}
+
 function renderForecast(venueIdx, view){
   if(venueIdx!==undefined) _fcastActiveVenue = venueIdx;
   if(view!==undefined) _fcastActiveView = view;
@@ -3023,10 +3096,10 @@ function renderForecast(venueIdx, view){
 
   var h = '';
 
-  // No separate venue tabs ù Forecast follows the global venue selector (curV)
+  // No separate venue tabs ÔøΩ Forecast follows the global venue selector (curV)
 
   if(false && _fcastActiveView==='all'){
-    // -- ALL VENUES SUMMARY (disabled ù venue now driven by global selector) ---
+    // -- ALL VENUES SUMMARY (disabled ÔøΩ venue now driven by global selector) ---
     var allEvts = FORECAST_DATA.slice().sort(function(a,b){ return a.date<b.date?-1:a.date>b.date?1:0; });
     // Top KPI strip
     var totalRev = allEvts.reduce(function(s,e){return s+e.totalRevenue;},0);
@@ -3097,7 +3170,7 @@ function renderForecast(venueIdx, view){
     h += '</tbody></table></div>';
 
   } else {
-    // -- SINGLE VENUE VIEW ù follows global venue selector (curV) ---
+    // -- SINGLE VENUE VIEW ÔøΩ follows global venue selector (curV) ---
     var vname = curV;
     var events = FORECAST_DATA.filter(function(e){ return e.venue===vname; })
       .sort(function(a,b){ return a.date<b.date?-1:a.date>b.date?1:0; });
@@ -3328,7 +3401,7 @@ function vipWeekNav(delta) {
 
 /* Build VIP venue data from SCHED for a given week range (used for historical weeks) */
 /* Build a floor-plan reference (totalTables per tier, tablesBudget) from VIP_VENUES data.
-   This is stable ù the floor plan doesn't change week to week. */
+   This is stable ÔøΩ the floor plan doesn't change week to week. */
 var _vipFloorPlan = (function(){
   var fp = {};
   (VIP_VENUES||[]).forEach(function(v){
@@ -3381,7 +3454,7 @@ function buildVipFromSched(mon, sun) {
       fee:          e.fee || 0,
       bsActual:     e.bs_a || 0,
       bsMin:        e.bs_m || 0,
-      tablesActual: null,          // not available from SCHED; shown as ù
+      tablesActual: null,          // not available from SCHED; shown as ÔøΩ
       tablesBudget: budget,        // from floor plan reference
       tiers:        tierRef,
       roiActual:    e.roi_a || (e.fee > 0 ? Math.round((e.bs_a||0)/e.fee*100)/100 : 0),
@@ -3413,7 +3486,7 @@ function renderVIP(venueIdx){
     document.getElementById('vipBody').innerHTML='<div class="empty" style="padding:40px;text-align:center;color:var(--ink3)">No VIP data for this week.</div>';
     return;
   }
-  // VIP follows the global venue selector (curV) ù no separate tab bar
+  // VIP follows the global venue selector (curV) ÔøΩ no separate tab bar
   var d = venues.find(function(v){ return v.venue===curV; }) || venues[0];
   if(!d){ document.getElementById('vipBody').innerHTML='<div class="empty" style="padding:40px;text-align:center;color:var(--ink3)">No VIP data for '+curV+' this week.</div>'; return; }
 
@@ -4128,7 +4201,7 @@ function _swDelete(idx){
     }
     if(window._fbSave) window._fbSave('specialWeeks', specialWeeks);
   } else {
-    // Remove ev field from all matching SCHED entries ù sync via schedOverrides
+    // Remove ev field from all matching SCHED entries ÔøΩ sync via schedOverrides
     SCHED.forEach(function(r){
       if(r.v===curV && r.ev===sw.label){
         r.ev=null;
