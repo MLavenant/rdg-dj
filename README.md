@@ -16,12 +16,12 @@ Single-file HTML dashboard for Riviera Dining Group DJ / bottle-service performa
 2. Commit and push to `main` on this repo (`MLavenant/rdg-dj`)
 3. GitHub Pages serves it at https://mlavenant.github.io/rdg-dj/
 
-## Nightly refresh
-Windows Task Scheduler runs `C:\Cursor\toast-mcp-server\refresh-dashboard.bat`, which:
-- Pulls FourVenues forecast bookings
-- Updates Toast bottle-service actuals
-- Writes pacing snapshots to Firebase
-- Commits and pushes to this repo
+## Automated refresh (Task Scheduler on this PC)
+- **FourVenues** — daily at **8:30 AM** (`RDG DJ FourVenues Daily 830`)
+- **Toast** — **Mondays** at **8:30 AM** (`RDG DJ Toast Monday 830`)
+- Status is written to Firebase and shown in the dashboard **System Status** page
+
+PC must be powered on at run time (or move jobs to a cloud VM later).
 
 ## Related repos (not this app)
 - `rdg-ai-dashboard` — separate project
