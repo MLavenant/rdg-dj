@@ -407,12 +407,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .cy-month-hd{font-size:11.5px;font-weight:800;text-align:center;padding:8px;background:var(--card2);cursor:pointer;letter-spacing:.02em}
 .cy-month-hd:hover{background:var(--card3)}
 .cy-days-list{max-height:280px;overflow-y:auto}
-.cy-row{display:grid;grid-template-columns:20px 1fr 46px 46px;gap:4px;align-items:center;padding:3px 8px;border-bottom:0.5px solid var(--hair);cursor:pointer;font-size:9px}
+.cy-row{display:grid;grid-template-columns:18px 1fr 36px 36px 36px;gap:3px;align-items:center;padding:3px 6px;border-bottom:0.5px solid var(--hair);cursor:pointer;font-size:9px}
 .cy-row:hover{filter:brightness(.96)}
 .cy-daynum{font-weight:800;color:var(--ink3);font-size:9px}
 .cy-djname{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
-.cy-fee{text-align:right;color:var(--ink3);font-size:8px}
-.cy-target{text-align:right;color:var(--ink3);font-size:8px}
+.cy-fee{text-align:right;color:var(--amb);font-size:8px;font-weight:700}
+.cy-target{text-align:right;color:var(--blue);font-size:8px;font-weight:700}
+.cy-actual{text-align:right;color:#0f766e;font-size:8px;font-weight:700}
 .cy-row-beat{background:var(--beat-bg)}.cy-row-beat .cy-djname{color:var(--beat)}
 .cy-row-miss{background:var(--miss-bg)}.cy-row-miss .cy-djname{color:var(--miss)}
 .cy-row-fut{background:var(--blue-bg)}.cy-row-fut .cy-djname{color:var(--blue)}
@@ -513,8 +514,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .import-preview-tbl td{padding:3px 6px;border-bottom:0.5px solid var(--hair)}
 .import-err{color:var(--miss);background:var(--miss-bg);padding:8px 10px;border-radius:6px;font-size:11px;margin-top:8px}
 
-.acct-status-hd{min-width:170px}
-.acct-status-sel{width:100%;font-size:10px;font-weight:600;padding:5px 6px;border-radius:6px;border:0.5px solid var(--rule);outline:none;font-family:inherit;cursor:pointer}
+.acct-status-hd{min-width:88px;max-width:110px;width:100px}
+.acct-status-sel{width:100%;max-width:108px;font-size:9px;font-weight:600;padding:4px 4px;border-radius:6px;border:0.5px solid var(--rule);outline:none;font-family:inherit;cursor:pointer}
+.acct-status-wrap{display:flex;flex-direction:column;align-items:stretch;gap:3px;min-width:88px;max-width:112px}
+.acct-last-edit{font-size:8px;color:var(--ink4);line-height:1.2;text-align:left;cursor:pointer}
+.acct-last-edit:hover{color:var(--blue);text-decoration:underline}
+.acct-hist-modal{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:9999;display:flex;align-items:center;justify-content:center}
+.acct-hist-card{background:var(--card,#fff);border-radius:12px;padding:16px 18px;max-width:420px;width:90%;max-height:70vh;overflow:auto;box-shadow:0 12px 40px rgba(0,0,0,.2)}
+.acct-hist-card h3{margin:0 0 8px;font-size:14px}
+.acct-hist-row{font-size:11px;padding:6px 0;border-bottom:0.5px solid var(--hair,#eee)}
+.acct-ap-lock{font-size:9px;color:var(--ink4)}
 .acct-st-notset{background:var(--card2);color:var(--ink3)}
 .acct-st-pending{background:var(--amb-bg);color:var(--amb)}
 .acct-st-confirmed{background:var(--blue-bg);color:var(--blue)}
@@ -568,7 +577,8 @@ textarea#fldNote:focus{border-color:var(--blue)}
 .cy-legend{padding:8px 16px;font-size:10px;color:var(--ink3);background:var(--card2);border-bottom:0.5px solid var(--hair)}
 .cy-legend-fee{color:var(--amb);font-weight:700}
 .cy-legend-target{color:var(--blue);font-weight:700}
-.cy-col-labels{display:grid;grid-template-columns:20px 1fr 46px 46px;gap:4px;padding:2px 8px 0;font-size:7px;font-weight:700;text-transform:uppercase;color:var(--ink4)}
+.cy-legend-actual{color:#0f766e;font-weight:700}
+.cy-col-labels{display:grid;grid-template-columns:18px 1fr 36px 36px 36px;gap:3px;padding:2px 6px 0;font-size:7px;font-weight:700;text-transform:uppercase;color:var(--ink4)}
 .cy-col-lbl{text-align:right}
 
 .bgt-spend-locked{display:flex;align-items:center;justify-content:center;gap:4px;font-size:10px;font-weight:700;color:var(--ink)}
@@ -2025,6 +2035,8 @@ var SCHED_BAKED = SCHED.map(function(r){ return Object.assign({},r); }); // immu
     }
     // MONTHLY_DJ_BUDGET
     if(data.monthlyDjBudget) MONTHLY_DJ_BUDGET = data.monthlyDjBudget;
+    // Accounting status + history
+    if(data.acctData) acctData = data.acctData;
 
     if(window._fbReady){
       if(curView==='vip')           renderVIP();
@@ -2066,9 +2078,9 @@ var ACCT_DEFAULT_CATS = ['Rider','Resident DJ','Fire Show','Cryo','Sound System'
 function getAcct(d){
   var k=acctKey(d);
   if(!acctData[k]){
-    acctData[k]={items:ACCT_DEFAULT_CATS.map(function(c){return {name:c,amount:null};}),r365:0};
+    acctData[k]={items:ACCT_DEFAULT_CATS.map(function(c){return {name:c,amount:null};}),r365:0,djStatus:null,apStatus:null,log:[]};
   }
-  return acctData[k];
+  return _acctNormalize(acctData[k]);
 }
 function addAcctItem(ds){
   var acct=getAcct(ds);
@@ -2296,7 +2308,7 @@ function renderCalGrid(yr,mo,mm,days,showMap){
 function renderCalYear(){
   applyVenueTint();
   var yr=curYr;
-  var h='<div class="cy-legend"><b>Legend:</b> each row shows <span class="cy-legend-fee">DJ Fee</span> and <span class="cy-legend-target">BS Target</span> &middot; colors = beat / miss / scheduled / TBD, same as the list view</div>';
+  var h='<div class="cy-legend"><b>Legend:</b> <span class="cy-legend-fee">Fee</span> &middot; <span class="cy-legend-target">BS Target</span> &middot; <span class="cy-legend-actual">BS Actual</span> &middot; colors = beat / miss / scheduled / TBD</div>';
   h+='<div class="cal-year-grid">';
   for(var mo=0; mo<12; mo++){
     var days=new Date(yr,mo+1,0).getDate();
@@ -2313,7 +2325,7 @@ function renderCalYear(){
 
     h+='<div class="cy-month">';
     h+='<div class="cy-month-hd" onclick="jumpFromYear('+mo+')">'+MN_FULL[mo]+'</div>';
-    h+='<div class="cy-col-labels"><span></span><span></span><span class="cy-col-lbl">Fee</span><span class="cy-col-lbl">Target</span></div>';
+    h+='<div class="cy-col-labels"><span></span><span></span><span class="cy-col-lbl">Fee</span><span class="cy-col-lbl">Target</span><span class="cy-col-lbl">Actual</span></div>';
     h+='<div class="cy-days-list">';
     for(var day=1; day<=days; day++){
       var ds=yr+'-'+mm+'-'+(day<10?'0':'')+day;
@@ -2332,6 +2344,7 @@ function renderCalYear(){
         h+='<span class="cy-djname">'+nm+'</span>';
         h+='<span class="cy-fee">'+$k(r.fee||r.cost)+'</span>';
         h+='<span class="cy-target">'+$k(r.bs_m)+'</span>';
+        h+='<span class="cy-actual">'+$k(r.bs_a)+'</span>';
         h+='</div>';
       });
     }
@@ -2596,15 +2609,24 @@ function wireAccountingEvents(){
   document.querySelectorAll('#acctBody [data-action="edit"]').forEach(function(btn){
     btn.addEventListener('click',function(){ openEditModal(parseInt(btn.dataset.idx,10)); });
   });
-  document.querySelectorAll('#acctBody [data-action="status"]').forEach(function(sel){
-    sel.addEventListener('change',function(){ updateAcctStatus(sel.dataset.ds, sel.value); });
+  document.querySelectorAll('#acctBody [data-action="djStatus"]').forEach(function(sel){
+    sel.addEventListener('change',function(){ updateAcctDjStatus(sel.dataset.ds, sel.value, sel); });
+  });
+  document.querySelectorAll('#acctBody [data-action="apStatus"]').forEach(function(sel){
+    sel.addEventListener('change',function(){ updateAcctApStatus(sel.dataset.ds, sel.value, sel); });
+  });
+  document.querySelectorAll('#acctBody [data-action="acctHist"]').forEach(function(btn){
+    btn.addEventListener('click',function(){ showAcctHistory(btn.dataset.ds); });
   });
   document.querySelectorAll('#acctBody [data-action="r365"]').forEach(function(chk){
     chk.addEventListener('change',function(){ updateR365(chk, chk.dataset.ds); });
   });
 }
 
-var ACCT_STATUS_OPTIONS=["Offer sent","Hold 1","Confirmed","Contract + invoice received","Missing contract","Missing invoice","Missing forms","Deposit paid","Paid"];
+var ACCT_DJ_STATUS=["Offer sent","Hold 1","Confirmed"];
+var ACCT_AP_STATUS=["Contract + invoice received","Missing contract","Missing invoice","Missing forms","Missing Countersign","Missing Mika Signature","Deposit paid","Paid"];
+var ACCT_STATUS_OPTIONS=ACCT_DJ_STATUS.concat(ACCT_AP_STATUS);
+var ACCT_AP_PASSWORD="jessica";
 var _acctStatusFilter=null; /* when set, only show rows matching this status */
 
 function acctStatusClass(status){
@@ -2616,11 +2638,111 @@ function acctStatusClass(status){
   if(status==='Offer sent'||status==='Hold 1') return 'acct-st-pending';
   return 'acct-st-notset';
 }
-function updateAcctStatus(ds,val){
-  getAcct(ds).status=val||null;
+function _acctNormalize(acct){
+  if(!acct) return acct;
+  if(acct.djStatus==null && acct.apStatus==null && acct.status){
+    if(ACCT_DJ_STATUS.indexOf(acct.status)>=0) acct.djStatus=acct.status;
+    else if(ACCT_AP_STATUS.indexOf(acct.status)>=0) acct.apStatus=acct.status;
+  }
+  if(!acct.log) acct.log=[];
+  return acct;
+}
+function _acctEffectiveStatus(acct){
+  _acctNormalize(acct);
+  return acct.apStatus || acct.djStatus || acct.status || null;
+}
+function _acctPersist(){
+  try{ if(window._fbSave) window._fbSave('acctData', acctData); }catch(e){}
+}
+function _acctEditorName(){
+  var by=sessionStorage.getItem('rdg_acct_editor')||'';
+  if(!by){
+    by=prompt('Your name (saved for edit history):')||'';
+    by=by.trim();
+    if(!by) return null;
+    sessionStorage.setItem('rdg_acct_editor', by);
+  }
+  return by;
+}
+function _acctRequireApPassword(){
+  var by=_acctEditorName();
+  if(!by) return null;
+  var pw=prompt('Password required to update AP Status:');
+  if(pw!==ACCT_AP_PASSWORD){ alert('Incorrect password.'); return null; }
+  return by;
+}
+function _acctPushLog(acct, field, fromVal, toVal, by){
+  if(!acct.log) acct.log=[];
+  acct.log.push({
+    at: new Date().toISOString(),
+    by: by,
+    field: field,
+    from: fromVal||'',
+    to: toVal||''
+  });
+  if(acct.log.length>40) acct.log=acct.log.slice(-40);
+  acct.updatedAt=new Date().toISOString();
+  acct.updatedBy=by;
+}
+function updateAcctDjStatus(ds,val,sel){
+  var acct=_acctNormalize(getAcct(ds));
+  var prev=acct.djStatus||'';
+  var next=val||'';
+  if(prev===next) return;
+  var by=_acctEditorName()||'Unknown';
+  acct.djStatus=next||null;
+  acct.status=_acctEffectiveStatus(acct); /* keep legacy field in sync for filters */
+  _acctPushLog(acct,'DJ Status',prev,next,by);
+  _acctPersist();
   renderAccounting();
 }
-function updateR365(inp,ds){ getAcct(ds).r365=inp.checked?1:0; }
+function updateAcctApStatus(ds,val,sel){
+  var acct=_acctNormalize(getAcct(ds));
+  var prev=acct.apStatus||'';
+  var next=val||'';
+  if(prev===next) return;
+  var by=_acctRequireApPassword();
+  if(!by){
+    if(sel) sel.value=prev;
+    return;
+  }
+  acct.apStatus=next||null;
+  acct.status=_acctEffectiveStatus(acct);
+  _acctPushLog(acct,'AP Status',prev,next,by);
+  _acctPersist();
+  renderAccounting();
+}
+function updateAcctStatus(ds,val){ /* legacy */ updateAcctDjStatus(ds,val); }
+function _fmtAcctWhen(iso){
+  if(!iso) return '';
+  try{
+    var d=new Date(iso);
+    return d.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  }catch(e){ return iso; }
+}
+function showAcctHistory(ds){
+  var acct=_acctNormalize(getAcct(ds));
+  var log=acct.log||[];
+  var old=document.getElementById('acctHistModal');
+  if(old) old.remove();
+  var modal=document.createElement('div');
+  modal.id='acctHistModal';
+  modal.className='acct-hist-modal';
+  var rows=log.slice().reverse().map(function(e){
+    return '<div class="acct-hist-row"><b>'+_fmtAcctWhen(e.at)+'</b> &middot; '+ (e.by||'?')
+      +'<br><span style="color:var(--ink3)">'+e.field+': </span>'
+      +'<span style="color:var(--ink4)">'+(e.from||'Not set')+'</span> \u2192 <b>'+(e.to||'Not set')+'</b></div>';
+  }).join('') || '<div class="acct-hist-row" style="color:var(--ink3)">No edits yet.</div>';
+  modal.innerHTML='<div class="acct-hist-card"><h3>Edit history</h3>'
+    +'<div style="font-size:11px;color:var(--ink3);margin-bottom:8px">'+ds+' &middot; '+curV+'</div>'
+    +(acct.updatedBy?'<div style="font-size:11px;margin-bottom:10px">Last edit: <b>'+acct.updatedBy+'</b> &middot; '+_fmtAcctWhen(acct.updatedAt)+'</div>':'')
+    +rows
+    +'<div style="margin-top:12px;text-align:right"><button onclick="document.getElementById(\'acctHistModal\').remove()" style="padding:6px 14px;border-radius:8px;border:none;background:var(--ink);color:#fff;font-weight:700;cursor:pointer">Close</button></div>'
+    +'</div>';
+  modal.addEventListener('click',function(ev){ if(ev.target===modal) modal.remove(); });
+  document.body.appendChild(modal);
+}
+function updateR365(inp,ds){ getAcct(ds).r365=inp.checked?1:0; _acctPersist(); }
 function setAcctStatusFilter(status){
   _acctStatusFilter = (_acctStatusFilter===status) ? null : status;
   renderAccounting();
@@ -3830,7 +3952,7 @@ function renderAccounting(){
     tshows.forEach(function(){
       totalShowsThisMonth++;
       var tacct=getAcct(tds);
-      var st=tacct.status||'Not set';
+      var st=_acctEffectiveStatus(tacct)||'Not set';
       statusCounts[st]=(statusCounts[st]||0)+1;
     });
   }
@@ -3858,7 +3980,8 @@ function renderAccounting(){
   h+='<th class="sc-num acct-col-fee">DJ Fee</th>';
   h+='<th class="sc-num acct-col-target">BS Target</th>';
   h+='<th class="sc-num" style="background:#eef7ee">BS Actual</th>';
-  h+='<th class="acct-status-hd">AP / DJ Status</th>';
+  h+='<th class="acct-status-hd">DJ Status</th>';
+  h+='<th class="acct-status-hd">AP Status <span class="acct-ap-lock" title="Password protected">&#128274;</span></th>';
   h+='<th class="sc-act-r" title="R365">R365</th>';
   h+='<th class="sc-act"></th>';
   h+='</tr></thead><tbody>';
@@ -3876,7 +3999,7 @@ function renderAccounting(){
 
     /* Apply status filter   skip days that don't match when a filter is active */
     if(_acctStatusFilter){
-      var dayStatus = acct.status || 'Not set';
+      var dayStatus = _acctEffectiveStatus(acct) || 'Not set';
       if(dayStatus!==_acctStatusFilter) continue;
     }
 
@@ -3896,7 +4019,7 @@ function renderAccounting(){
       h+='<td class="sc-date-cell">'+dateStr+'</td>';
       h+='<td class="sc-ev-cell">'+(evLabel?'<span class="sc-ev-label" onclick="openEditSpecialWeek(\''+evLabel.replace(/'/g,"\\'")+'\')" title="Edit/delete this period" style="cursor:pointer">'+evLabel+'</span>':'')+'</td>';
       h+='<td colspan="4" class="sc-empty-day"></td>';
-      h+='<td></td><td></td>';
+      h+='<td></td><td></td><td></td>';
       h+='<td class="sc-act"><button class="sc-add-btn" data-ds="'+ds+'" data-action="add">+</button></td>';
       h+='</tr>';
       continue;
@@ -3926,11 +4049,21 @@ function renderAccounting(){
       h+='<td class="sc-num acct-col-target">'+$k(r.bs_m)+'</td>';
       h+='<td class="sc-num '+bsCls+'"><b>'+$k(r.bs_a)+'</b></td>';
       if(ri===0){
-        h+='<td class="acct-status-cell" rowspan="'+nrows+'">'
-          +'<select class="acct-status-sel '+acctStatusClass(acct.status)+'" data-ds="'+ds+'" data-action="status">'
-          +'<option value=""'+(!acct.status?' selected':'')+'>Not set</option>'
-          +ACCT_STATUS_OPTIONS.map(function(s){return '<option value="'+s+'"'+(acct.status===s?' selected':'')+'>'+s+'</option>';}).join('')
-          +'</select></td>';
+        var djSt=acct.djStatus||'';
+        var apSt=acct.apStatus||'';
+        var lastHint=acct.updatedBy?('Last: '+acct.updatedBy+' \u00b7 '+_fmtAcctWhen(acct.updatedAt)):'History';
+        h+='<td class="acct-status-cell" rowspan="'+nrows+'"><div class="acct-status-wrap">'
+          +'<select class="acct-status-sel '+acctStatusClass(djSt||null)+'" data-ds="'+ds+'" data-action="djStatus">'
+          +'<option value=""'+(!djSt?' selected':'')+'>Not set</option>'
+          +ACCT_DJ_STATUS.map(function(opt){return '<option value="'+opt+'"'+(djSt===opt?' selected':'')+'>'+opt+'</option>';}).join('')
+          +'</select></div></td>';
+        h+='<td class="acct-status-cell" rowspan="'+nrows+'"><div class="acct-status-wrap">'
+          +'<select class="acct-status-sel '+acctStatusClass(apSt||null)+'" data-ds="'+ds+'" data-action="apStatus" title="Password required">'
+          +'<option value=""'+(!apSt?' selected':'')+'>Not set</option>'
+          +ACCT_AP_STATUS.map(function(opt){return '<option value="'+opt+'"'+(apSt===opt?' selected':'')+'>'+opt+'</option>';}).join('')
+          +'</select>'
+          +'<div class="acct-last-edit" data-ds="'+ds+'" data-action="acctHist" title="View edit history">'+lastHint+'</div>'
+          +'</div></td>';
         h+='<td class="sc-act-r" rowspan="'+nrows+'"><label class="r365-wrap"><input type="checkbox" class="r365-chk" data-ds="'+ds+'" data-action="r365" '+(acct.r365?'checked':'')+'><span class="r365-box">R</span></label></td>';
       }
       h+='<td class="sc-act"><button class="sc-edit-btn" data-idx="'+idx+'" data-action="edit">&#9998;</button></td>';
@@ -3939,7 +4072,7 @@ function renderAccounting(){
   }
 
   if(_acctStatusFilter && !anyFilterMatch){
-    h+='<tr><td colspan="9" class="sc-empty-day" style="text-align:center;padding:16px">No shows with status "'+_acctStatusFilter+'" this month.</td></tr>';
+    h+='<tr><td colspan="10" class="sc-empty-day" style="text-align:center;padding:16px">No shows with status "'+_acctStatusFilter+'" this month.</td></tr>';
   }
 
   h+='<tr class="acct-total-row">';
@@ -3947,7 +4080,7 @@ function renderAccounting(){
   h+='<td class="sc-num acct-col-fee"><b>'+$k(totDJ)+'</b></td>';
   h+='<td class="sc-num acct-col-target">'+$k(totBSM)+'</td>';
   h+='<td class="sc-num '+(totBSA&&totBSM?(totBSA>=totBSM?'hit':'low'):'')+'"><b>'+$k(totBSA)+'</b></td>';
-  h+='<td></td><td></td><td></td>';
+  h+='<td></td><td></td><td></td><td></td>';
   h+='</tr></tbody></table>';
 
   document.getElementById('acctBody').innerHTML=h;
