@@ -266,6 +266,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .fcast-pill{display:inline-block;padding:1px 7px;border-radius:20px;font-size:9px;font-weight:800}
 .fcast-fill-bar{height:6px;border-radius:3px;background:var(--hair);overflow:hidden;width:60px;display:inline-block;vertical-align:middle;margin-left:4px}
 .fcast-fill-bar-inner{height:100%;border-radius:3px;background:#22c55e}
+.fcast-wx{background:var(--card);border-radius:12px;padding:14px 16px;overflow-x:auto}
+.fcast-wx-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.fcast-wx-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}
+.fcast-wx-sub{font-size:10px;color:var(--ink4)}
+.fcast-wx-row{display:flex;gap:8px;min-width:max-content}
+.fcast-wx-day{min-width:92px;flex:0 0 auto;border:0.5px solid var(--hair);border-radius:10px;padding:10px 8px;text-align:center;background:var(--card2,#fafafa)}
+.fcast-wx-day.has-show{border-color:#93c5fd;background:#eff6ff}
+.fcast-wx-dow{font-size:10px;font-weight:800;color:var(--ink2);text-transform:uppercase}
+.fcast-wx-date{font-size:9px;color:var(--ink4);margin-bottom:4px}
+.fcast-wx-ico{font-size:22px;line-height:1.2;margin:2px 0}
+.fcast-wx-cond{font-size:9px;font-weight:700;color:var(--ink3);min-height:22px;line-height:1.15}
+.fcast-wx-temp{font-size:13px;font-weight:900;letter-spacing:-.3px;margin-top:4px}
+.fcast-wx-temp span{font-weight:600;color:var(--ink4);font-size:11px}
+.fcast-wx-rain{font-size:9px;color:#2563eb;font-weight:700;margin-top:3px}
+.fcast-wx-show{font-size:8px;font-weight:800;color:#1d4ed8;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:88px}
+.fcast-wx-err{font-size:11px;color:var(--ink3);padding:8px 0}
 /* VIP section */
 .vip-wrap{padding:14px 16px;display:flex;flex-direction:column;gap:18px}
 .vip-section-hd{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);padding:4px 0 2px;border-bottom:0.5px solid var(--hair)}
@@ -3243,6 +3259,111 @@ function renderSystem(){
   el.innerHTML = h;
 }
 
+
+/* ---- Forecast weather (Open-Meteo, Miami) ---- */
+var _WX_LAT = 25.7617, _WX_LON = -80.1918; /* Miami */
+var _wxCache = null;
+var _wxCacheAt = 0;
+var _wxLoading = false;
+
+function _wxCodeInfo(code){
+  var c = code|0;
+  if(c===0) return {ico:'\u2600\uFE0F', lbl:'Clear'};
+  if(c<=3) return {ico:'\u26C5', lbl:c===1?'Mostly clear':'Partly cloudy'};
+  if(c===45||c===48) return {ico:'\uD83C\uDF2B\uFE0F', lbl:'Fog'};
+  if(c>=51&&c<=57) return {ico:'\uD83C\uDF27\uFE0F', lbl:'Drizzle'};
+  if(c>=61&&c<=67) return {ico:'\uD83C\uDF27\uFE0F', lbl:'Rain'};
+  if(c>=71&&c<=77) return {ico:'\uD83C\uDF28\uFE0F', lbl:'Snow'};
+  if(c>=80&&c<=82) return {ico:'\uD83C\uDF26\uFE0F', lbl:'Showers'};
+  if(c>=95) return {ico:'\u26C8\uFE0F', lbl:'Storms'};
+  return {ico:'\u2601\uFE0F', lbl:'Cloudy'};
+}
+function _wxF(c){ return Math.round((c*9/5)+32); }
+function _wxShowMap(events){
+  var m={};
+  (events||[]).forEach(function(e){
+    if(!e||!e.date) return;
+    if(_daysTo(e.date)<-1) return;
+    var nm=_fcastDjName(e.dj)||'Show';
+    if(!m[e.date]) m[e.date]=[];
+    m[e.date].push(nm);
+  });
+  return m;
+}
+function _wxRenderHtml(data, events){
+  if(!data||!data.daily||!data.daily.time){
+    return '<div class="fcast-wx"><div class="fcast-wx-err">Weather unavailable right now.</div></div>';
+  }
+  var d=data.daily;
+  var shows=_wxShowMap(events);
+  var h='<div class="fcast-wx">';
+  h+='<div class="fcast-wx-hd"><div class="fcast-wx-title">Weather &mdash; Miami</div>';
+  h+='<div class="fcast-wx-sub">Next 7 days &middot; Open-Meteo &middot; evenings matter for outdoor / patio nights</div></div>';
+  h+='<div class="fcast-wx-row">';
+  for(var i=0;i<d.time.length && i<7;i++){
+    var ds=d.time[i];
+    var info=_wxCodeInfo(d.weather_code?d.weather_code[i]:d.weathercode?d.weathercode[i]:3);
+    var hi=_wxF(d.temperature_2m_max[i]);
+    var lo=_wxF(d.temperature_2m_min[i]);
+    var rain=d.precipitation_probability_max?d.precipitation_probability_max[i]:null;
+    var dateObj=new Date(ds+'T12:00:00');
+    var dow=dateObj.toLocaleDateString('en-US',{weekday:'short'});
+    var md=dateObj.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    var showList=shows[ds]||[];
+    var cls='fcast-wx-day'+(showList.length?' has-show':'');
+    h+='<div class="'+cls+'">';
+    h+='<div class="fcast-wx-dow">'+dow+'</div>';
+    h+='<div class="fcast-wx-date">'+md+'</div>';
+    h+='<div class="fcast-wx-ico">'+info.ico+'</div>';
+    h+='<div class="fcast-wx-cond">'+info.lbl+'</div>';
+    h+='<div class="fcast-wx-temp">'+hi+'\u00b0 <span>/ '+lo+'\u00b0</span></div>';
+    if(rain!=null) h+='<div class="fcast-wx-rain">'+rain+'% rain</div>';
+    if(showList.length) h+='<div class="fcast-wx-show" title="'+showList.join(', ')+'">'+showList[0]+(showList.length>1?' +'+(showList.length-1):'')+'</div>';
+    h+='</div>';
+  }
+  h+='</div></div>';
+  return h;
+}
+function _wxFetch(cb){
+  var now=Date.now();
+  if(_wxCache && (now-_wxCacheAt)<55*60*1000){ cb(null,_wxCache); return; }
+  if(_wxLoading){ cb(null,_wxCache); return; }
+  _wxLoading=true;
+  var url='https://api.open-meteo.com/v1/forecast'
+    +'?latitude='+_WX_LAT+'&longitude='+_WX_LON
+    +'&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
+    +'&temperature_unit=celsius&timezone=America%2FNew_York&forecast_days=7';
+  fetch(url).then(function(r){ return r.json(); }).then(function(j){
+    _wxLoading=false;
+    _wxCache=j; _wxCacheAt=Date.now();
+    try{ sessionStorage.setItem('rdg_wx', JSON.stringify({at:_wxCacheAt,data:j})); }catch(e){}
+    cb(null,j);
+  }).catch(function(err){
+    _wxLoading=false;
+    cb(err,null);
+  });
+}
+function _wxEnsureMounted(events){
+  var host=document.getElementById('fcastWxHost');
+  if(!host) return;
+  try{
+    if(!_wxCache){
+      var raw=sessionStorage.getItem('rdg_wx');
+      if(raw){ var o=JSON.parse(raw); if(o&&o.data&&(Date.now()-o.at)<55*60*1000){ _wxCache=o.data; _wxCacheAt=o.at; } }
+    }
+  }catch(e){}
+  if(_wxCache){ host.innerHTML=_wxRenderHtml(_wxCache, events); }
+  else { host.innerHTML='<div class="fcast-wx"><div class="fcast-wx-err">Loading Miami weather\u2026</div></div>'; }
+  _wxFetch(function(err,data){
+    if(!document.getElementById('fcastWxHost')) return;
+    if(err||!data){
+      if(!_wxCache) document.getElementById('fcastWxHost').innerHTML='<div class="fcast-wx"><div class="fcast-wx-err">Could not load weather. Check connection and retry.</div></div>';
+      return;
+    }
+    document.getElementById('fcastWxHost').innerHTML=_wxRenderHtml(data, events);
+  });
+}
+
 function renderForecast(venueIdx, view){
   if(venueIdx!==undefined) _fcastActiveVenue = venueIdx;
   if(view!==undefined) _fcastActiveView = view;
@@ -3340,6 +3461,9 @@ function renderForecast(venueIdx, view){
     var allTiers = [];
     events.forEach(function(e){ Object.keys(e.tierSummary).forEach(function(t){ if(allTiers.indexOf(t)<0) allTiers.push(t); }); });
     allTiers.sort(function(a,b){ var ai=TIER_ORDER_FC.indexOf(a),bi=TIER_ORDER_FC.indexOf(b); return (ai<0?99:ai)-(bi<0?99:bi); });
+
+    // Weather strip (async fill)
+    h += '<div id="fcastWxHost"></div>';
 
     // KPI strip ? compute targets live from VENUE_ROI_RULES
     var totalRev = events.reduce(function(s,e){return s+e.totalRevenue;},0);
@@ -3493,7 +3617,11 @@ function renderForecast(venueIdx, view){
   }
 
   document.getElementById('fcastBody').innerHTML = h;
-  document.getElementById('fcastMeta').textContent = 'Results \u00b7 Pick up pace vs yesterday \u00b7 Breakdown by tables';
+  document.getElementById('fcastMeta').textContent = 'Results \u00b7 Pick up pace vs yesterday \u00b7 Breakdown by tables \u00b7 Miami weather';
+  try{
+    var _wxEvts = (typeof events!=='undefined') ? events : FORECAST_DATA.filter(function(e){ return e.venue===curV; });
+    _wxEnsureMounted(_wxEvts);
+  }catch(e){}
 }
 
 
