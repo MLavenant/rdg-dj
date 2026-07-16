@@ -647,7 +647,7 @@ textarea#fldNote:focus{border-color:var(--blue)}
     <div class="sb-section-lbl">Tools</div>
     <button class="sb-help-btn" onclick="openVenueRulesEditor()">&#127919; Venue ROI Rules</button>
     <button class="sb-help-btn" onclick="openImportModal()">&#8635; Import from Excel</button>
-    <button class="sb-help-btn" id="sbHelpBtn" onclick="openHelp(event)">&#9432; Help &amp; Feedback</button>
+    <button class="sb-help-btn" id="sbHelpBtn" type="button">&#9432; Help &amp; Feedback</button>
     <button type="button" class="sb-help-egg" id="sbHelpEgg" tabindex="-1" aria-hidden="true">&#183;</button>
   </div>
 </aside>
@@ -4648,7 +4648,13 @@ var EGG_PLAYLIST = [
   { title: 'Hugo M. \u2014 Baoli Miami 2012', src: 'assets/easter/hugo-baoli-miami-2012.mp3' }
 ];
 function openHelp(ev){
-  if(ev && (ev.shiftKey || ev.altKey)){ triggerHelpBoothEgg(); return; }
+  ev = ev || window.event;
+  if(ev && (ev.shiftKey || ev.altKey)){
+    if(ev.preventDefault) ev.preventDefault();
+    if(ev.stopPropagation) ev.stopPropagation();
+    triggerHelpBoothEgg();
+    return false;
+  }
   document.getElementById('helpModal').classList.remove('hidden');
   renderHelpFaq('');
 }
@@ -4672,30 +4678,65 @@ function _eggPickTrack(){
   if(!EGG_PLAYLIST.length) return null;
   return EGG_PLAYLIST[Math.floor(Math.random()*EGG_PLAYLIST.length)];
 }
+function _eggTrackUrl(src){
+  try{ return new URL(src, window.location.href).href; }catch(e){ return src; }
+}
 function stopEggSong(){
   if(_eggAudio){
-    try{ _eggAudio.pause(); _eggAudio.currentTime=0; }catch(e){}
+    try{ _eggAudio.pause(); _eggAudio.removeAttribute('src'); _eggAudio.load(); }catch(e){}
     _eggAudio=null;
   }
   var bar=document.getElementById('eggPlayer');
   if(bar) bar.remove();
 }
+function _eggSetPlayerSub(msg){
+  var bar=document.getElementById('eggPlayer');
+  if(bar){
+    var sub=bar.querySelector('.egg-player-sub');
+    if(sub) sub.textContent=msg;
+  }
+}
 function playEggSong(track){
   var t=track||_eggPickTrack();
-  if(!t) return;
+  if(!t) return null;
   stopEggSong();
-  _eggAudio=new Audio(t.src);
+  var url=_eggTrackUrl(t.src);
+  _eggAudio=new Audio();
   _eggAudio.preload='auto';
+  _eggAudio.volume=0.9;
+  _eggAudio.src=url;
   _eggAudio.addEventListener('ended', stopEggSong);
+  _eggAudio.addEventListener('error', function(){
+    _eggSetPlayerSub('Could not load track \u2014 check network, then press Play');
+  });
+  _eggAudio.addEventListener('playing', function(){
+    _eggSetPlayerSub('Now playing \u00b7 press Stop anytime');
+  });
   var bar=document.createElement('div');
   bar.id='eggPlayer';
   bar.className='egg-player';
-  bar.innerHTML='<div class="egg-player-meta"><div class="egg-player-title">&#9835; '+(t.title||'Secret track')+'</div><div class="egg-player-sub">Easter egg playing \u00b7 Shift+click Help again to shuffle</div></div><button type="button" class="egg-player-stop" onclick="stopEggSong()">Stop</button>';
+  bar.innerHTML='<div class="egg-player-meta"><div class="egg-player-title">&#9835; '+(t.title||'Secret track')+'</div><div class="egg-player-sub">Loading track\u2026</div></div>'
+    +'<button type="button" class="egg-player-stop" style="background:#22c55e" onclick="resumeEggSong()">Play</button>'
+    +'<button type="button" class="egg-player-stop" onclick="stopEggSong()">Stop</button>';
   document.body.appendChild(bar);
+  // Start immediately inside the user-gesture stack (critical for browsers)
   var p=_eggAudio.play();
-  if(p&&p.catch) p.catch(function(){
-    if(bar) bar.querySelector('.egg-player-sub').textContent='Click Stop, then Shift+click Help again if autoplay is blocked';
-  });
+  if(p&&p.then){
+    p.then(function(){ _eggSetPlayerSub('Now playing \u00b7 press Stop anytime'); })
+     .catch(function(){ _eggSetPlayerSub('Press green Play to start (browser blocked autoplay)'); });
+  }
+  return t;
+}
+function resumeEggSong(){
+  if(!_eggAudio){
+    playEggSong();
+    return;
+  }
+  var p=_eggAudio.play();
+  if(p&&p.then){
+    p.then(function(){ _eggSetPlayerSub('Now playing \u00b7 press Stop anytime'); })
+     .catch(function(err){ _eggSetPlayerSub('Play failed: '+(err&&err.message?err.message:'blocked')); });
+  }
 }
 function triggerHelpBoothEgg(){
   var old=document.getElementById('eggBooth');
@@ -4706,15 +4747,29 @@ function triggerHelpBoothEgg(){
   var modal=document.createElement('div');
   modal.id='eggBooth';
   modal.className='modal-bg';
-  modal.innerHTML='<div class="modal" style="width:400px"><div class="modal-hd"><h3>&#127911; Secret DJ Booth</h3><button class="modal-close" onclick="document.getElementById(\'eggBooth\').remove()">&#10005;</button></div><div class="modal-body" style="font-size:12px;line-height:1.55;color:var(--ink2)"><p style="margin:0 0 8px">You found the booth behind <b>Help &amp; Feedback</b> (Shift+click).</p><p style="margin:0 0 8px">Now spinning: <b>'+(track?track.title:'\u2014')+'</b></p><p style="margin:0 0 8px">Tonight\u2019s vibe check: <b>'+shows+'</b> shows already picking up bottle service on the Forecast board.</p><p style="margin:0;color:var(--ink3);font-size:11px">Use the red <b>Stop</b> button (bottom-right) whenever you want silence.</p></div><div class="modal-foot"><button class="btn-cancel" onclick="stopEggSong()">Stop song</button><button class="btn-save" onclick="document.getElementById(\'eggBooth\').remove();triggerDiscoEgg()">Hit the lights</button></div></div>';
+  modal.innerHTML='<div class="modal" style="width:400px"><div class="modal-hd"><h3>&#127911; Secret DJ Booth</h3><button class="modal-close" onclick="document.getElementById(\'eggBooth\').remove()">&#10005;</button></div><div class="modal-body" style="font-size:12px;line-height:1.55;color:var(--ink2)"><p style="margin:0 0 8px">You found the booth behind <b>Help &amp; Feedback</b> (Shift+click).</p><p style="margin:0 0 8px">Track: <b>'+(track?track.title:'\u2014')+'</b></p><p style="margin:0 0 8px">Tonight\u2019s vibe check: <b>'+shows+'</b> shows already picking up bottle service.</p><p style="margin:0;color:var(--ink3);font-size:11px">If you hear nothing, hit <b>Play song</b> below (some browsers block autoplay on large files).</p></div><div class="modal-foot"><button class="btn-save" onclick="resumeEggSong()">Play song</button><button class="btn-cancel" onclick="stopEggSong()">Stop</button><button class="btn-save" onclick="document.getElementById(\'eggBooth\').remove();triggerDiscoEgg()">Hit the lights</button></div></div>';
   modal.addEventListener('click',function(e){ if(e.target===modal) modal.remove(); });
   document.body.appendChild(modal);
 }
+function _wireHelpEggClick(){
+  var btn=document.getElementById('sbHelpBtn');
+  if(!btn || btn._eggWired) return;
+  btn._eggWired=true;
+  btn.addEventListener('click', function(e){
+    if(e.shiftKey || e.altKey){
+      e.preventDefault();
+      e.stopPropagation();
+      triggerHelpBoothEgg();
+    }
+  }, true);
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', _wireHelpEggClick);
+else _wireHelpEggClick();
 function renderHelpFaq(query){
   var qs=(query||'').trim().toLowerCase();
   if(qs==='neos forever' || qs==='afterparty'){
     var box=document.getElementById('helpFaqList');
-    if(box) box.innerHTML='<div class="help-q">Easter egg unlocked</div><div class="help-a">Casa Neos never sleeps. Shift+click <b>Help &amp; Feedback</b> to open the secret DJ booth and start a random booth track (Stop anytime). Or tap <b>Built with &#9835; in Miami</b> five times for Afterparty Mode.</div>';
+    if(box) box.innerHTML='<div class="help-q">Easter egg unlocked</div><div class="help-a">Casa Neos never sleeps. Shift+click <b>Help &amp; Feedback</b> for the secret DJ booth + song. If audio is blocked, press <b>Play song</b> in the booth. Or tap <b>Built with &#9835; in Miami</b> five times for Afterparty Mode.</div>';
     return;
   }
   var list = qs
