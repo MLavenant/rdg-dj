@@ -285,6 +285,36 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .egg-player-sub{font-size:9px;color:rgba(255,255,255,.65);margin-top:2px}
 .egg-player-stop{border:none;border-radius:999px;padding:7px 12px;font-size:11px;font-weight:800;cursor:pointer;background:#ef4444;color:#fff;font-family:inherit;flex-shrink:0}
 .egg-player-stop:hover{filter:brightness(1.08)}
+.djb-modal .modal{width:min(920px,96vw);max-width:96vw;background:#12101a;color:#f3f0ff;border:1px solid #2a2438}
+.djb-modal .modal-hd{background:#1a1624;border-bottom:1px solid #2a2438;color:#fff}
+.djb-modal .modal-hd h3{color:#fff}
+.djb-modal .modal-close{color:#ccc}
+.djb-modal .modal-foot{background:#1a1624;border-top:1px solid #2a2438}
+.djb-wrap{display:grid;grid-template-columns:1fr 110px 1fr;gap:12px;padding:4px 0 8px}
+.djb-deck{background:#1c1828;border:1px solid #342c48;border-radius:14px;padding:12px}
+.djb-deck-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.djb-deck-name{font-size:12px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#c4b5fd}
+.djb-deck.a .djb-deck-name{color:#67e8f9}
+.djb-deck.b .djb-deck-name{color:#f9a8d4}
+.djb-track{font-size:11px;font-weight:700;color:#e9e4ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:8px}
+.djb-progress{width:100%;accent-color:#a78bfa;margin:4px 0 8px}
+.djb-time{display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;margin-top:-4px;margin-bottom:8px}
+.djb-btns{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.djb-btn{border:none;border-radius:8px;padding:7px 10px;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;background:#312848;color:#fff}
+.djb-btn:hover{filter:brightness(1.1)}
+.djb-btn.play{background:#16a34a}
+.djb-btn.stop{background:#dc2626}
+.djb-sliders{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
+.djb-slider label{display:block;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#9ca3af;margin-bottom:3px}
+.djb-slider input[type=range]{width:100%;accent-color:#a78bfa}
+.djb-center{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:8px 4px}
+.djb-xf-lbl{font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#c4b5fd}
+.djb-xf{writing-mode:bt-lr;-webkit-appearance:slider-vertical;appearance:slider-vertical;width:28px;height:160px;accent-color:#fbbf24}
+.djb-master{width:100%}
+.djb-vu{width:100%;height:36px;border-radius:8px;background:#0b0a10;overflow:hidden;display:flex;align-items:flex-end;gap:2px;padding:4px}
+.djb-vu i{flex:1;display:block;background:linear-gradient(180deg,#22c55e,#eab308,#ef4444);border-radius:2px 2px 0 0;min-height:2px;opacity:.85}
+.djb-hint{font-size:10px;color:#9ca3af;text-align:center;margin-top:6px;line-height:1.4}
+@media (max-width:780px){.djb-wrap{grid-template-columns:1fr;}.djb-xf{writing-mode:horizontal-tb;-webkit-appearance:auto;appearance:auto;width:100%;height:28px}}
 .fcast-tbl-wrap{overflow-x:auto}
 .fcast-tbl{border-collapse:collapse;font-size:11px;width:100%}
 .fcast-tbl th{background:var(--head-bg,#f8f8f8);padding:7px 10px;text-align:center;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;border-bottom:1.5px solid var(--hair)}
@@ -3490,7 +3520,7 @@ function renderForecast(venueIdx, view){
       : String(curV||'VENUE').toUpperCase();
 
     // ============================================================
-    // 1) RESULTS — 4-show horizontal Actual vs Target
+    // 1) RESULTS ? 4-show horizontal Actual vs Target
     // ============================================================
     h += '<div class="fcast-chart-wrap" style="padding:0;overflow:hidden">';
     if(!viewRows.length){
@@ -4644,13 +4674,15 @@ var HELP_FAQ = [
 ];
 
 
-/* ---- Help & Feedback easter eggs ---- */
+/* ---- Help & Feedback easter eggs + Virtual DJ Booth ---- */
 var _helpEggClicks = 0;
 var _helpEggTimer = null;
 var _eggAudio = null;
 var EGG_PLAYLIST = [
   { title: 'Hugo M. \u2014 Baoli Miami 2012', src: 'assets/easter/hugo-baoli-miami-2012.mp3' }
 ];
+var _djb = null; /* mixer state */
+
 function openHelp(ev){
   document.getElementById('helpModal').classList.remove('hidden');
   renderHelpFaq('');
@@ -4679,6 +4711,7 @@ function _eggTrackUrl(src){
   try{ return new URL(src, window.location.href).href; }catch(e){ return src; }
 }
 function stopEggSong(){
+  closeDjBooth(true);
   if(_eggAudio){
     try{ _eggAudio.pause(); _eggAudio.removeAttribute('src'); _eggAudio.load(); }catch(e){}
     _eggAudio=null;
@@ -4694,59 +4727,257 @@ function _eggSetPlayerSub(msg){
   }
 }
 function playEggSong(track){
+  /* legacy mini player kept as fallback; booth uses Web Audio mixer */
   var t=track||_eggPickTrack();
   if(!t) return null;
-  stopEggSong();
-  var url=_eggTrackUrl(t.src);
-  _eggAudio=new Audio();
-  _eggAudio.preload='auto';
-  _eggAudio.volume=0.9;
-  _eggAudio.src=url;
-  _eggAudio.addEventListener('ended', stopEggSong);
-  _eggAudio.addEventListener('error', function(){
-    _eggSetPlayerSub('Could not load track \u2014 check network, then press Play');
-  });
-  _eggAudio.addEventListener('playing', function(){
-    _eggSetPlayerSub('Now playing \u00b7 press Stop anytime');
-  });
-  var bar=document.createElement('div');
-  bar.id='eggPlayer';
-  bar.className='egg-player';
-  bar.innerHTML='<div class="egg-player-meta"><div class="egg-player-title">&#9835; '+(t.title||'Secret track')+'</div><div class="egg-player-sub">Loading track\u2026</div></div>'
-    +'<button type="button" class="egg-player-stop" style="background:#22c55e" onclick="resumeEggSong()">Play</button>'
-    +'<button type="button" class="egg-player-stop" onclick="stopEggSong()">Stop</button>';
-  document.body.appendChild(bar);
-  // Start immediately inside the user-gesture stack (critical for browsers)
-  var p=_eggAudio.play();
-  if(p&&p.then){
-    p.then(function(){ _eggSetPlayerSub('Now playing \u00b7 press Stop anytime'); })
-     .catch(function(){ _eggSetPlayerSub('Press green Play to start (browser blocked autoplay)'); });
+  if(_eggAudio){
+    try{ _eggAudio.pause(); }catch(e){}
+    _eggAudio=null;
   }
+  var bar=document.getElementById('eggPlayer');
+  if(bar) bar.remove();
   return t;
 }
 function resumeEggSong(){
-  if(!_eggAudio){
-    playEggSong();
-    return;
-  }
-  var p=_eggAudio.play();
-  if(p&&p.then){
-    p.then(function(){ _eggSetPlayerSub('Now playing \u00b7 press Stop anytime'); })
-     .catch(function(err){ _eggSetPlayerSub('Play failed: '+(err&&err.message?err.message:'blocked')); });
-  }
+  if(_djb){ djbPlay('a'); djbPlay('b'); return; }
+  openDjBooth();
 }
-function triggerHelpBoothEgg(){
+
+function _djbFmt(t){
+  if(!isFinite(t) || t<0) return '0:00';
+  var m=Math.floor(t/60), sec=Math.floor(t%60);
+  return m+':'+(sec<10?'0':'')+sec;
+}
+function _djbMakeDeckAudio(url){
+  var a=new Audio();
+  a.crossOrigin='anonymous';
+  a.preload='auto';
+  a.src=url;
+  a.loop=true;
+  return a;
+}
+function _djbBuildGraph(ctx, audioEl){
+  var src=ctx.createMediaElementSource(audioEl);
+  var vol=ctx.createGain(); vol.gain.value=0.85;
+  var low=ctx.createBiquadFilter(); low.type='lowshelf'; low.frequency.value=320; low.gain.value=0;
+  var mid=ctx.createBiquadFilter(); mid.type='peaking'; mid.frequency.value=1000; mid.Q.value=0.7; mid.gain.value=0;
+  var high=ctx.createBiquadFilter(); high.type='highshelf'; high.frequency.value=3200; high.gain.value=0;
+  var filter=ctx.createBiquadFilter(); filter.type='lowpass'; filter.frequency.value=18000; filter.Q.value=0.7;
+  var xf=ctx.createGain(); xf.gain.value=0.707;
+  src.connect(vol); vol.connect(low); low.connect(mid); mid.connect(high); high.connect(filter); filter.connect(xf);
+  return { src:src, vol:vol, low:low, mid:mid, high:high, filter:filter, xf:xf, audio:audioEl };
+}
+function _djbApplyCrossfader(v){
+  if(!_djb) return;
+  /* equal-power crossfade: 0 = full A, 1 = full B */
+  var x=Math.max(0, Math.min(1, Number(v)));
+  _djb.xfPos=x;
+  _djb.a.xf.gain.value=Math.cos(x*0.5*Math.PI);
+  _djb.b.xf.gain.value=Math.sin(x*0.5*Math.PI);
+  var el=document.getElementById('djbXfVal');
+  if(el) el.textContent = x<0.45?'A':(x>0.55?'B':'CENTER');
+}
+function _djbTick(){
+  if(!_djb || !_djb.open) return;
+  ['a','b'].forEach(function(id){
+    var d=_djb[id];
+    var prog=document.getElementById('djbProg'+id.toUpperCase());
+    var t0=document.getElementById('djbT0'+id.toUpperCase());
+    var t1=document.getElementById('djbT1'+id.toUpperCase());
+    if(prog && d.audio.duration){
+      prog.max=d.audio.duration;
+      if(!_djb.scrubbing) prog.value=d.audio.currentTime||0;
+    }
+    if(t0) t0.textContent=_djbFmt(d.audio.currentTime||0);
+    if(t1) t1.textContent=_djbFmt(d.audio.duration||0);
+  });
+  if(_djb.analyser && _djb.vuEls){
+    var data=new Uint8Array(_djb.analyser.frequencyBinCount);
+    _djb.analyser.getByteFrequencyData(data);
+    var n=_djb.vuEls.length;
+    for(var i=0;i<n;i++){
+      var idx=Math.floor(i/n*data.length);
+      var h=Math.max(4, Math.round(data[idx]/255*100));
+      _djb.vuEls[i].style.height=h+'%';
+    }
+  }
+  _djb.raf=requestAnimationFrame(_djbTick);
+}
+function djbPlay(which){
+  if(!_djb) return;
+  var d=_djb[which];
+  if(!_djb.ctx) return;
+  if(_djb.ctx.state==='suspended') _djb.ctx.resume();
+  var p=d.audio.play();
+  if(p&&p.catch) p.catch(function(){});
+  var btn=document.getElementById('djbPlay'+which.toUpperCase());
+  if(btn) btn.textContent='Pause';
+}
+function djbPause(which){
+  if(!_djb) return;
+  _djb[which].audio.pause();
+  var btn=document.getElementById('djbPlay'+which.toUpperCase());
+  if(btn) btn.textContent='Play';
+}
+function djbToggle(which){
+  if(!_djb) return;
+  if(_djb[which].audio.paused) djbPlay(which); else djbPause(which);
+}
+function djbCue(which){
+  if(!_djb) return;
+  var d=_djb[which];
+  d.audio.currentTime=0;
+  djbPlay(which);
+}
+function djbSetVol(which, v){
+  if(!_djb) return;
+  _djb[which].vol.gain.value=Number(v);
+}
+function djbSetPitch(which, v){
+  if(!_djb) return;
+  _djb[which].audio.playbackRate=Number(v);
+  var el=document.getElementById('djbPitchVal'+which.toUpperCase());
+  if(el) el.textContent=Number(v).toFixed(2)+'x';
+}
+function djbSetEq(which, band, v){
+  if(!_djb) return;
+  _djb[which][band].gain.value=Number(v);
+}
+function djbSetFilter(which, v){
+  if(!_djb) return;
+  /* log scale ~200Hz to 18kHz */
+  var t=Number(v);
+  var freq=200*Math.pow(18000/200, t);
+  _djb[which].filter.frequency.value=freq;
+}
+function djbSetMaster(v){
+  if(!_djb||!_djb.master) return;
+  _djb.master.gain.value=Number(v);
+}
+function djbSeek(which, v){
+  if(!_djb) return;
+  _djb[which].audio.currentTime=Number(v);
+}
+function closeDjBooth(silent){
+  if(_djb){
+    _djb.open=false;
+    if(_djb.raf) cancelAnimationFrame(_djb.raf);
+    try{ if(_djb.a) _djb.a.audio.pause(); }catch(e){}
+    try{ if(_djb.b) _djb.b.audio.pause(); }catch(e){}
+    try{ if(_djb.ctx) _djb.ctx.close(); }catch(e){}
+    _djb=null;
+  }
+  var m=document.getElementById('eggBooth');
+  if(m) m.remove();
+  var bar=document.getElementById('eggPlayer');
+  if(bar && !silent) bar.remove();
+}
+function openDjBooth(){
+  stopEggSong();
+  var track=_eggPickTrack();
+  if(!track){ alert('No easter track found.'); return; }
+  var url=_eggTrackUrl(track.src);
   var old=document.getElementById('eggBooth');
   if(old) old.remove();
-  var track=_eggPickTrack();
-  playEggSong(track);
-  var shows=(typeof FORECAST_DATA!=='undefined'?FORECAST_DATA:[]).filter(function(e){return (e.totalRevenue||0)>0;}).length;
+
+  var AC=window.AudioContext||window.webkitAudioContext;
+  var ctx=new AC();
+  var audioA=_djbMakeDeckAudio(url);
+  var audioB=_djbMakeDeckAudio(url);
+  /* Offset deck B a bit so mixing feels different when both play */
+  audioB.addEventListener('loadedmetadata', function(){
+    try{ audioB.currentTime=Math.min(32, (audioB.duration||60)*0.12); }catch(e){}
+  }, {once:true});
+
+  var deckA=_djbBuildGraph(ctx, audioA);
+  var deckB=_djbBuildGraph(ctx, audioB);
+  var master=ctx.createGain(); master.gain.value=0.9;
+  var analyser=ctx.createAnalyser(); analyser.fftSize=64;
+  deckA.xf.connect(master);
+  deckB.xf.connect(master);
+  master.connect(analyser);
+  analyser.connect(ctx.destination);
+
+  _djb={ open:true, ctx:ctx, a:deckA, b:deckB, master:master, analyser:analyser, xfPos:0.5, scrubbing:false, raf:0, track:track };
+
   var modal=document.createElement('div');
   modal.id='eggBooth';
-  modal.className='modal-bg';
-  modal.innerHTML='<div class="modal" style="width:400px"><div class="modal-hd"><h3>&#127911; Secret DJ Booth</h3><button class="modal-close" onclick="document.getElementById(\'eggBooth\').remove()">&#10005;</button></div><div class="modal-body" style="font-size:12px;line-height:1.55;color:var(--ink2)"><p style="margin:0 0 8px">You found the booth behind <b>Help &amp; Feedback</b> (Shift+click).</p><p style="margin:0 0 8px">Track: <b>'+(track?track.title:'\u2014')+'</b></p><p style="margin:0 0 8px">Tonight\u2019s vibe check: <b>'+shows+'</b> shows already picking up bottle service.</p><p style="margin:0;color:var(--ink3);font-size:11px">If you hear nothing, hit <b>Play song</b> below (some browsers block autoplay on large files).</p></div><div class="modal-foot"><button class="btn-save" onclick="resumeEggSong()">Play song</button><button class="btn-cancel" onclick="stopEggSong()">Stop</button><button class="btn-save" onclick="document.getElementById(\'eggBooth\').remove();triggerDiscoEgg()">Hit the lights</button></div></div>';
-  modal.addEventListener('click',function(e){ if(e.target===modal) modal.remove(); });
+  modal.className='modal-bg djb-modal';
+  modal.innerHTML=
+    '<div class="modal">'+
+      '<div class="modal-hd"><h3>&#127911; Virtual DJ Booth</h3><button class="modal-close" onclick="closeDjBooth()">&#10005;</button></div>'+
+      '<div class="modal-body">'+
+        '<div class="djb-wrap">'+
+          '<div class="djb-deck a">'+
+            '<div class="djb-deck-hd"><div class="djb-deck-name">Deck A</div><div style="font-size:10px;color:#67e8f9">LEFT</div></div>'+
+            '<div class="djb-track">'+track.title+'</div>'+
+            '<input class="djb-progress" id="djbProgA" type="range" min="0" max="100" step="0.1" value="0" oninput="_djb.scrubbing=true;djbSeek(\'a\',this.value)" onchange="_djb.scrubbing=false">'+
+            '<div class="djb-time"><span id="djbT0A">0:00</span><span id="djbT1A">0:00</span></div>'+
+            '<div class="djb-btns">'+
+              '<button class="djb-btn play" id="djbPlayA" onclick="djbToggle(\'a\')">Play</button>'+
+              '<button class="djb-btn" onclick="djbCue(\'a\')">Cue</button>'+
+              '<button class="djb-btn stop" onclick="djbPause(\'a\')">Stop</button>'+
+            '</div>'+
+            '<div class="djb-sliders">'+
+              '<div class="djb-slider"><label>Volume</label><input type="range" min="0" max="1" step="0.01" value="0.85" oninput="djbSetVol(\'a\',this.value)"></div>'+
+              '<div class="djb-slider"><label>Pitch <span id="djbPitchValA">1.00x</span></label><input type="range" min="0.85" max="1.15" step="0.01" value="1" oninput="djbSetPitch(\'a\',this.value)"></div>'+
+              '<div class="djb-slider"><label>Bass</label><input type="range" min="-12" max="12" step="0.5" value="0" oninput="djbSetEq(\'a\',\'low\',this.value)"></div>'+
+              '<div class="djb-slider"><label>Mid</label><input type="range" min="-12" max="12" step="0.5" value="0" oninput="djbSetEq(\'a\',\'mid\',this.value)"></div>'+
+              '<div class="djb-slider"><label>Treble</label><input type="range" min="-12" max="12" step="0.5" value="0" oninput="djbSetEq(\'a\',\'high\',this.value)"></div>'+
+              '<div class="djb-slider"><label>Filter</label><input type="range" min="0" max="1" step="0.01" value="1" oninput="djbSetFilter(\'a\',this.value)"></div>'+
+            '</div>'+
+          '</div>'+
+          '<div class="djb-center">'+
+            '<div class="djb-xf-lbl">Crossfader</div>'+
+            '<div id="djbXfVal" style="font-size:11px;font-weight:900;color:#fbbf24">CENTER</div>'+
+            '<input class="djb-xf" type="range" min="0" max="1" step="0.01" value="0.5" oninput="_djbApplyCrossfader(this.value)" orient="vertical">'+
+            '<div class="djb-slider djb-master"><label>Master</label><input type="range" min="0" max="1" step="0.01" value="0.9" oninput="djbSetMaster(this.value)"></div>'+
+            '<div class="djb-vu" id="djbVu"></div>'+
+          '</div>'+
+          '<div class="djb-deck b">'+
+            '<div class="djb-deck-hd"><div class="djb-deck-name">Deck B</div><div style="font-size:10px;color:#f9a8d4">RIGHT</div></div>'+
+            '<div class="djb-track">'+track.title+'</div>'+
+            '<input class="djb-progress" id="djbProgB" type="range" min="0" max="100" step="0.1" value="0" oninput="_djb.scrubbing=true;djbSeek(\'b\',this.value)" onchange="_djb.scrubbing=false">'+
+            '<div class="djb-time"><span id="djbT0B">0:00</span><span id="djbT1B">0:00</span></div>'+
+            '<div class="djb-btns">'+
+              '<button class="djb-btn play" id="djbPlayB" onclick="djbToggle(\'b\')">Play</button>'+
+              '<button class="djb-btn" onclick="djbCue(\'b\')">Cue</button>'+
+              '<button class="djb-btn stop" onclick="djbPause(\'b\')">Stop</button>'+
+            '</div>'+
+            '<div class="djb-sliders">'+
+              '<div class="djb-slider"><label>Volume</label><input type="range" min="0" max="1" step="0.01" value="0.85" oninput="djbSetVol(\'b\',this.value)"></div>'+
+              '<div class="djb-slider"><label>Pitch <span id="djbPitchValB">1.00x</span></label><input type="range" min="0.85" max="1.15" step="0.01" value="1" oninput="djbSetPitch(\'b\',this.value)"></div>'+
+              '<div class="djb-slider"><label>Bass</label><input type="range" min="-12" max="12" step="0.5" value="0" oninput="djbSetEq(\'b\',\'low\',this.value)"></div>'+
+              '<div class="djb-slider"><label>Mid</label><input type="range" min="-12" max="12" step="0.5" value="0" oninput="djbSetEq(\'b\',\'mid\',this.value)"></div>'+
+              '<div class="djb-slider"><label>Treble</label><input type="range" min="-12" max="12" step="0.5" value="0" oninput="djbSetEq(\'b\',\'high\',this.value)"></div>'+
+              '<div class="djb-slider"><label>Filter</label><input type="range" min="0" max="1" step="0.01" value="1" oninput="djbSetFilter(\'b\',this.value)"></div>'+
+            '</div>'+
+          '</div>'+
+        '</div>'+
+        '<div class="djb-hint">Mix tip: start Deck A, nudge Deck B pitch, sweep the crossfader, and ride bass/filter for drops. Same track on both decks \u2014 your mix, your booth.</div>'+
+      '</div>'+
+      '<div class="modal-foot">'+
+        '<button class="btn-cancel" onclick="closeDjBooth()">Close booth</button>'+
+        '<button class="btn-save" onclick="djbPlay(\'a\');djbPlay(\'b\')">Start both decks</button>'+
+        '<button class="btn-save" onclick="triggerDiscoEgg()">Hit the lights</button>'+
+      '</div>'+
+    '</div>';
+
+  modal.addEventListener('click', function(e){ if(e.target===modal) closeDjBooth(); });
   document.body.appendChild(modal);
+
+  var vu=document.getElementById('djbVu');
+  _djb.vuEls=[];
+  for(var i=0;i<16;i++){ var bar=document.createElement('i'); bar.style.height='8%'; vu.appendChild(bar); _djb.vuEls.push(bar); }
+
+  _djbApplyCrossfader(0.5);
+  _djbTick();
+
+  /* Auto-start deck A inside user gesture */
+  ctx.resume().then(function(){ djbPlay('a'); }).catch(function(){});
+}
+function triggerHelpBoothEgg(){
+  openDjBooth();
 }
 function _wireHelpEggClick(){
   var btn=document.getElementById('sbHelpBtn');
@@ -4764,11 +4995,12 @@ function _wireHelpEggClick(){
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', _wireHelpEggClick);
 else _wireHelpEggClick();
+
 function renderHelpFaq(query){
   var qs=(query||'').trim().toLowerCase();
   if(qs==='neos forever' || qs==='afterparty'){
     var box=document.getElementById('helpFaqList');
-    if(box) box.innerHTML='<div class="help-q">Easter egg unlocked</div><div class="help-a">Casa Neos never sleeps. Shift+click <b>Help &amp; Feedback</b> for the secret DJ booth + song. If audio is blocked, press <b>Play song</b> in the booth. Or tap <b>Built with &#9835; in Miami</b> five times for Afterparty Mode.</div>';
+    if(box) box.innerHTML='<div class="help-q">Easter egg unlocked</div><div class="help-a">Casa Neos never sleeps. Shift+click <b>Help &amp; Feedback</b> to open the <b>Virtual DJ Booth</b> and mix Baoli Miami 2012 (2 decks, EQ, crossfader). Or tap <b>Built with &#9835; in Miami</b> five times for Afterparty Mode.</div>';
     return;
   }
   var list = qs
