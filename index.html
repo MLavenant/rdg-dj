@@ -3481,8 +3481,9 @@ function renderForecast(venueIdx, view){
     h += '</div>';
 
     var upcoming = events.filter(function(e){ return _daysTo(e.date)>=-1; });
-    // Horizontal booking chart: next 4 performances only (clear Actual vs Target view)
-    var viewRows = upcoming.slice(0, 4);
+    // Horizontal booking chart: BC = next 4, Lounge & MILA = next 8
+    var chartLimit = (curV==='Casa Neos Beach Club') ? 4 : 8;
+    var viewRows = upcoming.slice(0, chartLimit);
     var venueShort = (curV==='Casa Neos Beach Club') ? 'CASA NEOS BC'
       : (curV==='Casa Neos Lounge') ? 'CASA NEOS LOUNGE'
       : (curV==='MILA Lounge') ? 'MILA LOUNGE'
