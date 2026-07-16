@@ -251,29 +251,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .fcast-wrap{padding:14px 16px;display:flex;flex-direction:column;gap:18px}
 .fcast-chart-wrap{background:var(--card);border-radius:12px;padding:16px;overflow-x:auto}
 .fcast-chart-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:12px}
-.fcast-bars{display:flex;flex-direction:column;gap:10px;padding:4px 16px 14px}
-.fcast-hbar-row{display:grid;grid-template-columns:minmax(120px,180px) 1fr minmax(88px,110px);gap:12px;align-items:center;padding:8px 0;border-bottom:0.5px solid var(--hair)}
-.fcast-hbar-meta{min-width:0}
-.fcast-hbar-name{font-size:12px;font-weight:800;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.fcast-hbar-sub{font-size:10px;color:var(--ink4);margin-top:2px}
-.fcast-hbar-tracks{display:flex;flex-direction:column;gap:5px;min-width:0}
-.fcast-hbar-track{display:grid;grid-template-columns:54px 1fr 64px;gap:8px;align-items:center}
-.fcast-hbar-lbl{font-size:9px;font-weight:700;color:var(--ink4);text-transform:uppercase}
-.fcast-hbar-rail{height:12px;background:rgba(0,0,0,.05);border-radius:6px;overflow:hidden;position:relative}
-.fcast-hbar-fill{height:100%;border-radius:6px;min-width:2px;transition:width .35s ease}
-.fcast-bar-tgt{background:#E8B923}
-.fcast-bar-act-hi{background:#22c55e}
-.fcast-bar-act-lo{background:#ef4444}
-.fcast-bar-act-zero{background:#94a3b8}
-.fcast-hbar-amt{font-size:11px;font-weight:800;text-align:right;font-variant-numeric:tabular-nums;color:var(--ink2)}
-.fcast-hbar-amt.tgt{color:#7d5a00}
-.fcast-hbar-amt.act-hi{color:#15803d}
-.fcast-hbar-amt.act-lo{color:#dc2626}
-.fcast-hbar-pct{text-align:right}
-.fcast-hbar-pct b{display:block;font-size:16px;font-weight:900;letter-spacing:-.3px;line-height:1.1}
-.fcast-hbar-pct span{font-size:9px;color:var(--ink4);font-weight:700;text-transform:uppercase}
-.fcast-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:10px;color:var(--ink3);padding:0 16px 10px}
-.fcast-legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.fcast-bars{display:flex;flex-direction:column;gap:18px;padding:8px 20px 16px}
+.fcast-perf-title{text-align:center;font-size:13px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);padding:14px 16px 4px}
+.fcast-hbar-row{display:grid;grid-template-columns:140px 1fr;gap:14px;align-items:center;padding:4px 0}
+.fcast-hbar-meta{min-width:0;border-right:1px solid var(--hair);padding-right:10px}
+.fcast-hbar-name{font-size:12px;font-weight:900;color:#111;line-height:1.15;text-transform:uppercase}
+.fcast-hbar-sub{font-size:11px;font-weight:700;color:#111;margin-top:2px}
+.fcast-hbar-pct-inline{font-size:10px;font-weight:800;color:var(--ink3);margin-top:3px}
+.fcast-hbar-tracks{display:flex;flex-direction:column;gap:7px;min-width:0;padding-right:8px}
+.fcast-hbar-track{display:flex;align-items:center;gap:8px;min-width:0}
+.fcast-hbar-rail{flex:1;height:18px;background:transparent;border-radius:2px;overflow:visible;position:relative;min-width:0}
+.fcast-hbar-fill{height:100%;border-radius:2px;min-width:0;transition:width .35s ease}
+.fcast-bar-tgt{background:#E8A317}
+.fcast-bar-act{background:#C62828}
+.fcast-bar-act-hi{background:#2E7D32}
+.fcast-bar-act-lo{background:#C62828}
+.fcast-bar-act-zero{background:transparent}
+.fcast-hbar-amt{font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;color:#111;white-space:nowrap;min-width:72px}
+.fcast-legend{display:flex;gap:16px;justify-content:flex-end;flex-wrap:wrap;font-size:11px;font-weight:800;color:#333;padding:4px 20px 14px;text-transform:uppercase}
+.fcast-legend i{display:inline-block;width:12px;height:12px;border-radius:2px;margin-right:6px;vertical-align:-2px}
 .fcast-pill-row{display:flex;gap:6px;flex-wrap:wrap;padding:0 16px 10px}
 .fcast-view-pill{font-size:10px;font-weight:800;padding:5px 10px;border-radius:999px;border:0.5px solid var(--rule);background:var(--card2);cursor:pointer;font-family:inherit;color:var(--ink2)}
 .fcast-view-pill.on{background:#1d4ed8;color:#fff;border-color:#1d4ed8}
@@ -3331,33 +3327,26 @@ function _fcastActColor(act, tgt){
   if(!tgt) return 'fcast-bar-act-hi';
   return act >= tgt ? 'fcast-bar-act-hi' : 'fcast-bar-act-lo';
 }
-function _fcastBarChartHtml(rows){
+function _fcastBarChartHtml(rows, venueTitle){
   var maxV = 1;
   rows.forEach(function(r){ maxV = Math.max(maxV, r.act||0, r.tgt||0); });
-  var h = '<div class="fcast-legend">'
-    + '<span><i style="background:#E8B923"></i>BS Target</span>'
-    + '<span><i style="background:#22c55e"></i>Actual \u2265 target</span>'
-    + '<span><i style="background:#ef4444"></i>Actual &lt; target</span>'
-    + '</div>';
+  var h = '<div class="fcast-perf-title">'+(venueTitle||'BOOKING PERFORMANCE')+' : ACTUAL VS. TARGET</div>';
   h += '<div class="fcast-bars">';
   rows.forEach(function(r){
     var act = r.act||0, tgt = r.tgt||0;
     var pct = tgt>0 ? Math.round(act/tgt*100) : (act>0?100:0);
-    var pctCol = !act ? '#94a3b8' : (pct>=100 ? '#15803d' : pct>=30 ? '#f59e0b' : '#dc2626');
-    var actCls = _fcastActColor(act, tgt);
-    var tw = Math.max(2, Math.round((tgt/maxV)*100));
-    var aw = Math.max(act?2:0, Math.round((act/maxV)*100));
-    var actAmtCls = !act ? '' : (act>=tgt && tgt ? 'act-hi' : 'act-lo');
+    var actCls = !act ? 'fcast-bar-act-zero' : (tgt && act>=tgt ? 'fcast-bar-act-hi' : 'fcast-bar-act');
+    var tw = Math.max(tgt?3:0, Math.round((tgt/maxV)*100));
+    var aw = Math.max(act?3:0, Math.round((act/maxV)*100));
     h += '<div class="fcast-hbar-row" title="'+(r.tip||'')+'">';
-    h += '<div class="fcast-hbar-meta"><div class="fcast-hbar-name">'+(r.label||'')+'</div><div class="fcast-hbar-sub">'+(r.sub||'')+'</div></div>';
+    h += '<div class="fcast-hbar-meta"><div class="fcast-hbar-name">'+(r.label||'')+'</div><div class="fcast-hbar-sub">'+(r.dateLabel||r.sub||'')+'</div><div class="fcast-hbar-pct-inline">'+pct+'% complete</div></div>';
     h += '<div class="fcast-hbar-tracks">';
-    h += '<div class="fcast-hbar-track"><div class="fcast-hbar-lbl">Target</div><div class="fcast-hbar-rail"><div class="fcast-hbar-fill fcast-bar-tgt" style="width:'+tw+'%"></div></div><div class="fcast-hbar-amt tgt">'+(tgt?'$'+tgt.toLocaleString():'\u2014')+'</div></div>';
-    h += '<div class="fcast-hbar-track"><div class="fcast-hbar-lbl">Actual</div><div class="fcast-hbar-rail"><div class="fcast-hbar-fill '+actCls+'" style="width:'+aw+'%"></div></div><div class="fcast-hbar-amt '+actAmtCls+'">'+(act?'$'+act.toLocaleString():'$0')+'</div></div>';
-    h += '</div>';
-    h += '<div class="fcast-hbar-pct"><b style="color:'+pctCol+'">'+pct+'%</b><span>complete</span></div>';
-    h += '</div>';
+    h += '<div class="fcast-hbar-track"><div class="fcast-hbar-rail"><div class="fcast-hbar-fill '+actCls+'" style="width:'+aw+'%"></div></div><div class="fcast-hbar-amt">$'+(act?act.toLocaleString():'0')+'</div></div>';
+    h += '<div class="fcast-hbar-track"><div class="fcast-hbar-rail"><div class="fcast-hbar-fill fcast-bar-tgt" style="width:'+tw+'%"></div></div><div class="fcast-hbar-amt">$'+(tgt?tgt.toLocaleString():'0')+'</div></div>';
+    h += '</div></div>';
   });
   h += '</div>';
+  h += '<div class="fcast-legend"><span><i style="background:#C62828"></i>Actual</span><span><i style="background:#E8A317"></i>Target</span></div>';
   return h;
 }
 function _fcastPickupPct(dlt, tgt){
@@ -3491,41 +3480,39 @@ function renderForecast(venueIdx, view){
     });
     h += '</div>';
 
-    // Range pills
-    h += '<div class="fcast-pill-row">';
-    h += '<button class="fcast-view-pill'+(_fcastRangeMode==='3d'?' on':'')+'" onclick="setFcastRange(\'3d\')">Next 3 days</button>';
-    h += '<button class="fcast-view-pill'+(_fcastRangeMode==='all'?' on':'')+'" onclick="setFcastRange(\'all\')">All upcoming</button>';
-    h += '</div>';
-
     var upcoming = events.filter(function(e){ return _daysTo(e.date)>=-1; });
-    var viewRows = (_fcastRangeMode==='3d')
-      ? upcoming.filter(function(e){ var d=_daysTo(e.date); return d>=-1 && d<=3; })
-      : upcoming.slice();
+    // Horizontal booking chart: next 4 performances only (clear Actual vs Target view)
+    var viewRows = upcoming.slice(0, 4);
+    var venueShort = (curV==='Casa Neos Beach Club') ? 'CASA NEOS BC'
+      : (curV==='Casa Neos Lounge') ? 'CASA NEOS LOUNGE'
+      : (curV==='MILA Lounge') ? 'MILA LOUNGE'
+      : String(curV||'VENUE').toUpperCase();
 
     // ============================================================
-    // 1) RESULTS — horizontal bars (stacked vertically) + $ + %
+    // 1) RESULTS — 4-show horizontal Actual vs Target
     // ============================================================
     h += '<div class="fcast-chart-wrap" style="padding:0;overflow:hidden">';
-    h += '<div class="fcast-chart-title" style="padding:12px 16px 0">1. Results &mdash; Actual vs Target</div>';
-    h += '<div style="padding:4px 16px 6px;font-size:10px;color:var(--ink3)">One show per row &middot; yellow target / red-green actual &middot; $ amounts + % complete'+( _fcastRangeMode==='3d' ? ' &middot; Next 3 days' : '')+'</div>';
     if(!viewRows.length){
-      h += '<div style="padding:16px;color:var(--ink3)">No shows in this window.</div>';
+      h += '<div style="padding:16px;color:var(--ink3)">No upcoming shows.</div>';
     } else {
       var chartRows = viewRows.map(function(e){
         var act = e.totalRevenue||0;
         var tgt = e.bsTarget || (function(){ var r=venueRoiLookup(e.venue,e.date,e.djCost||0); return r?r.bsTarget:0; })();
         var dateObj = new Date(e.date+'T12:00:00');
-        var dateFmt = dateObj.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+        var mm = ('0'+(dateObj.getMonth()+1)).slice(-2);
+        var dd = ('0'+dateObj.getDate()).slice(-2);
+        var yyyy = dateObj.getFullYear();
+        var dateLabel = mm+'/'+dd+'/'+yyyy;
         var djLabel = _fcastDjName(e.dj) || 'TBD';
         var pct = tgt>0?Math.round(act/tgt*100):0;
-        return { act:act, tgt:tgt, label:djLabel, sub:dateFmt+' \u00b7 '+_daysTo(e.date)+'d out', tip:djLabel+' \u2014 Actual $'+act.toLocaleString()+' / Target $'+(tgt||0).toLocaleString()+' ('+pct+'%)' };
+        return { act:act, tgt:tgt, label:djLabel, dateLabel:dateLabel, tip:djLabel+' \u2014 Actual $'+act.toLocaleString()+' / Target $'+(tgt||0).toLocaleString()+' ('+pct+'%)' };
       });
-      h += _fcastBarChartHtml(chartRows);
+      h += _fcastBarChartHtml(chartRows, venueShort+' BOOKING PERFORMANCE');
     }
     h += '</div>';
 
     // ============================================================
-    // 2) PICK UP PACE — all performances
+    // 2) PICK UP PACE ? all performances
     // ============================================================
     h += '<div class="fcast-chart-wrap" style="padding:0;overflow:hidden">';
     h += '<div class="fcast-chart-title" style="padding:12px 16px 0">2. Pick up Pace &mdash; How Fast We\u2019re Closing the Gap</div>';
