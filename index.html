@@ -3139,7 +3139,7 @@ var FORECAST_DATA = [
   {"venue":"Casa Neos Lounge","date":"2026-07-18","dj":"BARUT","bookedTables":0,"totalTables":16,"totalRevenue":0,"tierSummary":{"GOLD":{"total":3,"booked":0,"revenue":0},"PLATINUM":{"total":6,"booked":0,"revenue":0},"DIAMOND":{"total":7,"booked":0,"revenue":0}},"hasData":true},
   {"venue":"Casa Neos Lounge","date":"2026-07-19","dj":"AFTERDARK","bookedTables":0,"totalTables":15,"totalRevenue":0,"tierSummary":{"GOLD":{"total":2,"booked":0,"revenue":0},"PLATINUM":{"total":5,"booked":0,"revenue":0},"DIAMOND":{"total":8,"booked":0,"revenue":0}},"hasData":true},
   {"venue":"Casa Neos Lounge","date":"2026-07-23","dj":"BARUT","bookedTables":0,"totalTables":16,"totalRevenue":0,"tierSummary":{"GOLD":{"total":3,"booked":0,"revenue":0},"PLATINUM":{"total":6,"booked":0,"revenue":0},"DIAMOND":{"total":7,"booked":0,"revenue":0}},"hasData":true},
-  {"venue":"Casa Neos Lounge","date":"2026-07-24","dj":"Malóne Morez","bookedTables":0,"totalTables":16,"totalRevenue":0,"tierSummary":{"GOLD":{"total":3,"booked":0,"revenue":0},"PLATINUM":{"total":6,"booked":0,"revenue":0},"DIAMOND":{"total":7,"booked":0,"revenue":0}},"hasData":true},
+  {"venue":"Casa Neos Lounge","date":"2026-07-24","dj":"Malï¿½ne Morez","bookedTables":0,"totalTables":16,"totalRevenue":0,"tierSummary":{"GOLD":{"total":3,"booked":0,"revenue":0},"PLATINUM":{"total":6,"booked":0,"revenue":0},"DIAMOND":{"total":7,"booked":0,"revenue":0}},"hasData":true},
   {"venue":"Casa Neos Lounge","date":"2026-07-25","dj":"AMOG","bookedTables":0,"totalTables":16,"totalRevenue":0,"tierSummary":{"GOLD":{"total":3,"booked":0,"revenue":0},"PLATINUM":{"total":6,"booked":0,"revenue":0},"DIAMOND":{"total":7,"booked":0,"revenue":0}},"hasData":true},
   {"venue":"Casa Neos Lounge","date":"2026-07-26","dj":"AFTERDARK","bookedTables":0,"totalTables":15,"totalRevenue":0,"tierSummary":{"GOLD":{"total":2,"booked":0,"revenue":0},"PLATINUM":{"total":7,"booked":0,"revenue":0},"DIAMOND":{"total":6,"booked":0,"revenue":0}},"hasData":true},
   {"venue":"Casa Neos Lounge","date":"2026-07-30","dj":"BARUT","bookedTables":1,"totalTables":16,"totalRevenue":2000,"tierSummary":{"GOLD":{"total":3,"booked":0,"revenue":0},"PLATINUM":{"total":6,"booked":1,"revenue":2000},"DIAMOND":{"total":7,"booked":0,"revenue":0}},"hasData":true},
@@ -3163,6 +3163,1590 @@ var FORECAST_DATA = [
   {"venue":"Casa Neos Lounge","date":"2026-08-29","dj":"DA MIKE","bookedTables":0,"totalTables":16,"totalRevenue":0,"tierSummary":{"GOLD":{"total":3,"booked":0,"revenue":0},"PLATINUM":{"total":6,"booked":0,"revenue":0},"DIAMOND":{"total":7,"booked":0,"revenue":0}},"hasData":true},
   {"venue":"Casa Neos Lounge","date":"2026-08-30","dj":"AFTERDARK","bookedTables":0,"totalTables":16,"totalRevenue":0,"tierSummary":{"GOLD":{"total":3,"booked":0,"revenue":0},"PLATINUM":{"total":6,"booked":0,"revenue":0},"DIAMOND":{"total":7,"booked":0,"revenue":0}},"hasData":true}
 ];
+
+
+var _fcastActiveVenue = 0;
+var _fcastActiveView = 'venue'; // 'venue' or 'all'
+var FCAST_VENUES = ['Casa Neos Beach Club','MILA Lounge','Casa Neos Lounge'];
+
+function _fmtK(n){ return n>=1000?'$'+(n/1000).toFixed(1)+'k':'$'+n; }
+function _fmtMoney(n){ return n?'$'+n.toLocaleString():'?'; }
+function _daysTo(dateStr){
+  var now = new Date(); now.setHours(0,0,0,0);
+  var d = new Date(dateStr+'T12:00:00'); d.setHours(0,0,0,0);
+  return Math.round((d-now)/86400000);
+}
+
+/* For a forecast event, get fee + dj name from SCHED and compute bsTarget via ROI rules */
+function _fcastEnrich(e){
+  if(e._enriched) return e;
+  // Look up matching SCHED entry for fee and DJ name
+  var matches = SCHED.filter(function(r){ return r.v===e.venue && r.d===e.date; });
+  var match = matches[0];
+  var fee = (match && (match.fee||match.cost)) || e.djCost || 0;
+  e.djCost = fee;
+  // Prefer SCHED DJ name over FourVenues (which can be blank/garbled)
+  if(match && match.dj && (!e.dj || /^\?+$/.test(e.dj) || e.dj==='TBD' || e.dj==='TBA')){
+    e.dj = match.dj;
+  }
+  // Compute bsTarget from ROI rules using actual fee
+  if(!e.bsTarget){
+    var roi = venueRoiLookup(e.venue, e.date, fee);
+    if(roi && roi.bsTarget) e.bsTarget = roi.bsTarget;
+  }
+  // For past shows, prefer Toast bs_a if available
+  if(match && match.bs_a != null) e._toastActual = match.bs_a;
+  e._enriched = true;
+  return e;
+}
+
+/* ?? Pacing sparkline ??????????????????????????????????????????????????????
+   pacingObj: { "YYYY-MM-DD": {tables, revenue}, ... }
+   capacity:  totalTables for the event (cap line)
+   Returns an inline SVG string (80?30px).
+   ?????????????????????????????????????????????????????????????????????????? */
+function _sparkline(pacingObj, capacity){
+  if(!pacingObj) return '<span style="color:var(--ink4);font-size:9px">No data yet</span>';
+  var days = Object.keys(pacingObj).sort();
+  if(!days.length) return '<span style="color:var(--ink4);font-size:9px">No data yet</span>';
+  var vals = days.map(function(d){ return (pacingObj[d]&&pacingObj[d].tables)||0; });
+  var maxV = capacity || Math.max.apply(null,vals) || 1;
+  var W=84, H=30, pad=3;
+  var w=W-pad*2, h=H-pad*2;
+  var n=vals.length;
+  function px(i){ return pad + (n===1?w/2:i/(n-1)*w); }
+  function py(v){ return pad+h - Math.min(1,v/maxV)*h; }
+  var capY = py(maxV);
+  var pts = vals.map(function(v,i){ return px(i)+','+py(v); }).join(' ');
+  var col = vals[vals.length-1]>=maxV*0.8?'#22c55e':vals[vals.length-1]>=maxV*0.4?'#f59e0b':'#60a5fa';
+  var svg = '<svg width="'+W+'" height="'+H+'" style="vertical-align:middle">'
+    + '<line x1="'+pad+'" y1="'+capY+'" x2="'+(W-pad)+'" y2="'+capY+'" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="2,2"/>'
+    + '<polyline points="'+pts+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>';
+  vals.forEach(function(v,i){
+    svg += '<circle cx="'+px(i)+'" cy="'+py(v)+'" r="2" fill="'+col+'"/>';
+  });
+  svg += '<text x="'+(W-pad)+'" y="'+(H-1)+'" text-anchor="end" font-size="7" fill="'+col+'">'+vals[vals.length-1]+(capacity?'/'+capacity:'')+'</text>';
+  svg += '</svg>';
+  return svg;
+}
+
+/** Blank placeholder artist names like ??? / ???? */
+function _fcastDjName(dj){
+  if(!dj) return '';
+  var s = String(dj).trim().replace(/\s*\?+\s*$/,'').trim();
+  if(!s || /^[\?\uFF1F\s]+$/.test(s)) return '';
+  return s;
+}
+
+/** Compare latest pacing snapshot vs previous day */
+function _fcastDayDelta(venue, date, fallbackRev, fallbackTables){
+  var key = (venue + '_' + date).replace(/[^a-zA-Z0-9_-]/g, '_');
+  var hist = window._pacingData ? window._pacingData[key] : null;
+  var days = hist ? Object.keys(hist).sort() : [];
+  var todayRev = fallbackRev || 0;
+  var todayTbl = fallbackTables || 0;
+  var prevRev = null, prevTbl = null, prevDay = null, latestDay = null;
+  if(days.length){
+    latestDay = days[days.length - 1];
+    var latest = hist[latestDay] || {};
+    todayRev = latest.revenue != null ? latest.revenue : todayRev;
+    todayTbl = latest.tables != null ? latest.tables : todayTbl;
+    if(days.length >= 2){
+      prevDay = days[days.length - 2];
+      var prev = hist[prevDay] || {};
+      prevRev = prev.revenue != null ? prev.revenue : 0;
+      prevTbl = prev.tables != null ? prev.tables : 0;
+    }
+  }
+  return {
+    todayRev: todayRev, todayTbl: todayTbl,
+    prevRev: prevRev, prevTbl: prevTbl,
+    prevDay: prevDay, latestDay: latestDay,
+    dRev: prevRev == null ? null : (todayRev - prevRev),
+    dTbl: prevTbl == null ? null : (todayTbl - prevTbl),
+    hasPrev: prevRev != null
+  };
+}
+
+function renderSystem(){
+  var el = document.getElementById('systemBody');
+  if(!el) return;
+  var st = window._scrapeStatus || {};
+  var fv = st.fourvenues || null;
+  var toast = st.toast || null;
+  var fbOk = !!window._fbReady;
+
+  function card(title, schedule, data){
+    var ok = data && data.ok;
+    var never = !data;
+    var badge = never ? '#94a3b8' : (ok ? '#22c55e' : '#ef4444');
+    var label = never ? 'No run yet' : (ok ? 'OK' : 'FAILED');
+    var when = data && (data.atLocal || data.at) ? (data.atLocal || data.at) : '\u2014';
+    var msg  = data && data.message ? data.message : '';
+    return '<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid '+badge+'">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'
+      + '<div style="font-size:13px;font-weight:800">'+title+'</div>'
+      + '<span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px;background:'+badge+';color:#fff">'+label+'</span>'
+      + '</div>'
+      + '<div style="margin-top:8px;font-size:11px;color:var(--ink3)">Schedule: <b style="color:var(--ink2)">'+schedule+'</b></div>'
+      + '<div style="margin-top:4px;font-size:11px;color:var(--ink3)">Last run: <b style="color:var(--ink2)">'+when+'</b></div>'
+      + (msg ? '<div style="margin-top:6px;font-size:11px;color:var(--ink2)">'+msg+'</div>' : '')
+      + '</div>';
+  }
+
+  var h = '';
+  h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid '+(fbOk?'#22c55e':'#f59e0b')+'">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center">'
+    + '<div style="font-size:13px;font-weight:800">Live sync (Firebase)</div>'
+    + '<span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px;background:'+(fbOk?'#22c55e':'#f59e0b')+';color:#fff">'+(fbOk?'Connected':'Connecting...')+'</span>'
+    + '</div>'
+    + '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">Edits (shows, special weeks, ROI rules, budgets) sync to all browsers instantly.</div>'
+    + '</div>';
+
+  h += card('FourVenues scrape', 'Daily at 8:30 AM', fv);
+  h += card('Toast scrape', 'Mondays at 8:30 AM', toast);
+
+  h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px">'
+    + '<div style="font-size:13px;font-weight:800;margin-bottom:6px">How updates work</div>'
+    + '<div style="font-size:11px;color:var(--ink3);line-height:1.55">'
+    + '<b style="color:var(--ink2)">Website:</b> nightly/weekly scrapes update index.html and push to GitHub Pages.<br>'
+    + '<b style="color:var(--ink2)">People edits:</b> saved to Firebase &mdash; everyone sees them live.<br>'
+    + '<b style="color:var(--ink2)">Laptop:</b> scrapes currently run on this PC via Task Scheduler (must be on at 8:30).'
+    + '</div></div>';
+
+  el.innerHTML = h;
+}
+
+
+/* ---- Forecast weather (Open-Meteo, Miami) ---- */
+var _WX_LAT = 25.7617, _WX_LON = -80.1918; /* Miami */
+var _wxCache = null;
+var _wxCacheAt = 0;
+var _wxLoading = false;
+
+function _wxCodeInfo(code){
+  var c = code|0;
+  if(c===0) return {ico:'\u2600\uFE0F', lbl:'Clear'};
+  if(c<=3) return {ico:'\u26C5', lbl:c===1?'Mostly clear':'Partly cloudy'};
+  if(c===45||c===48) return {ico:'\uD83C\uDF2B\uFE0F', lbl:'Fog'};
+  if(c>=51&&c<=57) return {ico:'\uD83C\uDF27\uFE0F', lbl:'Drizzle'};
+  if(c>=61&&c<=67) return {ico:'\uD83C\uDF27\uFE0F', lbl:'Rain'};
+  if(c>=71&&c<=77) return {ico:'\uD83C\uDF28\uFE0F', lbl:'Snow'};
+  if(c>=80&&c<=82) return {ico:'\uD83C\uDF26\uFE0F', lbl:'Showers'};
+  if(c>=95) return {ico:'\u26C8\uFE0F', lbl:'Storms'};
+  return {ico:'\u2601\uFE0F', lbl:'Cloudy'};
+}
+function _wxF(c){ return Math.round((c*9/5)+32); }
+function _wxShowMap(events){
+  var m={};
+  (events||[]).forEach(function(e){
+    if(!e||!e.date) return;
+    if(_daysTo(e.date)<-1) return;
+    var nm=_fcastDjName(e.dj)||'Show';
+    if(!m[e.date]) m[e.date]=[];
+    m[e.date].push(nm);
+  });
+  return m;
+}
+function _wxRenderHtml(data, events){
+  if(!data||!data.daily||!data.daily.time){
+    return '<div class="fcast-wx"><div class="fcast-wx-err">Weather unavailable right now.</div></div>';
+  }
+  var d=data.daily;
+  var shows=_wxShowMap(events);
+  var h='<div class="fcast-wx">';
+  h+='<div class="fcast-wx-hd"><div class="fcast-wx-title">Weather &mdash; Miami</div>';
+  h+='<div class="fcast-wx-sub">Next 7 days &middot; Open-Meteo &middot; evenings matter for outdoor / patio nights</div></div>';
+  h+='<div class="fcast-wx-row">';
+  for(var i=0;i<d.time.length && i<7;i++){
+    var ds=d.time[i];
+    var info=_wxCodeInfo(d.weather_code?d.weather_code[i]:d.weathercode?d.weathercode[i]:3);
+    var hi=_wxF(d.temperature_2m_max[i]);
+    var lo=_wxF(d.temperature_2m_min[i]);
+    var rain=d.precipitation_probability_max?d.precipitation_probability_max[i]:null;
+    var dateObj=new Date(ds+'T12:00:00');
+    var dow=dateObj.toLocaleDateString('en-US',{weekday:'short'});
+    var md=dateObj.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    var showList=shows[ds]||[];
+    var cls='fcast-wx-day'+(showList.length?' has-show':'');
+    h+='<div class="'+cls+'">';
+    h+='<div class="fcast-wx-dow">'+dow+'</div>';
+    h+='<div class="fcast-wx-date">'+md+'</div>';
+    h+='<div class="fcast-wx-ico">'+info.ico+'</div>';
+    h+='<div class="fcast-wx-cond">'+info.lbl+'</div>';
+    h+='<div class="fcast-wx-temp">'+hi+'\u00b0 <span>/ '+lo+'\u00b0</span></div>';
+    if(rain!=null) h+='<div class="fcast-wx-rain">'+rain+'% rain</div>';
+    if(showList.length) h+='<div class="fcast-wx-show" title="'+showList.join(', ')+'">'+showList[0]+(showList.length>1?' +'+(showList.length-1):'')+'</div>';
+    h+='</div>';
+  }
+  h+='</div></div>';
+  return h;
+}
+function _wxFetch(cb){
+  var now=Date.now();
+  if(_wxCache && (now-_wxCacheAt)<55*60*1000){ cb(null,_wxCache); return; }
+  if(_wxLoading){ cb(null,_wxCache); return; }
+  _wxLoading=true;
+  var url='https://api.open-meteo.com/v1/forecast'
+    +'?latitude='+_WX_LAT+'&longitude='+_WX_LON
+    +'&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max'
+    +'&temperature_unit=celsius&timezone=America%2FNew_York&forecast_days=7';
+  fetch(url).then(function(r){ return r.json(); }).then(function(j){
+    _wxLoading=false;
+    _wxCache=j; _wxCacheAt=Date.now();
+    try{ sessionStorage.setItem('rdg_wx', JSON.stringify({at:_wxCacheAt,data:j})); }catch(e){}
+    cb(null,j);
+  }).catch(function(err){
+    _wxLoading=false;
+    cb(err,null);
+  });
+}
+function _wxEnsureMounted(events){
+  var host=document.getElementById('fcastWxHost');
+  if(!host) return;
+  try{
+    if(!_wxCache){
+      var raw=sessionStorage.getItem('rdg_wx');
+      if(raw){ var o=JSON.parse(raw); if(o&&o.data&&(Date.now()-o.at)<55*60*1000){ _wxCache=o.data; _wxCacheAt=o.at; } }
+    }
+  }catch(e){}
+  if(_wxCache){ host.innerHTML=_wxRenderHtml(_wxCache, events); }
+  else { host.innerHTML='<div class="fcast-wx"><div class="fcast-wx-err">Loading Miami weather\u2026</div></div>'; }
+  _wxFetch(function(err,data){
+    if(!document.getElementById('fcastWxHost')) return;
+    if(err||!data){
+      if(!_wxCache) document.getElementById('fcastWxHost').innerHTML='<div class="fcast-wx"><div class="fcast-wx-err">Could not load weather. Check connection and retry.</div></div>';
+      return;
+    }
+    document.getElementById('fcastWxHost').innerHTML=_wxRenderHtml(data, events);
+  });
+}
+
+
+var _fcastRangeMode = 'all'; /* '3d' | 'all' */
+function setFcastRange(mode){ _fcastRangeMode = mode; renderForecast(); }
+function _fcastActColor(act, tgt){
+  if(!act) return 'fcast-bar-act-zero';
+  if(!tgt) return 'fcast-bar-act-hi';
+  return act >= tgt ? 'fcast-bar-act-hi' : 'fcast-bar-act-lo';
+}
+function _fcastBarChartHtml(rows, venueTitle){
+  var maxV = 1;
+  rows.forEach(function(r){ maxV = Math.max(maxV, r.act||0, r.tgt||0); });
+  var h = '<div class="fcast-perf-title">'+(venueTitle||'BOOKING PERFORMANCE')+' : ACTUAL VS. TARGET</div>';
+  h += '<div class="fcast-bars">';
+  rows.forEach(function(r){
+    var act = r.act||0, tgt = r.tgt||0;
+    var pct = tgt>0 ? Math.round(act/tgt*100) : (act>0?100:0);
+    var actCls = !act ? 'fcast-bar-act-zero' : (tgt && act>=tgt ? 'fcast-bar-act-hi' : 'fcast-bar-act');
+    var tw = Math.max(tgt?3:0, Math.round((tgt/maxV)*100));
+    var aw = Math.max(act?3:0, Math.round((act/maxV)*100));
+    h += '<div class="fcast-hbar-row" title="'+(r.tip||'')+'">';
+    h += '<div class="fcast-hbar-meta"><div class="fcast-hbar-name">'+(r.label||'')+'</div><div class="fcast-hbar-sub">'+(r.dateLabel||r.sub||'')+'</div><div class="fcast-hbar-pct-inline">'+pct+'% complete</div></div>';
+    h += '<div class="fcast-hbar-tracks">';
+    h += '<div class="fcast-hbar-track"><div class="fcast-hbar-rail"><div class="fcast-hbar-fill '+actCls+'" style="width:'+aw+'%"></div></div><div class="fcast-hbar-amt">$'+(act?act.toLocaleString():'0')+'</div></div>';
+    h += '<div class="fcast-hbar-track"><div class="fcast-hbar-rail"><div class="fcast-hbar-fill fcast-bar-tgt" style="width:'+tw+'%"></div></div><div class="fcast-hbar-amt">$'+(tgt?tgt.toLocaleString():'0')+'</div></div>';
+    h += '</div></div>';
+  });
+  h += '</div>';
+  h += '<div class="fcast-legend"><span><i style="background:#C62828"></i>Actual</span><span><i style="background:#E8A317"></i>Target</span></div>';
+  return h;
+}
+function _fcastPickupPct(dlt, tgt){
+  if(!dlt || !dlt.hasPrev) return null;
+  var gap = Math.max(0, (tgt||0) - (dlt.prevRev||0));
+  if(gap <= 0){
+    if((dlt.dRev||0) > 0) return 100;
+    return 0;
+  }
+  return Math.round((dlt.dRev / gap) * 100);
+}
+
+function renderForecast(venueIdx, view){
+  if(venueIdx!==undefined) _fcastActiveVenue = venueIdx;
+  if(view!==undefined) _fcastActiveView = view;
+  // Enrich all forecast events with fee + bsTarget
+  FORECAST_DATA.forEach(_fcastEnrich);
+
+  var TCOL = {DIAMOND:'#b9f2ff',PRESTIGE:'#c8b4e8',PLATINUM:'#e8e8e8',GOLD:'#ffe082',RIVERWALK:'#b2dfdb',SLIP:'#ffccbc',LOUNGE:'#c8e6c9',BOOTHS:'#fff9c4',SEATING:'#f0f4c3',Other:'#eeeeee'};
+  var TTXT = {DIAMOND:'#0a4a6e',PRESTIGE:'#4a1a7a',PLATINUM:'#2d2d2d',GOLD:'#7d5a00',RIVERWALK:'#00574b',SLIP:'#7d3000',LOUNGE:'#155724',BOOTHS:'#666000',SEATING:'#4a5400',Other:'#555'};
+  var TIER_ORDER_FC = ['DIAMOND','PRESTIGE','PLATINUM','GOLD','RIVERWALK','SLIP','LOUNGE','BOOTHS','SEATING','Other'];
+  var now = new Date(); now.setHours(0,0,0,0);
+  var todayStr = now.toISOString().split('T')[0];
+
+  var h = '';
+
+  // No separate venue tabs ? Forecast follows the global venue selector (curV)
+
+  if(false && _fcastActiveView==='all'){
+    // -- ALL VENUES SUMMARY (disabled ? venue now driven by global selector) ---
+    var allEvts = FORECAST_DATA.slice().sort(function(a,b){ return a.date<b.date?-1:a.date>b.date?1:0; });
+    // Top KPI strip
+    var totalRev = allEvts.reduce(function(s,e){return s+e.totalRevenue;},0);
+    var totalTarget = allEvts.reduce(function(s,e){return s+(e.bsTarget||0);},0);
+    var totalPct = totalTarget>0?Math.round(totalRev/totalTarget*100):0;
+    h += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">';
+    [{lbl:'Total Shows',val:allEvts.length},{lbl:'With Bookings',val:allEvts.filter(function(e){return e.totalRevenue>0;}).length},
+     {lbl:'Revenue Committed',val:'$'+totalRev.toLocaleString()},{lbl:'Total Target',val:'$'+totalTarget.toLocaleString()},
+     {lbl:'Overall % Complete',val:totalPct+'%',col:totalPct>=50?'#22c55e':totalPct>=20?'#f59e0b':'#ef4444'}
+    ].forEach(function(s){
+      h += '<div style="background:var(--card);border-radius:10px;padding:9px 14px;min-width:110px">'
+         + '<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)">'+s.lbl+'</div>'
+         + '<div style="font-size:18px;font-weight:900;letter-spacing:-.5px;color:'+(s.col||'inherit')+'">'+s.val+'</div>'
+         + '</div>';
+    });
+    h += '</div>';
+
+    // All-venues table
+    h += '<div class="fcast-tbl-wrap"><table class="fcast-tbl">';
+    h += '<thead><tr>'
+       + '<th class="left">Date</th><th class="left">Venue</th><th class="left">Artist</th>'
+       + '<th>BS Actual</th><th style="background:#FFF2CC;color:#7D5A00">BS Target</th>'
+       + '<th>% Complete</th><th>Pickup Pace</th><th>Tables</th><th>Days Out</th>'
+       + '<th>Booking Pace</th>'
+       + '</tr></thead><tbody>';
+
+    allEvts.forEach(function(e){
+      var days = _daysTo(e.date);
+      if(days < -1) return; // skip past events
+      // Derive target live from VENUE_ROI_RULES if not pre-set
+      var bsTarget = e.bsTarget || 0;
+      var dispActAll = (e._toastActual!=null) ? e._toastActual : e.totalRevenue;
+      var pct = bsTarget>0?Math.round(dispActAll/bsTarget*100):0;
+      var pctCol = pct>=70?'#22c55e':pct>=30?'#f59e0b':'#ef4444';
+      if(pct===0&&!dispActAll) pctCol='#94a3b8';
+      var dateObj = new Date(e.date+'T12:00:00');
+      var dateFmt = dateObj.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+      // Pickup pace: pct per week assuming scrape was done 0 days ago (Jul 11)
+      // Days elapsed since event was last updated = 0 (just scraped)
+      // Weeks to event:
+      var weeksLeft = Math.max(1, Math.ceil(days/7));
+      var neededPerWeek = e.bsTarget>0 ? Math.round((e.bsTarget-e.totalRevenue)/weeksLeft) : 0;
+      var paceStr = (days>0 && e.bsTarget>0) ? '+'+_fmtK(neededPerWeek)+'/wk needed' : '?';
+      var vShort = e.venue==='Casa Neos Beach Club'?'BC':e.venue==='MILA Lounge'?'MILA':'Lounge';
+      h += '<tr>';
+      h += '<td class="left" style="font-size:10px;color:var(--ink3)">'+dateFmt+'</td>';
+      h += '<td class="left"><span style="font-size:9px;font-weight:800;padding:2px 7px;border-radius:20px;background:var(--hair);color:var(--ink2)">'+vShort+'</span></td>';
+      h += '<td class="left" style="font-weight:700">'+e.dj+'</td>';
+      h += '<td style="font-weight:700">'+(e.totalRevenue>0?'$'+e.totalRevenue.toLocaleString():'?')+'</td>';
+      h += '<td style="background:#FFF2CC;color:#7D5A00;font-weight:700">'+(bsTarget?'$'+bsTarget.toLocaleString():'?')+'</td>';
+      h += '<td>';
+      if(bsTarget>0){
+        h += '<div style="display:flex;align-items:center;gap:5px">'
+           + '<b style="color:'+pctCol+'">'+pct+'%</b>'
+           + '<div style="width:50px;height:6px;background:var(--hair);border-radius:3px;overflow:hidden"><div style="width:'+Math.min(100,pct)+'%;height:100%;background:'+pctCol+';border-radius:3px"></div></div>'
+           + '</div>';
+      } else { h += '?'; }
+      h += '</td>';
+      h += '<td style="font-size:10px;color:'+(neededPerWeek>0?'#f59e0b':'var(--ink3)')+'">'+paceStr+'</td>';
+      h += '<td>'+(e.totalTables>0?'<b>'+e.bookedTables+'</b><span style="color:var(--ink3)">/'+e.totalTables+'</span>':'?')+'</td>';
+      h += '<td style="font-size:10px;color:'+(days<=7?'#ef4444':days<=14?'#f59e0b':'var(--ink3)')+'">'+days+'d</td>';
+      // Pacing sparkline
+      var _pk = (e.venue+'_'+e.date).replace(/[^a-zA-Z0-9_-]/g,'_');
+      var _ph = window._pacingData ? window._pacingData[_pk] : null;
+      h += '<td>'+_sparkline(_ph, e.totalTables)+'</td>';
+      h += '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+  } else {
+    // -- SINGLE VENUE VIEW ? follows global venue selector (curV) ---
+    var vname = curV;
+    var events = FORECAST_DATA.filter(function(e){ return e.venue===vname; })
+      .sort(function(a,b){ return a.date<b.date?-1:a.date>b.date?1:0; });
+
+    // Collect tiers
+    var allTiers = [];
+    events.forEach(function(e){ Object.keys(e.tierSummary).forEach(function(t){ if(allTiers.indexOf(t)<0) allTiers.push(t); }); });
+    allTiers.sort(function(a,b){ var ai=TIER_ORDER_FC.indexOf(a),bi=TIER_ORDER_FC.indexOf(b); return (ai<0?99:ai)-(bi<0?99:bi); });
+
+    // Weather strip (async fill)
+    h += '<div id="fcastWxHost"></div>';
+
+    // KPI strip ? compute targets live from VENUE_ROI_RULES
+    var totalRev = events.reduce(function(s,e){return s+e.totalRevenue;},0);
+    var totalTarget = events.reduce(function(s,e){
+      if(e.bsTarget) return s+e.bsTarget;
+      var r=venueRoiLookup(e.venue,e.date,e.djCost||0); return s+(r?r.bsTarget:0);
+    },0);
+    var totalPct = totalTarget>0?Math.round(totalRev/totalTarget*100):0;
+    h += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">';
+    [{lbl:'Upcoming Shows',val:events.length},
+     {lbl:'BS Actual (sold)',val:'$'+totalRev.toLocaleString(),col:'#0f766e'},
+     {lbl:'BS Target',val:'$'+totalTarget.toLocaleString(),col:'#7d5a00'},
+     {lbl:'% of Target',val:totalPct+'%',col:totalPct>=50?'#22c55e':totalPct>=20?'#f59e0b':'#ef4444'}
+    ].forEach(function(s){
+      h += '<div style="background:var(--card);border-radius:10px;padding:12px 16px;min-width:130px;flex:1">'
+         + '<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)">'+s.lbl+'</div>'
+         + '<div style="font-size:22px;font-weight:900;letter-spacing:-.5px;margin-top:2px;color:'+(s.col||'inherit')+'">'+s.val+'</div>'
+         + '</div>';
+    });
+    h += '</div>';
+
+    var upcoming = events.filter(function(e){ return _daysTo(e.date)>=-1; });
+    // Horizontal booking chart: BC = next 4, Lounge & MILA = next 8
+    var chartLimit = (curV==='Casa Neos Beach Club') ? 4 : 8;
+    var viewRows = upcoming.slice(0, chartLimit);
+    var venueShort = (curV==='Casa Neos Beach Club') ? 'CASA NEOS BC'
+      : (curV==='Casa Neos Lounge') ? 'CASA NEOS LOUNGE'
+      : (curV==='MILA Lounge') ? 'MILA LOUNGE'
+      : String(curV||'VENUE').toUpperCase();
+
+    // ============================================================
+    // 1) RESULTS ? 4-show horizontal Actual vs Target
+    // ============================================================
+    h += '<div class="fcast-chart-wrap" style="padding:0;overflow:hidden">';
+    if(!viewRows.length){
+      h += '<div style="padding:16px;color:var(--ink3)">No upcoming shows.</div>';
+    } else {
+      var chartRows = viewRows.map(function(e){
+        var act = e.totalRevenue||0;
+        var tgt = e.bsTarget || (function(){ var r=venueRoiLookup(e.venue,e.date,e.djCost||0); return r?r.bsTarget:0; })();
+        var dateObj = new Date(e.date+'T12:00:00');
+        var mm = ('0'+(dateObj.getMonth()+1)).slice(-2);
+        var dd = ('0'+dateObj.getDate()).slice(-2);
+        var yyyy = dateObj.getFullYear();
+        var dateLabel = mm+'/'+dd+'/'+yyyy;
+        var djLabel = _fcastDjName(e.dj) || 'TBD';
+        var pct = tgt>0?Math.round(act/tgt*100):0;
+        return { act:act, tgt:tgt, label:djLabel, dateLabel:dateLabel, tip:djLabel+' \u2014 Actual $'+act.toLocaleString()+' / Target $'+(tgt||0).toLocaleString()+' ('+pct+'%)' };
+      });
+      h += _fcastBarChartHtml(chartRows, venueShort+' BOOKING PERFORMANCE');
+    }
+    h += '</div>';
+
+    // ============================================================
+    // 2) PICK UP PACE ? all performances
+    // ============================================================
+    h += '<div class="fcast-chart-wrap" style="padding:0;overflow:hidden">';
+    h += '<div class="fcast-chart-title" style="padding:12px 16px 0">2. Pick up Pace &mdash; How Fast We\u2019re Closing the Gap</div>';
+    h += '<div style="padding:4px 16px 10px;font-size:10px;color:var(--ink3)">All upcoming shows &middot; Pickup % = yesterday\u2019s $ gain as a share of remaining gap to target.</div>';
+    var paceFocus = upcoming.slice();
+    h += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+    h += '<thead><tr>'
+       + '<th style="text-align:left;padding:8px 16px;border-bottom:1px solid var(--rule);color:var(--ink3);font-size:10px">Date / Artist</th>'
+       + '<th style="text-align:right;padding:8px 10px;border-bottom:1px solid var(--rule);color:var(--ink3);font-size:10px">Yesterday</th>'
+       + '<th style="text-align:right;padding:8px 10px;border-bottom:1px solid var(--rule);color:#0f766e;font-size:10px">Today</th>'
+       + '<th style="text-align:right;padding:8px 10px;border-bottom:1px solid var(--rule);color:var(--ink3);font-size:10px">&Delta; $</th>'
+       + '<th style="text-align:right;padding:8px 10px;border-bottom:1px solid var(--rule);color:#7d5a00;font-size:10px">Target</th>'
+       + '<th style="text-align:right;padding:8px 10px;border-bottom:1px solid var(--rule);color:var(--ink3);font-size:10px">% Complete</th>'
+       + '<th style="text-align:right;padding:8px 16px;border-bottom:1px solid var(--rule);color:var(--ink3);font-size:10px">Pickup %</th>'
+       + '</tr></thead><tbody>';
+    if(!paceFocus.length){
+      h += '<tr><td colspan="7" style="padding:14px 16px;color:var(--ink3)">No upcoming shows</td></tr>';
+    }
+    paceFocus.forEach(function(e){
+      var tgt = e.bsTarget || (function(){ var r=venueRoiLookup(e.venue,e.date,e.djCost||0); return r?r.bsTarget:0; })();
+      var dlt = _fcastDayDelta(e.venue, e.date, e.totalRevenue||0, e.bookedTables||0);
+      var pct = _fcastPickupPct(dlt, tgt);
+      var donePct = tgt>0 ? Math.round((e.totalRevenue||0)/tgt*100) : 0;
+      var doneCol = !(e.totalRevenue) ? '#94a3b8' : (donePct>=100 ? '#15803d' : donePct>=30 ? '#f59e0b' : '#dc2626');
+      var dateObj = new Date(e.date+'T12:00:00');
+      var dateFmt = dateObj.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+      var djLabel = _fcastDjName(e.dj);
+      var dRevCol = !dlt.hasPrev ? 'var(--ink3)' : (dlt.dRev>0 ? '#22c55e' : dlt.dRev<0 ? '#ef4444' : 'var(--ink3)');
+      var dRevStr = !dlt.hasPrev ? '\u2014' : (dlt.dRev>0?'+$'+dlt.dRev.toLocaleString():(dlt.dRev<0?'-$'+Math.abs(dlt.dRev).toLocaleString():'$0'));
+      var pctCol = pct==null ? 'var(--ink4)' : (pct>=20 ? '#22c55e' : pct>0 ? '#f59e0b' : '#94a3b8');
+      var pctStr = pct==null ? '\u2014' : ((pct>0?'+':'')+pct+'%');
+      h += '<tr>';
+      h += '<td style="padding:10px 16px;border-bottom:0.5px solid var(--hair)"><div style="font-weight:800">'+(djLabel||'&nbsp;')+'</div><div style="font-size:10px;color:var(--ink3)">'+dateFmt+' &middot; '+_daysTo(e.date)+'d out</div></td>';
+      h += '<td style="padding:10px 10px;border-bottom:0.5px solid var(--hair);text-align:right;color:var(--ink3)">'+(dlt.hasPrev?'$'+dlt.prevRev.toLocaleString():'\u2014')+'</td>';
+      h += '<td style="padding:10px 10px;border-bottom:0.5px solid var(--hair);text-align:right;font-weight:800;color:#0f766e">$'+dlt.todayRev.toLocaleString()+'</td>';
+      h += '<td style="padding:10px 10px;border-bottom:0.5px solid var(--hair);text-align:right;font-weight:800;color:'+dRevCol+'">'+dRevStr+'</td>';
+      h += '<td style="padding:10px 10px;border-bottom:0.5px solid var(--hair);text-align:right;font-weight:800;color:#7d5a00;background:#FFF2CC">'+(tgt?'$'+tgt.toLocaleString():'\u2014')+'</td>';
+      h += '<td style="padding:10px 10px;border-bottom:0.5px solid var(--hair);text-align:right;font-weight:900;color:'+doneCol+'">'+donePct+'%</td>';
+      h += '<td style="padding:10px 16px;border-bottom:0.5px solid var(--hair);text-align:right;font-weight:900;color:'+pctCol+'">'+pctStr+'</td>';
+      h += '</tr>';
+    });
+    h += '</tbody></table></div>';
+
+    // ============================================================
+    // 3) BREAKDOWN BY TABLES
+    // ============================================================
+    h += '<div class="fcast-chart-wrap" style="padding:0;overflow:hidden">';
+    h += '<div class="fcast-chart-title" style="padding:12px 16px 0">3. Breakdown by Tables</div>';
+    h += '<div style="padding:4px 16px 10px;font-size:10px;color:var(--ink3)">Booked counts = Accepted or Not completed only (matches Sales report) &middot; revenue under each tier.</div>';
+    h += '<div class="fcast-tbl-wrap" style="padding:0 0 8px"><table class="fcast-tbl">';
+    h += '<thead><tr>'
+       + '<th class="left">Date</th><th class="left">Artist</th>'
+       + '<th>BS Actual</th><th style="background:#FFF2CC;color:#7D5A00">BS Target</th>'
+       + '<th>% Complete</th><th>Tables</th>';
+    allTiers.forEach(function(t){
+      var bg=TCOL[t]||'#eee', tx=TTXT[t]||'#333';
+      h += '<th style="background:'+bg+';color:'+tx+'">'+t+'</th>';
+    });
+    h += '</tr></thead><tbody>';
+
+    events.forEach(function(e){
+      var days = _daysTo(e.date);
+      var pct = e.bsTarget>0?Math.round(e.totalRevenue/e.bsTarget*100):0;
+      var pctCol = pct>=70?'#22c55e':pct>=30?'#f59e0b':'#ef4444';
+      if(pct===0&&!e.totalRevenue) pctCol='#94a3b8';
+      var dateObj = new Date(e.date+'T12:00:00');
+      var dateFmt = dateObj.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+      var djLabel = _fcastDjName(e.dj);
+      var urgentStyle = days<=7&&days>0?'background:rgba(239,68,68,.05)':'';
+      h += '<tr style="'+urgentStyle+'">';
+      h += '<td class="left" style="font-size:10px;color:var(--ink3)">'+dateFmt+(days<=7&&days>0?' <span style="color:#ef4444;font-weight:800">!</span>':'')+'</td>';
+      h += '<td class="left" style="font-weight:700">'+(djLabel||'')+'</td>';
+      h += '<td style="font-weight:700">'+(e.totalRevenue>0?'$'+e.totalRevenue.toLocaleString():'$0')+'</td>';
+      h += '<td style="background:#FFF2CC;color:#7D5A00;font-weight:700">'+(e.bsTarget?'$'+e.bsTarget.toLocaleString():'\u2014')+'</td>';
+      if(e.bsTarget>0){
+        h += '<td><div style="display:flex;align-items:center;gap:5px"><b style="color:'+pctCol+'">'+pct+'%</b>'
+           + '<div style="width:40px;height:5px;background:var(--hair);border-radius:3px;overflow:hidden"><div style="width:'+Math.min(100,pct)+'%;height:100%;background:'+pctCol+';border-radius:3px"></div></div>'
+           + '</div></td>';
+      } else { h += '<td style="color:var(--ink3)">\u2014</td>'; }
+      h += '<td>'+(e.totalTables>0?'<b>'+e.bookedTables+'</b><span style="color:var(--ink3)">/'+e.totalTables+'</span>':'\u2014')+'</td>';
+      if(e.hasData){
+        allTiers.forEach(function(t){
+          var ts=e.tierSummary[t];
+          if(ts){ var bg=TCOL[t]||'#eee',tx=TTXT[t]||'#333';
+            h+='<td style="background:'+bg+'20;color:'+tx+'"><b>'+ts.booked+'</b><span style="color:var(--ink3)">/'+ts.total+'</span>'+(ts.revenue>0?'<div style="font-size:9px">'+_fmtK(ts.revenue)+'</div>':'')+'</td>';
+          } else { h+='<td style="color:var(--ink3)">\u2014</td>'; }
+        });
+      } else {
+        h += '<td colspan="'+(allTiers.length)+'" style="color:var(--ink3);font-style:italic;font-size:10px">No reservations open yet</td>';
+      }
+      h += '</tr>';
+    });
+    h += '</tbody></table></div></div>';
+  }
+
+  document.getElementById('fcastBody').innerHTML = h;
+  document.getElementById('fcastMeta').textContent = 'Results \u00b7 Pick up pace vs yesterday \u00b7 Breakdown by tables \u00b7 Miami weather';
+  try{
+    var _wxEvts = (typeof events!=='undefined') ? events : FORECAST_DATA.filter(function(e){ return e.venue===curV; });
+    _wxEnsureMounted(_wxEvts);
+  }catch(e){}
+}
+
+
+/* ---------------------------------------------------------------
+   VIP WEEK NAVIGATION - week offset navigation
+   --------------------------------------------------------------- */
+function _vipShiftDate(dateStr, days) {
+  var d = new Date(dateStr + 'T12:00:00Z');
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function getVipWeekRange(weeksBack) {
+  // weeksBack=0 = last complete week, weeksBack=1 = 2 weeks ago, etc.
+  var nowMs = Date.now() - 4 * 60 * 60 * 1000;
+  var todayStr = new Date(nowMs).toISOString().slice(0, 10);
+  var dow = new Date(todayStr + 'T12:00:00Z').getUTCDay();
+  var daysToLastMon = dow === 0 ? 6 : dow + 6;
+  var lastMon = _vipShiftDate(todayStr, -daysToLastMon);
+  var targetMon = _vipShiftDate(lastMon, -weeksBack * 7);
+  var targetSun = _vipShiftDate(targetMon, 6);
+  return { mon: targetMon, sun: targetSun };
+}
+
+function _fmtVipWeekLabel(weeksBack) {
+  if (weeksBack === 0) return 'Last Week';
+  var r = getVipWeekRange(weeksBack);
+  var opts = { month: 'short', day: 'numeric', timeZone: 'UTC' };
+  var ms = new Date(r.mon + 'T12:00:00Z').toLocaleDateString('en-US', opts);
+  var ss = new Date(r.sun + 'T12:00:00Z').toLocaleDateString('en-US', opts);
+  return ms + ' \u2013 ' + ss;
+}
+
+function vipWeekNav(delta) {
+  var newOffset = _vipWeekOffset + delta;
+  if (newOffset < 0) return; // can't go forward past "last week"
+  var range = getVipWeekRange(newOffset);
+  var hasData = SCHED.some(function(e) { return e.d >= range.mon && e.d <= range.sun && e.bs_a; });
+  if (!hasData && delta > 0) return; // no data further back
+  _vipWeekOffset = newOffset;
+  renderVIP(_vipActiveVenue);
+}
+
+/* Build VIP venue data from SCHED for a given week range (used for historical weeks) */
+/* Build a floor-plan reference (totalTables per tier, tablesBudget) from VIP_VENUES data.
+   This is stable ? the floor plan doesn't change week to week. */
+var _vipFloorPlan = (function(){
+  var fp = {};
+  (VIP_VENUES||[]).forEach(function(v){
+    if(fp[v.venue]) return; // use first/most recent entry per venue
+    var budget = 0;
+    var tierRef = {};
+    (v.shows||[]).forEach(function(sh){
+      Object.keys(sh.tiers||{}).forEach(function(t){
+        var td = sh.tiers[t];
+        if(!tierRef[t]) tierRef[t] = { total: td.totalTables||0, min: td.minPerTable||0, color: td.color||'#eee', textColor: td.textColor||'#333' };
+        budget = Math.max(budget, Object.values(sh.tiers).reduce(function(s,x){ return s+(x.totalTables||0); },0));
+      });
+    });
+    fp[v.venue] = { budget: budget, tiers: tierRef };
+  });
+  return fp;
+})();
+
+function buildVipFromSched(mon, sun) {
+  var venueMap = {};
+  var opts     = { month: 'short', day: 'numeric', timeZone: 'UTC' };
+  var weekLabel = new Date(mon+'T12:00:00Z').toLocaleDateString('en-US', opts)
+                + ' \u2013 ' + new Date(sun+'T12:00:00Z').toLocaleDateString('en-US', opts);
+  var dateOpts = { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' };
+
+  SCHED.forEach(function(e) {
+    if (e.d < mon || e.d > sun) return;
+    var vn = e.venue || e.v || '';
+    if (!vn) return;
+    if (!venueMap[vn]) venueMap[vn] = { venue: vn, weekOf: weekLabel, weekKey: '', shows: [] };
+
+    // Pull floor plan reference for this venue
+    var fp      = _vipFloorPlan[vn] || {};
+    var budget  = fp.budget || null;
+    // Build empty tier structure from floor plan so the tier columns appear
+    var tierRef = {};
+    Object.keys(fp.tiers||{}).forEach(function(t){
+      tierRef[t] = {
+        soldTables: 0, totalTables: fp.tiers[t].total,
+        totalSales: 0, avgPerTable: 0,
+        minPerTable: fp.tiers[t].min,
+        color: fp.tiers[t].color, textColor: fp.tiers[t].textColor
+      };
+    });
+
+    venueMap[vn].shows.push({
+      date:         e.d,
+      label:        new Date(e.d+'T12:00:00Z').toLocaleDateString('en-US', dateOpts),
+      dj:           e.dj || '',
+      fee:          e.fee || 0,
+      bsActual:     e.bs_a || 0,
+      bsMin:        e.bs_m || 0,
+      tablesActual: null,          // not available from SCHED; shown as ?
+      tablesBudget: budget,        // from floor plan reference
+      tiers:        tierRef,
+      roiActual:    e.roi_a || (e.fee > 0 ? Math.round((e.bs_a||0)/e.fee*100)/100 : 0),
+      roiTarget:    e.roi_t || 0
+    });
+  });
+  var order = ['Casa Neos Beach Club','MILA Lounge','Casa Neos Lounge'];
+  var result = [];
+  order.forEach(function(vn){ if(venueMap[vn]) result.push(venueMap[vn]); });
+  Object.keys(venueMap).forEach(function(vn){ if(order.indexOf(vn)<0) result.push(venueMap[vn]); });
+  return result;
+}
+
+function renderVIP(venueIdx){
+  if(venueIdx!==undefined) _vipActiveVenue = venueIdx;
+
+  // Determine data source: VIP_VENUES (last week, rich tier data) vs SCHED (historical)
+  var venues;
+  var range = getVipWeekRange(_vipWeekOffset);
+  var vipWkKey = (VIP_VENUES && VIP_VENUES[0]) ? (VIP_VENUES[0].weekKey || '') : '';
+  var rangeWkKey = getISOWeek(new Date(range.mon + 'T12:00:00Z'));
+  if (VIP_VENUES && VIP_VENUES.length && vipWkKey === rangeWkKey) {
+    venues = VIP_VENUES;
+  } else {
+    venues = buildVipFromSched(range.mon, range.sun);
+  }
+
+  if(!venues||!venues.length){
+    document.getElementById('vipBody').innerHTML='<div class="empty" style="padding:40px;text-align:center;color:var(--ink3)">No VIP data for this week.</div>';
+    return;
+  }
+  // VIP follows the global venue selector (curV) ? no separate tab bar
+  var d = venues.find(function(v){ return v.venue===curV; }) || venues[0];
+  if(!d){ document.getElementById('vipBody').innerHTML='<div class="empty" style="padding:40px;text-align:center;color:var(--ink3)">No VIP data for '+curV+' this week.</div>'; return; }
+
+  // Update week nav UI
+  var wkLbl = document.getElementById('vipWeekLabel');
+  if(wkLbl) wkLbl.textContent = _fmtVipWeekLabel(_vipWeekOffset);
+  var nextBtn = document.getElementById('vipNextBtn');
+  if(nextBtn){ nextBtn.disabled = _vipWeekOffset===0; nextBtn.style.opacity = _vipWeekOffset===0?'0.3':'1'; }
+
+  document.getElementById('vipMeta').textContent = (d.weekOf||_fmtVipWeekLabel(_vipWeekOffset)) + ' \u2014 ' + d.venue;
+
+  var h = '';
+
+  /* -- Insight sentence -- */
+  var insight = _generateInsight(d);
+  if(insight) h += '<div style="font-size:11px;color:var(--ink2);line-height:1.55;padding:12px 14px;background:var(--card);border-radius:12px;border-left:3px solid var(--ink3)">'+insight+'</div>';
+
+  /* collect tiers actually used by this venue */
+  var tierSet = {};
+  d.shows.forEach(function(sh){ Object.keys(sh.tiers).forEach(function(t){ tierSet[t]=sh.tiers[t]; }); });
+  var _excludedTiers = (d.venue==='MILA Lounge') ? ['Booths','Seating']
+                     : (d.venue==='Casa Neos Lounge') ? ['Lounge']
+                     : ['Cabana','Deck'];
+  var tiers = TIER_ORDER.filter(function(t){ return tierSet[t] && _excludedTiers.indexOf(t)<0; });
+
+  /* ----------------------------------------------------
+     TABLE 1 ? PERFORMANCE SUMMARY
+     ---------------------------------------------------- */
+  h += '<div class="vip-perf-block">';
+  h += '<div class="vip-perf-hd"><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)">Performance Summary</span>'
+     + '<span style="font-size:10px;color:var(--ink3)">'+d.venue+(d.weekOf?' \u2014 '+d.weekOf:'')+'</span></div>';
+  h += '<div class="tbl-wrap" style="margin:0"><table class="vip-past-tbl"><thead><tr>'
+     + '<th class="l" style="min-width:140px">Artist / Date</th>'
+     + '<th>DJ Cost</th>'
+     + '<th>BS Actual</th><th style="'+_TARGET_BG+'">BS Min</th><th>BS Variance</th>'
+     + '<th>ROI Actual</th><th style="'+_TARGET_BG+'">ROI Target</th>'
+     + '<th>Tables</th><th style="'+_TARGET_BG+'">Budget</th><th>Tbl Var</th>'
+     + '<th>Avg / Tbl</th>'
+     + '</tr></thead><tbody>';
+
+  var totBS=0,totMin=0,totTbl=0,totBudget=0,totFee=0;
+  d.shows.forEach(function(sh){
+    var b=sh.bsActual>=sh.bsMin;
+    var vbs=sh.bsActual-sh.bsMin, vtbl=(sh.tablesActual!=null&&sh.tablesBudget!=null)?sh.tablesActual-sh.tablesBudget:null;
+    var avg=(sh.tablesActual||0)?Math.round(sh.bsActual/sh.tablesActual):0;
+    var roiA=_fmtROI(sh.bsActual,sh.fee), roiT=_fmtROI(sh.bsMin,sh.fee);
+    var roiBeat=sh.fee>0&&sh.bsActual>=sh.bsMin;
+    totBS+=sh.bsActual; totMin+=sh.bsMin; totTbl+=(sh.tablesActual||0); totBudget+=(sh.tablesBudget||0); totFee+=sh.fee;
+    h += '<tr>'
+       + '<td class="l"><b>'+sh.dj+'</b><br><span style="font-size:9px;color:var(--ink3)">'+sh.label+'</span></td>'
+       + '<td>'+$kv(sh.fee)+'</td>'
+       + '<td><b class="'+(b?'beat':'miss')+'">'+$kv(sh.bsActual)+'</b></td>'
+       + '<td style="'+_TARGET_BG+'">'+$kv(sh.bsMin)+'</td>'
+       + '<td>'+_fmtVar(vbs)+'</td>'
+       + '<td class="'+(roiBeat?'beat':sh.fee>0?'miss':'')+'" style="font-weight:700">'+roiA+'</td>'
+       + '<td style="'+_TARGET_BG+'">'+roiT+'</td>'
+       + '<td>'+(sh.tablesActual!=null?sh.tablesActual:'\u2014')+'</td>'
+       + '<td style="'+_TARGET_BG+'">'+(sh.tablesBudget!=null?sh.tablesBudget:'\u2014')+'</td>'
+       + '<td>'+(vtbl!=null?_fmtVarN(vtbl):'\u2014')+'</td>'
+       + '<td>'+(avg?$kv(avg):'\u2014')+'</td>'
+       + '</tr>';
+  });
+  /* Totals row */
+  var totAvg=totTbl?Math.round(totBS/totTbl):0;
+  var totVbs=totBS-totMin, totVtbl=totTbl-totBudget;
+  var totROIA=_fmtROI(totBS,totFee), totROIT=_fmtROI(totMin,totFee);
+  h += '<tr>'
+     + '<td class="l">Total</td>'
+     + '<td>'+$kv(totFee)+'</td>'
+     + '<td><b class="'+(totVbs>=0?'beat':'miss')+'">'+$kv(totBS)+'</b></td>'
+     + '<td style="'+_TARGET_BG+'">'+$kv(totMin)+'</td>'
+     + '<td>'+_fmtVar(totVbs)+'</td>'
+     + '<td class="'+(totVbs>=0?'beat':'miss')+'" style="font-weight:700">'+totROIA+'</td>'
+     + '<td style="'+_TARGET_BG+'">'+totROIT+'</td>'
+     + '<td>'+(totTbl||'\u2014')+'</td>'
+     + '<td style="'+_TARGET_BG+'">'+(totBudget||'\u2014')+'</td>'
+     + '<td>'+(totBudget?_fmtVarN(totVtbl):'\u2014')+'</td>'
+     + '<td>'+$kv(totAvg)+'</td>'
+     + '</tr>';
+  h += '</tbody></table></div></div>';
+
+  /* ----------------------------------------------------
+     TABLE 2 ? TIER BREAKDOWN PER SHOW
+     ---------------------------------------------------- */
+  h += '<div class="vip-perf-block">';
+  h += '<div class="vip-perf-hd"><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)">Tier Breakdown</span></div>';
+  h += '<div class="tbl-wrap" style="margin:0"><table class="vip-past-tbl"><thead>';
+
+  /* Row 1: tier color headers spanning 4 cols each */
+  h += '<tr><th class="l" rowspan="2" style="min-width:130px;vertical-align:bottom">Artist / Date</th>'
+     + '<th rowspan="2" style="vertical-align:bottom">DJ Cost</th>'
+     + '<th rowspan="2" style="vertical-align:bottom">Tables</th>'
+     + '<th rowspan="2" style="vertical-align:bottom">Avg/Tbl</th>';
+  tiers.forEach(function(tname){
+    var t=tierSet[tname];
+    h += '<th colspan="4" class="th-tier" style="background:'+t.color+';color:'+t.textColor+'">'+tname+'</th>';
+  });
+  h += '</tr><tr>';
+  tiers.forEach(function(){
+    h += '<th>Sold</th><th>Total</th><th>Avg</th><th style="'+_TARGET_BG+'">Min/Tbl</th>';
+  });
+  h += '</tr></thead><tbody>';
+
+  var totTiers={};
+  tiers.forEach(function(t){ totTiers[t]={sold:0,total:0,avgSum:0,cnt:0}; });
+  var totTblSum=0, totBSSum=0, totFeeSum=0;
+
+  d.shows.forEach(function(sh){
+    var avg=sh.tablesActual?Math.round(sh.bsActual/sh.tablesActual):0;
+    totTblSum+=sh.tablesActual; totBSSum+=sh.bsActual; totFeeSum+=sh.fee;
+    h += '<tr><td class="l"><b>'+sh.dj+'</b><br><span style="font-size:9px;color:var(--ink3)">'+sh.label.replace(/,.*$/,'')+'</span></td>'
+       + '<td>'+$kv(sh.fee)+'</td>'
+       + '<td>'+sh.tablesActual+' <span style="color:var(--ink3);font-size:9px">/ '+sh.tablesBudget+'</span></td>'
+       + '<td>'+$kv(avg)+'</td>';
+    tiers.forEach(function(tname){
+      var t=sh.tiers[tname];
+      if(!t){ h+='<td>?</td><td>?</td><td>?</td><td>?</td>'; return; }
+      var bT=t.soldTables>0&&t.avgPerTable>=t.minPerTable;
+      totTiers[tname].sold+=t.soldTables; totTiers[tname].total+=t.totalSales;
+      if(t.soldTables>0){totTiers[tname].avgSum+=t.avgPerTable;totTiers[tname].cnt++;}
+      h += '<td>'+t.soldTables+'/'+t.totalTables+'</td>'
+         + '<td><b class="'+(t.totalSales>0?bT?'beat':'miss':'')+'">'+$kv(t.totalSales)+'</b></td>'
+         + '<td class="'+(t.soldTables>0?bT?'beat':'miss':'')+'">'+$kv(t.avgPerTable)+'</td>'
+         + '<td style="'+_TARGET_BG+'">'+$kv(t.minPerTable)+'</td>';
+    });
+    h += '</tr>';
+  });
+
+  /* Totals row */
+  h += '<tr><td class="l">Total</td><td>'+$kv(totFeeSum)+'</td>'
+     + '<td>'+totTblSum+'</td>'
+     + '<td>'+$kv(totTblSum?Math.round(totBSSum/totTblSum):0)+'</td>';
+  tiers.forEach(function(tname){
+    var t=totTiers[tname];
+    var avgT=t.cnt?Math.round(t.avgSum/t.cnt):0;
+    h += '<td>'+t.sold+'</td><td><b>'+$kv(t.total)+'</b></td><td>'+$kv(avgT)+'</td><td></td>';
+  });
+  h += '</tr></tbody></table></div></div>';
+
+  /* ----------------------------------------------------
+     TABLE 3 ? PER-TABLE DETAIL (Beach Club only)
+     ---------------------------------------------------- */
+  var hasDetail = d.shows.some(function(sh){return sh.tableDetail&&sh.tableDetail.length;});
+  if(hasDetail){
+    h += '<div class="vip-perf-block">';
+    h += '<div class="vip-perf-hd"><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)">Full Table Detail</span></div>';
+    d.shows.forEach(function(sh){
+      if(!sh.tableDetail||!sh.tableDetail.length) return;
+      h += '<div style="padding:8px 14px 4px;font-size:10px;font-weight:700;color:var(--ink2);border-top:0.5px solid var(--hair)">'+sh.dj+' ? '+sh.label.replace(/,.*$/,'')+'</div>';
+      h += '<div class="tbl-wrap" style="margin:0"><table class="vip-tbl"><thead><tr>'
+         + '<th>Table</th><th>Tier</th><th class="r">Sales</th><th class="r">Min/Tbl</th><th class="r">vs Min</th>'
+         + '</tr></thead><tbody>';
+      sh.tableDetail.slice().sort(function(a,b){
+        /* "Other" (no-table) always last */
+        if(a.tier==='Other'&&b.tier!=='Other') return 1;
+        if(b.tier==='Other'&&a.tier!=='Other') return -1;
+        return (b.sales||0)-(a.sales||0);
+      }).forEach(function(row){
+        var _excl = (d.venue==='MILA Lounge') ? ['Booths','Seating']
+                  : (d.venue==='Casa Neos Lounge') ? ['Lounge']
+                  : ['Cabana','Deck'];
+        if(_excl.indexOf(row.tier)>=0) return;
+        var isOther=row.tier==='Other';
+        var minPT=(!isOther&&sh.tiers[row.tier])?sh.tiers[row.tier].minPerTable:0;
+        var diff=(row.sales||0)-minPT, zero=!row.sales;
+        h += '<tr'+(zero?' class="zero-row"':'')+(isOther?' style="opacity:.55"':'')+'>'+
+             '<td><b>'+row.table+'</b></td>'+
+             '<td><span class="tier-badge" style="background:'+(isOther?'#eee':TIER_COLORS[row.tier]||'#eee')+';color:'+(isOther?'#555':TIER_TEXT[row.tier]||'#333')+'">'+row.tier+'</span></td>'+
+             '<td class="r">'+(zero?'?':$kv(row.sales))+'</td>'+
+             '<td class="r" style="'+_TARGET_BG+'">'+(minPT?$kv(minPT):'?')+'</td>';
+        if(zero||isOther) h+='<td class="r" style="color:var(--ink4)">?</td>';
+        else h+='<td class="r '+(diff>=0?'beat':'miss')+'">'+(diff>=0?'+':'')+$kv(diff)+'</td>';
+        h += '</tr>';
+      });
+      h += '</tbody></table></div>';
+    });
+    h += '</div>';
+  }
+
+  document.getElementById('vipBody').innerHTML = h;
+}
+
+/* ---------------------------------------------------------------
+   NEW-WEEK POPUP ? fires once per week on first visit
+   --------------------------------------------------------------- */
+function getISOWeek(d){
+  var dt=new Date(d); dt.setHours(0,0,0,0);
+  dt.setDate(dt.getDate()+4-(dt.getDay()||7));
+  var y=dt.getFullYear();
+  var s=new Date(y,0,1);
+  return y+'-W'+Math.ceil(((dt-s)/86400000+1)/7);
+}
+
+function checkNewWeekPopup(){
+  if(!VIP_VENUES||!VIP_VENUES.length) return;
+  var nowWeek = getISOWeek(new Date());
+  var seenKey = 'vip_seen_'+nowWeek;
+  if(localStorage.getItem(seenKey)) return;
+  localStorage.setItem(seenKey,'1');
+  var dataWeek = (VIP_VENUES[0]||{}).weekKey||'';
+  if(dataWeek===nowWeek) return;
+  showVIPPopup();
+}
+
+function showVIPPopup(){
+  /* aggregate all shows across all venues */
+  var allShows = [];
+  VIP_VENUES.forEach(function(v){ v.shows.forEach(function(sh){ allShows.push({show:sh,venue:v.venue}); }); });
+  if(!allShows.length) return;
+
+  var totalBS    = allShows.reduce(function(s,r){return s+r.show.bsActual;},0);
+  var beatCount  = allShows.filter(function(r){return r.show.bsActual>=r.show.bsMin;}).length;
+  var beatPct    = Math.round(beatCount/allShows.length*100);
+  var crushIt    = beatPct >= 50;
+
+  var pop = document.createElement('div');
+  pop.id = 'vipPopup';
+  pop.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:200;overflow-y:auto;padding:20px 0';
+
+  var venueBlocks = VIP_VENUES.map(function(v){
+    var vTotal = v.shows.reduce(function(s,sh){return s+sh.bsActual;},0);
+    var vBeat  = v.shows.filter(function(sh){return sh.bsActual>=sh.bsMin;}).length;
+    var vOver  = vBeat>=Math.ceil(v.shows.length/2);
+    var rows   = v.shows.map(function(sh){
+      var b=sh.bsActual>=sh.bsMin;
+      var pct = sh.bsMin>0 ? Math.min(100,Math.round(sh.bsActual/sh.bsMin*100)) : 100;
+      return '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.06)">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+        +'<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.85)">'+sh.label.split(',')[0]+' &mdash; '+sh.dj+'</div>'
+        +'<div style="font-size:12px;font-weight:900;color:'+(b?'#22c55e':'#ef4444')+'">'+$kv(sh.bsActual)+'</div></div>'
+        +'<div style="display:flex;align-items:center;gap:6px">'
+        +'<div style="flex:1;height:3px;background:rgba(255,255,255,.1);border-radius:2px;overflow:hidden">'
+        +'<div style="width:'+pct+'%;height:100%;background:'+(b?'#22c55e':'#ef4444')+';border-radius:2px"></div></div>'
+        +'<div style="font-size:9px;color:rgba(255,255,255,.35);white-space:nowrap">min '+$kv(sh.bsMin)+'</div>'
+        +'</div></div>';
+    }).join('');
+    var vColor = vOver ? '#22c55e' : '#ef4444';
+    return '<div style="background:rgba(255,255,255,.05);border-radius:14px;padding:14px 16px;border:1px solid rgba(255,255,255,.08);margin-bottom:8px">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+      +'<span style="font-size:11px;font-weight:800;letter-spacing:-.2px;color:#fff">'+v.venue+'</span>'
+      +'<span style="font-size:14px;font-weight:900;color:'+vColor+'">'+$kv(vTotal)+'</span></div>'
+      +rows+'</div>';
+  }).join('');
+
+  var headTitle = crushIt ? '&#127881; Week Crushed It!' : '&#128200; Room to Grow';
+  var headSub   = crushIt
+    ? beatCount+' of '+allShows.length+' shows beat target &mdash; great week!'
+    : 'Only '+beatCount+' of '+allShows.length+' shows beat target this week.';
+
+  var accentColor = crushIt ? '#22c55e' : '#ef4444';
+  var bgGrad      = crushIt ? 'linear-gradient(135deg,#0f2010 0%,#1a1a2e 100%)' : 'linear-gradient(135deg,#200f0f 0%,#1a1a2e 100%)';
+  pop.innerHTML = (crushIt?'<canvas id="fwCanvas" style="position:fixed;inset:0;pointer-events:none;z-index:199"></canvas>':'')+
+    '<div style="background:'+bgGrad+';border-radius:24px;padding:0;width:440px;max-width:95vw;position:relative;z-index:200;box-shadow:0 24px 80px rgba(0,0,0,.6);overflow:hidden">'
+    +'<div style="height:4px;background:'+accentColor+';width:100%"></div>'
+    +'<div style="padding:22px 24px 14px;border-bottom:1px solid rgba(255,255,255,.08)">'
+    +'<div style="font-size:20px;font-weight:900;letter-spacing:-.5px;color:#fff;margin-bottom:4px">'+headTitle+'</div>'
+    +'<div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:10px">'+headSub+'</div>'
+    +'<div style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;background:rgba(255,255,255,.07);border-radius:999px;border:1px solid rgba(255,255,255,.1)">'
+    +'<span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.5)">All Venues BS</span>'
+    +'<span style="font-size:15px;font-weight:900;color:'+accentColor+'">'+$kv(totalBS)+'</span>'
+    +'</div>'
+    +'</div>'
+    +'<div style="padding:16px 24px;display:flex;flex-direction:column;gap:0">'+venueBlocks+'</div>'
+    +'<div style="padding:0 24px 20px;display:flex;gap:8px">'
+    +'<button onclick="document.getElementById(\'vipPopup\').remove()" style="flex:1;padding:10px;border-radius:12px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.07);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;color:rgba(255,255,255,.7)">Dismiss</button>'
+    +'<button onclick="setView(\'vip\');document.getElementById(\'vipPopup\').remove()" style="flex:2;padding:10px;border-radius:12px;border:none;background:'+accentColor+';color:#fff;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;letter-spacing:.02em">Full VIP Recap &#8594;</button>'
+    +'</div>'
+    +'</div>';
+
+  document.body.appendChild(pop);
+  if(crushIt) launchFireworks();
+}
+
+function launchFireworks(){
+  var cv=document.getElementById('fwCanvas'); if(!cv)return;
+  cv.width=window.innerWidth; cv.height=window.innerHeight;
+  var ctx=cv.getContext('2d');
+  var particles=[];
+  var colors=['#FFD700','#FF4444','#4CAF50','#2196F3','#FF69B4','#FF8C00','#00CED1'];
+  for(var i=0;i<160;i++){
+    var a=Math.random()*Math.PI*2;
+    var sp=2+Math.random()*6;
+    particles.push({x:cv.width/2+(Math.random()-0.5)*200,y:cv.height/2+(Math.random()-0.5)*100,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-3,alpha:1,size:3+Math.random()*4,color:colors[Math.floor(Math.random()*colors.length)]});
+  }
+  function frame(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    var alive=false;
+    particles.forEach(function(p){
+      p.x+=p.vx; p.y+=p.vy; p.vy+=0.12; p.alpha-=0.013;
+      if(p.alpha>0){alive=true;ctx.globalAlpha=p.alpha;ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fill();}
+    });
+    ctx.globalAlpha=1;
+    if(alive) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function renderAccounting(){
+  var yr=curYr, mo=acctM;
+  var days=new Date(yr,mo+1,0).getDate();
+  var mm=(mo+1<10?'0':'')+(mo+1);
+  document.getElementById('acctHd').textContent=MN_FULL[mo]+' '+yr;
+
+  var sl='<div class="month-slider" id="acctSliderInner">';
+  for(var mi=0;mi<12;mi++) sl+='<button class="ms-btn'+(mi===mo?' ms-on':'')+'" id="asbtn'+mi+'" onclick="jumpAcctMonth('+mi+')">'+ MN_SH[mi]+'</button>';
+  sl+='</div>';
+  document.getElementById('acctSlider').innerHTML=sl;
+  setTimeout(function(){var b=document.getElementById('asbtn'+mo);if(b&&b.scrollIntoView)b.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});},60);
+
+  var showMap={};
+  SCHED.forEach(function(r){
+    if(r.v!==curV||r._s==='empty') return;
+    if(!r.d||r.d.slice(0,7)!==yr+'-'+mm) return;
+    if(!showMap[r.d]) showMap[r.d]=[];
+    showMap[r.d].push(r);
+  });
+
+  var statusCounts={};
+  ACCT_STATUS_OPTIONS.forEach(function(s){ statusCounts[s]=0; });
+  statusCounts['Not set']=0;
+  var totalShowsThisMonth=0;
+  for(var td=1; td<=days; td++){
+    var tds=yr+'-'+mm+'-'+(td<10?'0':'')+td;
+    var tshows=showMap[tds]||[];
+    tshows.forEach(function(){
+      totalShowsThisMonth++;
+      var tacct=getAcct(tds);
+      var st=_acctEffectiveStatus(tacct)||'Not set';
+      statusCounts[st]=(statusCounts[st]||0)+1;
+    });
+  }
+  var summaryHtml='<div class="acct-summary">';
+  summaryHtml+='<div class="acct-sum-item'+(!_acctStatusFilter?' acct-sum-active':'')+'" data-filter="__all__"><b>'+totalShowsThisMonth+'</b><span>Shows this month</span></div>';
+  ACCT_STATUS_OPTIONS.concat(['Not set']).forEach(function(s){
+    if(!statusCounts[s]) return;
+    var cls=acctStatusClass(s==='Not set'?null:s);
+    var active=_acctStatusFilter===s;
+    summaryHtml+='<div class="acct-sum-item '+cls+(active?' acct-sum-active':'')+'" data-filter="'+s+'"><b>'+statusCounts[s]+'</b><span>'+s+'</span></div>';
+  });
+  summaryHtml+='</div>';
+  document.getElementById('acctSummary').innerHTML=summaryHtml;
+  document.querySelectorAll('.acct-sum-item').forEach(function(tile){
+    tile.addEventListener('click',function(){
+      var f=tile.dataset.filter;
+      setAcctStatusFilter(f==='__all__'?null:f);
+    });
+  });
+
+  var h='<table class="sched-tbl acct-tbl"><thead><tr>';
+  h+='<th class="sc-date">Date</th>';
+  h+='<th class="sc-ev">Event</th>';
+  h+='<th class="sc-dj">Guest DJ</th>';
+  h+='<th class="sc-num acct-col-fee">DJ Fee</th>';
+  h+='<th class="sc-num acct-col-target">BS Target</th>';
+  h+='<th class="sc-num" style="background:#eef7ee">BS Actual</th>';
+  h+='<th class="acct-status-hd">DJ Status</th>';
+  h+='<th class="acct-status-hd">AP Status <span class="acct-ap-lock" title="Password protected">&#128274;</span></th>';
+  h+='<th class="sc-act-r" title="R365">R365</th>';
+  h+='<th class="sc-act"></th>';
+  h+='</tr></thead><tbody>';
+
+  var totDJ=0, totBSM=0, totBSA=0;
+  var anyFilterMatch=false;
+
+  for(var day=1;day<=days;day++){
+    var ds=yr+'-'+mm+'-'+(day<10?'0':'')+day;
+    var dow=new Date(ds+'T12:00:00').getDay();
+    var isToday=ds===TODAY;
+    var shows=showMap[ds]||[];
+    var evLabel=daySpecialLabel(ds)||'';
+    var acct=getAcct(ds);
+
+    /* Apply status filter   skip days that don't match when a filter is active */
+    if(_acctStatusFilter){
+      var dayStatus = _acctEffectiveStatus(acct) || 'Not set';
+      if(dayStatus!==_acctStatusFilter) continue;
+    }
+
+    var dc='sc-row';
+    if(isToday) dc+=' sc-today';
+    else if(dow===6) dc+=' sc-sat';
+    else if(dow===0) dc+=' sc-sun';
+    else if(dow===5) dc+=' sc-fri';
+    else if(dow===3||dow===4) dc+=' sc-wedthu';
+    if(!shows.length) dc+=' sc-noshow';
+
+    var dateStr=DOW_FULL[dow]+', '+MN_FULL[mo]+' '+day;
+
+    if(!shows.length){
+      if(_acctStatusFilter) continue; /* empty days never match a status filter */
+      h+='<tr class="'+dc+'">';
+      h+='<td class="sc-date-cell">'+dateStr+'</td>';
+      h+='<td class="sc-ev-cell">'+(evLabel?'<span class="sc-ev-label" onclick="openEditSpecialWeek(\''+evLabel.replace(/'/g,"\\'")+'\')" title="Edit/delete this period" style="cursor:pointer">'+evLabel+'</span>':'')+'</td>';
+      h+='<td colspan="4" class="sc-empty-day"></td>';
+      h+='<td></td><td></td><td></td>';
+      h+='<td class="sc-act"><button class="sc-add-btn" data-ds="'+ds+'" data-action="add">+</button></td>';
+      h+='</tr>';
+      continue;
+    }
+    anyFilterMatch=true;
+
+    var djFeeTotal=shows.reduce(function(s,r){return s+(r.fee||r.cost||0);},0);
+    totDJ+=djFeeTotal;
+    totBSM+=shows.reduce(function(s,r){return s+(r.bs_m||0);},0);
+    totBSA+=shows.reduce(function(s,r){return s+(r.bs_a||0);},0);
+
+    var nrows=Math.max(1,shows.length);
+    shows.forEach(function(r,ri){
+      var nm=(r.dj||'TBD').replace(/\?+/g,'').trim()||'TBD';
+      var idx=SCHED.indexOf(r);
+      var bsCls=r.bs_a&&r.bs_m?(r.bs_a>=r.bs_m?'hit':'low'):'';
+
+      h+='<tr class="'+dc+'">';
+      if(ri===0){
+        h+='<td class="sc-date-cell" rowspan="'+nrows+'">'+dateStr
+          +(isToday?'<span class="sc-today-badge"> Today</span>':'')
+          +'</td>';
+        h+='<td class="sc-ev-cell" rowspan="'+nrows+'">'+(evLabel?'<span class="sc-ev-label" onclick="openEditSpecialWeek(\''+evLabel.replace(/'/g,"\\'")+'\')" title="Edit/delete this period" style="cursor:pointer">'+evLabel+'</span>':'')+'</td>';
+      }
+      h+='<td class="sc-dj-cell"><b>'+nm+'</b>'+(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')+'</td>';
+      h+='<td class="sc-num acct-col-fee">'+$k(r.fee||r.cost||null)+'</td>';
+      h+='<td class="sc-num acct-col-target">'+$k(r.bs_m)+'</td>';
+      h+='<td class="sc-num '+bsCls+'"><b>'+$k(r.bs_a)+'</b></td>';
+      if(ri===0){
+        var djSt=acct.djStatus||'';
+        var apSt=acct.apStatus||'';
+        var lastHint=acct.updatedBy?('Last: '+acct.updatedBy+' \u00b7 '+_fmtAcctWhen(acct.updatedAt)):'History';
+        h+='<td class="acct-status-cell" rowspan="'+nrows+'"><div class="acct-status-wrap">'
+          +'<select class="acct-status-sel '+acctStatusClass(djSt||null)+'" data-ds="'+ds+'" data-action="djStatus">'
+          +'<option value=""'+(!djSt?' selected':'')+'>Not set</option>'
+          +ACCT_DJ_STATUS.map(function(opt){return '<option value="'+opt+'"'+(djSt===opt?' selected':'')+'>'+opt+'</option>';}).join('')
+          +'</select></div></td>';
+        h+='<td class="acct-status-cell" rowspan="'+nrows+'"><div class="acct-status-wrap">'
+          +'<select class="acct-status-sel '+acctStatusClass(apSt||null)+'" data-ds="'+ds+'" data-action="apStatus" title="Password required">'
+          +'<option value=""'+(!apSt?' selected':'')+'>Not set</option>'
+          +ACCT_AP_STATUS.map(function(opt){return '<option value="'+opt+'"'+(apSt===opt?' selected':'')+'>'+opt+'</option>';}).join('')
+          +'</select>'
+          +'<div class="acct-last-edit" data-ds="'+ds+'" data-action="acctHist" title="View edit history">'+lastHint+'</div>'
+          +'</div></td>';
+        h+='<td class="sc-act-r" rowspan="'+nrows+'"><label class="r365-wrap"><input type="checkbox" class="r365-chk" data-ds="'+ds+'" data-action="r365" '+(acct.r365?'checked':'')+'><span class="r365-box">R</span></label></td>';
+      }
+      h+='<td class="sc-act"><button class="sc-edit-btn" data-idx="'+idx+'" data-action="edit">&#9998;</button></td>';
+      h+='</tr>';
+    });
+  }
+
+  if(_acctStatusFilter && !anyFilterMatch){
+    h+='<tr><td colspan="10" class="sc-empty-day" style="text-align:center;padding:16px">No shows with status "'+_acctStatusFilter+'" this month.</td></tr>';
+  }
+
+  h+='<tr class="acct-total-row">';
+  h+='<td><b>'+(_acctStatusFilter?'FILTERED':'MONTH')+' TOTAL</b></td><td></td><td></td>';
+  h+='<td class="sc-num acct-col-fee"><b>'+$k(totDJ)+'</b></td>';
+  h+='<td class="sc-num acct-col-target">'+$k(totBSM)+'</td>';
+  h+='<td class="sc-num '+(totBSA&&totBSM?(totBSA>=totBSM?'hit':'low'):'')+'"><b>'+$k(totBSA)+'</b></td>';
+  h+='<td></td><td></td><td></td><td></td>';
+  h+='</tr></tbody></table>';
+
+  document.getElementById('acctBody').innerHTML=h;
+  wireAccountingEvents();
+}
+
+
+
+/*                                                               
+   EVENT MODAL   simplified (venue/date/dj/fee only)
+                                                                  */
+function openAddModal(ds){
+  _editIdx=-1;
+  var f=getFields();
+  f.venue.value=curV;
+  f.date.value=ds||(curYr+'-'+(curM<9?'0':'')+(curM+1)+'-01');
+  f.dj.value=''; f.fee.value=''; f.ev.value=''; f.tbd.checked=false; f.note.value='';
+  f.bsm.value=''; f.bsa.value=''; f.roit.value=''; f.roia.value='';
+  document.getElementById('modalTitle').textContent='Add Show';
+  document.getElementById('btnDelete').style.display='none';
+  checkDjSuggestion();
+  document.getElementById('evModal').classList.remove('hidden');
+}
+function openEditModal(idx){
+  _editIdx=idx; var r=SCHED[idx]; if(!r) return;
+  var f=getFields();
+  f.venue.value=r.v||''; f.date.value=r.d||'';
+  f.dj.value=r.dj||''; f.fee.value=r.fee||r.cost||'';
+  f.bsm.value=r.bs_m||''; f.bsa.value=r.bs_a||'';
+  f.roit.value=r.roi_t||''; f.roia.value=r.roi_a||'';
+  f.ev.value=r.ev||''; f.tbd.checked=!!r.tbd; f.note.value=r.note||'';
+  document.getElementById('modalTitle').textContent='Edit Show';
+  document.getElementById('btnDelete').style.display='';
+  checkDjSuggestion();
+  document.getElementById('evModal').classList.remove('hidden');
+}
+function getFields(){
+  return {
+    venue:document.getElementById('fldVenue'), date:document.getElementById('fldDate'),
+    dj:document.getElementById('fldDJ'),       fee:document.getElementById('fldFee'),
+    bsm:document.getElementById('fldBSM'),     bsa:document.getElementById('fldBSA'),
+    roit:document.getElementById('fldROIT'),   roia:document.getElementById('fldROIA'),
+    ev:document.getElementById('fldEv'),       tbd:document.getElementById('fldTBD'),
+    note:document.getElementById('fldNote'),
+  };
+}
+
+/* Live DJ-history lookup for the Add/Edit Show modal */
+function checkDjSuggestion(){
+  var f=getFields();
+  var name=(f.dj.value||'').trim();
+  var box=document.getElementById('fldDjSuggest');
+  if(!box) return;
+  if(!name){ box.innerHTML=''; box.style.display='none'; return; }
+  var proj=djProj(name,null);
+
+  var venue=f.venue.value, dateStr=f.date.value;
+  var proposedFee=parseFloat(f.fee.value)||null;
+  var budgetHtml='';
+  if(venue && dateStr){
+    var mm=dateStr.slice(5,7), yr=dateStr.slice(0,4);
+    var budget=getMonthlyBudget(venue,yr,mm);
+    var currentSpend=SCHED.filter(function(r){
+      return r.v===venue && r.yr===parseInt(yr,10) && r.d.slice(5,7)===mm && r._s!=='empty' && SCHED.indexOf(r)!==_editIdx;
+    }).reduce(function(s,r){return s+(r.fee||r.cost||0);},0);
+    var feeToAdd = proposedFee || (proj.p?cappedSuggestedFee(proj.p.avg_bs,proj.p.avg_fee):0) || 0;
+    var afterBooking = currentSpend + feeToAdd;
+    var remaining = budget!=null ? budget-afterBooking : null;
+    budgetHtml='<div class="dj-sugg-budget">'
+      +'<div class="dj-sugg-budget-hd">'+MN_FULL[parseInt(mm,10)-1]+' '+yr+' budget position</div>'
+      +'<div class="dj-sugg-row"><span>Scheduled spend so far</span><b>'+$k(currentSpend)+'</b></div>'
+      +'<div class="dj-sugg-row"><span>If you book this DJ ('+$k(feeToAdd)+')</span><b>'+$k(afterBooking)+'</b></div>'
+      +(budget!=null
+        ? '<div class="dj-sugg-row"><span>Remaining budget after</span><b class="'+(remaining>=0?'pos':'neg')+'">'+$kv(remaining)+'</b></div>'
+        : '<div class="dj-sugg-row"><span style="color:var(--ink3)">No budget set for this month</span></div>')
+      +'</div>';
+  }
+
+  if(!proj.p){
+    box.style.display = budgetHtml ? 'block' : 'none';
+    box.innerHTML = budgetHtml;
+    return;
+  }
+  var p=proj.p;
+  var fair=cappedSuggestedFee(p.avg_bs, p.avg_fee);
+  box.style.display='block';
+  box.innerHTML=
+    '<div class="dj-sugg-hd">'+p.display+' &mdash; '+p.n+' shows on record</div>'
+    +'<div class="dj-sugg-row"><span>Avg fee historically paid</span><b>'+$k(p.avg_fee)+'</b></div>'
+    +'<div class="dj-sugg-row"><span>Avg BS delivered</span><b>'+$k(p.avg_bs)+'</b></div>'
+    +'<div class="dj-sugg-row"><span>Avg ROI achieved</span><b class="kc-b">'+(p.avg_roi_a||'-')+'x</b></div>'
+    +'<div class="dj-sugg-row"><span>Beat rate</span><b class="'+(p.beat_rate>=60?'hit':'low')+'">'+p.beat_rate+'%</b></div>'
+    +'<button type="button" class="dj-sugg-use" onclick="useSuggestedFee('+fair+')">Use suggested fee: '+$k(fair)+'</button>'
+    +budgetHtml;
+}
+function useSuggestedFee(fee){
+  var f=getFields();
+  f.fee.value=fee;
+}
+function closeModal(){ document.getElementById('evModal').classList.add('hidden'); }
+function saveEvent(){
+  var f=getFields();
+  var v=f.venue.value, d=f.date.value, dj=(f.dj.value||'').trim();
+  var fee=parseFloat(f.fee.value)||null;
+  var ev=(f.ev.value||'').trim()||null;
+  var tbd=f.tbd.checked?1:0;
+  if(!d){alert('Date required');return;}
+  var yr=parseInt(d.slice(0,4),10);
+  /* auto-populate BS target and ROI target   venue-specific rules first, generic tier fallback */
+  var vLookup=fee?venueRoiLookup(v,d,fee):null;
+  var bsm=vLookup?vLookup.bsTarget:(fee?bsMinFor(fee):null);
+  var roit=vLookup?vLookup.roiTarget:(fee?roiTFor(fee):null);
+  var past=d<=TODAY;
+  var _s=(!dj&&!fee)?'empty':(tbd?'tbd':(past?'nd':'fut'));
+  var note=(f.note.value||'').trim()||null;
+  var rec={v:v,yr:yr,d:d,dj:dj,fee:fee,cost:fee,bs_m:bsm,bs_a:null,
+           roi_t:roit,roi_a:null,beat:null,ev:ev,tbd:tbd,_s:_s,note:note};
+  /* preserve existing bs_a/roi_a/beat when editing an already-performed show */
+  if(_editIdx>=0){
+    var prev=SCHED[_editIdx];
+    if(prev){ rec.bs_a=prev.bs_a; rec.roi_a=prev.roi_a; rec.beat=prev.beat;
+      if(prev.bs_a&&prev._s!=='fut'&&prev._s!=='tbd') rec._s=prev._s; }
+  }
+  if(_editIdx>=0) SCHED[_editIdx]=rec; else SCHED.push(rec);
+  IDX=buildIdx(SCHED); closeModal(); go();
+  if(curView==='accounting') renderAccounting();
+  if(curView==='budget'&&_budgetInited) renderBudget();
+  /* Sync to Firebase */
+  if(window._fbSave){
+    var isBaked = SCHED_BAKED.some(function(r){ return (r.venue||r.v)===(rec.venue||rec.v) && r.d===rec.d; });
+    var fbKey   = (rec.venue||rec.v)+'|'+rec.d;
+    if(isBaked){
+      window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_')).set(rec);
+    } else {
+      /* Find or create in adds array */
+      window._fbRef.child('schedOverrides/adds').once('value', function(snap){
+        var adds = snap.val();
+        var arr  = adds ? (Array.isArray(adds)?adds:Object.values(adds)) : [];
+        var ai   = arr.findIndex(function(r){ return (r.venue||r.v)===(rec.venue||rec.v) && r.d===rec.d; });
+        if(ai>=0) arr[ai]=rec; else arr.push(rec);
+        window._fbRef.child('schedOverrides/adds').set(arr);
+      });
+    }
+  }
+}
+function deleteEvent(){
+  if(_editIdx<0) return;
+  var show = SCHED[_editIdx];
+  var label = (show ? (show.dj||'this performance') + ' on ' + (show.d||'') : 'this performance');
+  if(!confirm('Delete ' + label + '?\n\nThis cannot be undone.')) return;
+  /* Sync delete to Firebase before splicing */
+  if(window._fbSave && show){
+    var delKey = (show.venue||show.v)+'|'+show.d;
+    var isBaked = SCHED_BAKED.some(function(r){ return (r.venue||r.v)===(show.venue||show.v) && r.d===show.d; });
+    if(isBaked){
+      window._fbRef.child('schedOverrides/deletes').once('value', function(snap){
+        var dels = snap.val();
+        var arr  = dels ? (Array.isArray(dels)?dels:Object.values(dels)) : [];
+        if(arr.indexOf(delKey)<0) arr.push(delKey);
+        window._fbRef.child('schedOverrides/deletes').set(arr);
+        /* Also remove any edit entry */
+        window._fbRef.child('schedOverrides/edits/'+delKey.replace(/\//g,'_')).remove();
+      });
+    } else {
+      window._fbRef.child('schedOverrides/adds').once('value', function(snap){
+        var adds = snap.val();
+        var arr  = adds ? (Array.isArray(adds)?adds:Object.values(adds)) : [];
+        arr = arr.filter(function(r){ return !((r.venue||r.v)===(show.venue||show.v) && r.d===show.d); });
+        window._fbRef.child('schedOverrides/adds').set(arr.length?arr:null);
+      });
+    }
+  }
+  SCHED.splice(_editIdx,1); IDX=buildIdx(SCHED); closeModal(); go();
+  if(curView==='accounting') renderAccounting();
+  if(curView==='budget'&&_budgetInited) renderBudget();
+}
+
+/*                                                               
+   SPECIAL WEEK
+                                                                  */
+/* ?? Special Week management ?? */
+var _swEditKey   = null;
+var _swEditLabel = null;
+var _swEditSrc   = null;
+
+function _renderSwList(){
+  var container = document.getElementById('swExistingList');
+  if(!container) return;
+  var all = [];
+  // 1. specialWeeks runtime entries
+  Object.keys(specialWeeks).forEach(function(k){
+    if(!k.startsWith(curV+'|')) return;
+    var parts = k.split('|');
+    var yr2 = parts[1], mm2 = parts[2];
+    (specialWeeks[k]||[]).forEach(function(sw){
+      all.push({ key:k, label:sw.label, startDay:sw.startDay, endDay:sw.endDay, yr:yr2, mm:mm2, src:'sw' });
+    });
+  });
+  // 2. SCHED ev-field labels for current venue (grouped by label)
+  var schedLabels = {};
+  SCHED.forEach(function(r){
+    if(r.v!==curV || !r.ev) return;
+    if(!schedLabels[r.ev]) schedLabels[r.ev]={ label:r.ev, dates:[] };
+    schedLabels[r.ev].dates.push(r.d);
+  });
+  Object.keys(schedLabels).forEach(function(lbl){
+    var dates = schedLabels[lbl].dates.sort();
+    all.push({ label:lbl, src:'sched', dates:dates });
+  });
+  all.sort(function(a,b){ return a.label.localeCompare(b.label); });
+  if(!all.length){ container.innerHTML='<div style="font-size:10px;color:var(--ink3);margin-bottom:8px">No special periods added yet.</div>'; return; }
+  var h = '<div style="margin-bottom:10px">'
+    +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin-bottom:6px">Existing Periods</div>';
+  all.forEach(function(sw, i){
+    var subtitle = sw.src==='sched'
+      ? sw.dates.length+' show'+(sw.dates.length>1?'s':'')
+      : (['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(sw.mm,10)-1]+' '+sw.yr+' &nbsp;&#183;&nbsp; Day '+sw.startDay+(sw.endDay!==sw.startDay?' &ndash; '+sw.endDay:''));
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--card);border-radius:8px;margin-bottom:4px;border:0.5px solid var(--hair)">'
+      +'<div><div style="font-size:11px;font-weight:700">'+sw.label+'</div>'
+      +'<div style="font-size:9px;color:var(--ink3)">'+subtitle+(sw.src==='sched'?' &nbsp;<span style="opacity:.5">(from schedule)</span>':'')+'</div></div>'
+      +'<div style="display:flex;gap:4px">'
+      +'<button onclick="_swEdit('+i+')" style="padding:3px 9px;border-radius:6px;border:0.5px solid var(--rule);background:var(--card2);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit">Edit</button>'
+      +'<button onclick="_swDelete('+i+')" style="padding:3px 9px;border-radius:6px;border:none;background:#faeaea;color:#8b2020;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit">Delete</button>'
+      +'</div></div>';
+  });
+  h += '</div>';
+  container.innerHTML = h;
+  container._swAll = all;
+}
+
+function _swEdit(idx){
+  var container = document.getElementById('swExistingList');
+  var all = container._swAll||[];
+  var sw = all[parseInt(idx)];
+  if(!sw) return;
+  _swEditKey   = sw.key || null;
+  _swEditLabel = sw.label;
+  _swEditSrc   = sw.src;
+  document.getElementById('swLabel').value = sw.label;
+  document.getElementById('swModalTitle').textContent = 'Edit Special Period';
+  document.getElementById('swFormLabel').textContent  = 'Edit Period';
+  document.getElementById('swSaveBtn').textContent    = 'Save Changes';
+  if(sw.src === 'sw'){
+    var mm2 = sw.mm, yr2 = sw.yr;
+    document.getElementById('swStartDate').value = yr2+'-'+mm2+'-'+(sw.startDay<10?'0':'')+sw.startDay;
+    document.getElementById('swEndDate').value   = yr2+'-'+mm2+'-'+(sw.endDay  <10?'0':'')+sw.endDay;
+  } else {
+    // SCHED-based: fill dates from first/last show
+    var dates = sw.dates.slice().sort();
+    document.getElementById('swStartDate').value = dates[0]||'';
+    document.getElementById('swEndDate').value   = dates[dates.length-1]||'';
+  }
+  document.getElementById('swLabel').focus();
+}
+
+function _swDelete(idx){
+  var container = document.getElementById('swExistingList');
+  var all = container._swAll||[];
+  var sw = all[parseInt(idx)];
+  if(!sw) return;
+  if(!confirm('Delete special period "'+sw.label+'"?\n\nThis cannot be undone.')) return;
+  if(sw.src==='sw'){
+    // Remove from specialWeeks runtime object
+    if(specialWeeks[sw.key]){
+      specialWeeks[sw.key] = specialWeeks[sw.key].filter(function(s){ return s.label!==sw.label||s.startDay!==sw.startDay; });
+      if(!specialWeeks[sw.key].length) delete specialWeeks[sw.key];
+    }
+    if(window._fbSave) window._fbSave('specialWeeks', specialWeeks);
+  } else {
+    // Remove ev field from all matching SCHED entries ? sync via schedOverrides
+    SCHED.forEach(function(r){
+      if(r.v===curV && r.ev===sw.label){
+        r.ev=null;
+        if(window._fbRef){
+          var k = (r.venue||r.v)+'|'+r.d;
+          window._fbRef.child('schedOverrides/edits/'+k.replace(/\//g,'_')+'/ev').set(null);
+        }
+      }
+    });
+  }
+  _renderSwList();
+  go();
+}
+
+function openEditSpecialWeek(label){
+  /* Find this label in specialWeeks and pre-populate the edit form */
+  var found = null;
+  Object.keys(specialWeeks).forEach(function(k){
+    if(!k.startsWith(curV+'|')) return;
+    (specialWeeks[k]||[]).forEach(function(sw){
+      if(sw.label===label) found={ key:k, sw:sw };
+    });
+  });
+  document.getElementById('swModal').classList.remove('hidden');
+  _renderSwList();
+  document.getElementById('swModalTitle').textContent = 'Manage Special Periods';
+  document.getElementById('swFormLabel').textContent  = 'New Period';
+  document.getElementById('swSaveBtn').textContent    = 'Add Period';
+  document.getElementById('swLabel').value = label;
+  if(found){
+    _swEditKey   = found.key;
+    _swEditLabel = found.sw.label;
+    var parts = found.key.split('|'); // venue|yr|mm
+    var yr2=parts[1], mm2=parts[2];
+    document.getElementById('swStartDate').value = yr2+'-'+mm2+'-'+(found.sw.startDay<10?'0':'')+found.sw.startDay;
+    document.getElementById('swEndDate').value   = yr2+'-'+mm2+'-'+(found.sw.endDay  <10?'0':'')+found.sw.endDay;
+  }
+  document.getElementById('swLabel').focus();
+}
+
+function openAddSpecialWeek(){
+  _swEditKey = null; _swEditLabel = null;
+  document.getElementById('swModal').classList.remove('hidden');
+  document.getElementById('swModalTitle').textContent = 'Manage Special Periods';
+  document.getElementById('swFormLabel').textContent  = 'New Period';
+  document.getElementById('swSaveBtn').textContent    = 'Add Period';
+  var yr=curYr, mo=curM;
+  var days=new Date(yr,mo+1,0).getDate();
+  var mm=(mo+1<10?'0':'')+(mo+1);
+  document.getElementById('swStartDate').value=yr+'-'+mm+'-01';
+  document.getElementById('swEndDate').value=yr+'-'+mm+'-'+(days<10?'0':'')+days;
+  document.getElementById('swLabel').value='';
+  _renderSwList();
+  document.getElementById('swLabel').focus();
+}
+function closeSwModal(){
+  document.getElementById('swModal').classList.add('hidden');
+  _swEditKey = null; _swEditLabel = null; _swEditSrc = null;
+}
+function saveSpecialWeek(){
+  var label=(document.getElementById('swLabel').value||'').trim();
+  var startStr=document.getElementById('swStartDate').value;
+  var endStr  =document.getElementById('swEndDate').value;
+  if(!label||!startStr||!endStr) return;
+  var sd=new Date(startStr+'T12:00:00'), ed=new Date(endStr+'T12:00:00');
+  if(sd>ed) return;
+  /* If editing a SCHED-based label, just rename the ev field across all records */
+  if(_swEditSrc === 'sched' && _swEditLabel){
+    SCHED.forEach(function(r){ if(r.v===curV && r.ev===_swEditLabel) r.ev=label; });
+    _swEditKey=null; _swEditLabel=null; _swEditSrc=null;
+    _renderSwList();
+    go();
+    return;
+  }
+  /* If editing a runtime specialWeek, remove old entry first */
+  if(_swEditKey && _swEditLabel){
+    if(specialWeeks[_swEditKey]){
+      specialWeeks[_swEditKey]=specialWeeks[_swEditKey].filter(function(s){return s.label!==_swEditLabel;});
+    }
+    _swEditKey=null; _swEditLabel=null; _swEditSrc=null;
+  }
+  /* store per month (can span multiple months) */
+  var cur=new Date(sd);
+  while(cur<=ed){
+    var yr2=cur.getFullYear(), mo2=cur.getMonth();
+    var mm2=(mo2+1<10?'0':'')+(mo2+1);
+    var startDay=cur.getDate();
+    var monthEnd=new Date(yr2,mo2+1,0);
+    var endInMonth=ed<=monthEnd?ed:monthEnd;
+    var endDay=endInMonth.getDate();
+    var k=curV+'|'+yr2+'|'+mm2;
+    if(!specialWeeks[k]) specialWeeks[k]=[];
+    specialWeeks[k]=specialWeeks[k].filter(function(s){return s.label!==label;});
+    specialWeeks[k].push({label:label,startDay:startDay,endDay:endDay});
+    cur=new Date(yr2,mo2+1,1);
+  }
+  /* Sync specialWeeks to Firebase */
+  if(window._fbSave) window._fbSave('specialWeeks', specialWeeks);
+  /* Reset form for another add */
+  document.getElementById('swLabel').value='';
+  document.getElementById('swModalTitle').textContent='Manage Special Periods';
+  document.getElementById('swFormLabel').textContent='New Period';
+  document.getElementById('swSaveBtn').textContent='Add Period';
+  _renderSwList();
+  go();
+}
+
+/*                                                               
+   BUDGET TOPLINE   Bottle Service only
+                                                                  */
+var REV_CTX={bs:9604301, dj_bs_2026:5869524, label:'2026 CN BC'};
+
+function renderBudgetTopLine(ytProj, ytFee){
+  var tl = document.getElementById('budgetTopLine');
+  if(!tl) return;
+  var pctBS = ytProj ? (ytProj/REV_CTX.bs*100).toFixed(1) : null;
+  var varVsPY = ytProj - REV_CTX.dj_bs_2026;
+
+  var h='<div class="bgt-topline">';
+  h+='<div class="btl-title">Bottle Service forecast   '+bgtYear+' vs 2026</div>';
+  h+='<div class="btl-row">';
+  /* PY DJ BS */
+  h+='<div class="btl-col">';
+  h+='<div class="btl-lbl">DJ BS 2026 actual</div>';
+  h+='<div style="font-size:20px;font-weight:900;color:var(--ink3)">'+$m(REV_CTX.dj_bs_2026)+'</div>';
+  h+='<div class="btl-note">'+REV_CTX.label+'</div>';
+  h+='</div>';
+  /* Total BS 2026 */
+  h+='<div class="btl-col">';
+  h+='<div class="btl-lbl">Total BS 2026</div>';
+  h+='<div style="font-size:20px;font-weight:900;color:var(--ink3)">'+$m(REV_CTX.bs)+'</div>';
+  h+='<div class="btl-note">full venue BS</div>';
+  h+='</div>';
+  /* Projected DJ BS */
+  h+='<div class="btl-col btl-key">';
+  h+='<div class="btl-lbl">Proj DJ BS '+bgtYear+'</div>';
+  h+='<div style="font-size:24px;font-weight:900;color:var(--blue)">'+$m(ytProj)+'</div>';
+  h+='<div class="btl-note '+(pctBS?'kc-b':'')+'">'+(pctBS?pctBS+'% of total BS':'add fees to project')+'</div>';
+  h+='</div>';
+  /* Change */
+  h+='<div class="btl-col btl-total">';
+  h+='<div class="btl-lbl">vs 2026 DJ BS</div>';
+  h+='<div style="font-size:24px;font-weight:900" class="'+(varVsPY>=0?'pos':'neg')+'">'+$mv(varVsPY)+'</div>';
+  h+='<div class="btl-note">'+$m(ytFee)+' in DJ fees</div>';
+  h+='</div>';
+  h+='</div></div>';
+  tl.innerHTML=h;
+}
+
+
+
+
+/*     HELP & FEEDBACK PANEL                                         */
+var HELP_FAQ = [
+  {kw:['add','show','new dj','book'], q:'How do I add a show?',
+   a:'Click <b>+ Add Show</b> on the Calendar or Accounting tab. Enter venue, date, DJ name and fee   BS Target and ROI Target are calculated automatically from the fee tier table.'},
+  {kw:['py','prior year','last year','2025','blank','empty'], q:"Why is a date's PY (prior year) column empty?",
+   a:"The system matches each date to the closest SAME-WEEKDAY show from last year (Saturday matches Saturday, Sunday matches Sunday). If no matching weekday show exists nearby, it's left blank rather than guessing wrong."},
+  {kw:['budget','not show','missing','lounge','venue'], q:"Why don't I see my new show in the Budget tab?",
+   a:"The Budget tab follows whatever venue you're viewing on the Calendar   switch venues using the pills at the top and Budget updates automatically. The Year dropdown inside Budget is independent, so make sure it's set to the year you want too."},
+  {kw:['roi','target','tier','multiplier','suggested','fair value'], q:'How is the ROI Target / Suggested Fee calculated?',
+   a:'ROI Target comes from the DJ fee, using the tier table from the minimum reporting file (e.g. a $20K&ndash;$30K fee carries a 5x BS target). Suggested Fee is a ceiling based on that DJ has proven to deliver on average   it will never suggest paying more than they already get.'},
+  {kw:['special week','f1','art basel','wmc','event','festival'], q:'Can I add a Special Week (like F1, Art Basel)?',
+   a:'Yes   click <b>+ Special Week</b>, name it, and pick a start/end date. It can span multiple months and shows as an amber label on every day in range.'},
+  {kw:['2026','2027','plan','year','current'], q:'Can I budget for 2026 as well as 2027?',
+   a:'Yes   use the Year dropdown in the Budget tab. Selecting 2026 shows your existing bookings for the rest of this year with the same fee/ROI/BS Target math as 2027 planning.'},
+  {kw:['accounting','rider','fire','sound','cryo','cost line'], q:'How do I track extra costs like rider, fire, sound?',
+   a:'On the Accounting tab, each show comes pre-loaded with Rider, Resident DJ, Fire Show, Cryo, and Sound System lines   just fill in amounts. Click <b>+ Add cost line</b> for anything else, and rename any category by clicking its name field.'},
+  {kw:['grid','list','year view','toggle','zoom'], q:'What do the calendar view buttons do?',
+   a:'The three icons switch between List (detailed table), Grid (traditional box calendar), and Full Year (all 12 months at a glance, still showing DJ name/fee/target).'},
+];
+
 
 
 /* ---- Help & Feedback easter eggs + Virtual DJ Booth ---- */
