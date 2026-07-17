@@ -604,6 +604,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .import-err{color:var(--miss);background:var(--miss-bg);padding:8px 10px;border-radius:6px;font-size:11px;margin-top:8px}
 
 .acct-status-hd{min-width:88px;max-width:110px;width:100px}
+.sc-dj-st{width:100px;min-width:92px;max-width:110px}
 .acct-status-sel{width:100%;max-width:108px;font-size:9px;font-weight:600;padding:4px 4px;border-radius:6px;border:0.5px solid var(--rule);outline:none;font-family:inherit;cursor:pointer}
 .acct-status-wrap{display:flex;flex-direction:column;align-items:stretch;gap:3px;min-width:88px;max-width:112px}
 .acct-last-edit{font-size:8px;color:var(--ink4);line-height:1.2;text-align:left;cursor:pointer}
@@ -2303,6 +2304,7 @@ function renderCal(){
   h+='<th class="sc-num">BS Actual</th>';
   h+='<th class="sc-num">ROI Tgt</th>';
   h+='<th class="sc-num">ROI Act</th>';
+  h+='<th class="acct-status-hd sc-dj-st">DJ Status</th>';
   h+='<th class="sc-sep"></th>';
   h+='<th class="sc-py sc-py-hd">PY DJ ('+(yr-1)+')</th>';
   h+='<th class="sc-num">PY Fee</th>';
@@ -2335,7 +2337,7 @@ function renderCal(){
       h+='<tr class="'+dc+'">';
       h+='<td class="sc-ev-cell">'+(evLabel?'<span class="sc-ev-label" onclick="openEditSpecialWeek(\''+evLabel.replace(/'/g,"\\'")+'\')" title="Edit/delete this period" style="cursor:pointer">'+evLabel+'</span>':'')+'</td>';
       h+='<td class="sc-date-cell">'+dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
-      h+='<td colspan="6" class="sc-empty-day"><button type="button" class="sc-add-inline" onclick="openAddModal(\''+ds+'\')">+ Add show</button></td>';
+      h+='<td colspan="7" class="sc-empty-day"><button type="button" class="sc-add-inline" onclick="openAddModal(\''+ds+'\')">+ Add show</button></td>';
       h+='<td class="sc-sep"></td>';
       h+='<td colspan="6" class="sc-empty-day"></td>';
       h+='<td class="sc-act"><button class="sc-add-btn" onclick="openAddModal(\''+ds+'\')">+</button></td>';
@@ -2375,7 +2377,15 @@ function renderCal(){
         h+='<td class="sc-num">'+rx(roiT)+'</td>';
         h+='<td class="sc-num '+rCls+'"><b>'+rx(r.roi_a)+'</b>'
           +(rCls?'<div class="sc-beat-icon">'+(rCls==='hit'?'&#9650;':'&#9660;')+'</div>':'')+'</td>';
-        if(ri===0) h+='<td class="sc-sep" rowspan="'+nrows+'"></td>';
+        if(ri===0){
+          var djSt=(getAcct(ds).djStatus||'');
+          h+='<td class="acct-status-cell" rowspan="'+nrows+'"><div class="acct-status-wrap">'
+            +'<select class="acct-status-sel '+acctStatusClass(djSt||null)+'" data-ds="'+ds+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status (shared with Accounting)">'
+            +'<option value=""'+(!djSt?' selected':'')+'>Not set</option>'
+            +ACCT_DJ_STATUS.map(function(opt){return '<option value="'+opt+'"'+(djSt===opt?' selected':'')+'>'+opt+'</option>';}).join('')
+            +'</select></div></td>';
+          h+='<td class="sc-sep" rowspan="'+nrows+'"></td>';
+        }
         /* prior year columns */
         h+='<td class="sc-py">';
         if(pyNm){
@@ -2394,6 +2404,9 @@ function renderCal(){
   }
   h+='</tbody></table>';
   document.getElementById('calBody').innerHTML=h;
+  document.querySelectorAll('#calBody [data-action="djStatus"]').forEach(function(sel){
+    sel.addEventListener('change',function(){ updateAcctDjStatus(sel.dataset.ds, sel.value, sel); });
+  });
 }
 
 /*     CALENDAR   grid (box) view                                   */
@@ -2837,7 +2850,11 @@ function updateAcctDjStatus(ds,val,sel){
   acct.status=_acctEffectiveStatus(acct); /* keep legacy field in sync for filters */
   _acctPushLog(acct,'DJ Status',prev,next,by);
   _acctPersist();
-  renderAccounting();
+  if(curView==='accounting') renderAccounting();
+  else if(curView==='calendar') renderCal();
+  else if(sel){
+    sel.className='acct-status-sel '+acctStatusClass(next||null);
+  }
 }
 function updateAcctApStatus(ds,val,sel){
   var acct=_acctNormalize(getAcct(ds));
