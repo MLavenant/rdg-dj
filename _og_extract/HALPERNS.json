@@ -1,0 +1,1054 @@
+{
+ "name": "HALPERNS",
+ "max_row": 58,
+ "max_col": 34,
+ "rows": [
+  {
+   "r": 1,
+   "cells": [
+    {
+     "c": "G",
+     "v": "PURCHASE ORDER"
+    }
+   ]
+  },
+  {
+   "r": 2,
+   "cells": [
+    {
+     "c": "O",
+     "v": "Back to ORDERING"
+    }
+   ]
+  },
+  {
+   "r": 3,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RIVIERA DINING GROUP "
+    },
+    {
+     "c": "H",
+     "v": "RESTAURANT:"
+    },
+    {
+     "c": "J",
+     "v": "CLAUDIE"
+    },
+    {
+     "c": "O",
+     "v": "ORDER DATE"
+    },
+    {
+     "c": "P",
+     "v": "=TEXT(P4,\"DDDD\")"
+    }
+   ]
+  },
+  {
+   "r": 4,
+   "cells": [
+    {
+     "c": "A",
+     "v": "2915 Biscayne blvd, Suite 303A "
+    },
+    {
+     "c": "H",
+     "v": "ADDRESS:"
+    },
+    {
+     "c": "J",
+     "v": "1101 Brickell Ave S-113, Miami, FL 33131"
+    },
+    {
+     "c": "O",
+     "v": "Date"
+    },
+    {
+     "c": "P",
+     "v": "=TODAY()"
+    }
+   ]
+  },
+  {
+   "r": 5,
+   "cells": [
+    {
+     "c": "A",
+     "v": "Miami, FL 33137"
+    },
+    {
+     "c": "H",
+     "v": "VENDOR:"
+    },
+    {
+     "c": "J",
+     "v": "=A11"
+    }
+   ]
+  },
+  {
+   "r": 6,
+   "cells": [
+    {
+     "c": "H",
+     "v": "PO"
+    },
+    {
+     "c": "J",
+     "v": "=\"CLAUDIE_BRICKELL_\"&SUBSTITUTE(SUBSTITUTE(SUBSTITUTE(UPPER(J5),\" \",\"\"),\"'\",\"\"),\"&\",\"\")&\"_\"&TEXT(TODAY(),\"MMDDYY\")"
+    }
+   ]
+  },
+  {
+   "r": 7,
+   "cells": [
+    {
+     "c": "A",
+     "v": "Email Address: a.perez@claudierestaurant.com"
+    }
+   ]
+  },
+  {
+   "r": 8,
+   "cells": [
+    {
+     "c": "A",
+     "v": "Point of Contact - Amanda Perez"
+    }
+   ]
+  },
+  {
+   "r": 9,
+   "cells": [
+    {
+     "c": "G",
+     "v": "CLAUDIE ORDER"
+    },
+    {
+     "c": "L",
+     "v": 25
+    },
+    {
+     "c": "X",
+     "v": "`"
+    }
+   ]
+  },
+  {
+   "r": 10,
+   "cells": [
+    {
+     "c": "A",
+     "v": "Vendor"
+    },
+    {
+     "c": "E",
+     "v": "Category"
+    },
+    {
+     "c": "F",
+     "v": "Items"
+    },
+    {
+     "c": "G",
+     "v": "Vendor"
+    },
+    {
+     "c": "H",
+     "v": "Price"
+    },
+    {
+     "c": "J",
+     "v": "UofM"
+    },
+    {
+     "c": "K",
+     "v": "Frequency"
+    },
+    {
+     "c": "L",
+     "v": "Weekly Purchase"
+    },
+    {
+     "c": "M",
+     "v": "=P3"
+    }
+   ]
+  },
+  {
+   "r": 11,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F11,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "F",
+     "v": "<openpyxl.worksheet.formula.ArrayFormula object at 0x00000149633909B0>"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F11,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F11,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "I",
+     "v": "=H11*20"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F11,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F11,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    },
+    {
+     "c": "Z",
+     "v": "DARTAGNAN"
+    },
+    {
+     "c": "AA",
+     "v": "=IFERROR((#REF!*#REF!)+(#REF!*#REF!)+(#REF!*#REF!)+(#REF!*#REF!),\"\")"
+    },
+    {
+     "c": "AB",
+     "v": "=IFERROR((#REF!*#REF!)+(#REF!*#REF!)+(#REF!*#REF!)+(#REF!*#REF!),\"\")"
+    },
+    {
+     "c": "AC",
+     "v": "=IFERROR((#REF!*#REF!)+(#REF!*#REF!)+(#REF!*#REF!)+(#REF!*#REF!),\"\")"
+    },
+    {
+     "c": "AD",
+     "v": "=IFERROR((#REF!*#REF!)+(#REF!*#REF!)+(#REF!*#REF!)+(#REF!*#REF!),\"\")"
+    },
+    {
+     "c": "AE",
+     "v": "=IFERROR((#REF!*#REF!)+(#REF!*#REF!)+(#REF!*#REF!)+(#REF!*#REF!),\"\")"
+    },
+    {
+     "c": "AF",
+     "v": "=IFERROR((#REF!*#REF!)+(#REF!*#REF!)+(#REF!*#REF!)+(#REF!*#REF!),\"\")"
+    },
+    {
+     "c": "AG",
+     "v": "=IFERROR((#REF!*#REF!)+(#REF!*#REF!)+(#REF!*#REF!)+(#REF!*#REF!),\"\")"
+    },
+    {
+     "c": "AH",
+     "v": "=#REF!+1"
+    }
+   ]
+  },
+  {
+   "r": 12,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F12,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "F",
+     "v": "="
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F12,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F12,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F12,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F12,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 13,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F13,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F13,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F13,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F13,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F13,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 14,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F14,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F14,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F14,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F14,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F14,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 15,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F15,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F15,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F15,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F15,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F15,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 16,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F16,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F16,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F16,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F16,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F16,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 17,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F17,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F17,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F17,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F17,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F17,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 18,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F18,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F18,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F18,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F18,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F18,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 19,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F19,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F19,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F19,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F19,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F19,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 20,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F20,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F20,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F20,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F20,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F20,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 21,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F21,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F21,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F21,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F21,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F21,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 22,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F22,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F22,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F22,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F22,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F22,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 23,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F23,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F23,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F23,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F23,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F23,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 24,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F24,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F24,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F24,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F24,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F24,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 25,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F25,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F25,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F25,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F25,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F25,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 26,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F26,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F26,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F26,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F26,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F26,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 27,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F27,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F27,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F27,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F27,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F27,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 28,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F28,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F28,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F28,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F28,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F28,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 29,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F29,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F29,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F29,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F29,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F29,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 30,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F30,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F30,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F30,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F30,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F30,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 31,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F31,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F31,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F31,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F31,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F31,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 32,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F32,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F32,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F32,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F32,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F32,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 33,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F33,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F33,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F33,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F33,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F33,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 34,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F34,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F34,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F34,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F34,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F34,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  },
+  {
+   "r": 35,
+   "cells": [
+    {
+     "c": "A",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "=VLOOKUP(F35,'ORDER GUIDE'!$H$8:$W$666,16,FALSE)"
+    },
+    {
+     "c": "G",
+     "v": "=VLOOKUP($F35,'ORDER GUIDE'!$H:$W,2,FALSE)"
+    },
+    {
+     "c": "H",
+     "v": "=VLOOKUP($F35,'ORDER GUIDE'!$H:$W,3,FALSE)"
+    },
+    {
+     "c": "J",
+     "v": "=VLOOKUP($F35,'ORDER GUIDE'!$H:$W,5,FALSE)"
+    },
+    {
+     "c": "K",
+     "v": "SU-TU-TH"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP(F35,'ORDER GUIDE'!$H:$U,VLOOKUP($M$10,REF!$AB$22:$AC$28,2,FALSE),FALSE)"
+    }
+   ]
+  }
+ ]
+}

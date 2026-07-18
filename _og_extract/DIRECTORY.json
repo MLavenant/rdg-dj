@@ -1,0 +1,2823 @@
+{
+ "name": "DIRECTORY",
+ "max_row": 107,
+ "max_col": 16,
+ "rows": [
+  {
+   "r": 1,
+   "cells": [
+    {
+     "c": "I",
+     "v": "Delivery Days"
+    }
+   ]
+  },
+  {
+   "r": 2,
+   "cells": [
+    {
+     "c": "A",
+     "v": "VENDOR DIRECTORY"
+    }
+   ]
+  },
+  {
+   "r": 3,
+   "cells": [
+    {
+     "c": "A",
+     "v": "LOCATION"
+    },
+    {
+     "c": "B",
+     "v": "COMMODITY:"
+    },
+    {
+     "c": "C",
+     "v": "VENDOR"
+    },
+    {
+     "c": "D",
+     "v": "REP . NAME"
+    },
+    {
+     "c": "E",
+     "v": "MOIBLE "
+    },
+    {
+     "c": "F",
+     "v": "EMAIL "
+    },
+    {
+     "c": "G",
+     "v": "CUT OFF TIME"
+    },
+    {
+     "c": "H",
+     "v": "NOTES & CUT OFF TIMES"
+    },
+    {
+     "c": "I",
+     "v": "MON"
+    },
+    {
+     "c": "J",
+     "v": "TUES"
+    },
+    {
+     "c": "K",
+     "v": "WED"
+    },
+    {
+     "c": "L",
+     "v": "THURS"
+    },
+    {
+     "c": "M",
+     "v": "FRI"
+    },
+    {
+     "c": "N",
+     "v": "SAT"
+    },
+    {
+     "c": "O",
+     "v": "SUN"
+    }
+   ]
+  },
+  {
+   "r": 4,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "OPEX"
+    },
+    {
+     "c": "C",
+     "v": "ABC PRINTING"
+    },
+    {
+     "c": "D",
+     "v": "YOLANDA SANTIAGO"
+    },
+    {
+     "c": "E",
+     "v": "773-557-7258"
+    },
+    {
+     "c": "F",
+     "v": "YOLANDA@ABCPRINT.COM ; JESSICA@ABCPRINT.COM"
+    }
+   ]
+  },
+  {
+   "r": 5,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CASA NEOS"
+    },
+    {
+     "c": "B",
+     "v": "SEAFOOD"
+    },
+    {
+     "c": "C",
+     "v": "AD MAIORA"
+    },
+    {
+     "c": "D",
+     "v": "NICOLA FORMAGGIO"
+    },
+    {
+     "c": "E",
+     "v": "786.302.9860"
+    },
+    {
+     "c": "F",
+     "v": "NFORMAGGIO@ADMAIORASEAFOOD.COM"
+    }
+   ]
+  },
+  {
+   "r": 6,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "ANGELS SHARE SOUTH "
+    },
+    {
+     "c": "D",
+     "v": "JONATHAN SLOAN"
+    },
+    {
+     "c": "E",
+     "v": "917.922.6489"
+    }
+   ]
+  },
+  {
+   "r": 7,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "ANTARES WINES/MORGNA ROIAL WINES"
+    },
+    {
+     "c": "D",
+     "v": "MORGAN ROIAL"
+    },
+    {
+     "c": "E",
+     "v": "201-233-8539"
+    },
+    {
+     "c": "F",
+     "v": "DANIEL@FLORIDAWINECOMPANY.COM"
+    }
+   ]
+  },
+  {
+   "r": 8,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "GROCERIES & PASTRY INGRIDIENTS"
+    },
+    {
+     "c": "C",
+     "v": "AUI"
+    },
+    {
+     "c": "D",
+     "v": "CAMILA RANGEL ARREAZA"
+    },
+    {
+     "c": "E",
+     "v": "301-258-2050"
+    },
+    {
+     "c": "F",
+     "v": "CRARREAZA@AUIFINEFOODS.COM"
+    },
+    {
+     "c": "G",
+     "v": "5pm"
+    }
+   ]
+  },
+  {
+   "r": 9,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "BREAKTHRU"
+    },
+    {
+     "c": "D",
+     "v": "TYRESES LEWIS, PAULINA ARANGO"
+    },
+    {
+     "c": "E",
+     "v": "954-830-1733"
+    },
+    {
+     "c": "F",
+     "v": "TYLEWIS@BREAKTHRUBEV.COM ; PARANGO@BREAKTHRUBEV.COM"
+    }
+   ]
+  },
+  {
+   "r": 10,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PROTEINS, SEAFOOD, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "BROWNE TRADING"
+    },
+    {
+     "c": "D",
+     "v": "JAMES MARIANI"
+    },
+    {
+     "c": "E",
+     "v": "631.433.5871"
+    },
+    {
+     "c": "F",
+     "v": "James Mariani <JMariani@brownetrading.com>; Grady McCormick <grady@brownetrading.com>; Orders <orders@brownetrading.com>; Jeff Sedacca <jsedacca@brownetrading.com>"
+    }
+   ]
+  },
+  {
+   "r": 11,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PROTEINS "
+    },
+    {
+     "c": "C",
+     "v": "BUSH BROTHERS"
+    },
+    {
+     "c": "D",
+     "v": "BRENDAN J. FLANAGAN "
+    },
+    {
+     "c": "E",
+     "v": "954 999 7734"
+    },
+    {
+     "c": "F",
+     "v": "BRENDAN@BUSH-BROTHERS.COM;ORDERS@BUSH-BROTHERS.COM"
+    },
+    {
+     "c": "G",
+     "v": "8pm"
+    }
+   ]
+  },
+  {
+   "r": 12,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PROTEINS & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "CEDAR TRADING"
+    },
+    {
+     "c": "D",
+     "v": "GEORGE TSIRIS / PARIS TSIRIIS"
+    },
+    {
+     "c": "E",
+     "v": "786.325.7820"
+    },
+    {
+     "c": "F",
+     "v": "George Tsiris <cedartrading@aol.com>; cedartrading2014@gmail.com; Laurence Rogers <laurence@cedarfoodsgroup.com>"
+    },
+    {
+     "c": "G",
+     "v": "7pm"
+    }
+   ]
+  },
+  {
+   "r": 13,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PROTEINS, SEAFOOD, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "CHEF WAREHOUSE"
+    },
+    {
+     "c": "D",
+     "v": "MELISSA CATRA"
+    },
+    {
+     "c": "E",
+     "v": "786-858-6815"
+    },
+    {
+     "c": "F",
+     "v": "Melissa Catra <mcatra@chefswarehouse.com>; Melissa Flit <mflit@chefswarehouse.com>; DFisboin@chefswarehouse.com; flseafoodorders@allenbrothers.com; fl@chefswarehouse.com"
+    },
+    {
+     "c": "G",
+     "v": "(M-TH:5PM)(FR 4PM)"
+    },
+    {
+     "c": "H",
+     "v": "$250 MINIMUM ORDER AMOUNT"
+    }
+   ]
+  },
+  {
+   "r": 14,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "CONSORTIUM WINE & SPIRITS"
+    },
+    {
+     "c": "D",
+     "v": "WILLIAM RIVAS"
+    },
+    {
+     "c": "E",
+     "v": "702.501.6243"
+    },
+    {
+     "c": "F",
+     "v": "WRIVAS@CONSORTIUMWINES.COM"
+    }
+   ]
+  },
+  {
+   "r": 15,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "CORK CAPITAL"
+    },
+    {
+     "c": "D",
+     "v": "SARAH PHILIPS "
+    },
+    {
+     "c": "E",
+     "v": "786-580-8521"
+    },
+    {
+     "c": "F",
+     "v": "SARAH@CORKCAPITAL.COM"
+    },
+    {
+     "c": "G",
+     "v": "Min $400; 3pm cut-off. Orders WED. FRI."
+    }
+   ]
+  },
+  {
+   "r": 16,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PROTEINS, SEAFOOD, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "DARTAGNAN"
+    },
+    {
+     "c": "D",
+     "v": "JONATHAN HALOUA"
+    },
+    {
+     "c": "E",
+     "v": "321.338.0718"
+    },
+    {
+     "c": "F",
+     "v": "Jonathan Haloua' <jhaloua@fortunefishco.net>; 'Florida Orders' <florders@fortunefishco.net>"
+    },
+    {
+     "c": "G",
+     "v": "4pm"
+    },
+    {
+     "c": "H",
+     "v": "$300 minimum order"
+    }
+   ]
+  },
+  {
+   "r": 17,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "EAGLE DISTRIBUTOR "
+    },
+    {
+     "c": "D",
+     "v": "ROBIN YGLESIAS"
+    },
+    {
+     "c": "E",
+     "v": "786-566-9526"
+    },
+    {
+     "c": "F",
+     "v": "ROBIN@EAGLEBRANDS.COM"
+    }
+   ]
+  },
+  {
+   "r": 18,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "EURO WINES "
+    },
+    {
+     "c": "D",
+     "v": "GLORIA LOPEZ"
+    },
+    {
+     "c": "F",
+     "v": "gloriaeurowines@gmail.com <gloriaeurowines@gmail.com>"
+    }
+   ]
+  },
+  {
+   "r": 19,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PRODUCE"
+    },
+    {
+     "c": "C",
+     "v": "FLAVORS BY BHUMI"
+    },
+    {
+     "c": "D",
+     "v": "VIVEK MALIK"
+    },
+    {
+     "c": "E",
+     "v": "609.933.5152"
+    },
+    {
+     "c": "F",
+     "v": "VIVEK.MALIK@FLAVORSBYBHUMI.COM"
+    }
+   ]
+  },
+  {
+   "r": 20,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "ASIAN GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "FLORIDA MUTUAL TRADING"
+    },
+    {
+     "c": "D",
+     "v": "ZOY KAWASAKI"
+    },
+    {
+     "c": "E",
+     "v": "305.888.9830"
+    },
+    {
+     "c": "F",
+     "v": "ZAWASKI@MUTUAL.US"
+    },
+    {
+     "c": "G",
+     "v": "Daily before 5pm"
+    },
+    {
+     "c": "H",
+     "v": "MINIMUM ORDER - 250"
+    }
+   ]
+  },
+  {
+   "r": 21,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "OPEX, SOAPS/ LOTIONS"
+    },
+    {
+     "c": "C",
+     "v": "FLORRIE"
+    },
+    {
+     "c": "D",
+     "v": "Ruben"
+    },
+    {
+     "c": "E",
+     "v": "917.703.3800"
+    },
+    {
+     "c": "F",
+     "v": "info@florrieparfum.com"
+    }
+   ]
+  },
+  {
+   "r": 22,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "OPEX"
+    },
+    {
+     "c": "C",
+     "v": "FLOWERS KEEPER"
+    },
+    {
+     "c": "D",
+     "v": "MARIANA ANTONETII"
+    },
+    {
+     "c": "E",
+     "v": "786-451-6530"
+    },
+    {
+     "c": "F",
+     "v": "CONTACT VIA TEXT/ CALL"
+    }
+   ]
+  },
+  {
+   "r": 23,
+   "cells": [
+    {
+     "c": "C",
+     "v": "FOGO Charcoal"
+    },
+    {
+     "c": "F",
+     "v": "orders@fogocharcoal.com yanell@fogocharcoal.com"
+    }
+   ]
+  },
+  {
+   "r": 24,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CASA NEOS"
+    },
+    {
+     "c": "B",
+     "v": "PRODUCE, DAIRY, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "FRESH BOY"
+    },
+    {
+     "c": "D",
+     "v": "ARNALDO CABRERA"
+    },
+    {
+     "c": "E",
+     "v": "786-650-9704"
+    },
+    {
+     "c": "F",
+     "v": "SALES@FRESHBOYPRODUCE.COM"
+    }
+   ]
+  },
+  {
+   "r": 25,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CASA NEOS"
+    },
+    {
+     "c": "B",
+     "v": "PRODUCE & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "FRESH POINT"
+    },
+    {
+     "c": "D",
+     "v": "JEAN PAUL BIZET"
+    },
+    {
+     "c": "E",
+     "v": "954.892.8684"
+    },
+    {
+     "c": "F",
+     "v": "JEAN.BIZET@FRESHPOINT.COM;FP277CUSTOMERSERVICE@FRESHPOINT.COM"
+    },
+    {
+     "c": "H",
+     "v": "Customer Service: 954.366.0538"
+    }
+   ]
+  },
+  {
+   "r": 26,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "GALLERY WINES"
+    },
+    {
+     "c": "D",
+     "v": "HORACIO JASIN"
+    },
+    {
+     "c": "F",
+     "v": "hjasin@gallerywines.net"
+    }
+   ]
+  },
+  {
+   "r": 27,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "BREAD"
+    },
+    {
+     "c": "C",
+     "v": "GELATO GO"
+    },
+    {
+     "c": "D",
+     "v": "DOMENICO "
+    },
+    {
+     "c": "E",
+     "v": "561.427.3166"
+    },
+    {
+     "c": "F",
+     "v": "DOMENICO@GELATOGO.NET"
+    }
+   ]
+  },
+  {
+   "r": 28,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "GOLD COAST DISTRIBUTOR"
+    },
+    {
+     "c": "D",
+     "v": "ANDREW"
+    },
+    {
+     "c": "E",
+     "v": "305.591.9800"
+    },
+    {
+     "c": "F",
+     "v": "Andrew Florvil' <AFlorvil@reyesholdings.com>"
+    }
+   ]
+  },
+  {
+   "r": 29,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CASA NEOS"
+    },
+    {
+     "c": "B",
+     "v": "PRODUCE & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "GFI"
+    },
+    {
+     "c": "D",
+     "v": "MARIE MINEO"
+    },
+    {
+     "c": "E",
+     "v": "305.807.2414"
+    },
+    {
+     "c": "F",
+     "v": "MMINEO@GFIFOODS.COM "
+    }
+   ]
+  },
+  {
+   "r": 30,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CASA NEOS"
+    },
+    {
+     "c": "B",
+     "v": "PRODUCE & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "GOURMET RESOURCES"
+    },
+    {
+     "c": "D",
+     "v": "\"HANK\" HEIKKI TALVITTIE"
+    },
+    {
+     "c": "E",
+     "v": "305.633.4242"
+    },
+    {
+     "c": "F",
+     "v": "SALES@GOURMET-RESOURCE.COM"
+    }
+   ]
+  },
+  {
+   "r": 31,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "GREYSTONE"
+    },
+    {
+     "c": "D",
+     "v": "SARAH PHILIPS "
+    },
+    {
+     "c": "E",
+     "v": "786-580-8521"
+    },
+    {
+     "c": "F",
+     "v": "SARAH@PROVINTERS.COM"
+    },
+    {
+     "c": "G",
+     "v": "M-F. 3pm cut-off. 1cs min."
+    }
+   ]
+  },
+  {
+   "r": 32,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CASA NEOS"
+    },
+    {
+     "c": "B",
+     "v": "PROTEINS, SEAFOOD, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "E",
+     "v": "954.557.1705"
+    },
+    {
+     "c": "F",
+     "v": "sefl.orders@halperns.com"
+    },
+    {
+     "c": "G",
+     "v": "5pm"
+    }
+   ]
+  },
+  {
+   "r": 33,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PROTEINS MEAT SPECIALTY & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "HAM CHEESE WINE"
+    },
+    {
+     "c": "G",
+     "v": "48 hr in advance"
+    },
+    {
+     "c": "H",
+     "v": "SERRANO BONELESS HAM"
+    }
+   ]
+  },
+  {
+   "r": 34,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PRODUCE"
+    },
+    {
+     "c": "C",
+     "v": "HARPKE FARM"
+    },
+    {
+     "c": "G",
+     "v": "2pm cut off for next day"
+    }
+   ]
+  },
+  {
+   "r": 35,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CASA NEOS"
+    },
+    {
+     "c": "B",
+     "v": "COFFEE"
+    },
+    {
+     "c": "C",
+     "v": "ILLY COFFEE"
+    },
+    {
+     "c": "D",
+     "v": "IVY DAVIS"
+    },
+    {
+     "c": "E",
+     "v": "888.448.0234"
+    },
+    {
+     "c": "F",
+     "v": "ordersfl@reliantcoffee.com ; IVY@RELIANTCOFFEE.COM"
+    }
+   ]
+  },
+  {
+   "r": 36,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CASA NEOS"
+    },
+    {
+     "c": "B",
+     "v": "DRY GOODS, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "ITAL FOODS"
+    },
+    {
+     "c": "D",
+     "v": "MARCO FELICIELLO"
+    },
+    {
+     "c": "E",
+     "v": "305.469.6662"
+    },
+    {
+     "c": "F",
+     "v": "MARCOF@ITALFOODSERV.COM"
+    },
+    {
+     "c": "G",
+     "v": "17:00:00"
+    }
+   ]
+  },
+  {
+   "r": 37,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CASA NEOS"
+    },
+    {
+     "c": "B",
+     "v": "BREAD"
+    },
+    {
+     "c": "C",
+     "v": "ITALIANWAY "
+    },
+    {
+     "c": "D",
+     "v": "CALEB PROCOPIO"
+    },
+    {
+     "c": "E",
+     "v": "305.904-9446 ; 786.532.4323"
+    },
+    {
+     "c": "F",
+     "v": "CPRPOCOPIO@ITALIANWAY.US ; INFO@ITALIANWAY.US"
+    }
+   ]
+  },
+  {
+   "r": 38,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "ASIAN GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "JFC INTERNATIONAL"
+    },
+    {
+     "c": "D",
+     "v": "SHINJI"
+    },
+    {
+     "c": "E",
+     "v": "854.415.9839"
+    },
+    {
+     "c": "F",
+     "v": "SKAWATO@JFC.COM"
+    },
+    {
+     "c": "G",
+     "v": "By Noon Mon & Thurs"
+    },
+    {
+     "c": "H",
+     "v": "MINIMUM ORDER - 500"
+    }
+   ]
+  },
+  {
+   "r": 39,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "TEA"
+    },
+    {
+     "c": "C",
+     "v": "JOJO TEA"
+    },
+    {
+     "c": "D",
+     "v": "WHOLESALE JOJO TEA"
+    },
+    {
+     "c": "E",
+     "v": "ONLINE"
+    },
+    {
+     "c": "F",
+     "v": "ORDERS@SIPJOJO.COM"
+    }
+   ]
+  },
+  {
+   "r": 40,
+   "cells": [
+    {
+     "c": "C",
+     "v": "KING OF SPARKLERS"
+    },
+    {
+     "c": "D",
+     "v": "JEREMY"
+    },
+    {
+     "c": "F",
+     "v": "jeremy@kingofsparklers.com"
+    }
+   ]
+  },
+  {
+   "r": 41,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "SPICES"
+    },
+    {
+     "c": "C",
+     "v": "LA BOITE"
+    },
+    {
+     "c": "D",
+     "v": "NO REP.."
+    },
+    {
+     "c": "E",
+     "v": "ONLINE"
+    },
+    {
+     "c": "F",
+     "v": "orders@laboiteny.com"
+    }
+   ]
+  },
+  {
+   "r": 42,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PROTEINS, SEAFOOD, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "MARKYS"
+    },
+    {
+     "c": "D",
+     "v": "VERONIQUE TAYLOR"
+    },
+    {
+     "c": "E",
+     "v": "305.968.7521"
+    },
+    {
+     "c": "F",
+     "v": "VTAYLOR@MARKYS.COM"
+    }
+   ]
+  },
+  {
+   "r": 43,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "MAVERICK WINES "
+    },
+    {
+     "c": "D",
+     "v": "DAVID MATTTOCK "
+    },
+    {
+     "c": "E",
+     "v": "724.493.4017"
+    },
+    {
+     "c": "F",
+     "v": "DAVID.MATTOCK@MAVERICKBEVFL.COM"
+    }
+   ]
+  },
+  {
+   "r": 44,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "BREAD"
+    },
+    {
+     "c": "C",
+     "v": "Mediterranos"
+    },
+    {
+     "c": "D",
+     "v": "ORAIB AREF , SAMIR"
+    },
+    {
+     "c": "E",
+     "v": "504.615.6100"
+    },
+    {
+     "c": "F",
+     "v": "ORAIB@MEDITERRANOS.COM"
+    }
+   ]
+  },
+  {
+   "r": 45,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "JUICES"
+    },
+    {
+     "c": "C",
+     "v": "MEP"
+    },
+    {
+     "c": "D",
+     "v": "RUSH TAN"
+    },
+    {
+     "c": "E",
+     "v": "305-905-9160"
+    },
+    {
+     "c": "F",
+     "v": "RUSH@MEPFLORIDA.COM ; ORDER@MEPFLORIDA.COM"
+    }
+   ]
+  },
+  {
+   "r": 46,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CASA NEOS"
+    },
+    {
+     "c": "B",
+     "v": "PRODUCE, DAIRY, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "Farmer Mikes"
+    },
+    {
+     "c": "D",
+     "v": "DUSTIN LEEKA"
+    },
+    {
+     "c": "F",
+     "v": "rcardenas.fmf@gmail.com; farmermikesorders@gmail.com;dgleeka.fmp@gmail.com"
+    }
+   ]
+  },
+  {
+   "r": 47,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "MIRACULOUS FOAMER"
+    },
+    {
+     "c": "D",
+     "v": "JOE BARWIN"
+    },
+    {
+     "c": "E",
+     "v": "EMAIL"
+    },
+    {
+     "c": "F",
+     "v": "HELLO@MSBETTERS.US"
+    }
+   ]
+  },
+  {
+   "r": 48,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "ICE"
+    },
+    {
+     "c": "C",
+     "v": "MIXOLOGY ICE"
+    },
+    {
+     "c": "D",
+     "v": "CARLOS LEAL "
+    },
+    {
+     "c": "E",
+     "v": "786.451.8420"
+    },
+    {
+     "c": "F",
+     "v": "CARLOS@MIXOLOGYICE.COM"
+    }
+   ]
+  },
+  {
+   "r": 49,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CASA NEOS"
+    },
+    {
+     "c": "B",
+     "v": "FINE CONDIMENTS"
+    },
+    {
+     "c": "C",
+     "v": "MOCC INTERNATIONAL"
+    },
+    {
+     "c": "D",
+     "v": "OLIVER BARBEYRAC"
+    },
+    {
+     "c": "E",
+     "v": "843.609.0340"
+    },
+    {
+     "c": "F",
+     "v": "OLIVER@MOCCAINTL.COM"
+    }
+   ]
+  },
+  {
+   "r": 50,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "MONSIEUR TOUTON SELECTION"
+    },
+    {
+     "c": "D",
+     "v": "CARLOS GAMBOA"
+    },
+    {
+     "c": "E",
+     "v": "786.521.1598"
+    },
+    {
+     "c": "F",
+     "v": "CARLOS.GAMBOA@MTOUTON.COM"
+    }
+   ]
+  },
+  {
+   "r": 51,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "MORGAN ROIAL WINES"
+    },
+    {
+     "c": "D",
+     "v": "MORGAN ROIAL"
+    },
+    {
+     "c": "E",
+     "v": "201-233-8539"
+    },
+    {
+     "c": "F",
+     "v": "MORGAN@MAISONCR.COM"
+    }
+   ]
+  },
+  {
+   "r": 52,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PRODUCE, DAIRY, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "MR GREENS"
+    },
+    {
+     "c": "D",
+     "v": "MARIELA CARRODEGUAS "
+    },
+    {
+     "c": "E",
+     "v": "305.498.8573"
+    },
+    {
+     "c": "F",
+     "v": "Order' <order@mrgreensproduce.net>; 'Mariela Carrodeguas' <Mariela@mrgreensproduce.net>"
+    },
+    {
+     "c": "H",
+     "v": "Copy in all orders: Order@mrgreensproduce.net "
+    }
+   ]
+  },
+  {
+   "r": 53,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CLAUDIE"
+    },
+    {
+     "c": "B",
+     "v": "DRY GOODS, & GROCERIES &PRODUCE"
+    },
+    {
+     "c": "C",
+     "v": "MRS.PASTA"
+    },
+    {
+     "c": "D",
+     "v": "DAVID CRUPI"
+    },
+    {
+     "c": "E",
+     "v": "954.649.2918"
+    },
+    {
+     "c": "F",
+     "v": "DAVID@MRSPASTA.COM; Info@mrspasta.com "
+    },
+    {
+     "c": "G",
+     "v": "17:00:00"
+    }
+   ]
+  },
+  {
+   "r": 54,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "MUGAVA"
+    },
+    {
+     "c": "D",
+     "v": "TOMMY AVZLLONE"
+    },
+    {
+     "c": "E",
+     "v": "305.299.4300"
+    },
+    {
+     "c": "F",
+     "v": "TAVALLONE@MUGAVAUSA.COM"
+    }
+   ]
+  },
+  {
+   "r": 55,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CASA NEOS"
+    },
+    {
+     "c": "B",
+     "v": "PRODUCE & DAIRY"
+    },
+    {
+     "c": "C",
+     "v": "NC UNLIMITED"
+    },
+    {
+     "c": "D",
+     "v": "NUNZIO "
+    },
+    {
+     "c": "E",
+     "v": "786.899.1697"
+    },
+    {
+     "c": "F",
+     "v": "NCUNLIMITED.FRESH@GMAIL.COM"
+    }
+   ]
+  },
+  {
+   "r": 56,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "PARK STREET"
+    },
+    {
+     "c": "D",
+     "v": "MORGAN ROIAL"
+    },
+    {
+     "c": "E",
+     "v": "305.967.7440"
+    },
+    {
+     "c": "F",
+     "v": "MORGAN@MAISONCR.COM"
+    },
+    {
+     "c": "G",
+     "v": "12PM for next day delivery"
+    }
+   ]
+  },
+  {
+   "r": 57,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PROTEINS, SEAFOOD, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "PATAGONIA"
+    },
+    {
+     "c": "D",
+     "v": "NICOLO SANTIN"
+    },
+    {
+     "c": "E",
+     "v": "786.609.4047"
+    },
+    {
+     "c": "F",
+     "v": "NICOLO.PATAGONIAN@GMAIL.COM; ORDERS.PATAGONIAN@GMAIL.COM"
+    }
+   ]
+  },
+  {
+   "r": 58,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PROTEINS, SEAFOOD, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "PETROSSIAN"
+    },
+    {
+     "c": "D",
+     "v": "CHRISTHOPE CHALANGE"
+    },
+    {
+     "c": "E",
+     "v": "407.234.5462"
+    },
+    {
+     "c": "F",
+     "v": "Christophe.Chalange@petrossian.com"
+    }
+   ]
+  },
+  {
+   "r": 59,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CASA NEOS"
+    },
+    {
+     "c": "B",
+     "v": "SEAFOOD SPECIALTY"
+    },
+    {
+     "c": "C",
+     "v": "PLANTIN KAVIAR"
+    },
+    {
+     "c": "D",
+     "v": "ORDERS@PLANTINKAVIARI.US"
+    },
+    {
+     "c": "E",
+     "v": "212.759.2414"
+    },
+    {
+     "c": "F",
+     "v": "ORDERS@PLANTINKAVIARI.US"
+    },
+    {
+     "c": "G",
+     "v": "11am"
+    }
+   ]
+  },
+  {
+   "r": 60,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "POMPIA"
+    },
+    {
+     "c": "D",
+     "v": "ALEX KECHAGIADAKIS"
+    },
+    {
+     "c": "E",
+     "v": "914.893.1650"
+    },
+    {
+     "c": "F",
+     "v": "ALEX.KECHAGIADAKIS@GMAIL.COM : MERLEMISG@YAHOO.COM; MERLEMIS@GMAIL.COM"
+    }
+   ]
+  },
+  {
+   "r": 61,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CASA NEOS"
+    },
+    {
+     "c": "B",
+     "v": "PRODUCE, DAIRY, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "What Chefs Want"
+    },
+    {
+     "c": "D",
+     "v": "TY"
+    },
+    {
+     "c": "E",
+     "v": "954.809.5834"
+    },
+    {
+     "c": "F",
+     "v": "tytom@premierproducefl.com; Orders <orders@premierproducefl.com>"
+    },
+    {
+     "c": "H",
+     "v": "Copy all orders: orders@premierproducefl.com"
+    }
+   ]
+  },
+  {
+   "r": 62,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PRODUCE, DAIRY, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "PRIMELINE DISTRIBUTORS"
+    },
+    {
+     "c": "D",
+     "v": "HAROLD ARAGON"
+    },
+    {
+     "c": "E",
+     "v": "786.525.3909"
+    },
+    {
+     "c": "F",
+     "v": "HAROLD@PRIMELINEDIST.COM"
+    },
+    {
+     "c": "H",
+     "v": "$300.00 Minimum"
+    }
+   ]
+  },
+  {
+   "r": 63,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "PRINCE VINO "
+    },
+    {
+     "c": "D",
+     "v": "JONATHON SLOAN"
+    },
+    {
+     "c": "E",
+     "v": "917-922-6489"
+    },
+    {
+     "c": "F",
+     "v": "THEPRINCEVINO@GMAIL.COM"
+    }
+   ]
+  },
+  {
+   "r": 64,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "PROGRESS WINE"
+    },
+    {
+     "c": "D",
+     "v": " "
+    }
+   ]
+  },
+  {
+   "r": 65,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CASA NEOS"
+    },
+    {
+     "c": "B",
+     "v": "PROTEINS, SEAFOOD, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "POLITIS "
+    },
+    {
+     "c": "D",
+     "v": "754- 253-7375"
+    },
+    {
+     "c": "E",
+     "v": "Luis Padilla"
+    },
+    {
+     "c": "F",
+     "v": "Orders@mypolitis.com; Luis@mypolitis.com"
+    }
+   ]
+  },
+  {
+   "r": 66,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CLAUDIE"
+    },
+    {
+     "c": "B",
+     "v": "COFFEE"
+    },
+    {
+     "c": "C",
+     "v": "RELIANT COFFEE"
+    },
+    {
+     "c": "F",
+     "v": "ordersfl@reliantcoffee.com"
+    }
+   ]
+  },
+  {
+   "r": 67,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "RNDC"
+    },
+    {
+     "c": "D",
+     "v": "GUI (GHEE)  SIMONY"
+    },
+    {
+     "c": "E",
+     "v": "305.205.2002"
+    },
+    {
+     "c": "F",
+     "v": "GUILHERME.SIMONY@RNDC-USA.COM"
+    }
+   ]
+  },
+  {
+   "r": 68,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "RM DISTRIBUTORS "
+    },
+    {
+     "c": "D",
+     "v": "TERRESA CAMPOS "
+    },
+    {
+     "c": "E",
+     "v": "305-316-9220"
+    },
+    {
+     "c": "F",
+     "v": "Teresa@rm-distributors.com"
+    }
+   ]
+  },
+  {
+   "r": 69,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "OPEX"
+    },
+    {
+     "c": "C",
+     "v": "RODMAN"
+    },
+    {
+     "c": "D",
+     "v": "MICHAEL MAFUZ"
+    },
+    {
+     "c": "E",
+     "v": "954.274.6380"
+    },
+    {
+     "c": "F",
+     "v": "Office rodman.guru <office@rodman.guru>; Guru Office Assistant <orders@rodman.guru>"
+    }
+   ]
+  },
+  {
+   "r": 70,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PRODUCE, DAIRY, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "SABATINO"
+    },
+    {
+     "c": "D",
+     "v": "LEONARDO MORALES, FERNANDO "
+    },
+    {
+     "c": "E",
+     "v": "888-444-9971 ; 786.448.6404"
+    },
+    {
+     "c": "F",
+     "v": "L.MORALES@SABATINOSTORE.COM"
+    }
+   ]
+  },
+  {
+   "r": 71,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PROTIENS, SEAFOOD & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "SAMUEL&SON"
+    },
+    {
+     "c": "D",
+     "v": "MARK SANTILLI"
+    },
+    {
+     "c": "E",
+     "v": "O:407.401.8898 M: 689.234.7524"
+    },
+    {
+     "c": "F",
+     "v": "ORDERSFL@SAMUELSSEAFOOD.COM;MARKSA@SAMUELSSEAFOOD.COM"
+    },
+    {
+     "c": "H",
+     "v": "6 AM DELIVERY "
+    }
+   ]
+  },
+  {
+   "r": 72,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PRODUCE, DAIRY, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "SCALISI"
+    },
+    {
+     "c": "D",
+     "v": "CARLOS ALVAREZ ;  ANTHONY SCALISI"
+    },
+    {
+     "c": "E",
+     "v": "561-951-1320"
+    },
+    {
+     "c": "F",
+     "v": "nicole@SCALISIPRODUCE.COM ; ANTHONYC@SCALISIPRODUCE.COM ; ORDERS@SCALISIPRODUCE.COM"
+    }
+   ]
+  },
+  {
+   "r": 73,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CASA NEOS"
+    },
+    {
+     "c": "B",
+     "v": "PRODUCE, DAIRY, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "SOGNO TOSCANO"
+    },
+    {
+     "c": "D",
+     "v": "STEFANIA DI FELICE"
+    },
+    {
+     "c": "E",
+     "v": "786-201-4338"
+    },
+    {
+     "c": "F",
+     "v": "stefania.difelice@sognotoscano.com"
+    },
+    {
+     "c": "G",
+     "v": "4:pm"
+    },
+    {
+     "c": "H",
+     "v": "MINIMUM ORDER - 250"
+    }
+   ]
+  },
+  {
+   "r": 74,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PRODUCE & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "SOLEX FINE FOODS"
+    },
+    {
+     "c": "D",
+     "v": "JOSEPHINE HASTIG"
+    },
+    {
+     "c": "E",
+     "v": "310.430.2294"
+    },
+    {
+     "c": "F",
+     "v": "Josephine Hastig <Jhastig@solexff.com>"
+    },
+    {
+     "c": "G",
+     "v": "Josephine Hastig <Jhastig@solexff.com>"
+    }
+   ]
+  },
+  {
+   "r": 75,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "SOMM SELECTION"
+    },
+    {
+     "c": "D",
+     "v": "JUAN HERNANDEZ"
+    },
+    {
+     "c": "E",
+     "v": "786-897-9463"
+    },
+    {
+     "c": "F",
+     "v": "JEH@SOMMSELECTIONMIAMI.COM"
+    }
+   ]
+  },
+  {
+   "r": 76,
+   "cells": [
+    {
+     "c": "A",
+     "v": "CLAUDIE"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "SGWS"
+    },
+    {
+     "c": "D",
+     "v": "KAREN CABANILLA-ZULETA"
+    },
+    {
+     "c": "E",
+     "v": "973-417-0110"
+    },
+    {
+     "c": "F",
+     "v": "claudiemiami@sgws.com"
+    }
+   ]
+  },
+  {
+   "r": 77,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "SOUTHERN GLAZERS"
+    },
+    {
+     "c": "D",
+     "v": "SPECIFIC TO REGION"
+    }
+   ]
+  },
+  {
+   "r": 78,
+   "cells": [
+    {
+     "c": "C",
+     "v": "RARE TEA"
+    },
+    {
+     "c": "D",
+     "v": "RODRICK J. MARKUS"
+    },
+    {
+     "c": "E",
+     "v": "011.773.619.8000"
+    },
+    {
+     "c": "F",
+     "v": "rm@rareteacellar.com"
+    }
+   ]
+  },
+  {
+   "r": 79,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "BREAD"
+    },
+    {
+     "c": "C",
+     "v": "SULLIVAN STREET BAKERY"
+    },
+    {
+     "c": "D",
+     "v": "JOEL DURAN"
+    },
+    {
+     "c": "E",
+     "v": "305.903.9422"
+    },
+    {
+     "c": "F",
+     "v": "JOEL DURAN <JOEL@SSBMIAMI.COM>"
+    },
+    {
+     "c": "G",
+     "v": "Mon - Fri 11am "
+    }
+   ]
+  },
+  {
+   "r": 80,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PRODUCE, DAIRY, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "Superior"
+    },
+    {
+     "c": "D",
+     "v": "ALEJANDRO LOZANO"
+    },
+    {
+     "c": "E",
+     "v": "954-591-9889"
+    },
+    {
+     "c": "F",
+     "v": "ALEJANDRO@MYSUPERIORFOODS.COM ; ORDERS@MYSUPERIORFOODS.COM"
+    },
+    {
+     "c": "G",
+     "v": "48 hours notice"
+    }
+   ]
+  },
+  {
+   "r": 81,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "SYMPOSIUM WINES "
+    },
+    {
+     "c": "D",
+     "v": "FRANKIE SAUNDERS"
+    },
+    {
+     "c": "E",
+     "v": "706-3471572"
+    },
+    {
+     "c": "F",
+     "v": "FRANKIE@SYMPOSIUMWINECO.COM"
+    }
+   ]
+  },
+  {
+   "r": 82,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PRODUCE, DAIRY, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "SYSCO"
+    },
+    {
+     "c": "D",
+     "v": "GABRIELA "
+    },
+    {
+     "c": "E",
+     "v": "786.390.0883"
+    },
+    {
+     "c": "F",
+     "v": "GABRIELA.GONZALEZ@SYSCO.COM"
+    }
+   ]
+  },
+  {
+   "r": 83,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PRODUCE, DAIRY, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "TARTUFO"
+    },
+    {
+     "c": "D",
+     "v": "DEJAN"
+    },
+    {
+     "c": "E",
+     "v": "786.614.6944"
+    },
+    {
+     "c": "F",
+     "v": "ORDERS@TARTUFOPRESTIGE.US"
+    }
+   ]
+  },
+  {
+   "r": 84,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "TERRIOR "
+    },
+    {
+     "c": "D",
+     "v": "FADZIO BOUDA"
+    },
+    {
+     "c": "E",
+     "v": "954.942.7218"
+    },
+    {
+     "c": "F",
+     "v": "WWW.TERROIR-SELECTIONS.COM"
+    }
+   ]
+  },
+  {
+   "r": 85,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "ASIAN GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "TRUE WORLD"
+    },
+    {
+     "c": "D",
+     "v": "HIROSHI HARADA "
+    },
+    {
+     "c": "E",
+     "v": "305.926.0192"
+    },
+    {
+     "c": "F",
+     "v": "HHARADA@TRUEWORLDFOODS.COM"
+    },
+    {
+     "c": "G",
+     "v": "5pm"
+    }
+   ]
+  },
+  {
+   "r": 86,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "PROTEINS, SEAFOOD, & GROCERIES"
+    },
+    {
+     "c": "C",
+     "v": "USHI TORO"
+    },
+    {
+     "c": "D",
+     "v": "GARRETT MONTEAGUDO "
+    },
+    {
+     "c": "E",
+     "v": "954.804.6182"
+    },
+    {
+     "c": "F",
+     "v": "sales@ushi-toro.com;admin@ushi-toro.com"
+    },
+    {
+     "c": "G",
+     "v": "2 pm cut off "
+    }
+   ]
+  },
+  {
+   "r": 87,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "WINEBOW"
+    },
+    {
+     "c": "D",
+     "v": "FRED CRABRERA"
+    },
+    {
+     "c": "F",
+     "v": "FRED.CABRERA@WINEBOW.COM ; "
+    }
+   ]
+  },
+  {
+   "r": 88,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "B",
+     "v": "LIQUOR, BEER, & WINE"
+    },
+    {
+     "c": "C",
+     "v": "XX1 WINES"
+    },
+    {
+     "c": "D",
+     "v": "DAVID SYNDER"
+    },
+    {
+     "c": "E",
+     "v": "305-968-5953"
+    },
+    {
+     "c": "F",
+     "v": "DAVID.SNYDER@XXIWINESSPIRITS.COM"
+    }
+   ]
+  },
+  {
+   "r": 89,
+   "cells": [
+    {
+     "c": "C",
+     "v": "FICELLE"
+    },
+    {
+     "c": "E",
+     "v": "954-655-3907"
+    },
+    {
+     "c": "F",
+     "v": "orizk@ficellebakeryusa.com;arizk@ficellebakeryusa.com"
+    }
+   ]
+  },
+  {
+   "r": 90,
+   "cells": [
+    {
+     "c": "A",
+     "v": "RDG"
+    },
+    {
+     "c": "C",
+     "v": "I HALPER"
+    },
+    {
+     "c": "D",
+     "v": "KAREN"
+    },
+    {
+     "c": "E",
+     "v": "732-690-1399"
+    },
+    {
+     "c": "F",
+     "v": "karen.temin@ihalper.com ; ihalpercustomerservice@ihalper.com"
+    }
+   ]
+  },
+  {
+   "r": 91,
+   "cells": [
+    {
+     "c": "C",
+     "v": "MRS PASTA"
+    },
+    {
+     "c": "F",
+     "v": "info@mrspasta.com"
+    }
+   ]
+  },
+  {
+   "r": 92,
+   "cells": [
+    {
+     "c": "C",
+     "v": "MUNDO PASTRY "
+    },
+    {
+     "c": "F",
+     "v": "miami@mundopastry.com aiglesias@mundopastry.com"
+    }
+   ]
+  },
+  {
+   "r": 93,
+   "cells": [
+    {
+     "c": "B",
+     "v": "OPEX"
+    },
+    {
+     "c": "C",
+     "v": "PAPER OUTLET"
+    },
+    {
+     "c": "D",
+     "v": "ANDREW"
+    },
+    {
+     "c": "F",
+     "v": "afoote@paper-outlet.com"
+    }
+   ]
+  },
+  {
+   "r": 94,
+   "cells": [
+    {
+     "c": "C",
+     "v": "PENSATO "
+    },
+    {
+     "c": "F",
+     "v": "order@pensato.us"
+    }
+   ]
+  },
+  {
+   "r": 95,
+   "cells": [
+    {
+     "c": "C",
+     "v": "THIERY ATLAN"
+    },
+    {
+     "c": "D",
+     "v": "LEXI"
+    },
+    {
+     "c": "F",
+     "v": "lexi@thierryatlan.com"
+    }
+   ]
+  },
+  {
+   "r": 96,
+   "cells": [
+    {
+     "c": "C",
+     "v": "Ossetra"
+    },
+    {
+     "c": "F",
+     "v": "maisonvalentinemiami@gmail.com"
+    }
+   ]
+  },
+  {
+   "r": 97,
+   "cells": [
+    {
+     "c": "C",
+     "v": "NATOORA"
+    },
+    {
+     "c": "D",
+     "v": "NICK"
+    },
+    {
+     "c": "E",
+     "v": "786-676-5092"
+    },
+    {
+     "c": "F",
+     "v": "nicolas.brunk@natoora.com;orders-mia@natoora.com"
+    }
+   ]
+  },
+  {
+   "r": 98,
+   "cells": [
+    {
+     "c": "C",
+     "v": "Palais des Thes"
+    },
+    {
+     "c": "F",
+     "v": "wholesale@us.palaisdesthes.com"
+    }
+   ]
+  },
+  {
+   "r": 99,
+   "cells": [
+    {
+     "c": "C",
+     "v": "Linz"
+    },
+    {
+     "c": "F",
+     "v": "customerservicefl@meatsbylinz.com; cballay@Meatsbylinz.com"
+    }
+   ]
+  },
+  {
+   "r": 100,
+   "cells": [
+    {
+     "c": "C",
+     "v": "Rader"
+    },
+    {
+     "c": "F",
+     "v": "julie.carrasco@raderfoods.com"
+    }
+   ]
+  },
+  {
+   "r": 101,
+   "cells": [
+    {
+     "c": "C",
+     "v": "MATTHIAS"
+    },
+    {
+     "c": "F",
+     "v": "matthias@rivieradininggroup.com"
+    }
+   ]
+  },
+  {
+   "r": 102,
+   "cells": [
+    {
+     "c": "C",
+     "v": "Lianne"
+    },
+    {
+     "c": "F",
+     "v": "matthias@rivieradininggroup.com"
+    }
+   ]
+  },
+  {
+   "r": 103,
+   "cells": [
+    {
+     "c": "C",
+     "v": "Tk"
+    },
+    {
+     "c": "F",
+     "v": "matthias@rivieradininggroup.com"
+    }
+   ]
+  },
+  {
+   "r": 104,
+   "cells": [
+    {
+     "c": "C",
+     "v": "ale"
+    },
+    {
+     "c": "F",
+     "v": "matthias@rivieradininggroup.com"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,89 @@
+{
+ "name": "ANALYST - TROUBLESHOOT",
+ "max_row": 37,
+ "max_col": 46,
+ "rows": [
+  {
+   "r": 3,
+   "cells": [
+    {
+     "c": "C",
+     "v": "1- Add a new Vendor - How to"
+    },
+    {
+     "c": "J",
+     "v": "2- Add a new Item - How to"
+    },
+    {
+     "c": "W",
+     "v": "3 - Fix an email adress"
+    },
+    {
+     "c": "AJ",
+     "v": "4 - Update the Unit of Measure"
+    }
+   ]
+  },
+  {
+   "r": 5,
+   "cells": [
+    {
+     "c": "C",
+     "v": "1. Fill of the name of your new vendor below"
+    },
+    {
+     "c": "W",
+     "v": "1. Go to Directory"
+    },
+    {
+     "c": "AJ",
+     "v": "1. Go to your tab ( Meat & Poultry, Seafood, Produce )"
+    }
+   ]
+  },
+  {
+   "r": 7,
+   "cells": [
+    {
+     "c": "C",
+     "v": "LINZ"
+    },
+    {
+     "c": "W",
+     "v": "2. Look at column C and find your vendors. Fix email in column F. Always add ; after each email adress."
+    },
+    {
+     "c": "AJ",
+     "v": "2. Column E is your UofM purchase registered. This is what is facing on your PO, but does not impact the Suggested orders"
+    }
+   ]
+  },
+  {
+   "r": 9,
+   "cells": [
+    {
+     "c": "C",
+     "v": "2. Click to Create New Vendor"
+    }
+   ]
+  },
+  {
+   "r": 11,
+   "cells": [
+    {
+     "c": "AJ",
+     "v": "3. Change the conversion measure. You should convert your UofM purchase to the Inventory. "
+    }
+   ]
+  },
+  {
+   "r": 19,
+   "cells": [
+    {
+     "c": "C",
+     "v": "3. Add vendors on the vendor list"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,617 @@
+{
+ "name": "LBW",
+ "max_row": 487,
+ "max_col": 37,
+ "rows": [
+  {
+   "r": 1,
+   "cells": [
+    {
+     "c": "K",
+     "v": "2026-06-01 00:00:00"
+    },
+    {
+     "c": "N",
+     "v": "=K1+1"
+    },
+    {
+     "c": "P",
+     "v": "=N1+1"
+    },
+    {
+     "c": "S",
+     "v": "=Q1+1"
+    },
+    {
+     "c": "V",
+     "v": "=T1+1"
+    },
+    {
+     "c": "Y",
+     "v": "=W1+1"
+    },
+    {
+     "c": "AB",
+     "v": "=Z1+1"
+    }
+   ]
+  },
+  {
+   "r": 3,
+   "cells": [
+    {
+     "c": "C",
+     "v": " "
+    },
+    {
+     "c": "G",
+     "v": "CLAUDIE ORDER GUIDE"
+    },
+    {
+     "c": "K",
+     "v": "FOR TUESDAY DELVIERY"
+    },
+    {
+     "c": "N",
+     "v": "FOR WEDNESDAY DELVIERY"
+    },
+    {
+     "c": "P",
+     "v": "FOR THURSDAY DELVIERY"
+    },
+    {
+     "c": "S",
+     "v": "FOR FRIDAY DELVIERY"
+    },
+    {
+     "c": "V",
+     "v": "NO ORDERS"
+    },
+    {
+     "c": "Y",
+     "v": "NO ORDERS"
+    },
+    {
+     "c": "AB",
+     "v": "FOR MONDAY DELVIERY"
+    }
+   ]
+  },
+  {
+   "r": 4,
+   "cells": [
+    {
+     "c": "B",
+     "v": "LOCATION"
+    },
+    {
+     "c": "C",
+     "v": "R365"
+    },
+    {
+     "c": "D",
+     "v": "CATEGORY"
+    },
+    {
+     "c": "E",
+     "v": " VENDOR"
+    },
+    {
+     "c": "F",
+     "v": "ITEM NUMBER"
+    },
+    {
+     "c": "G",
+     "v": "DESCRIPTION"
+    },
+    {
+     "c": "H",
+     "v": "UNIT /MEASURE IN ML"
+    },
+    {
+     "c": "I",
+     "v": "CASE PK"
+    },
+    {
+     "c": "J",
+     "v": "BTL COST"
+    },
+    {
+     "c": "K",
+     "v": "PAR"
+    },
+    {
+     "c": "L",
+     "v": "ON HAND"
+    },
+    {
+     "c": "M",
+     "v": "ORDER BY BTL"
+    },
+    {
+     "c": "N",
+     "v": "ON HAND"
+    },
+    {
+     "c": "O",
+     "v": "ORDER BY BTL"
+    },
+    {
+     "c": "P",
+     "v": "PAR"
+    },
+    {
+     "c": "Q",
+     "v": "ON HAND"
+    },
+    {
+     "c": "R",
+     "v": "ORDER BY BTL"
+    },
+    {
+     "c": "S",
+     "v": "PAR"
+    },
+    {
+     "c": "T",
+     "v": "ON HAND"
+    },
+    {
+     "c": "U",
+     "v": "ORDER BY BTL"
+    },
+    {
+     "c": "V",
+     "v": "PAR"
+    },
+    {
+     "c": "W",
+     "v": "ON HAND"
+    },
+    {
+     "c": "X",
+     "v": "ORDER BY BTL"
+    },
+    {
+     "c": "Y",
+     "v": "PAR"
+    },
+    {
+     "c": "Z",
+     "v": "ON HAND"
+    },
+    {
+     "c": "AA",
+     "v": "ORDER BY BTL"
+    },
+    {
+     "c": "AB",
+     "v": "PAR"
+    },
+    {
+     "c": "AC",
+     "v": "ON HAND"
+    },
+    {
+     "c": "AD",
+     "v": "ORDER BY BTL"
+    },
+    {
+     "c": "AE",
+     "v": "NOTES"
+    }
+   ]
+  },
+  {
+   "r": 5,
+   "cells": [
+    {
+     "c": "A",
+     "v": 40
+    },
+    {
+     "c": "B",
+     "v": "1ST POUR"
+    },
+    {
+     "c": "D",
+     "v": "AGAVE SPIRIT"
+    },
+    {
+     "c": "E",
+     "v": "21 imports  XXI"
+    },
+    {
+     "c": "F",
+     "v": "LW-3"
+    },
+    {
+     "c": "G",
+     "v": "CARDENXE SOTOL DE DESIERTO"
+    },
+    {
+     "c": "H",
+     "v": 750
+    },
+    {
+     "c": "I",
+     "v": 6
+    },
+    {
+     "c": "J",
+     "v": 40
+    },
+    {
+     "c": "AK",
+     "v": "21 imports  XXI"
+    }
+   ]
+  },
+  {
+   "r": 6,
+   "cells": [
+    {
+     "c": "A",
+     "v": 30
+    },
+    {
+     "c": "B",
+     "v": "COCKTAIL"
+    },
+    {
+     "c": "D",
+     "v": "LIQUOR / CORDIALS"
+    },
+    {
+     "c": "E",
+     "v": "21 imports  XXI"
+    },
+    {
+     "c": "G",
+     "v": "ROGER GROULT CALVADOS 3 YR "
+    },
+    {
+     "c": "H",
+     "v": 750
+    },
+    {
+     "c": "I",
+     "v": "12 BTL / CASE"
+    },
+    {
+     "c": "J",
+     "v": 37.5
+    },
+    {
+     "c": "AK",
+     "v": "21 imports  XXI"
+    }
+   ]
+  },
+  {
+   "r": 7,
+   "cells": [
+    {
+     "c": "A",
+     "v": 22
+    },
+    {
+     "c": "B",
+     "v": "COCKTAIL"
+    },
+    {
+     "c": "D",
+     "v": "BOURBON / WHISKEY"
+    },
+    {
+     "c": "E",
+     "v": "ANTARES"
+    },
+    {
+     "c": "G",
+     "v": "PAUL MASON BOURBON - KITCHEN"
+    },
+    {
+     "c": "H",
+     "v": 750
+    },
+    {
+     "c": "I",
+     "v": 12
+    },
+    {
+     "c": "AK",
+     "v": "ANTARES"
+    }
+   ]
+  },
+  {
+   "r": 8,
+   "cells": [
+    {
+     "c": "A",
+     "v": 214
+    },
+    {
+     "c": "B",
+     "v": "COCKTAIL"
+    },
+    {
+     "c": "D",
+     "v": "BITTERS"
+    },
+    {
+     "c": "E",
+     "v": "BITTER & BOTTLES"
+    },
+    {
+     "c": "G",
+     "v": "MIRACULOUS FOAMER"
+    },
+    {
+     "c": "H",
+     "v": "4-OZ"
+    },
+    {
+     "c": "I",
+     "v": 6
+    },
+    {
+     "c": "J",
+     "v": 20
+    },
+    {
+     "c": "AK",
+     "v": "BITTER & BOTTLES"
+    }
+   ]
+  },
+  {
+   "r": 9,
+   "cells": [
+    {
+     "c": "A",
+     "v": 152
+    },
+    {
+     "c": "B",
+     "v": "BACKBAR"
+    },
+    {
+     "c": "D",
+     "v": "AAKITCHEN"
+    },
+    {
+     "c": "E",
+     "v": "BREAKTHRU"
+    },
+    {
+     "c": "G",
+     "v": "TAYLOR NEW YORK\u00a0 MADEIRA\u00a0 SKU 9044188"
+    },
+    {
+     "c": "H",
+     "v": 750
+    },
+    {
+     "c": "AK",
+     "v": "BREAKTHRU"
+    }
+   ]
+  },
+  {
+   "r": 10,
+   "cells": [
+    {
+     "c": "A",
+     "v": 138
+    },
+    {
+     "c": "B",
+     "v": "BACKBAR"
+    },
+    {
+     "c": "D",
+     "v": "AAKITCHEN"
+    },
+    {
+     "c": "E",
+     "v": "BREAKTHRU"
+    },
+    {
+     "c": "G",
+     "v": "DOW'S, PORTO FINE RUBY PORT SKU 2314441"
+    },
+    {
+     "c": "H",
+     "v": 750
+    },
+    {
+     "c": "AK",
+     "v": "BREAKTHRU"
+    }
+   ]
+  },
+  {
+   "r": 11,
+   "cells": [
+    {
+     "c": "A",
+     "v": 139
+    },
+    {
+     "c": "B",
+     "v": "COCKTAIL"
+    },
+    {
+     "c": "D",
+     "v": "BITTERS"
+    },
+    {
+     "c": "E",
+     "v": "BREAKTHRU"
+    },
+    {
+     "c": "F",
+     "v": 9031535
+    },
+    {
+     "c": "G",
+     "v": "BITTERS PEYCHAUDS "
+    },
+    {
+     "c": "H",
+     "v": "10 oz"
+    },
+    {
+     "c": "I",
+     "v": 6
+    },
+    {
+     "c": "J",
+     "v": 7.34
+    },
+    {
+     "c": "AK",
+     "v": "BREAKTHRU"
+    }
+   ]
+  },
+  {
+   "r": 12,
+   "cells": [
+    {
+     "c": "A",
+     "v": 154
+    },
+    {
+     "c": "B",
+     "v": "BACKBAR"
+    },
+    {
+     "c": "D",
+     "v": "BOURBON / WHISKEY"
+    },
+    {
+     "c": "E",
+     "v": "BREAKTHRU"
+    },
+    {
+     "c": "G",
+     "v": "BLANTONS (BREAKTHROUGH) "
+    },
+    {
+     "c": "H",
+     "v": 750
+    },
+    {
+     "c": "AK",
+     "v": "BREAKTHRU"
+    }
+   ]
+  },
+  {
+   "r": 13,
+   "cells": [
+    {
+     "c": "A",
+     "v": 20
+    },
+    {
+     "c": "B",
+     "v": "COCKTAIL"
+    },
+    {
+     "c": "D",
+     "v": "BOURBON / WHISKEY"
+    },
+    {
+     "c": "E",
+     "v": "BREAKTHRU"
+    },
+    {
+     "c": "F",
+     "v": 9031302
+    },
+    {
+     "c": "G",
+     "v": "BUFFALO TRACE"
+    },
+    {
+     "c": "H",
+     "v": 1000
+    },
+    {
+     "c": "J",
+     "v": 37
+    },
+    {
+     "c": "AK",
+     "v": "BREAKTHRU"
+    }
+   ]
+  },
+  {
+   "r": 14,
+   "cells": [
+    {
+     "c": "A",
+     "v": 25
+    },
+    {
+     "c": "D",
+     "v": "BOURBON / WHISKEY"
+    },
+    {
+     "c": "E",
+     "v": "BREAKTHRU"
+    },
+    {
+     "c": "G",
+     "v": "EAGLE RARE (BREAKTHROUGH) "
+    },
+    {
+     "c": "H",
+     "v": 750
+    },
+    {
+     "c": "AK",
+     "v": "BREAKTHRU"
+    }
+   ]
+  },
+  {
+   "r": 15,
+   "cells": [
+    {
+     "c": "A",
+     "v": 41
+    },
+    {
+     "c": "B",
+     "v": "COCKTAIL"
+    },
+    {
+     "c": "D",
+     "v": "BOURBON / WHISKEY"
+    },
+    {
+     "c": "E",
+     "v": "BREAKTHRU"
+    },
+    {
+     "c": "G",
+     "v": "EH TAYLOR "
+    },
+    {
+     "c": "H",
+     "v": 750
+    },
+    {
+     "c": "AK",
+     "v": "BREAKTHRU"
+    }
+   ]
+  }
+ ]
+}

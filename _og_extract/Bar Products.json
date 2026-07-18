@@ -1,0 +1,634 @@
+{
+ "name": "Bar Products",
+ "max_row": 88,
+ "max_col": 26,
+ "rows": [
+  {
+   "r": 1,
+   "cells": [
+    {
+     "c": "C",
+     "v": "f"
+    },
+    {
+     "c": "D",
+     "v": 1
+    },
+    {
+     "c": "E",
+     "v": "=D1+1"
+    },
+    {
+     "c": "F",
+     "v": "=E1+1"
+    },
+    {
+     "c": "G",
+     "v": "=F1+1"
+    },
+    {
+     "c": "H",
+     "v": "=G1+1"
+    },
+    {
+     "c": "I",
+     "v": "=H1+1"
+    },
+    {
+     "c": "J",
+     "v": "=I1+1"
+    },
+    {
+     "c": "K",
+     "v": "=J1+1"
+    },
+    {
+     "c": "L",
+     "v": "=K1+1"
+    },
+    {
+     "c": "M",
+     "v": "=L1+1"
+    },
+    {
+     "c": "N",
+     "v": "=M1+1"
+    },
+    {
+     "c": "O",
+     "v": "=N1+1"
+    },
+    {
+     "c": "P",
+     "v": "=O1+1"
+    },
+    {
+     "c": "Q",
+     "v": "=P1+1"
+    },
+    {
+     "c": "R",
+     "v": "=Q1+1"
+    },
+    {
+     "c": "S",
+     "v": "=R1+1"
+    },
+    {
+     "c": "T",
+     "v": "=S1+1"
+    },
+    {
+     "c": "U",
+     "v": "=T1+1"
+    }
+   ]
+  },
+  {
+   "r": 2,
+   "cells": [
+    {
+     "c": "D",
+     "v": "CLAUDIE ORDER GUIDE"
+    },
+    {
+     "c": "H",
+     "v": "=TODAY()-WEEKDAY(TODAY(),2)+1"
+    },
+    {
+     "c": "J",
+     "v": "=H2+1"
+    },
+    {
+     "c": "L",
+     "v": "=J2+1"
+    },
+    {
+     "c": "N",
+     "v": "=L2+1"
+    },
+    {
+     "c": "P",
+     "v": "=N2+1"
+    },
+    {
+     "c": "R",
+     "v": "=P2+1"
+    },
+    {
+     "c": "T",
+     "v": "=R2+1"
+    }
+   ]
+  },
+  {
+   "r": 3,
+   "cells": [
+    {
+     "c": "H",
+     "v": "FOR TUESDAY DELVIERY"
+    },
+    {
+     "c": "J",
+     "v": "FOR WEDNESDAY DELVIERY"
+    },
+    {
+     "c": "L",
+     "v": "FOR THURSDAY DELVIERY"
+    },
+    {
+     "c": "N",
+     "v": "FOR FRIDAY DELVIERY"
+    },
+    {
+     "c": "P",
+     "v": "FOR SATURDAY DELVIERY"
+    },
+    {
+     "c": "R",
+     "v": "NO ORDERS"
+    },
+    {
+     "c": "T",
+     "v": "FOR MONDAY DELVIERY"
+    },
+    {
+     "c": "X",
+     "v": "MR. GREENS"
+    }
+   ]
+  },
+  {
+   "r": 4,
+   "cells": [
+    {
+     "c": "A",
+     "v": "POS"
+    },
+    {
+     "c": "B",
+     "v": "CATEGORY"
+    },
+    {
+     "c": "C",
+     "v": "VENDOR"
+    },
+    {
+     "c": "D",
+     "v": "DESCRIPTION"
+    },
+    {
+     "c": "E",
+     "v": "PRICE"
+    },
+    {
+     "c": "F",
+     "v": "UNIT"
+    },
+    {
+     "c": "H",
+     "v": "PAR"
+    },
+    {
+     "c": "I",
+     "v": "ORDER"
+    },
+    {
+     "c": "J",
+     "v": "PAR"
+    },
+    {
+     "c": "K",
+     "v": "ORDER"
+    },
+    {
+     "c": "L",
+     "v": "PAR"
+    },
+    {
+     "c": "M",
+     "v": "ORDER"
+    },
+    {
+     "c": "N",
+     "v": "PAR"
+    },
+    {
+     "c": "O",
+     "v": "ORDER"
+    },
+    {
+     "c": "P",
+     "v": "PAR"
+    },
+    {
+     "c": "Q",
+     "v": "ORDER"
+    },
+    {
+     "c": "R",
+     "v": "PAR"
+    },
+    {
+     "c": "S",
+     "v": "ORDER"
+    },
+    {
+     "c": "T",
+     "v": "PAR"
+    },
+    {
+     "c": "U",
+     "v": "ORDER"
+    },
+    {
+     "c": "V",
+     "v": "NOTES"
+    },
+    {
+     "c": "X",
+     "v": "ITEM NUMBER"
+    },
+    {
+     "c": "Y",
+     "v": "PRICE"
+    },
+    {
+     "c": "Z",
+     "v": "UOM"
+    }
+   ]
+  },
+  {
+   "r": 5,
+   "cells": [
+    {
+     "c": "A",
+     "v": 1
+    },
+    {
+     "c": "B",
+     "v": "COFFEE"
+    },
+    {
+     "c": "C",
+     "v": "ILLY COFFEE"
+    },
+    {
+     "c": "D",
+     "v": "ILLY CLASSICO BEANS #7178"
+    },
+    {
+     "c": "E",
+     "v": 217.74
+    },
+    {
+     "c": "F",
+     "v": "2X3 KG"
+    },
+    {
+     "c": "H",
+     "v": 2
+    },
+    {
+     "c": "I",
+     "v": 2
+    },
+    {
+     "c": "Z",
+     "v": "RELIANT COFFEE"
+    }
+   ]
+  },
+  {
+   "r": 6,
+   "cells": [
+    {
+     "c": "A",
+     "v": 2
+    },
+    {
+     "c": "B",
+     "v": "COFFEE"
+    },
+    {
+     "c": "C",
+     "v": "ILLY COFFEE"
+    },
+    {
+     "c": "D",
+     "v": "ILLY FRAC PACK DECAFF #US1012"
+    },
+    {
+     "c": "E",
+     "v": 127.34
+    },
+    {
+     "c": "F",
+     "v": "64GM/2.2OZ 48 CT"
+    },
+    {
+     "c": "H",
+     "v": 1
+    },
+    {
+     "c": "Z",
+     "v": "RELIANT COFFEE"
+    }
+   ]
+  },
+  {
+   "r": 7,
+   "cells": [
+    {
+     "c": "A",
+     "v": 3
+    },
+    {
+     "c": "B",
+     "v": "COFFEE"
+    },
+    {
+     "c": "C",
+     "v": "ILLY COFFEE"
+    },
+    {
+     "c": "D",
+     "v": "ILLY FRAC PACK INTENSO #US1010"
+    },
+    {
+     "c": "E",
+     "v": 115.76
+    },
+    {
+     "c": "F",
+     "v": "64GM/2.2OZ 48 CT"
+    },
+    {
+     "c": "H",
+     "v": 2
+    },
+    {
+     "c": "Z",
+     "v": "RELIANT COFFEE"
+    }
+   ]
+  },
+  {
+   "r": 8,
+   "cells": [
+    {
+     "c": "A",
+     "v": 4
+    },
+    {
+     "c": "B",
+     "v": "COFFEE"
+    },
+    {
+     "c": "C",
+     "v": "ILLY COFFEE"
+    },
+    {
+     "c": "D",
+     "v": "ILLY GROUND CLASSICO DEACF COFFEE #8838"
+    },
+    {
+     "c": "E",
+     "v": 64
+    },
+    {
+     "c": "F",
+     "v": "6 X 250 GM"
+    },
+    {
+     "c": "Z",
+     "v": "RELIANT COFFEE"
+    }
+   ]
+  },
+  {
+   "r": 9,
+   "cells": [
+    {
+     "c": "A",
+     "v": 6
+    },
+    {
+     "c": "B",
+     "v": "FRUIT PUREE"
+    },
+    {
+     "c": "C",
+     "v": "CHEF WAREHOUSE"
+    },
+    {
+     "c": "D",
+     "v": "BLOOD ORANGE PUREE BOIRON                  BAR"
+    },
+    {
+     "c": "F",
+     "v": "CS"
+    },
+    {
+     "c": "O",
+     "v": 1
+    },
+    {
+     "c": "Z",
+     "v": "CHEF WAREHOUSE"
+    }
+   ]
+  },
+  {
+   "r": 10,
+   "cells": [
+    {
+     "c": "A",
+     "v": 7
+    },
+    {
+     "c": "B",
+     "v": "GROCERY"
+    },
+    {
+     "c": "C",
+     "v": "CHEF WAREHOUSE"
+    },
+    {
+     "c": "D",
+     "v": "LUXARDO CHERRIES                                      BAR"
+    },
+    {
+     "c": "E",
+     "v": "83.85"
+    },
+    {
+     "c": "F",
+     "v": "3 KG"
+    },
+    {
+     "c": "Z",
+     "v": "CHEF WAREHOUSE"
+    }
+   ]
+  },
+  {
+   "r": 11,
+   "cells": [
+    {
+     "c": "A",
+     "v": 8
+    },
+    {
+     "c": "B",
+     "v": "GROCERY"
+    },
+    {
+     "c": "C",
+     "v": "CHEF WAREHOUSE"
+    },
+    {
+     "c": "D",
+     "v": "LYCHEE FRUIT IN SYRUP"
+    },
+    {
+     "c": "Z",
+     "v": "CHEF WAREHOUSE"
+    }
+   ]
+  },
+  {
+   "r": 12,
+   "cells": [
+    {
+     "c": "A",
+     "v": 9
+    },
+    {
+     "c": "B",
+     "v": "GROCERY"
+    },
+    {
+     "c": "C",
+     "v": "CHEF WAREHOUSE"
+    },
+    {
+     "c": "D",
+     "v": "Olive Ptd Castelvetrano      BAR"
+    },
+    {
+     "c": "E",
+     "v": 61.49
+    },
+    {
+     "c": "F",
+     "v": "EACH"
+    },
+    {
+     "c": "Z",
+     "v": "CHEF WAREHOUSE"
+    }
+   ]
+  },
+  {
+   "r": 13,
+   "cells": [
+    {
+     "c": "A",
+     "v": 11
+    },
+    {
+     "c": "B",
+     "v": "GROCERY"
+    },
+    {
+     "c": "C",
+     "v": "CHEF WAREHOUSE"
+    },
+    {
+     "c": "D",
+     "v": "SPICE ALL SPICE"
+    },
+    {
+     "c": "E",
+     "v": "8.89"
+    },
+    {
+     "c": "F",
+     "v": "13 OZ"
+    },
+    {
+     "c": "Z",
+     "v": "CHEF WAREHOUSE"
+    }
+   ]
+  },
+  {
+   "r": 14,
+   "cells": [
+    {
+     "c": "A",
+     "v": 12
+    },
+    {
+     "c": "B",
+     "v": "GROCERY"
+    },
+    {
+     "c": "C",
+     "v": "CHEF WAREHOUSE"
+    },
+    {
+     "c": "D",
+     "v": "SPICE CINNAMON STICKS"
+    },
+    {
+     "c": "E",
+     "v": "5.95"
+    },
+    {
+     "c": "F",
+     "v": "8 OZ"
+    },
+    {
+     "c": "Z",
+     "v": "CHEF WAREHOUSE"
+    }
+   ]
+  },
+  {
+   "r": 15,
+   "cells": [
+    {
+     "c": "A",
+     "v": 13
+    },
+    {
+     "c": "B",
+     "v": "GROCERY"
+    },
+    {
+     "c": "C",
+     "v": "CHEF WAREHOUSE"
+    },
+    {
+     "c": "D",
+     "v": "SPICE STAR ANISES"
+    },
+    {
+     "c": "E",
+     "v": "8.35"
+    },
+    {
+     "c": "F",
+     "v": "16 OZ"
+    },
+    {
+     "c": "Z",
+     "v": "CHEF WAREHOUSE"
+    }
+   ]
+  }
+ ]
+}

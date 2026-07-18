@@ -1,0 +1,1279 @@
+{
+ "name": "ORDER GUIDE",
+ "max_row": 1059,
+ "max_col": 78,
+ "rows": [
+  {
+   "r": 1,
+   "cells": [
+    {
+     "c": "BZ",
+     "v": "<openpyxl.worksheet.formula.ArrayFormula object at 0x0000014961D436B0>"
+    }
+   ]
+  },
+  {
+   "r": 2,
+   "cells": [
+    {
+     "c": "C",
+     "v": "CLAUDIE ORDER GUIDE - PRODUCE, DAIRY, SEAFOOD, MEAT"
+    },
+    {
+     "c": "BZ",
+     "v": "<openpyxl.worksheet.formula.ArrayFormula object at 0x0000014961D43D70>"
+    }
+   ]
+  },
+  {
+   "r": 3,
+   "cells": [
+    {
+     "c": "BZ",
+     "v": "<openpyxl.worksheet.formula.ArrayFormula object at 0x0000014961D43D10>"
+    }
+   ]
+  },
+  {
+   "r": 4,
+   "cells": [
+    {
+     "c": "C",
+     "v": "SEAFOOD"
+    },
+    {
+     "c": "BZ",
+     "v": "<openpyxl.worksheet.formula.ArrayFormula object at 0x0000014961D43CB0>"
+    }
+   ]
+  },
+  {
+   "r": 5,
+   "cells": [
+    {
+     "c": "AS",
+     "v": "=TODAY()-WEEKDAY(TODAY(),2)+MATCH(AS6,{\"Monday\",\"Tuesday\",\"Wednesday\",\"Thursday\",\"Friday\",\"Saturday\",\"Sunday\"},0)"
+    },
+    {
+     "c": "BZ",
+     "v": "<openpyxl.worksheet.formula.ArrayFormula object at 0x0000014961D43EF0>"
+    }
+   ]
+  },
+  {
+   "r": 6,
+   "cells": [
+    {
+     "c": "C",
+     "v": "REF DO NOT TOUCH"
+    },
+    {
+     "c": "O",
+     "v": 24
+    },
+    {
+     "c": "P",
+     "v": 45
+    },
+    {
+     "c": "Q",
+     "v": 66
+    },
+    {
+     "c": "R",
+     "v": 87
+    },
+    {
+     "c": "S",
+     "v": 108
+    },
+    {
+     "c": "T",
+     "v": 114
+    },
+    {
+     "c": "U",
+     "v": 146
+    },
+    {
+     "c": "AS",
+     "v": "Friday"
+    }
+   ]
+  },
+  {
+   "r": 7,
+   "cells": [
+    {
+     "c": "G",
+     "v": "Category"
+    },
+    {
+     "c": "H",
+     "v": "Items"
+    },
+    {
+     "c": "I",
+     "v": "Vendor Item Name"
+    },
+    {
+     "c": "J",
+     "v": "Price"
+    },
+    {
+     "c": "L",
+     "v": "UofM"
+    },
+    {
+     "c": "M",
+     "v": "Frequency"
+    },
+    {
+     "c": "N",
+     "v": "Weekly Purchase"
+    },
+    {
+     "c": "O",
+     "v": "MONDAY"
+    },
+    {
+     "c": "P",
+     "v": "TUESDAY"
+    },
+    {
+     "c": "Q",
+     "v": "WEDNESDAY"
+    },
+    {
+     "c": "R",
+     "v": "THURSDAY"
+    },
+    {
+     "c": "S",
+     "v": "FRIDAY"
+    },
+    {
+     "c": "T",
+     "v": "SATURDAY"
+    },
+    {
+     "c": "U",
+     "v": "SUNDAY"
+    }
+   ]
+  },
+  {
+   "r": 8,
+   "cells": [
+    {
+     "c": "A",
+     "v": 1
+    },
+    {
+     "c": "B",
+     "v": "Seafood"
+    },
+    {
+     "c": "C",
+     "v": "PETROSSIAN"
+    },
+    {
+     "c": "G",
+     "v": "Seafood"
+    },
+    {
+     "c": "H",
+     "v": "='Seafood '!B19"
+    },
+    {
+     "c": "I",
+     "v": "Caviar Daurenki Petrossian 125gr"
+    },
+    {
+     "c": "J",
+     "v": "=IFERROR(_xlfn.XLOOKUP(H8,'Seafood '!$B:$B,'Seafood '!$A:$A),\"\")"
+    },
+    {
+     "c": "K",
+     "v": 176
+    },
+    {
+     "c": "L",
+     "v": "=VLOOKUP($H8,'Seafood '!$B$19:$E$72,4,FALSE)"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP($H8,'Seafood '!$B$19:$E$72,3,FALSE)"
+    },
+    {
+     "c": "O",
+     "v": "=IFERROR(IF(VLOOKUP($H8,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)=0,0,VLOOKUP($H8,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)),0)"
+    },
+    {
+     "c": "P",
+     "v": "=IFERROR(IF(VLOOKUP($H8,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)=0,0,VLOOKUP($H8,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)),0)"
+    },
+    {
+     "c": "Q",
+     "v": "=IFERROR(IF(VLOOKUP($H8,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)=0,0,VLOOKUP($H8,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)),0)"
+    },
+    {
+     "c": "R",
+     "v": "=IFERROR(IF(VLOOKUP($H8,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)=0,0,VLOOKUP($H8,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)),0)"
+    },
+    {
+     "c": "S",
+     "v": "=IFERROR(IF(VLOOKUP($H8,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)=0,0,VLOOKUP($H8,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)),0)"
+    },
+    {
+     "c": "T",
+     "v": "=IFERROR(IF(VLOOKUP($H8,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)=0,0,VLOOKUP($H8,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)),0)"
+    },
+    {
+     "c": "U",
+     "v": "=IFERROR(IF(VLOOKUP($H8,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)=0,0,VLOOKUP($H8,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)),0)"
+    },
+    {
+     "c": "W",
+     "v": "=G8"
+    }
+   ]
+  },
+  {
+   "r": 9,
+   "cells": [
+    {
+     "c": "A",
+     "v": 2
+    },
+    {
+     "c": "B",
+     "v": "Seafood"
+    },
+    {
+     "c": "C",
+     "v": "PETROSSIAN"
+    },
+    {
+     "c": "G",
+     "v": "Seafood"
+    },
+    {
+     "c": "H",
+     "v": "='Seafood '!B20"
+    },
+    {
+     "c": "I",
+     "v": "Caviar Daurenki Petrossian 30gr"
+    },
+    {
+     "c": "J",
+     "v": "=IFERROR(_xlfn.XLOOKUP(H9,'Seafood '!$B:$B,'Seafood '!$A:$A),\"\")"
+    },
+    {
+     "c": "K",
+     "v": 44
+    },
+    {
+     "c": "L",
+     "v": "=VLOOKUP($H9,'Seafood '!$B$19:$E$72,4,FALSE)"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP($H9,'Seafood '!$B$19:$E$72,3,FALSE)"
+    },
+    {
+     "c": "O",
+     "v": "=IFERROR(IF(VLOOKUP($H9,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)=0,0,VLOOKUP($H9,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)),0)"
+    },
+    {
+     "c": "P",
+     "v": "=IFERROR(IF(VLOOKUP($H9,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)=0,0,VLOOKUP($H9,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)),0)"
+    },
+    {
+     "c": "Q",
+     "v": "=IFERROR(IF(VLOOKUP($H9,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)=0,0,VLOOKUP($H9,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)),0)"
+    },
+    {
+     "c": "R",
+     "v": "=IFERROR(IF(VLOOKUP($H9,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)=0,0,VLOOKUP($H9,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)),0)"
+    },
+    {
+     "c": "S",
+     "v": "=IFERROR(IF(VLOOKUP($H9,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)=0,0,VLOOKUP($H9,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)),0)"
+    },
+    {
+     "c": "T",
+     "v": "=IFERROR(IF(VLOOKUP($H9,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)=0,0,VLOOKUP($H9,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)),0)"
+    },
+    {
+     "c": "U",
+     "v": "=IFERROR(IF(VLOOKUP($H9,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)=0,0,VLOOKUP($H9,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)),0)"
+    },
+    {
+     "c": "W",
+     "v": "=G9"
+    }
+   ]
+  },
+  {
+   "r": 10,
+   "cells": [
+    {
+     "c": "A",
+     "v": 3
+    },
+    {
+     "c": "B",
+     "v": "Seafood"
+    },
+    {
+     "c": "C",
+     "v": "PETROSSIAN"
+    },
+    {
+     "c": "G",
+     "v": "Seafood"
+    },
+    {
+     "c": "H",
+     "v": "='Seafood '!B21"
+    },
+    {
+     "c": "I",
+     "v": "Caviar Daurenki Petrossian 50gr"
+    },
+    {
+     "c": "J",
+     "v": "=IFERROR(_xlfn.XLOOKUP(H10,'Seafood '!$B:$B,'Seafood '!$A:$A),\"\")"
+    },
+    {
+     "c": "K",
+     "v": 71
+    },
+    {
+     "c": "L",
+     "v": "=VLOOKUP($H10,'Seafood '!$B$19:$E$72,4,FALSE)"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP($H10,'Seafood '!$B$19:$E$72,3,FALSE)"
+    },
+    {
+     "c": "O",
+     "v": "=IFERROR(IF(VLOOKUP($H10,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)=0,0,VLOOKUP($H10,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)),0)"
+    },
+    {
+     "c": "P",
+     "v": "=IFERROR(IF(VLOOKUP($H10,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)=0,0,VLOOKUP($H10,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)),0)"
+    },
+    {
+     "c": "Q",
+     "v": "=IFERROR(IF(VLOOKUP($H10,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)=0,0,VLOOKUP($H10,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)),0)"
+    },
+    {
+     "c": "R",
+     "v": "=IFERROR(IF(VLOOKUP($H10,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)=0,0,VLOOKUP($H10,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)),0)"
+    },
+    {
+     "c": "S",
+     "v": "=IFERROR(IF(VLOOKUP($H10,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)=0,0,VLOOKUP($H10,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)),0)"
+    },
+    {
+     "c": "T",
+     "v": "=IFERROR(IF(VLOOKUP($H10,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)=0,0,VLOOKUP($H10,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)),0)"
+    },
+    {
+     "c": "U",
+     "v": "=IFERROR(IF(VLOOKUP($H10,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)=0,0,VLOOKUP($H10,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)),0)"
+    },
+    {
+     "c": "W",
+     "v": "=G10"
+    },
+    {
+     "c": "X",
+     "v": 1
+    },
+    {
+     "c": "BF",
+     "v": "<openpyxl.worksheet.formula.ArrayFormula object at 0x0000014961D43230>"
+    }
+   ]
+  },
+  {
+   "r": 11,
+   "cells": [
+    {
+     "c": "A",
+     "v": 4
+    },
+    {
+     "c": "B",
+     "v": "Seafood"
+    },
+    {
+     "c": "C",
+     "v": "Ossetra"
+    },
+    {
+     "c": "G",
+     "v": "Seafood"
+    },
+    {
+     "c": "H",
+     "v": "='Seafood '!B22"
+    },
+    {
+     "c": "I",
+     "v": "Caviar Kaluga Brown Trading 250gr"
+    },
+    {
+     "c": "J",
+     "v": "=IFERROR(_xlfn.XLOOKUP(H11,'Seafood '!$B:$B,'Seafood '!$A:$A),\"\")"
+    },
+    {
+     "c": "K",
+     "v": 225
+    },
+    {
+     "c": "L",
+     "v": "=VLOOKUP($H11,'Seafood '!$B$19:$E$72,4,FALSE)"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP($H11,'Seafood '!$B$19:$E$72,3,FALSE)"
+    },
+    {
+     "c": "O",
+     "v": "=IFERROR(IF(VLOOKUP($H11,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)=0,0,VLOOKUP($H11,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)),0)"
+    },
+    {
+     "c": "P",
+     "v": "=IFERROR(IF(VLOOKUP($H11,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)=0,0,VLOOKUP($H11,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)),0)"
+    },
+    {
+     "c": "Q",
+     "v": "=IFERROR(IF(VLOOKUP($H11,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)=0,0,VLOOKUP($H11,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)),0)"
+    },
+    {
+     "c": "R",
+     "v": "=IFERROR(IF(VLOOKUP($H11,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)=0,0,VLOOKUP($H11,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)),0)"
+    },
+    {
+     "c": "S",
+     "v": "=IFERROR(IF(VLOOKUP($H11,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)=0,0,VLOOKUP($H11,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)),0)"
+    },
+    {
+     "c": "T",
+     "v": "=IFERROR(IF(VLOOKUP($H11,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)=0,0,VLOOKUP($H11,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)),0)"
+    },
+    {
+     "c": "U",
+     "v": "=IFERROR(IF(VLOOKUP($H11,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)=0,0,VLOOKUP($H11,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)),0)"
+    },
+    {
+     "c": "W",
+     "v": "=G11"
+    },
+    {
+     "c": "BA",
+     "v": 60
+    },
+    {
+     "c": "BB",
+     "v": 78
+    },
+    {
+     "c": "BC",
+     "v": 96
+    },
+    {
+     "c": "BD",
+     "v": 0
+    },
+    {
+     "c": "BE",
+     "v": 130
+    },
+    {
+     "c": "BF",
+     "v": "MEAT & POULTRY||CHEF WAREHOUSE"
+    }
+   ]
+  },
+  {
+   "r": 12,
+   "cells": [
+    {
+     "c": "A",
+     "v": 5
+    },
+    {
+     "c": "B",
+     "v": "Seafood"
+    },
+    {
+     "c": "C",
+     "v": "PATAGONIA"
+    },
+    {
+     "c": "G",
+     "v": "Seafood"
+    },
+    {
+     "c": "H",
+     "v": "='Seafood '!B23"
+    },
+    {
+     "c": "I",
+     "v": "Branzino 800\u20131000g Whole"
+    },
+    {
+     "c": "J",
+     "v": "=IFERROR(_xlfn.XLOOKUP(H12,'Seafood '!$B:$B,'Seafood '!$A:$A),\"\")"
+    },
+    {
+     "c": "K",
+     "v": "=J12"
+    },
+    {
+     "c": "L",
+     "v": "=VLOOKUP($H12,'Seafood '!$B$19:$E$72,4,FALSE)"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP($H12,'Seafood '!$B$19:$E$72,3,FALSE)"
+    },
+    {
+     "c": "N",
+     "v": "=IF(VLOOKUP($H12,'Seafood '!$B$7:$ER$37,'ORDER GUIDE'!N$5,FALSE)=0,\"\",VLOOKUP($H12,'Seafood '!$B$7:$ER$37,'ORDER GUIDE'!N$5,FALSE))"
+    },
+    {
+     "c": "O",
+     "v": "=IFERROR(IF(VLOOKUP($H12,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)=0,0,VLOOKUP($H12,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)),0)"
+    },
+    {
+     "c": "P",
+     "v": "=IFERROR(IF(VLOOKUP($H12,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)=0,0,VLOOKUP($H12,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)),0)"
+    },
+    {
+     "c": "Q",
+     "v": "=IFERROR(IF(VLOOKUP($H12,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)=0,0,VLOOKUP($H12,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)),0)"
+    },
+    {
+     "c": "R",
+     "v": "=IFERROR(IF(VLOOKUP($H12,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)=0,0,VLOOKUP($H12,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)),0)"
+    },
+    {
+     "c": "S",
+     "v": "=IFERROR(IF(VLOOKUP($H12,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)=0,0,VLOOKUP($H12,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)),0)"
+    },
+    {
+     "c": "T",
+     "v": "=IFERROR(IF(VLOOKUP($H12,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)=0,0,VLOOKUP($H12,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)),0)"
+    },
+    {
+     "c": "U",
+     "v": "=IFERROR(IF(VLOOKUP($H12,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)=0,0,VLOOKUP($H12,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)),0)"
+    },
+    {
+     "c": "W",
+     "v": "=G12"
+    },
+    {
+     "c": "AP",
+     "v": "<openpyxl.worksheet.formula.ArrayFormula object at 0x0000014961D43470>"
+    },
+    {
+     "c": "BF",
+     "v": "MEAT & POULTRY||DARTAGNAN"
+    }
+   ]
+  },
+  {
+   "r": 13,
+   "cells": [
+    {
+     "c": "A",
+     "v": 6
+    },
+    {
+     "c": "B",
+     "v": "Seafood"
+    },
+    {
+     "c": "C",
+     "v": "PATAGONIA"
+    },
+    {
+     "c": "G",
+     "v": "Seafood"
+    },
+    {
+     "c": "H",
+     "v": "='Seafood '!B24"
+    },
+    {
+     "c": "I",
+     "v": "BRANZINO FILET SKIN ON 600-800G (GRILLED)"
+    },
+    {
+     "c": "J",
+     "v": "=IFERROR(_xlfn.XLOOKUP(H13,'Seafood '!$B:$B,'Seafood '!$A:$A),\"\")"
+    },
+    {
+     "c": "K",
+     "v": "=J13*60"
+    },
+    {
+     "c": "L",
+     "v": "=VLOOKUP($H13,'Seafood '!$B$19:$E$72,4,FALSE)"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP($H13,'Seafood '!$B$19:$E$72,3,FALSE)"
+    },
+    {
+     "c": "O",
+     "v": "=IFERROR(IF(VLOOKUP($H13,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)=0,0,VLOOKUP($H13,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)),0)"
+    },
+    {
+     "c": "P",
+     "v": "=IFERROR(IF(VLOOKUP($H13,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)=0,0,VLOOKUP($H13,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)),0)"
+    },
+    {
+     "c": "Q",
+     "v": "=IFERROR(IF(VLOOKUP($H13,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)=0,0,VLOOKUP($H13,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)),0)"
+    },
+    {
+     "c": "R",
+     "v": "=IFERROR(IF(VLOOKUP($H13,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)=0,0,VLOOKUP($H13,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)),0)"
+    },
+    {
+     "c": "S",
+     "v": "=IFERROR(IF(VLOOKUP($H13,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)=0,0,VLOOKUP($H13,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)),0)"
+    },
+    {
+     "c": "T",
+     "v": "=IFERROR(IF(VLOOKUP($H13,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)=0,0,VLOOKUP($H13,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)),0)"
+    },
+    {
+     "c": "U",
+     "v": "=IFERROR(IF(VLOOKUP($H13,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)=0,0,VLOOKUP($H13,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)),0)"
+    },
+    {
+     "c": "W",
+     "v": "=G13"
+    },
+    {
+     "c": "BF",
+     "v": "MEAT & POULTRY||USHI TORO"
+    }
+   ]
+  },
+  {
+   "r": 14,
+   "cells": [
+    {
+     "c": "A",
+     "v": 7
+    },
+    {
+     "c": "B",
+     "v": "Seafood"
+    },
+    {
+     "c": "C",
+     "v": "PATAGONIA"
+    },
+    {
+     "c": "G",
+     "v": "Seafood"
+    },
+    {
+     "c": "H",
+     "v": "='Seafood '!B25"
+    },
+    {
+     "c": "I",
+     "v": "DOVER SOLE WHOLE 600-800 GR  (CLEANED, CUSTOM CUT,)"
+    },
+    {
+     "c": "J",
+     "v": "=IFERROR(_xlfn.XLOOKUP(H14,'Seafood '!$B:$B,'Seafood '!$A:$A),\"\")"
+    },
+    {
+     "c": "K",
+     "v": "=J14*20"
+    },
+    {
+     "c": "L",
+     "v": "=VLOOKUP($H14,'Seafood '!$B$19:$E$72,4,FALSE)"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP($H14,'Seafood '!$B$19:$E$72,3,FALSE)"
+    },
+    {
+     "c": "O",
+     "v": "=IFERROR(IF(VLOOKUP($H14,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)=0,0,VLOOKUP($H14,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)),0)"
+    },
+    {
+     "c": "P",
+     "v": "=IFERROR(IF(VLOOKUP($H14,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)=0,0,VLOOKUP($H14,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)),0)"
+    },
+    {
+     "c": "Q",
+     "v": "=IFERROR(IF(VLOOKUP($H14,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)=0,0,VLOOKUP($H14,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)),0)"
+    },
+    {
+     "c": "R",
+     "v": "=IFERROR(IF(VLOOKUP($H14,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)=0,0,VLOOKUP($H14,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)),0)"
+    },
+    {
+     "c": "S",
+     "v": "=IFERROR(IF(VLOOKUP($H14,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)=0,0,VLOOKUP($H14,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)),0)"
+    },
+    {
+     "c": "T",
+     "v": "=IFERROR(IF(VLOOKUP($H14,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)=0,0,VLOOKUP($H14,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)),0)"
+    },
+    {
+     "c": "U",
+     "v": "=IFERROR(IF(VLOOKUP($H14,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)=0,0,VLOOKUP($H14,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)),0)"
+    },
+    {
+     "c": "W",
+     "v": "=G14"
+    },
+    {
+     "c": "BF",
+     "v": "PRODUCE, DAIRY & DRY GOODS||Cedar Trading"
+    }
+   ]
+  },
+  {
+   "r": 15,
+   "cells": [
+    {
+     "c": "A",
+     "v": 8
+    },
+    {
+     "c": "B",
+     "v": "Seafood"
+    },
+    {
+     "c": "C",
+     "v": "SAMUEL&SON"
+    },
+    {
+     "c": "G",
+     "v": "Seafood"
+    },
+    {
+     "c": "H",
+     "v": "='Seafood '!B26"
+    },
+    {
+     "c": "I",
+     "v": "FISH SALMON FAROE 7OZ/200GR PORTION STAIGHT CUT CENTER CUT (NO TAIL)\u00a0#S17"
+    },
+    {
+     "c": "J",
+     "v": "=IFERROR(_xlfn.XLOOKUP(H15,'Seafood '!$B:$B,'Seafood '!$A:$A),\"\")"
+    },
+    {
+     "c": "L",
+     "v": "=VLOOKUP($H15,'Seafood '!$B$19:$E$72,4,FALSE)"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP($H15,'Seafood '!$B$19:$E$72,3,FALSE)"
+    },
+    {
+     "c": "O",
+     "v": "=IFERROR(IF(VLOOKUP($H15,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)=0,0,VLOOKUP($H15,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)),0)"
+    },
+    {
+     "c": "P",
+     "v": "=IFERROR(IF(VLOOKUP($H15,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)=0,0,VLOOKUP($H15,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)),0)"
+    },
+    {
+     "c": "Q",
+     "v": "=IFERROR(IF(VLOOKUP($H15,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)=0,0,VLOOKUP($H15,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)),0)"
+    },
+    {
+     "c": "R",
+     "v": "=IFERROR(IF(VLOOKUP($H15,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)=0,0,VLOOKUP($H15,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)),0)"
+    },
+    {
+     "c": "S",
+     "v": "=IFERROR(IF(VLOOKUP($H15,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)=0,0,VLOOKUP($H15,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)),0)"
+    },
+    {
+     "c": "T",
+     "v": "=IFERROR(IF(VLOOKUP($H15,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)=0,0,VLOOKUP($H15,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)),0)"
+    },
+    {
+     "c": "U",
+     "v": "=IFERROR(IF(VLOOKUP($H15,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)=0,0,VLOOKUP($H15,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)),0)"
+    },
+    {
+     "c": "W",
+     "v": "=G15"
+    },
+    {
+     "c": "BF",
+     "v": "PRODUCE, DAIRY & DRY GOODS||Chef Warehouse"
+    }
+   ]
+  },
+  {
+   "r": 16,
+   "cells": [
+    {
+     "c": "A",
+     "v": 9
+    },
+    {
+     "c": "B",
+     "v": "Seafood"
+    },
+    {
+     "c": "C",
+     "v": "CHEF WAREHOUSE"
+    },
+    {
+     "c": "G",
+     "v": "Seafood"
+    },
+    {
+     "c": "H",
+     "v": "='Seafood '!B27"
+    },
+    {
+     "c": "I",
+     "v": "Salmon Smoked Pre-Sliced"
+    },
+    {
+     "c": "J",
+     "v": "=IFERROR(_xlfn.XLOOKUP(H16,'Seafood '!$B:$B,'Seafood '!$A:$A),\"\")"
+    },
+    {
+     "c": "K",
+     "v": "=J16"
+    },
+    {
+     "c": "L",
+     "v": "=VLOOKUP($H16,'Seafood '!$B$19:$E$72,4,FALSE)"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP($H16,'Seafood '!$B$19:$E$72,3,FALSE)"
+    },
+    {
+     "c": "N",
+     "v": "=IF(VLOOKUP($H16,'Seafood '!$B$7:$ER$37,'ORDER GUIDE'!N$5,FALSE)=0,\"\",VLOOKUP($H16,'Seafood '!$B$7:$ER$37,'ORDER GUIDE'!N$5,FALSE))"
+    },
+    {
+     "c": "O",
+     "v": "=IFERROR(IF(VLOOKUP($H16,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)=0,0,VLOOKUP($H16,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)),0)"
+    },
+    {
+     "c": "P",
+     "v": "=IFERROR(IF(VLOOKUP($H16,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)=0,0,VLOOKUP($H16,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)),0)"
+    },
+    {
+     "c": "Q",
+     "v": "=IFERROR(IF(VLOOKUP($H16,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)=0,0,VLOOKUP($H16,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)),0)"
+    },
+    {
+     "c": "R",
+     "v": "=IFERROR(IF(VLOOKUP($H16,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)=0,0,VLOOKUP($H16,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)),0)"
+    },
+    {
+     "c": "S",
+     "v": "=IFERROR(IF(VLOOKUP($H16,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)=0,0,VLOOKUP($H16,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)),0)"
+    },
+    {
+     "c": "T",
+     "v": "=IFERROR(IF(VLOOKUP($H16,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)=0,0,VLOOKUP($H16,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)),0)"
+    },
+    {
+     "c": "U",
+     "v": "=IFERROR(IF(VLOOKUP($H16,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)=0,0,VLOOKUP($H16,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)),0)"
+    },
+    {
+     "c": "W",
+     "v": "=G16"
+    },
+    {
+     "c": "BA",
+     "v": 56
+    },
+    {
+     "c": "BB",
+     "v": 74
+    },
+    {
+     "c": "BC",
+     "v": 92
+    },
+    {
+     "c": "BD",
+     "v": 111
+    },
+    {
+     "c": "BE",
+     "v": 123
+    },
+    {
+     "c": "BF",
+     "v": "PRODUCE, DAIRY & DRY GOODS||Farmer Mikes"
+    }
+   ]
+  },
+  {
+   "r": 17,
+   "cells": [
+    {
+     "c": "A",
+     "v": 10
+    },
+    {
+     "c": "B",
+     "v": "Seafood"
+    },
+    {
+     "c": "C",
+     "v": "BROWNE TRADING"
+    },
+    {
+     "c": "G",
+     "v": "Seafood"
+    },
+    {
+     "c": "H",
+     "v": "='Seafood '!B28"
+    },
+    {
+     "c": "I",
+     "v": "Seabream Daurade 2.2LB Whole 1000 gr"
+    },
+    {
+     "c": "J",
+     "v": "=IFERROR(_xlfn.XLOOKUP(H17,'Seafood '!$B:$B,'Seafood '!$A:$A),\"\")"
+    },
+    {
+     "c": "L",
+     "v": "=VLOOKUP($H17,'Seafood '!$B$19:$E$72,4,FALSE)"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP($H17,'Seafood '!$B$19:$E$72,3,FALSE)"
+    },
+    {
+     "c": "O",
+     "v": "=IFERROR(IF(VLOOKUP($H17,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)=0,0,VLOOKUP($H17,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)),0)"
+    },
+    {
+     "c": "P",
+     "v": "=IFERROR(IF(VLOOKUP($H17,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)=0,0,VLOOKUP($H17,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)),0)"
+    },
+    {
+     "c": "Q",
+     "v": "=IFERROR(IF(VLOOKUP($H17,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)=0,0,VLOOKUP($H17,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)),0)"
+    },
+    {
+     "c": "R",
+     "v": "=IFERROR(IF(VLOOKUP($H17,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)=0,0,VLOOKUP($H17,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)),0)"
+    },
+    {
+     "c": "S",
+     "v": "=IFERROR(IF(VLOOKUP($H17,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)=0,0,VLOOKUP($H17,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)),0)"
+    },
+    {
+     "c": "T",
+     "v": "=IFERROR(IF(VLOOKUP($H17,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)=0,0,VLOOKUP($H17,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)),0)"
+    },
+    {
+     "c": "U",
+     "v": "=IFERROR(IF(VLOOKUP($H17,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)=0,0,VLOOKUP($H17,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)),0)"
+    },
+    {
+     "c": "W",
+     "v": "=G17"
+    },
+    {
+     "c": "BF",
+     "v": "PRODUCE, DAIRY & DRY GOODS||MR GREENS"
+    }
+   ]
+  },
+  {
+   "r": 18,
+   "cells": [
+    {
+     "c": "A",
+     "v": 11
+    },
+    {
+     "c": "B",
+     "v": "Seafood"
+    },
+    {
+     "c": "C",
+     "v": "HALPERNS"
+    },
+    {
+     "c": "G",
+     "v": "Seafood"
+    },
+    {
+     "c": "H",
+     "v": "='Seafood '!B29"
+    },
+    {
+     "c": "I",
+     "v": "SQUID BABY, FRESH CLEANED T&T, LOLIGO, PEREIRA BRAND SPAIN - smallest size available - baby "
+    },
+    {
+     "c": "J",
+     "v": "=IFERROR(_xlfn.XLOOKUP(H18,'Seafood '!$B:$B,'Seafood '!$A:$A),\"\")"
+    },
+    {
+     "c": "K",
+     "v": "=J18*2.25"
+    },
+    {
+     "c": "L",
+     "v": "=VLOOKUP($H18,'Seafood '!$B$19:$E$72,4,FALSE)"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP($H18,'Seafood '!$B$19:$E$72,3,FALSE)"
+    },
+    {
+     "c": "O",
+     "v": "=IFERROR(IF(VLOOKUP($H18,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)=0,0,VLOOKUP($H18,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)),0)"
+    },
+    {
+     "c": "P",
+     "v": "=IFERROR(IF(VLOOKUP($H18,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)=0,0,VLOOKUP($H18,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)),0)"
+    },
+    {
+     "c": "Q",
+     "v": "=IFERROR(IF(VLOOKUP($H18,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)=0,0,VLOOKUP($H18,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)),0)"
+    },
+    {
+     "c": "R",
+     "v": "=IFERROR(IF(VLOOKUP($H18,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)=0,0,VLOOKUP($H18,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)),0)"
+    },
+    {
+     "c": "S",
+     "v": "=IFERROR(IF(VLOOKUP($H18,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)=0,0,VLOOKUP($H18,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)),0)"
+    },
+    {
+     "c": "T",
+     "v": "=IFERROR(IF(VLOOKUP($H18,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)=0,0,VLOOKUP($H18,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)),0)"
+    },
+    {
+     "c": "U",
+     "v": "=IFERROR(IF(VLOOKUP($H18,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)=0,0,VLOOKUP($H18,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)),0)"
+    },
+    {
+     "c": "W",
+     "v": "=G18"
+    },
+    {
+     "c": "BA",
+     "v": 41
+    },
+    {
+     "c": "BB",
+     "v": 59
+    },
+    {
+     "c": "BC",
+     "v": 77
+    },
+    {
+     "c": "BD",
+     "v": 96
+    },
+    {
+     "c": "BE",
+     "v": 0
+    },
+    {
+     "c": "BF",
+     "v": "PRODUCE, DAIRY & DRY GOODS||NC Unlimited"
+    }
+   ]
+  },
+  {
+   "r": 19,
+   "cells": [
+    {
+     "c": "A",
+     "v": 12
+    },
+    {
+     "c": "B",
+     "v": "Seafood"
+    },
+    {
+     "c": "C",
+     "v": "PATAGONIA"
+    },
+    {
+     "c": "G",
+     "v": "Seafood"
+    },
+    {
+     "c": "H",
+     "v": "='Seafood '!B30"
+    },
+    {
+     "c": "I",
+     "v": "FISH  TUNA YELLOW FIN LOIN SKIN OFF, CHAIN OFF, BLOOD LINE OUT "
+    },
+    {
+     "c": "J",
+     "v": "=IFERROR(_xlfn.XLOOKUP(H19,'Seafood '!$B:$B,'Seafood '!$A:$A),\"\")"
+    },
+    {
+     "c": "K",
+     "v": "=J19"
+    },
+    {
+     "c": "L",
+     "v": "=VLOOKUP($H19,'Seafood '!$B$19:$E$72,4,FALSE)"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP($H19,'Seafood '!$B$19:$E$72,3,FALSE)"
+    },
+    {
+     "c": "O",
+     "v": "=IFERROR(IF(VLOOKUP($H19,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)=0,0,VLOOKUP($H19,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)),0)"
+    },
+    {
+     "c": "P",
+     "v": "=IFERROR(IF(VLOOKUP($H19,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)=0,0,VLOOKUP($H19,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)),0)"
+    },
+    {
+     "c": "Q",
+     "v": "=IFERROR(IF(VLOOKUP($H19,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)=0,0,VLOOKUP($H19,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)),0)"
+    },
+    {
+     "c": "R",
+     "v": "=IFERROR(IF(VLOOKUP($H19,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)=0,0,VLOOKUP($H19,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)),0)"
+    },
+    {
+     "c": "S",
+     "v": "=IFERROR(IF(VLOOKUP($H19,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)=0,0,VLOOKUP($H19,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)),0)"
+    },
+    {
+     "c": "T",
+     "v": "=IFERROR(IF(VLOOKUP($H19,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)=0,0,VLOOKUP($H19,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)),0)"
+    },
+    {
+     "c": "U",
+     "v": "=IFERROR(IF(VLOOKUP($H19,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)=0,0,VLOOKUP($H19,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)),0)"
+    },
+    {
+     "c": "W",
+     "v": "=G19"
+    },
+    {
+     "c": "BF",
+     "v": "PRODUCE, DAIRY & DRY GOODS||Sabatino"
+    }
+   ]
+  },
+  {
+   "r": 20,
+   "cells": [
+    {
+     "c": "A",
+     "v": 13
+    },
+    {
+     "c": "B",
+     "v": "Seafood"
+    },
+    {
+     "c": "C",
+     "v": "SAMUEL&SON"
+    },
+    {
+     "c": "G",
+     "v": "Seafood"
+    },
+    {
+     "c": "H",
+     "v": "='Seafood '!B31"
+    },
+    {
+     "c": "I",
+     "v": "FISH  TURBOT WHOLE WILD CAUGHT NEED SMALLER SIZE / AVG  2.8 lb to 3lb  #TURBO23"
+    },
+    {
+     "c": "J",
+     "v": "=IFERROR(_xlfn.XLOOKUP(H20,'Seafood '!$B:$B,'Seafood '!$A:$A),\"\")"
+    },
+    {
+     "c": "K",
+     "v": "=J20*100"
+    },
+    {
+     "c": "L",
+     "v": "=VLOOKUP($H20,'Seafood '!$B$19:$E$72,4,FALSE)"
+    },
+    {
+     "c": "M",
+     "v": "=VLOOKUP($H20,'Seafood '!$B$19:$E$72,3,FALSE)"
+    },
+    {
+     "c": "O",
+     "v": "=IFERROR(IF(VLOOKUP($H20,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)=0,0,VLOOKUP($H20,'Seafood '!$B$18:$ZZ$72,O$6,FALSE)),0)"
+    },
+    {
+     "c": "P",
+     "v": "=IFERROR(IF(VLOOKUP($H20,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)=0,0,VLOOKUP($H20,'Seafood '!$B$18:$ZZ$72,P$6,FALSE)),0)"
+    },
+    {
+     "c": "Q",
+     "v": "=IFERROR(IF(VLOOKUP($H20,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)=0,0,VLOOKUP($H20,'Seafood '!$B$18:$ZZ$72,Q$6,FALSE)),0)"
+    },
+    {
+     "c": "R",
+     "v": "=IFERROR(IF(VLOOKUP($H20,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)=0,0,VLOOKUP($H20,'Seafood '!$B$18:$ZZ$72,R$6,FALSE)),0)"
+    },
+    {
+     "c": "S",
+     "v": "=IFERROR(IF(VLOOKUP($H20,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)=0,0,VLOOKUP($H20,'Seafood '!$B$18:$ZZ$72,S$6,FALSE)),0)"
+    },
+    {
+     "c": "T",
+     "v": "=IFERROR(IF(VLOOKUP($H20,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)=0,0,VLOOKUP($H20,'Seafood '!$B$18:$ZZ$72,T$6,FALSE)),0)"
+    },
+    {
+     "c": "U",
+     "v": "=IFERROR(IF(VLOOKUP($H20,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)=0,0,VLOOKUP($H20,'Seafood '!$B$18:$ZZ$72,U$6,FALSE)),0)"
+    },
+    {
+     "c": "W",
+     "v": "=G20"
+    },
+    {
+     "c": "BF",
+     "v": "PRODUCE, DAIRY & DRY GOODS||Superior"
+    }
+   ]
+  }
+ ]
+}

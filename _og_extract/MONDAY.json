@@ -1,0 +1,16 @@
+{
+ "name": "MONDAY",
+ "max_row": 898,
+ "max_col": 18,
+ "rows": [
+  {
+   "r": 2,
+   "cells": [
+    {
+     "c": "A",
+     "v": "Above-Store Actual vs. Theoretical Analysis"
+    }
+   ]
+  }
+ ]
+}
