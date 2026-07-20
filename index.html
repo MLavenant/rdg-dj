@@ -867,11 +867,11 @@ textarea#fldNote:focus{border-color:var(--blue)}
     <div id="vipBody" class="vip-wrap"></div>
   </div>
 
-  <!-- SYSTEM / HEALTH -->
+  <!-- SANITY / HEALTH -->
   <div id="view-system" style="display:none">
     <div class="pg-section">
-      <div class="pg-title2">System Status</div>
-      <div style="font-size:10px;color:var(--ink3);margin-top:2px">Scrape health, sync, and schedule</div>
+      <div class="pg-title2">Sanity</div>
+      <div style="font-size:10px;color:var(--ink3);margin-top:2px">What we pull, when it runs, and whether it’s healthy</div>
     </div>
     <div id="systemBody" style="padding:14px 16px;display:flex;flex-direction:column;gap:14px"></div>
   </div>
@@ -1129,7 +1129,7 @@ function buildSidebar() {
         + '<span class="sb-ic">&#9679;</span>LIVE</button>';
   html += '<div class="sb-section-lbl" style="margin-top:8px">Admin</div>';
   html += '<button class="sb-btn" data-view="system" onclick="setView(\'system\')">'
-        + '<span class="sb-ic">&#9881;</span>System Status</button>';
+        + '<span class="sb-ic">&#9881;</span>Sanity</button>';
   html += '<div class="sb-section-lbl">Venues</div>';
   venues.forEach(function(v) {
     var c=venueColor(v);
@@ -2378,7 +2378,17 @@ var SCHED_BAKED = SCHED.map(function(r){ return Object.assign({},r); }); // immu
   window._scrapeStatus = {};
   window._fbDb.ref('rdg/scrapeStatus').on('value', function(snap){
     window._scrapeStatus = snap.val() || {};
-    if(window._fbReady && curView==='system') renderSystem();
+    if(curView==='system') renderSystem();
+  });
+  window._rdgConfig = {};
+  window._fbDb.ref('rdg/config').on('value', function(snap){
+    window._rdgConfig = snap.val() || {};
+    if(curView==='system') renderSystem();
+  });
+  window._liveRefreshRequest = null;
+  window._fbDb.ref('rdg/liveRefreshRequest').on('value', function(snap){
+    window._liveRefreshRequest = snap.val() || null;
+    if(curView==='system') renderSystem();
   });
 })();
 var calViewMode = 'list';
@@ -3389,7 +3399,7 @@ var FORECAST_DATA = [
   {"venue":"Casa Neos Lounge","date":"2026-07-18","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-19","dj":"AFTERDARK","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-23","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
-  {"venue":"Casa Neos Lounge","date":"2026-07-24","dj":"Mal�ne Morez","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
+  {"venue":"Casa Neos Lounge","date":"2026-07-24","dj":"Mal�ne Morez","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-25","dj":"AMOG","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-26","dj":"AFTERDARK","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-30","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
@@ -3596,12 +3606,89 @@ function _liveAnimateMoney(el, from, to, deltaEl){
 }
 function refreshLive(){
   var btn = document.getElementById('liveRefreshBtn');
-  if(btn){ btn.textContent = '?'; btn.disabled = true; }
-  // Re-read Firebase snapshot already in memory, then animate any increases
-  renderLive(true);
-  setTimeout(function(){
+  if(btn){ btn.textContent = 'Pulling Toast…'; btn.disabled = true; }
+  var prevAt = (window._liveNight && window._liveNight.updatedAt) || '';
+  var cfg = window._rdgConfig || {};
+  var url = (cfg.liveRefreshUrl || '').trim();
+  var ghToken = (cfg.githubDispatchToken || '').trim();
+  var ghRepo = (cfg.githubDispatchRepo || 'MLavenant/boh-dashboard').trim();
+
+  function done(ok, msg){
     if(btn){ btn.textContent = 'Refresh'; btn.disabled = false; }
-  }, 1000);
+    if(msg){
+      var tip = document.getElementById('liveRefreshTip');
+      if(!tip){
+        tip = document.createElement('div');
+        tip.id = 'liveRefreshTip';
+        tip.style.cssText = 'font-size:11px;margin:0 0 10px;color:var(--ink3)';
+        var body = document.getElementById('liveBody');
+        if(body && body.parentNode) body.parentNode.insertBefore(tip, body);
+      }
+      tip.textContent = msg;
+      tip.style.color = ok ? '#0f766e' : '#b91c1c';
+    }
+    renderLive(true);
+  }
+
+  function pollUntilUpdated(tries){
+    tries = tries || 0;
+    if(tries > 40){
+      done(false, 'Toast pull timed out — check Sanity / GitHub Actions Live Refresh.');
+      return;
+    }
+    var cur = (window._liveNight && window._liveNight.updatedAt) || '';
+    var req = window._liveRefreshRequest || {};
+    if((cur && cur !== prevAt) || req.status === 'done' || req.status === 'failed'){
+      done(req.status !== 'failed', req.message || (cur && cur !== prevAt ? 'Toast LIVE updated.' : 'Refresh finished.'));
+      return;
+    }
+    setTimeout(function(){ pollUntilUpdated(tries + 1); }, 3000);
+  }
+
+  // Mark request in Firebase (Sanity + workers can see it)
+  if(window._fbDb){
+    window._fbDb.ref('rdg/liveRefreshRequest').set({
+      status: 'pending',
+      requestedAt: new Date().toISOString(),
+      source: 'dashboard_refresh_btn'
+    }).catch(function(){});
+  }
+
+  var kick = Promise.resolve();
+  if(url){
+    kick = fetch(url.replace(/\/$/, '') + (url.indexOf('/live-refresh') >= 0 ? '' : '/live-refresh'), {
+      method: 'POST',
+      headers: Object.assign(
+        { 'Content-Type': 'application/json' },
+        cfg.liveRefreshKey ? { 'x-live-key': cfg.liveRefreshKey } : {}
+      ),
+      body: '{}'
+    }).then(function(r){
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json().catch(function(){ return {}; });
+    });
+  } else if(ghToken){
+    kick = fetch('https://api.github.com/repos/' + ghRepo + '/dispatches', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/vnd.github+json',
+        'Authorization': 'Bearer ' + ghToken,
+        'X-GitHub-Api-Version': '2022-11-28'
+      },
+      body: JSON.stringify({ event_type: 'live-refresh' })
+    }).then(function(r){
+      if(r.status !== 204 && !r.ok) throw new Error('GitHub dispatch HTTP ' + r.status);
+    });
+  } else {
+    done(false, 'Live Refresh not configured. Open Sanity → set liveRefreshUrl or githubDispatchToken.');
+    return;
+  }
+
+  kick.then(function(){
+    pollUntilUpdated(0);
+  }).catch(function(err){
+    done(false, 'Could not start Toast pull: ' + (err && err.message ? err.message : err));
+  });
 }
 function renderLive(animate){
   var el=document.getElementById('liveBody');
@@ -3725,44 +3812,99 @@ function renderSystem(){
   var toast = st.toast || null;
   var toastLive = st.toastLive || null;
   var fbOk = !!window._fbReady;
+  var cfg = window._rdgConfig || {};
+  var liveCfgOk = !!(cfg.liveRefreshUrl || cfg.githubDispatchToken);
+  var forecastLive = window._forecastLive || null;
+  var liveNight = window._liveNight || null;
+  var liveReq = window._liveRefreshRequest || null;
 
-  function card(title, schedule, data){
-    var ok = data && data.ok;
-    var never = !data;
-    var badge = never ? '#94a3b8' : (ok ? '#22c55e' : '#ef4444');
-    var label = never ? 'No run yet' : (ok ? 'OK' : 'FAILED');
+  function ageHours(iso){
+    if(!iso) return null;
+    var t = Date.parse(iso);
+    if(!t) return null;
+    return (Date.now() - t) / 3600000;
+  }
+  function health(data, maxHours){
+    if(!data) return { badge:'#94a3b8', label:'No run yet', stale:true };
+    if(data.ok === false) return { badge:'#ef4444', label:'FAILED', stale:true };
+    var h = ageHours(data.at || data.updatedAt);
+    if(h != null && maxHours != null && h > maxHours) return { badge:'#f59e0b', label:'STALE', stale:true };
+    return { badge:'#22c55e', label:'OK', stale:false };
+  }
+  function card(title, defaultSchedule, data, maxHours, extra){
+    var sched = (data && (data.schedule || data.Schedule)) || defaultSchedule;
+    var what = (data && data.what) || '';
+    var hx = health(data, maxHours);
     var when = data && (data.atLocal || data.at) ? (data.atLocal || data.at) : '\u2014';
-    var msg  = data && data.message ? data.message : '';
-    return '<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid '+badge+'">'
+    var msg  = data && (data.message || data.msg) ? (data.message || data.msg) : '';
+    return '<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid '+hx.badge+'">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'
       + '<div style="font-size:13px;font-weight:800">'+title+'</div>'
-      + '<span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px;background:'+badge+';color:#fff">'+label+'</span>'
+      + '<span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px;background:'+hx.badge+';color:#fff">'+hx.label+'</span>'
       + '</div>'
-      + '<div style="margin-top:8px;font-size:11px;color:var(--ink3)">Schedule: <b style="color:var(--ink2)">'+schedule+'</b></div>'
+      + (what ? '<div style="margin-top:8px;font-size:11px;color:var(--ink2)"><b>Pulls:</b> '+what+'</div>' : '')
+      + '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">When: <b style="color:var(--ink2)">'+sched+'</b></div>'
       + '<div style="margin-top:4px;font-size:11px;color:var(--ink3)">Last run: <b style="color:var(--ink2)">'+when+'</b></div>'
       + (msg ? '<div style="margin-top:6px;font-size:11px;color:var(--ink2)">'+msg+'</div>' : '')
+      + (extra || '')
       + '</div>';
   }
 
+  var overallBad = (!fbOk) || (fv && fv.ok === false) || (toast && toast.ok === false) || !liveCfgOk;
+  var overallWarn = !overallBad && (
+    health(fv, 36).stale || health(toast, 84).stale || health(toastLive, 36).stale
+  );
+
   var h = '';
+  h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid '+(overallBad?'#ef4444':(overallWarn?'#f59e0b':'#22c55e'))+'">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'
+    + '<div style="font-size:14px;font-weight:900">Overall</div>'
+    + '<span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px;background:'+(overallBad?'#ef4444':(overallWarn?'#f59e0b':'#22c55e'))+';color:#fff">'
+    + (overallBad ? 'NEEDS ATTENTION' : (overallWarn ? 'CHECK STALE DATA' : 'HEALTHY'))
+    + '</span></div>'
+    + '<div style="margin-top:8px;font-size:11px;color:var(--ink3);line-height:1.55">'
+    + 'GitHub Pages hosts the site. GitHub Actions pulls FourVenues (daily) and Toast BS (Wed–Sun). '
+    + 'LIVE only updates when someone presses Refresh (Toast API → Firebase).'
+    + '</div></div>';
+
   h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid '+(fbOk?'#22c55e':'#f59e0b')+'">'
     + '<div style="display:flex;justify-content:space-between;align-items:center">'
-    + '<div style="font-size:13px;font-weight:800">Live sync (Firebase)</div>'
+    + '<div style="font-size:13px;font-weight:800">Firebase connection</div>'
     + '<span style="font-size:10px;font-weight:800;padding:3px 8px;border-radius:20px;background:'+(fbOk?'#22c55e':'#f59e0b')+';color:#fff">'+(fbOk?'Connected':'Connecting...')+'</span>'
     + '</div>'
-    + '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">Edits (shows, special weeks, ROI rules, budgets) sync to all browsers instantly.</div>'
+    + '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">People edits + live overlays (Forecast / LIVE) sync here for every viewer.</div>'
     + '</div>';
 
-  h += card('FourVenues scrape', 'Daily at 8:30 AM', fv);
-  h += card('Toast scrape', 'Mondays at 8:30 AM', toast);
-  h += card('Toast LIVE (night)', 'Every 30 min ? 11pm?3am ET', toastLive);
+  var fvExtra = forecastLive && forecastLive.updatedAt
+    ? '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">forecastLive: <b style="color:var(--ink2)">'+forecastLive.updatedAt+'</b>'
+      + (forecastLive.source ? ' · '+forecastLive.source : '') + '</div>'
+    : '';
+  h += card('FourVenues (Forecast BS Actual)', 'Daily ~8:30 AM ET · GitHub Actions', fv, 36, fvExtra);
+
+  h += card('Toast BS Actual (calendar / history)', 'Wed–Sun ~8:30 AM ET · GitHub Actions → GitHub Pages', toast, 84, '');
+
+  var liveExtra = '';
+  if(liveNight && liveNight.updatedAt){
+    liveExtra += '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">liveNight: <b style="color:var(--ink2)">'+(liveNight.updatedAtLocal||liveNight.updatedAt)+'</b> · night '+(liveNight.date||'')+'</div>';
+  }
+  if(liveReq && liveReq.status){
+    liveExtra += '<div style="margin-top:4px;font-size:11px;color:var(--ink3)">Last Refresh request: <b style="color:var(--ink2)">'+liveReq.status+'</b>'
+      + (liveReq.requestedAt || liveReq.finishedAt ? ' · '+(liveReq.finishedAt||liveReq.requestedAt) : '') + '</div>';
+  }
+  liveExtra += '<div style="margin-top:6px;font-size:11px;color:'+(liveCfgOk?'#0f766e':'#b91c1c')+'">'
+    + (liveCfgOk
+      ? 'Refresh button wired ('+(cfg.liveRefreshUrl ? 'HTTP endpoint' : 'GitHub dispatch')+').'
+      : 'Refresh not wired — set rdg/config/liveRefreshUrl or githubDispatchToken in Firebase.')
+    + '</div>';
+  h += card('Toast LIVE (on-demand only)', 'Only when someone presses Refresh — no night schedule', toastLive, 36, liveExtra);
 
   h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px">'
-    + '<div style="font-size:13px;font-weight:800;margin-bottom:6px">How updates work</div>'
-    + '<div style="font-size:11px;color:var(--ink3);line-height:1.55">'
-    + '<b style="color:var(--ink2)">Website:</b> nightly/weekly scrapes update index.html and push to GitHub Pages.<br>'
-    + '<b style="color:var(--ink2)">People edits:</b> saved to Firebase &mdash; everyone sees them live.<br>'
-    + '<b style="color:var(--ink2)">Laptop:</b> scrapes currently run on this PC via Task Scheduler (must be on at 8:30).'
+    + '<div style="font-size:13px;font-weight:800;margin-bottom:6px">How the pieces fit</div>'
+    + '<div style="font-size:11px;color:var(--ink3);line-height:1.6">'
+    + '<b style="color:var(--ink2)">GitHub Pages (rdg-dj):</b> the published website everyone opens.<br>'
+    + '<b style="color:var(--ink2)">GitHub Actions (boh-dashboard):</b> cloud robot that pulls data on a schedule — laptop can be off.<br>'
+    + '<b style="color:var(--ink2)">Firebase:</b> instant overlays (Forecast Actuals, LIVE night, Sanity status).<br>'
+    + '<b style="color:var(--ink2)">Microsoft Graph / Azure:</b> optional path for FourVenues Sales Report emails; Live Refresh HTTP can run on Azure App Service.'
     + '</div></div>';
 
   el.innerHTML = h;
