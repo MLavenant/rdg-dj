@@ -3865,7 +3865,7 @@ function renderSystem(){
     + '</span></div>'
     + '<div style="margin-top:8px;font-size:11px;color:var(--ink3);line-height:1.55">'
     + 'GitHub Pages hosts the site. Toast BS updates automatically (Wed–Sun via GitHub Actions). '
-    + 'FourVenues Forecast updates daily via Microsoft Graph (Sales Report emails → Firebase). '
+    + 'FourVenues Forecast updates daily: Export trigger + Microsoft Graph Sales Report emails → Firebase. '
     + 'LIVE updates only when someone presses Refresh.'
     + '</div></div>';
 
@@ -3881,7 +3881,7 @@ function renderSystem(){
     ? '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">forecastLive: <b style="color:var(--ink2)">'+forecastLive.updatedAt+'</b>'
       + (forecastLive.source ? ' · '+forecastLive.source : '') + '</div>'
     : '';
-  h += card('FourVenues (Forecast BS Actual)', 'Daily ~8:30 AM ET · GitHub Actions + Microsoft Graph mailbox', fv, 36, fvExtra);
+  h += card('FourVenues (Forecast BS Actual)', 'Daily ~8:30 AM ET · Export email + Microsoft Graph (laptop off)', fv, 36, fvExtra);
 
   h += card('Toast BS Actual (calendar / history)', 'Wed–Sun ~8:30 AM ET · GitHub Actions → GitHub Pages', toast, 84, '');
 
@@ -3904,8 +3904,8 @@ function renderSystem(){
     + '<div style="font-size:13px;font-weight:800;margin-bottom:6px">How the pieces fit</div>'
     + '<div style="font-size:11px;color:var(--ink3);line-height:1.6">'
     + '<b style="color:var(--ink2)">GitHub Pages (rdg-dj):</b> the published website everyone opens.<br>'
-    + '<b style="color:var(--ink2)">GitHub Actions:</b> Toast BS (Wed–Sun) + FourVenues Graph (daily) — laptop can be off.<br>'
-    + '<b style="color:var(--ink2)">Microsoft Graph:</b> reads FourVenues Sales Report emails from your mailbox.<br>'
+    + '<b style="color:var(--ink2)">GitHub Actions:</b> Toast BS (Wed–Sun) + FourVenues daily (laptop off).<br>'
+    + '<b style="color:var(--ink2)">FourVenues:</b> cloud triggers Sales Overview Export → Graph reads mailbox → Forecast Actuals.<br>'
     + '<b style="color:var(--ink2)">Firebase:</b> instant overlays (Forecast Actuals, LIVE, Sanity status).'
     + '</div></div>';
 
