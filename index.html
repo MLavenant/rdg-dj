@@ -2329,7 +2329,8 @@ var SCHED_BAKED = SCHED.map(function(r){ return Object.assign({},r); }); // immu
     var n = 0;
     FORECAST_DATA.forEach(function(e){
       var key = (e.venue + '_' + e.date).replace(/[^a-zA-Z0-9_-]/g, '_');
-      var row = live.events[key];
+      var keyDj = (e.venue + '_' + e.date + '_' + String(e.dj || '')).replace(/[^a-zA-Z0-9_-]/g, '_');
+      var row = live.events[keyDj] || live.events[key];
       if(!row) return;
       if(row.totalRevenue != null) e.totalRevenue = row.totalRevenue;
       if(row.bookedTables != null) e.bookedTables = row.bookedTables;
@@ -3863,8 +3864,9 @@ function renderSystem(){
     + (overallBad ? 'NEEDS ATTENTION' : (overallWarn ? 'CHECK STALE DATA' : 'HEALTHY'))
     + '</span></div>'
     + '<div style="margin-top:8px;font-size:11px;color:var(--ink3);line-height:1.55">'
-    + 'GitHub Pages hosts the site. GitHub Actions pulls FourVenues (daily) and Toast BS (Wed–Sun). '
-    + 'LIVE only updates when someone presses Refresh (Toast API → Firebase).'
+    + 'GitHub Pages hosts the site. Toast BS updates automatically (Wed–Sun via GitHub Actions). '
+    + 'FourVenues Forecast updates daily via Microsoft Graph (Sales Report emails → Firebase). '
+    + 'LIVE updates only when someone presses Refresh.'
     + '</div></div>';
 
   h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid '+(fbOk?'#22c55e':'#f59e0b')+'">'
@@ -3879,7 +3881,7 @@ function renderSystem(){
     ? '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">forecastLive: <b style="color:var(--ink2)">'+forecastLive.updatedAt+'</b>'
       + (forecastLive.source ? ' · '+forecastLive.source : '') + '</div>'
     : '';
-  h += card('FourVenues (Forecast BS Actual)', 'Daily ~8:30 AM ET · GitHub Actions', fv, 36, fvExtra);
+  h += card('FourVenues (Forecast BS Actual)', 'Daily ~8:30 AM ET · GitHub Actions + Microsoft Graph mailbox', fv, 36, fvExtra);
 
   h += card('Toast BS Actual (calendar / history)', 'Wed–Sun ~8:30 AM ET · GitHub Actions → GitHub Pages', toast, 84, '');
 
@@ -3902,9 +3904,9 @@ function renderSystem(){
     + '<div style="font-size:13px;font-weight:800;margin-bottom:6px">How the pieces fit</div>'
     + '<div style="font-size:11px;color:var(--ink3);line-height:1.6">'
     + '<b style="color:var(--ink2)">GitHub Pages (rdg-dj):</b> the published website everyone opens.<br>'
-    + '<b style="color:var(--ink2)">GitHub Actions (boh-dashboard):</b> cloud robot that pulls data on a schedule — laptop can be off.<br>'
-    + '<b style="color:var(--ink2)">Firebase:</b> instant overlays (Forecast Actuals, LIVE night, Sanity status).<br>'
-    + '<b style="color:var(--ink2)">Microsoft Graph / Azure:</b> optional path for FourVenues Sales Report emails; Live Refresh HTTP can run on Azure App Service.'
+    + '<b style="color:var(--ink2)">GitHub Actions:</b> Toast BS (Wed–Sun) + FourVenues Graph (daily) — laptop can be off.<br>'
+    + '<b style="color:var(--ink2)">Microsoft Graph:</b> reads FourVenues Sales Report emails from your mailbox.<br>'
+    + '<b style="color:var(--ink2)">Firebase:</b> instant overlays (Forecast Actuals, LIVE, Sanity status).'
     + '</div></div>';
 
   el.innerHTML = h;
