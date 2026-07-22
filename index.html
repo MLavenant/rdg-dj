@@ -119,11 +119,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .sc-beat-icon{font-size:7px;font-weight:700;display:inline;margin-left:2px}
 /* Cells */
 .sc-ev-cell{border-right:1px solid var(--rule);vertical-align:top;padding:5px 6px!important;background:var(--card2)}
-.sc-ev-label{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#fff;background:var(--amb);padding:2px 5px;border-radius:3px;display:inline-block;white-space:nowrap;transition:opacity .15s;cursor:grab}
+.sc-ev-label{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#fff;background:var(--amb);padding:2px 5px;border-radius:3px;display:inline-block;white-space:nowrap;transition:opacity .15s;cursor:pointer}
 .sc-ev-label:hover{opacity:.75}
-.sc-ev-wrap{display:inline-flex;align-items:center;gap:2px;max-width:100%}
-.sc-ev-h{border:none;background:transparent;color:var(--amb);font-size:9px;font-weight:900;padding:0 2px;cursor:pointer;line-height:1;font-family:inherit;opacity:.7}
-.sc-ev-h:hover{opacity:1}
 .sc-row-drop td:not(.sc-sep){outline:2px dashed var(--blue);outline-offset:-2px}
 .sc-date-cell{white-space:nowrap;color:var(--ink2);border-right:0.5px solid var(--hair)}
 .dj-name{font-size:11px;font-weight:700}
@@ -790,12 +787,10 @@ textarea#fldNote:focus{border-color:var(--blue)}
     <div class="pg-section" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div class="pg-title2">ROI Ranking</div>
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        <span id="lbMeta" style="font-size:10px;color:var(--ink3)"></span>
         <input id="lbSearch" type="text" placeholder="Search DJ..." oninput="renderLeaderboard()"
           style="font-size:11px;padding:5px 9px;border:0.5px solid var(--rule);border-radius:var(--r);font-family:inherit;outline:none;width:160px">
       </div>
     </div>
-    <div id="lbSortBar" style="padding:0 16px 10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center"></div>
     <div id="lbBody"></div>
   </div>
 
@@ -1016,7 +1011,7 @@ function _schedShowOn(venue, dateStr){
   SCHED.forEach(function(r){
     if((r.v||r.venue)!==venue) return;
     if(r._s==='empty'||!r.d||r.d!==dateStr) return;
-    var nm=(r.dj||'').replace(/\?+/g,'').trim();
+    var nm=(r.dj||'').trim();
     if(!nm) return;
     if(!best || ((r.bs_a||0)>(best.bs_a||0))) best=r;
   });
@@ -1085,7 +1080,7 @@ function buildPyMapForMonth(venue, yr, mm){
       if((r.v||r.venue)!==venue) return;
       if(r._s==='empty'||!r.d) return;
       if(used[_pyShowKey(r)]) return;
-      var nm=(r.dj||'').replace(/\?+/g,'').trim();
+      var nm=(r.dj||'').trim();
       if(!nm) return;
       var rd=new Date(r.d+'T12:00:00');
       if(isNaN(rd.getTime())||rd.getDay()!==wantDow||rd.getFullYear()!==pyYear) return;
@@ -1127,7 +1122,7 @@ function resolvePyFields(venue, dateStr, baked){
   return {py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
 }
 function _pyCellsHtml(py, rowspan){
-  var pyNm=(py.py_dj||'').replace(/\?+/g,'').trim();
+  var pyNm=djLabel(py.py_dj, '');
   var pyBeat=py.py_beat;
   var pyBCls=pyBeat===1?'hit':pyBeat===0?'low':'';
   var rs=rowspan && rowspan>1 ? ' rowspan="'+rowspan+'"' : '';
@@ -1373,6 +1368,24 @@ function go() {
 
 /*     KPIs                                                      */
 function renderKPIs() {
+  var kpiEl=document.getElementById('kpis');
+  if(kpiEl){
+    /* ROI Ranking / Budget have their own layouts — hide the global KPI strip */
+    if(curView==='leaderboard'||curView==='budget'){
+      kpiEl.style.display='none';
+      kpiEl.innerHTML='';
+    } else {
+      kpiEl.style.display='';
+    }
+  }
+  if(curView==='leaderboard'){
+    document.getElementById('pgSub').innerHTML = '<span>ROI Ranking · all venues</span>';
+    return;
+  }
+  if(curView==='budget'){
+    document.getElementById('pgSub').innerHTML = '<span>Budget Planner</span>';
+    return;
+  }
   var mm = curView==='calendar' ? (curM<9?'0'+(curM+1):''+(curM+1)) : null;
   var mName = mm ? ['January','February','March','April','May','June','July','August','September','October','November','December'][curM]+' '+curYr : 'Full year '+curYr;
   var bsRecs = getBSRecs(curYr, curV, mm);
@@ -1398,7 +1411,7 @@ function renderKPIs() {
     {l:'Total DJ cost',  v:$k(totalFee),            s:scheduledShows.length+' shows scheduled', c:''},
     {l:'Upcoming',       v:upcoming,                s:'scheduled', c:'b'},
   ];
-  document.getElementById('kpis').innerHTML = kpis.map(function(k){
+  if(kpiEl) kpiEl.innerHTML = kpis.map(function(k){
     return '<div class="kpi '+(k.c?'kpi-'+k.c:'')+'"><div class="kpi-l">'+k.l+'</div><div class="kpi-v">'+k.v+'</div><div class="kpi-s">'+k.s+'</div></div>';
   }).join('');
   var logo=venueLogo(curV);
@@ -1554,13 +1567,62 @@ function monthAgg(mm){
   return {n:n,tFee:tFee,roi_t:roi_t,projBS:tProjBS||null,bsTgt:tBSTgt||null,tPY:tPY,shows:shows};
 }
 
+/* Display DJ name as stored — ? / ??? / ???? are valid and shown as entered. */
+function djLabel(dj, empty){
+  var s=String(dj==null?'':dj).trim();
+  if(!s) return empty!=null?empty:'TBD';
+  return s;
+}
+/* Live beat/ROI from SCHED — same rules as ROI Ranking (not baked DJ_PROFILES). */
+function liveDjPerfStats(name){
+  var q=String(name||'').replace(/\?+/g,'').trim().toUpperCase();
+  if(!q) return null;
+  var n=0, beats=0, meas=0, tFee=0, tBS=0, rois=[], display='';
+  SCHED.forEach(function(r){
+    if(!r||r._s==='empty'||r.roi_a==null||!r.bs_a) return;
+    var nkey=String(r.dj||'').replace(/\?+/g,'').trim().toUpperCase();
+    if(nkey!==q) return;
+    n++;
+    rois.push(r.roi_a);
+    if(r.roi_t) meas++;
+    if(r.beat===1) beats++;
+    tFee+=(r.fee||r.cost||0);
+    tBS+=(r.bs_a||0);
+    if(!display) display=r.dj;
+  });
+  if(!n) return null;
+  return {
+    n:n, beats:beats, meas:meas,
+    beat_rate: meas?Math.round(beats/meas*100):0,
+    avg_roi_a: +(rois.reduce(function(a,b){return a+b;},0)/rois.length).toFixed(2),
+    avg_bs: Math.round(tBS/n),
+    avg_fee: Math.round(tFee/n),
+    display: display||name.trim()
+  };
+}
 /*    DJ projection for picker                                    */
 function djProj(name, fee){
-  if(!name||!name.replace(/\?+/g,'').trim()) return {bs:null,roi:null,p:null};
-  var q=name.replace(/\?+/g,'').trim().toUpperCase(), p=null;
+  var raw=String(name||'').trim();
+  if(!raw) return {bs:null,roi:null,p:null};
+  var q=raw.replace(/\?+/g,'').trim().toUpperCase(), p=null;
+  /* Pure placeholders like ???? — no profile lookup, but name is valid */
+  if(!q) return {bs:null,roi:null,p:null};
   for(var i=0;i<DJ_PROFILES.length;i++){
     if(DJ_PROFILES[i].name===q){p=DJ_PROFILES[i];break;}
     if(!p){var ws=q.split(/\s+/);for(var w=0;w<ws.length;w++){if(ws[w].length>=4&&DJ_PROFILES[i].name.indexOf(ws[w])>=0){p=DJ_PROFILES[i];break;}}}
+  }
+  var live=liveDjPerfStats(raw);
+  if(live){
+    if(p){
+      p=Object.assign({}, p, {
+        n:live.n, beats:live.beats, n_measured:live.meas,
+        beat_rate:live.beat_rate, avg_roi_a:live.avg_roi_a,
+        avg_bs:live.avg_bs, avg_fee:live.avg_fee
+      });
+    } else {
+      p={name:q, display:live.display, n:live.n, beats:live.beats, n_measured:live.meas,
+        beat_rate:live.beat_rate, avg_roi_a:live.avg_roi_a, avg_bs:live.avg_bs, avg_fee:live.avg_fee};
+    }
   }
   if(!p) return {bs:null,roi:null,p:null};
   var f=fee||p.avg_fee||0;
@@ -2021,7 +2083,7 @@ function generateBudgetNarrative(venue, year, mm){
     } else {
       parts.push('No budget set for this month yet   add one above to track spend against it.');
     }
-    if(topShow) parts.push('Biggest booking: '+((topShow.dj||'TBD').replace(/\?+/g,'').trim())+' at '+$m(topShow.cost||topShow.fee)+'.');
+    if(topShow) parts.push('Biggest booking: '+djLabel(topShow.dj)+' at '+$m(topShow.cost||topShow.fee)+'.');
     return parts.join(' ');
   }
 
@@ -2088,8 +2150,8 @@ function renderYearGrid(){
   /* Bottle Service Forecast panel intentionally removed   Budget stays budget-only */
   var tl=document.getElementById('budgetTopLine'); if(tl) tl.innerHTML='';
 
-  document.getElementById('budgetNarrative').innerHTML =
-    '<div class="bgt-narrative"><span class="bgt-narrative-ic">&#128202;</span>'+generateBudgetNarrative(bgtVenue,bgtYear,null)+'</div>';
+  var narrEl=document.getElementById('budgetNarrative');
+  if(narrEl) narrEl.innerHTML='';
 
   renderBudgetSpendTracker();
 
@@ -2189,7 +2251,6 @@ function renderMonthDrill(mm){
   html+='<div style="font-size:20px;font-weight:900;letter-spacing:-.5px;min-width:140px">'+MNF[mi-1]+' '+bgtYear+'</div>';
   html+='<button id="bgtNextM" class="cal-nav-btn" style="width:26px;height:26px">&#8594;</button>';
   html+='</div>';
-  html+='<div class="bgt-narrative"><span class="bgt-narrative-ic">&#128202;</span>'+generateBudgetNarrative(bgtVenue,bgtYear,mm)+'</div>';
   html+='<div class="month-slider" id="bgtDrillSlider" style="margin:0 0 12px;border-radius:6px;border:0.5px solid var(--rule)">';
   for(var smi=0;smi<12;smi++){
     var smm=smi<10?'0'+(smi+1):''+(smi+1);
@@ -2252,7 +2313,7 @@ function renderMonthDrill(mm){
       var pyB=bpy.py_beat===1?'<span class="bgt-beat beat">BEAT</span>':bpy.py_beat===0?'<span class="bgt-beat miss">MISS</span>':'';
       html+='<div class="bgtm-trow'+(fee?' bgtm-tr-hasfee':'')+'">';
       html+='<div style="color:var(--ink3);font-size:10px">'+dt+'</div>';
-      html+='<div><span class="bgt-djbtn" data-si="'+si+'">'+(r.dj&&r.dj.replace(/\?+/g,'').trim()||'+ Pick DJ')+'</span></div>';
+      html+='<div><span class="bgt-djbtn" data-si="'+si+'">'+(r.dj&&String(r.dj).trim()?djLabel(r.dj):'+ Pick DJ')+'</span></div>';
       html+='<div><input class="bgtm-fi" type="number" min="0" placeholder="Enter fee" value="'+(fee||'')+'" data-si="'+si+'"></div>';
       html+='<div style="font-size:10px;color:var(--ink3)">'+(bpy.py_dj||'-')+''+pyB+'</div>';
       html+='<div class="'+pyBCls+'" style="font-weight:600">'+(bpy.py_bs_a?$m(bpy.py_bs_a):'-')+'</div>';
@@ -2640,16 +2701,9 @@ function _escAttr(s){
 function _evLabelHtml(evLabel, ds){
   if(!evLabel) return '';
   var enc=encodeURIComponent(evLabel);
-  var safeAttr=_escAttr(evLabel);
-  return '<span class="sc-ev-wrap" onclick="event.stopPropagation()">'
-    +'<button type="button" class="sc-ev-h" title="Extend start earlier" onclick="swNudgePeriod(decodeURIComponent(\''+enc+'\'),\'start\',-1)">&#9664;</button>'
-    +'<span class="sc-ev-label" draggable="true" data-sw-label="'+safeAttr+'" data-sw-from="'+ds+'" '
-    +'ondragstart="swDragStart(event)" ondragend="swDragEnd(event)" '
-    +'ondblclick="openEditSpecialWeek(decodeURIComponent(\''+enc+'\'))" '
-    +'title="Drag to move · double-click to edit · arrows extend">'
-    +evLabel.replace(/</g,'&lt;')+'</span>'
-    +'<button type="button" class="sc-ev-h" title="Extend end later" onclick="swNudgePeriod(decodeURIComponent(\''+enc+'\'),\'end\',1)">&#9654;</button>'
-    +'</span>';
+  return '<span class="sc-ev-label" onclick="event.stopPropagation();openEditSpecialWeek(decodeURIComponent(\''+enc+'\'))" '
+    +'title="Click to edit or remove this period" style="cursor:pointer">'
+    +evLabel.replace(/</g,'&lt;')+'</span>';
 }
 
 /*    month/year navigation                                       */
@@ -2755,7 +2809,7 @@ function renderCal(){
     } else {
       shows.forEach(function(r,ri){
         var st   = r._s||'nd';
-        var nm   = (r.dj||'TBD').replace(/\?+/g,'').trim()||'TBD';
+        var nm   = djLabel(r.dj);
         var idx  = SCHED.indexOf(r);
         var bCls = r.bs_a&&r.bs_m ? (r.bs_a>=r.bs_m?'hit':'low') : '';
         var rCls = r.roi_a&&r.roi_t ? (r.roi_a>=r.roi_t?'hit':'low') : '';
@@ -2777,12 +2831,9 @@ function renderCal(){
           +'</td>';
         if(ri===0){
           var djSt=(getAcct(ds).djStatus||'');
-          var djOpts=(typeof ACCT_DJ_STATUS!=='undefined'?ACCT_DJ_STATUS:['Offer sent','Hold 1','Confirmed']);
           h+='<td class="acct-status-cell" rowspan="'+nrows+'"><div class="acct-status-wrap">'
-            +'<select class="acct-status-sel '+acctStatusClass(djSt||null)+'" data-ds="'+ds+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status (shared with Accounting)">'
-            +'<option value=""'+(!djSt?' selected':'')+'>Not set</option>'
-            +djOpts.map(function(opt){return '<option value="'+opt+'"'+(djSt===opt?' selected':'')+'>'+opt+'</option>';}).join('')
-            +'</select></div></td>';
+            +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status (shared with Accounting)"')
+            +'</div></td>';
         }
         var tgt=showTargets(r);
         var bsM=tgt.bs_m, roiT=tgt.roi_t;
@@ -2843,7 +2894,7 @@ function renderCalGrid(yr,mo,mm,days,showMap){
 
     shows.forEach(function(r){
       var st=r._s||'nd';
-      var nm=(r.dj||'TBD').replace(/\?+/g,'').trim().slice(0,16)||'TBD';
+      var nm=djLabel(r.dj).slice(0,16);
       var idx=SCHED.indexOf(r);
       var tgt=showTargets(r);
       var bsM=tgt.bs_m;
@@ -2900,7 +2951,7 @@ function renderCalYear(){
       }
       shows.forEach(function(r,ri){
         var st=r._s||'nd';
-        var nm=(r.dj||'TBD').replace(/\?+/g,'').trim().slice(0,14)||'TBD';
+        var nm=djLabel(r.dj).slice(0,14);
         var idx=SCHED.indexOf(r);
         h+='<div class="cy-row cy-row-'+st+(isToday?' cy-row-today':'')+'" onclick="openEditModal('+idx+')">';
         h+='<span class="cy-daynum">'+(ri===0?day:'')+'</span>';
@@ -3030,30 +3081,6 @@ function renderAllShows(){
    ROI RANKING   venue all-time, click DJ for full history
                                                                   */
 var _lbDJ = null; /* selected DJ for detail view */
-var _lbSort = { key: 'score', dir: 'desc' };
-var _lbPreset = 'score'; /* score | beat | roi | bestDj */
-
-function lbSortBy(key){
-  if(_lbSort.key === key) _lbSort.dir = _lbSort.dir === 'desc' ? 'asc' : 'desc';
-  else { _lbSort.key = key; _lbSort.dir = 'desc'; }
-  _lbPreset = null;
-  renderLeaderboard();
-}
-function lbApplyPreset(preset){
-  _lbPreset = preset;
-  if(preset === 'beat'){ _lbSort = { key: 'br', dir: 'desc' }; }
-  else if(preset === 'roi'){ _lbSort = { key: 'avgROI', dir: 'desc' }; }
-  else if(preset === 'bestDj'){ _lbSort = { key: 'bestDj', dir: 'desc' }; }
-  else { _lbSort = { key: 'score', dir: 'desc' }; _lbPreset = 'score'; }
-  renderLeaderboard();
-}
-function _lbSortArrow(key){
-  if(_lbSort.key !== key) return ' <span style="opacity:.35">&#8597;</span>';
-  return _lbSort.dir === 'desc' ? ' <span>&#9660;</span>' : ' <span>&#9650;</span>';
-}
-function _lbTh(label, key){
-  return '<th style="cursor:pointer;user-select:none" onclick="event.stopPropagation();lbSortBy(\''+key+'\')" title="Sort by '+label+'">'+label+_lbSortArrow(key)+'</th>';
-}
 
 function renderLeaderboard(){
   if(_lbDJ) { renderDJDetail(_lbDJ); return; }
@@ -3081,58 +3108,17 @@ function renderLeaderboard(){
     var avgFeePaid=Math.round(d.tFee/d.n);
     var br=d.meas?Math.round(d.beats/d.meas*100):0;
     var score=avgROI*(d.meas?d.beats/d.meas:0.5)*Math.log(d.n+1);
-    /* Best DJ: shows × beat% × fee footprint (established acts with volume + consistency) */
-    var bestDj = Math.log(d.n + 1) * (br / 100) * Math.log10((avgFeePaid || 0) + 100);
     var fairFee=leaderboardSuggestedFee(avgBS, avgFeePaid, br);
     var venueList=Object.keys(d.venues).sort(function(a,b){return d.venues[b]-d.venues[a];});
-    return {dj:d.dj,n:d.n,beats:d.beats,meas:d.meas,avgROI:avgROI,br:br,score:score,bestDj:bestDj,
+    return {dj:d.dj,n:d.n,beats:d.beats,meas:d.meas,avgROI:avgROI,br:br,score:score,
       tFee:d.tFee,tBS:d.tBS,shows:d.shows,avgBS:avgBS,avgFeePaid:avgFeePaid,fairFee:fairFee,venues:venueList};
   });
-
-  var sortKey = _lbSort.key || 'score';
-  var dir = _lbSort.dir === 'asc' ? 1 : -1;
-  list.sort(function(a,b){
-    var av=a[sortKey], bv=b[sortKey];
-    if(av==null && bv==null) return 0;
-    if(av==null) return 1;
-    if(bv==null) return -1;
-    if(typeof av === 'string') return dir * String(av).localeCompare(String(bv));
-    if(av === bv){
-      /* tie-breakers */
-      if(a.br !== b.br) return dir * (a.br - b.br);
-      return dir * (a.n - b.n);
-    }
-    return dir * (av - bv);
-  });
+  list.sort(function(a,b){return b.score-a.score;});
   if(qs) list=list.filter(function(r){return r.dj.toUpperCase().indexOf(qs)>=0;});
-  document.getElementById('lbMeta').textContent=list.length+' DJs across all venues (all time)   click a DJ for full history';
-
-  var bar = document.getElementById('lbSortBar');
-  if(bar){
-    function pill(id, label){
-      var on = _lbPreset === id;
-      return '<button type="button" onclick="lbApplyPreset(\''+id+'\')" style="font-size:10px;font-weight:700;padding:5px 10px;border-radius:999px;border:0.5px solid '+(on?'var(--ink)':'var(--rule)')+';background:'+(on?'var(--ink)':'var(--card)')+';color:'+(on?'#fff':'var(--ink2)')+';cursor:pointer;font-family:inherit">'+label+'</button>';
-    }
-    bar.innerHTML = '<span style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin-right:4px">Order</span>'
-      + pill('score','Default score')
-      + pill('beat','Best % Beat')
-      + pill('roi','Best Avg ROI')
-      + pill('bestDj','Best DJ')
-      + '<span style="font-size:10px;color:var(--ink3);margin-left:6px">or click any column header</span>';
-  }
 
   var h='<table class="shows-tbl"><thead><tr>'
-    +'<th>#</th>'
-    +_lbTh('DJ','dj')
-    +'<th>Venue(s)</th>'
-    +_lbTh('Shows','n')
-    +_lbTh('Beat/Meas','beats')
-    +_lbTh('Beat %','br')
-    +_lbTh('Avg ROI','avgROI')
-    +_lbTh('Avg BS/show','avgBS')
-    +_lbTh('Avg Fee Paid','avgFeePaid')
-    +_lbTh('Suggested Fee','fairFee')
-    +_lbTh('Total BS Act','tBS')
+    +'<th>#</th><th>DJ</th><th>Venue(s)</th><th>Shows</th><th>Beat/Meas</th><th>Beat %</th>'
+    +'<th>Avg ROI</th><th>Avg BS/show</th><th>Avg Fee Paid</th><th>Suggested Fee</th><th>Total BS Act</th>'
     +'</tr></thead><tbody>';
   list.forEach(function(r,i){
     var fairCls = r.fairFee && r.avgFeePaid && r.fairFee<r.avgFeePaid ? 'low' : '';
@@ -3178,7 +3164,7 @@ function renderDJDetail(djEnc){
   }).map(function(r){return {venue:r.venue||r.v,dj:r.dj,cost:r.fee||r.cost,bs_a:r.bs_a,bs_m:r.bs_m,roi_a:r.roi_a,roi_t:r.roi_t,beat:r.beat,d:r.d};})
    .sort(function(a,b){return a.d<b.d?-1:1;});
 
-  document.getElementById('lbMeta').textContent=djName+'   '+shows.length+' shows across all venues';
+  document.getElementById('lbMeta') && (document.getElementById('lbMeta').textContent=djName+'   '+shows.length+' shows across all venues');
 
   var roiVals=shows.filter(function(r){return r.roi_a;});
   var avgROI=roiVals.length?roiVals.reduce(function(s,r){return s+r.roi_a;},0)/roiVals.length:0;
@@ -3316,6 +3302,11 @@ function updateAcctDjStatus(ds,val,sel){
   var acct=_acctNormalize(getAcct(ds));
   var prev=acct.djStatus||'';
   var next=val||'';
+  /* Once a DJ status is set, do not allow switching back to Not set */
+  if(prev && !next){
+    if(sel) sel.value=prev;
+    return;
+  }
   if(prev===next) return;
   var by=_acctEditorName()||'Unknown';
   acct.djStatus=next||null;
@@ -3327,6 +3318,13 @@ function updateAcctDjStatus(ds,val,sel){
   else if(sel){
     sel.className='acct-status-sel '+acctStatusClass(next||null);
   }
+}
+function _djStatusSelectHtml(djSt, extraAttrs){
+  var opts=(typeof ACCT_DJ_STATUS!=='undefined'?ACCT_DJ_STATUS:['Offer sent','Hold 1','Confirmed']);
+  var h='<select class="acct-status-sel '+acctStatusClass(djSt||null)+'" '+(extraAttrs||'')+'>';
+  if(!djSt) h+='<option value="" selected>Not set</option>';
+  h+=opts.map(function(opt){return '<option value="'+opt+'"'+(djSt===opt?' selected':'')+'>'+opt+'</option>';}).join('');
+  return h+'</select>';
 }
 function updateAcctApStatus(ds,val,sel){
   var acct=_acctNormalize(getAcct(ds));
@@ -3786,12 +3784,10 @@ function _sparkline(pacingObj, capacity){
   return svg;
 }
 
-/** Blank placeholder artist names like ??? / ???? */
+/** DJ name for Forecast UI — keep ? placeholders as entered. */
 function _fcastDjName(dj){
-  if(!dj) return '';
-  var s = String(dj).trim().replace(/\s*\?+\s*$/,'').trim();
-  if(!s || /^[\?\uFF1F\s]+$/.test(s)) return '';
-  return s;
+  if(dj==null) return '';
+  return String(dj).trim();
 }
 
 /** Day-over-day pace: Today ALWAYS = Sales-export FORECAST (fallbackRev).
@@ -4014,7 +4010,7 @@ function renderLive(animate){
   var shows = SCHED.filter(function(r){
     if(r.d!==showDate) return false;
     if(r._s==='empty') return false;
-    var dj=String(r.dj||'').replace(/\?+/g,'').trim();
+    var dj=String(r.dj||'').trim();
     return !!dj && dj.toUpperCase()!=='TBD';
   });
   // Also surface any Toast live rows that aren't in SCHED yet (tonight only)
@@ -4025,7 +4021,7 @@ function renderLive(animate){
         return (r.v||r.venue)===row.venue && String(r.dj||'')===String(row.dj||'');
       });
       if(already) return;
-      var dj=String(row.dj||'').replace(/\?+/g,'').trim();
+      var dj=String(row.dj||'').trim();
       if(!dj || dj.toUpperCase()==='TBD') return;
       shows.push({
         v: row.venue, venue: row.venue, d: row.date, dj: row.dj,
@@ -5392,7 +5388,7 @@ function renderAccounting(){
 
     var nrows=Math.max(1,shows.length);
     shows.forEach(function(r,ri){
-      var nm=(r.dj||'TBD').replace(/\?+/g,'').trim()||'TBD';
+      var nm=djLabel(r.dj);
       var idx=SCHED.indexOf(r);
       var tgt=showTargets(r);
       var bsM=tgt.bs_m;
@@ -5414,10 +5410,8 @@ function renderAccounting(){
         var apSt=acct.apStatus||'';
         var lastHint=acct.updatedBy?('Last: '+acct.updatedBy+' \u00b7 '+_fmtAcctWhen(acct.updatedAt)):'History';
         h+='<td class="acct-status-cell" rowspan="'+nrows+'"><div class="acct-status-wrap">'
-          +'<select class="acct-status-sel '+acctStatusClass(djSt||null)+'" data-ds="'+ds+'" data-action="djStatus">'
-          +'<option value=""'+(!djSt?' selected':'')+'>Not set</option>'
-          +ACCT_DJ_STATUS.map(function(opt){return '<option value="'+opt+'"'+(djSt===opt?' selected':'')+'>'+opt+'</option>';}).join('')
-          +'</select></div></td>';
+          +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-action="djStatus"')
+          +'</div></td>';
         h+='<td class="acct-status-cell" rowspan="'+nrows+'"><div class="acct-status-wrap">'
           +'<select class="acct-status-sel '+acctStatusClass(apSt||null)+'" data-ds="'+ds+'" data-action="apStatus" title="Password required">'
           +'<option value=""'+(!apSt?' selected':'')+'>Not set</option>'
