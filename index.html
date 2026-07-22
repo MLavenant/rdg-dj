@@ -1287,6 +1287,7 @@ function setView(v) {
   if (mainEl) mainEl.classList.toggle('cal-mode', v==='calendar' || v==='accounting');
   document.querySelectorAll('.sb-btn[data-view]').forEach(function(b){b.classList.toggle('on', b.dataset.view===v);});
   if (v === 'budget') {
+    clearGlobalCalChrome();
     bgtVenue = curV; bgtYear = curYr; bgtMonth = null;
     if (!_budgetInited) { initBudget(); _budgetInited = true; }
     else {
@@ -1366,26 +1367,30 @@ function go() {
   }
 }
 
+/* Hide calendar-only chrome (KPI strip + monthly budget banner) on other pages */
+function clearGlobalCalChrome(){
+  var kpiEl=document.getElementById('kpis');
+  if(kpiEl){ kpiEl.style.display='none'; kpiEl.innerHTML=''; }
+  var banner=document.getElementById('calBudgetBanner');
+  if(banner){ banner.innerHTML=''; banner.style.display='none'; }
+  var narr=document.getElementById('calNarrative');
+  if(narr) narr.innerHTML='';
+}
 /*     KPIs                                                      */
 function renderKPIs() {
   var kpiEl=document.getElementById('kpis');
-  if(kpiEl){
-    /* ROI Ranking / Budget have their own layouts — hide the global KPI strip */
-    if(curView==='leaderboard'||curView==='budget'){
-      kpiEl.style.display='none';
-      kpiEl.innerHTML='';
+  var banner=document.getElementById('calBudgetBanner');
+  if(curView==='leaderboard'||curView==='budget'){
+    clearGlobalCalChrome();
+    if(curView==='leaderboard'){
+      document.getElementById('pgSub').innerHTML = '<span>ROI Ranking · all venues</span>';
     } else {
-      kpiEl.style.display='';
+      document.getElementById('pgSub').innerHTML = '<span>Budget Planner</span>';
     }
-  }
-  if(curView==='leaderboard'){
-    document.getElementById('pgSub').innerHTML = '<span>ROI Ranking · all venues</span>';
     return;
   }
-  if(curView==='budget'){
-    document.getElementById('pgSub').innerHTML = '<span>Budget Planner</span>';
-    return;
-  }
+  if(kpiEl) kpiEl.style.display='';
+  if(banner) banner.style.display='';
   var mm = curView==='calendar' ? (curM<9?'0'+(curM+1):''+(curM+1)) : null;
   var mName = mm ? ['January','February','March','April','May','June','July','August','September','October','November','December'][curM]+' '+curYr : 'Full year '+curYr;
   var bsRecs = getBSRecs(curYr, curV, mm);
@@ -2131,21 +2136,9 @@ function renderYearGrid(){
   var ytPct = ytTotal ? Math.round(ytMeasured/ytTotal*100) : 0;
 
   document.getElementById('budgetMeta').textContent=bgtVenue+'   '+bgtYear+' budget';
-  var bKPIs=[
-    {l:'Shows planned', v:ytN,            s:'from calendar',           c:''},
-    {l:'DJ Fees (Spend)', v:$m(ytFee),    s:'guest DJ cost',           c:''},
-    {l:'Annual Budget',  v:$m(ytBudget||null), s:ytBudget?$mv(ytBudget-ytFee)+' remaining':'not set', c:ytBudget&&ytFee<=ytBudget?'kc-g':(ytBudget?'kc-r':'')},
-    {l:'BS Target',     v:$m(ytTgt),      s:'from fee tiers',          c:'kc-b'},
-    {l:'Proj DJ BS',    v:$m(ytProj),     s:ytPY?$mv(ytProj-ytPY)+' vs PY':'vs '+py1, c:ytProj>ytPY&&ytPY?'kc-g':'kc-b'},
-    {l:'ROI Completion', v:ytMeasured+'/'+ytTotal, s:ytPct+'% of shows measured', c:ytPct>=60?'kc-g':'kc-b'},
-  ];
-  document.getElementById('budgetKPIs').innerHTML='<div style="display:flex">'
-    +bKPIs.map(function(k){
-      return '<div class="bgt-kpi '+(k.c||'')+'">'
-        +'<div class="bgt-kpi-l">'+k.l+'</div>'
-        +'<div class="bgt-kpi-v">'+k.v+'</div>'
-        +'<div class="bgt-kpi-s">'+k.s+'</div></div>';
-    }).join('')+'</div>';
+  /* Top KPI strip removed — Budget stays focused on the planner grid */
+  var bKpiEl=document.getElementById('budgetKPIs');
+  if(bKpiEl){ bKpiEl.innerHTML=''; bKpiEl.style.display='none'; }
 
   /* Bottle Service Forecast panel intentionally removed   Budget stays budget-only */
   var tl=document.getElementById('budgetTopLine'); if(tl) tl.innerHTML='';
