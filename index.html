@@ -444,7 +444,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 /* DJ column ? narrower and clickable */
 .sc-dj{width:160px!important;min-width:140px!important;max-width:180px!important}
 .sc-dj-cell{font-size:11px;padding:4px 6px!important;max-width:180px;overflow:hidden}
-.dj-clickname{display:block;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.dj-clickname{display:block;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}.sc-beat .dj-clickname,.dj-clickname.hit{color:var(--beat)!important}.sc-miss .dj-clickname,.dj-clickname.low{color:var(--miss)!important}
 .dj-fee-inline{display:block;font-size:9px;color:var(--ink3);margin-top:1px}
 .sc-dj-cell:hover .dj-clickname{color:var(--blue);text-decoration:underline}
 /* Budget KPI */
@@ -944,7 +944,12 @@ var DJ_PROFILES = [{"name":"AMOG","display":"AMOG","n":19,"avg_bs":58644,"avg_fe
    RDG DJ Dashboard v5
                                                                        */
 
-var TODAY    = '2026-07-02';
+function miamiToday(){
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(new Date());
+}
+var TODAY = miamiToday();
 var HIDE_V   = ['AVA Winter Park'];
 var VENUE_COLORS = {
   'Casa Neos Beach Club': {a:'#a3402d', b:'#7a2f21'}, /* Casa Neos brand red */
@@ -1231,7 +1236,32 @@ function setView(v) {
   go();
 }
 
+
+/* Recompute schedule status from Miami today + BS Actual vs target.
+   Future nights stay fut/tbd; past nights with Actual become beat/miss; past without Actual = nd. */
+function recalcSchedStatuses(){
+  TODAY = miamiToday();
+  SCHED.forEach(function(r){
+    if(!r || r._s==='empty' || !r.d) return;
+    if(r.tbd){ r._s='tbd'; return; }
+    if(r.d > TODAY){ r._s='fut'; return; }
+    var tgt = (typeof showTargets==='function') ? showTargets(r) : {bs_m:r.bs_m};
+    var bsM = tgt && tgt.bs_m != null ? tgt.bs_m : r.bs_m;
+    if(r.bs_a != null && bsM != null){
+      var beat = r.bs_a >= bsM ? 1 : 0;
+      r.beat = beat;
+      r._s = beat ? 'beat' : 'miss';
+      var fee = r.fee || r.cost;
+      if(fee) r.roi_a = +(r.bs_a / fee).toFixed(4);
+      if(fee && bsM) r.roi_t = +(bsM / fee).toFixed(4);
+    } else {
+      r._s = 'nd';
+    }
+  });
+}
+
 function go() {
+  recalcSchedStatuses();
   renderKPIs();
   if (curView==='calendar')    renderCal();
   else if (curView==='summary')     renderSummary();
@@ -2551,7 +2581,7 @@ function renderCal(){
         }
         /* current year columns */
         h+='<td class="sc-dj-cell" onclick="openEditModal('+idx+')" style="cursor:pointer" title="Click to edit">'
-          +'<b class="dj-clickname">'+nm+'</b>'
+          +'<b class="dj-clickname '+(st==='beat'?'hit':st==='miss'?'low':'')+'">'+nm+'</b>'
           +'<span class="dj-fee-inline">'+$k(r.fee||r.cost)+'</span>'
           +(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')
           +'</td>';
