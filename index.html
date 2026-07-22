@@ -101,6 +101,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 /* Day row colours */
 .sc-sat td:not(.sc-sep){background:#f2f2f7}.sc-sun td:not(.sc-sep){background:#f2f2f7}
 .sc-fri td:not(.sc-sep){background:var(--card)}.sc-wedthu td:not(.sc-sep){background:var(--card)}
+.sc-has-show td:not(.sc-sep){background:#f2f2f7}
 .sc-today td:not(.sc-sep){background:#fef8e8!important}
 .sc-today-badge{font-size:8px;font-weight:700;color:var(--amb);margin-left:5px;background:var(--amb-bg);padding:1px 4px;border-radius:3px}
 .sc-noshow{opacity:.48}.sc-noshow:hover{opacity:1}
@@ -118,8 +119,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .sc-beat-icon{font-size:7px;font-weight:700;display:inline;margin-left:2px}
 /* Cells */
 .sc-ev-cell{border-right:1px solid var(--rule);vertical-align:top;padding:5px 6px!important;background:var(--card2)}
-.sc-ev-label{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#fff;background:var(--amb);padding:2px 5px;border-radius:3px;display:inline-block;white-space:nowrap;transition:opacity .15s}
+.sc-ev-label{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#fff;background:var(--amb);padding:2px 5px;border-radius:3px;display:inline-block;white-space:nowrap;transition:opacity .15s;cursor:grab}
 .sc-ev-label:hover{opacity:.75}
+.sc-ev-wrap{display:inline-flex;align-items:center;gap:2px;max-width:100%}
+.sc-ev-h{border:none;background:transparent;color:var(--amb);font-size:9px;font-weight:900;padding:0 2px;cursor:pointer;line-height:1;font-family:inherit;opacity:.7}
+.sc-ev-h:hover{opacity:1}
+.sc-row-drop td:not(.sc-sep){outline:2px dashed var(--blue);outline-offset:-2px}
 .sc-date-cell{white-space:nowrap;color:var(--ink2);border-right:0.5px solid var(--hair)}
 .dj-name{font-size:11px;font-weight:700}
 .sc-empty-day{color:var(--ink4)}
@@ -896,17 +901,24 @@ textarea#fldNote:focus{border-color:var(--blue)}
     <div class="modal-body">
       <div class="fld-row">
         <div class="fld"><label>Venue</label>
-          <select id="fldVenue">
+          <select id="fldVenue" onchange="checkDjSuggestion();updateFeeTargetsPreview()">
             <option>Casa Neos Beach Club</option>
             <option>MILA Lounge</option>
             <option>Casa Neos Lounge</option>
           </select>
         </div>
-        <div class="fld"><label>Date</label><input id="fldDate" type="date" onchange="checkDjSuggestion()"></div>
+        <div class="fld"><label>Date</label><input id="fldDate" type="date" onchange="checkDjSuggestion();updateFeeTargetsPreview()"></div>
       </div>
       <div class="fld-row">
         <div class="fld"><label>DJ / Artist</label><input id="fldDJ" type="text" placeholder="DJ name" oninput="checkDjSuggestion()"></div>
-        <div class="fld"><label>DJ Fee ($)</label><input id="fldFee" type="number" placeholder="0" oninput="checkDjSuggestion()"></div>
+        <div class="fld"><label>DJ Fee ($)</label><input id="fldFee" type="number" placeholder="0" oninput="checkDjSuggestion();updateFeeTargetsPreview()"></div>
+      </div>
+      <div id="fldFeeTargets" style="display:none;margin:0 0 10px;padding:10px 12px;background:var(--card2);border-radius:10px;border:0.5px solid var(--hair)">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin-bottom:6px">From DJ fee (venue ROI rules)</div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <div><div style="font-size:9px;color:var(--ink3);text-transform:uppercase">BS Target</div><div id="fldFeeBsTgt" style="font-size:16px;font-weight:900;color:#7D5A00">—</div></div>
+          <div><div style="font-size:9px;color:var(--ink3);text-transform:uppercase">ROI Target</div><div id="fldFeeRoiTgt" style="font-size:16px;font-weight:900">—</div></div>
+        </div>
       </div>
       <div class="dj-sugg-box" id="fldDjSuggest"></div>
       <div class="fld"><label>Event / Week label (optional)</label>
@@ -2622,6 +2634,23 @@ function daySpecialLabel(ds){
   if(recs.length) return recs[0].ev;
   return null;
 }
+function _escAttr(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;');
+}
+function _evLabelHtml(evLabel, ds){
+  if(!evLabel) return '';
+  var enc=encodeURIComponent(evLabel);
+  var safeAttr=_escAttr(evLabel);
+  return '<span class="sc-ev-wrap" onclick="event.stopPropagation()">'
+    +'<button type="button" class="sc-ev-h" title="Extend start earlier" onclick="swNudgePeriod(decodeURIComponent(\''+enc+'\'),\'start\',-1)">&#9664;</button>'
+    +'<span class="sc-ev-label" draggable="true" data-sw-label="'+safeAttr+'" data-sw-from="'+ds+'" '
+    +'ondragstart="swDragStart(event)" ondragend="swDragEnd(event)" '
+    +'ondblclick="openEditSpecialWeek(decodeURIComponent(\''+enc+'\'))" '
+    +'title="Drag to move · double-click to edit · arrows extend">'
+    +evLabel.replace(/</g,'&lt;')+'</span>'
+    +'<button type="button" class="sc-ev-h" title="Extend end later" onclick="swNudgePeriod(decodeURIComponent(\''+enc+'\'),\'end\',1)">&#9654;</button>'
+    +'</span>';
+}
 
 /*    month/year navigation                                       */
 function prevM(){ curM--; if(curM<0){curM=11;curYr--;buildYrPills();} go(); }
@@ -2707,14 +2736,15 @@ function renderCal(){
     else if(dow===0)     dc+=' sc-sun';
     else if(dow===5)     dc+=' sc-fri';
     else if(dow===3||dow===4) dc+=' sc-wedthu';
+    if(shows.length)     dc+=' sc-has-show';
     if(!shows.length)    dc+=' sc-noshow';
 
     var dateStr=DOW_FULL[dow]+', '+MN_FULL[mo]+' '+day+', '+yr;
     var nrows=Math.max(1,shows.length);
 
     if(!shows.length){
-      h+='<tr class="'+dc+'">';
-      h+='<td class="sc-ev-cell">'+(evLabel?'<span class="sc-ev-label" onclick="openEditSpecialWeek(\''+evLabel.replace(/'/g,"\\'")+'\')" title="Edit/delete this period" style="cursor:pointer">'+evLabel+'</span>':'')+'</td>';
+      h+='<tr class="'+dc+'" data-cal-ds="'+ds+'" ondragover="swDragOver(event)" ondragleave="swDragLeave(event)" ondrop="swDropOnDate(event,\''+ds+'\')">';
+      h+='<td class="sc-ev-cell">'+_evLabelHtml(evLabel, ds)+'</td>';
       h+='<td class="sc-date-cell">'+dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
       h+='<td colspan="8" class="sc-empty-day"><button type="button" class="sc-add-inline" onclick="openAddModal(\''+ds+'\')">+ Add show</button></td>';
       h+='<td class="sc-sep"></td>';
@@ -2731,15 +2761,16 @@ function renderCal(){
         var rCls = r.roi_a&&r.roi_t ? (r.roi_a>=r.roi_t?'hit':'low') : '';
         var py = (ri===0 ? (pyMap[ds]||pyBlank) : null);
 
-        h+='<tr class="'+dc+' sc-'+st+'">';
+        h+='<tr class="'+dc+' sc-'+st+'" data-cal-ds="'+ds+'" ondragover="swDragOver(event)" ondragleave="swDragLeave(event)" ondrop="swDropOnDate(event,\''+ds+'\')">';
         if(ri===0){
-          h+='<td class="sc-ev-cell" rowspan="'+nrows+'">'
-            +(evLabel?'<span class="sc-ev-label" onclick="openEditSpecialWeek(\''+evLabel.replace(/'/g,"\\'")+'\')" title="Edit/delete this period" style="cursor:pointer">'+evLabel+'</span>':'')+'</td>';
+          h+='<td class="sc-ev-cell" rowspan="'+nrows+'">'+_evLabelHtml(evLabel, ds)+'</td>';
           h+='<td class="sc-date-cell" rowspan="'+nrows+'">'
             +dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
         }
         /* current year columns */
-        h+='<td class="sc-dj-cell" onclick="openEditModal('+idx+')" style="cursor:pointer" title="Click to edit">'
+        h+='<td class="sc-dj-cell" draggable="true" data-show-idx="'+idx+'" '
+          +'ondragstart="showDragStart(event)" ondragend="swDragEnd(event)" '
+          +'onclick="openEditModal('+idx+')" style="cursor:grab" title="Drag to move date · click to edit">'
           +'<b class="dj-clickname '+(st==='beat'?'hit':st==='miss'?'low':'')+'">'+nm+'</b>'
           +'<span class="dj-fee-inline">'+$k(r.fee||r.cost)+'</span>'
           +(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')
@@ -2904,13 +2935,14 @@ function applyVenueTint(){
     styleEl=document.createElement('style'); styleEl.id='venueTintStyle';
     document.head.appendChild(styleEl);
   }
-  /* Simplified: only weekend rows get a tint (venue color), weekdays stay plain */
+  /* Weekend + any day with a performance share the venue tint */
   var weekendTint=hexLighten(c.a,0.92);
   styleEl.textContent =
     '.sc-sat td:not(.sc-sep){background:'+weekendTint+' !important}'
     +'.sc-sun td:not(.sc-sep){background:'+weekendTint+' !important}'
-    +'.sc-fri td:not(.sc-sep){background:var(--card) !important}'
-    +'.sc-wedthu td:not(.sc-sep){background:var(--card) !important}';
+    +'.sc-has-show td:not(.sc-sep){background:'+weekendTint+' !important}'
+    +'.sc-fri:not(.sc-has-show) td:not(.sc-sep){background:var(--card) !important}'
+    +'.sc-wedthu:not(.sc-has-show) td:not(.sc-sep){background:var(--card) !important}';
 }
 
 /*                                                               
@@ -5335,6 +5367,7 @@ function renderAccounting(){
     else if(dow===0) dc+=' sc-sun';
     else if(dow===5) dc+=' sc-fri';
     else if(dow===3||dow===4) dc+=' sc-wedthu';
+    if(shows.length) dc+=' sc-has-show';
     if(!shows.length) dc+=' sc-noshow';
 
     var dateStr=DOW_FULL[dow]+', '+MN_FULL[mo]+' '+day;
@@ -5430,6 +5463,7 @@ function openAddModal(ds){
   document.getElementById('modalTitle').textContent='Add Show';
   document.getElementById('btnDelete').style.display='none';
   checkDjSuggestion();
+  updateFeeTargetsPreview();
   document.getElementById('evModal').classList.remove('hidden');
 }
 function openEditModal(idx){
@@ -5443,6 +5477,7 @@ function openEditModal(idx){
   document.getElementById('modalTitle').textContent='Edit Show';
   document.getElementById('btnDelete').style.display='';
   checkDjSuggestion();
+  updateFeeTargetsPreview();
   document.getElementById('evModal').classList.remove('hidden');
 }
 function getFields(){
@@ -5519,6 +5554,27 @@ function editVipNote(idx){
 function useSuggestedFee(fee){
   var f=getFields();
   f.fee.value=fee;
+  updateFeeTargetsPreview();
+  checkDjSuggestion();
+}
+function updateFeeTargetsPreview(){
+  var box=document.getElementById('fldFeeTargets');
+  var bsEl=document.getElementById('fldFeeBsTgt');
+  var roiEl=document.getElementById('fldFeeRoiTgt');
+  if(!box||!bsEl||!roiEl) return;
+  var f=getFields();
+  var fee=parseFloat(f.fee.value)||0;
+  var venue=f.venue.value, dateStr=f.date.value;
+  if(!fee || !venue || !dateStr){
+    box.style.display='none';
+    return;
+  }
+  var tgt=showTargets({v:venue, venue:venue, d:dateStr, fee:fee, cost:fee});
+  box.style.display='block';
+  bsEl.textContent = tgt.bs_m!=null ? $k(tgt.bs_m) : '—';
+  roiEl.textContent = tgt.roi_t!=null ? (Number(tgt.roi_t).toFixed(1)+'x') : '—';
+  if(f.bsm) f.bsm.value = tgt.bs_m!=null ? tgt.bs_m : '';
+  if(f.roit) f.roit.value = tgt.roi_t!=null ? tgt.roi_t : '';
 }
 function closeModal(){ document.getElementById('evModal').classList.add('hidden'); }
 
@@ -5737,6 +5793,134 @@ function openEditSpecialWeek(label){
     document.getElementById('swEndDate').value   = yr2+'-'+mm2+'-'+(found.sw.endDay  <10?'0':'')+found.sw.endDay;
   }
   document.getElementById('swLabel').focus();
+}
+
+function _shiftYmd(dateStr, days){
+  var d=new Date(dateStr+'T12:00:00');
+  d.setDate(d.getDate()+days);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function findSpecialWeekRange(label){
+  var min=null, max=null, found=false;
+  Object.keys(specialWeeks).forEach(function(k){
+    if(!k.startsWith(curV+'|')) return;
+    var parts=k.split('|');
+    (specialWeeks[k]||[]).forEach(function(sw){
+      if(sw.label!==label) return;
+      found=true;
+      var start=parts[1]+'-'+parts[2]+'-'+String(sw.startDay).padStart(2,'0');
+      var end=parts[1]+'-'+parts[2]+'-'+String(sw.endDay).padStart(2,'0');
+      if(!min||start<min) min=start;
+      if(!max||end>max) max=end;
+    });
+  });
+  return found ? {start:min, end:max} : null;
+}
+function replaceSpecialWeekRange(label, startStr, endStr){
+  if(!label||!startStr||!endStr) return false;
+  var sd=new Date(startStr+'T12:00:00'), ed=new Date(endStr+'T12:00:00');
+  if(isNaN(sd.getTime())||isNaN(ed.getTime())||sd>ed) return false;
+  Object.keys(specialWeeks).forEach(function(k){
+    if(!k.startsWith(curV+'|')) return;
+    specialWeeks[k]=(specialWeeks[k]||[]).filter(function(s){ return s.label!==label; });
+    if(!specialWeeks[k].length) delete specialWeeks[k];
+  });
+  var cur=new Date(sd);
+  while(cur<=ed){
+    var yr2=cur.getFullYear(), mo2=cur.getMonth();
+    var mm2=(mo2+1<10?'0':'')+(mo2+1);
+    var startDay=cur.getDate();
+    var monthEnd=new Date(yr2,mo2+1,0);
+    var endInMonth=ed<=monthEnd?ed:monthEnd;
+    var endDay=endInMonth.getDate();
+    var k=curV+'|'+yr2+'|'+mm2;
+    if(!specialWeeks[k]) specialWeeks[k]=[];
+    specialWeeks[k]=specialWeeks[k].filter(function(s){return s.label!==label;});
+    specialWeeks[k].push({label:label,startDay:startDay,endDay:endDay});
+    cur=new Date(yr2,mo2+1,1);
+  }
+  if(window._fbSave) window._fbSave('specialWeeks', specialWeeks);
+  return true;
+}
+function swNudgePeriod(label, edge, delta){
+  var range=findSpecialWeekRange(label);
+  if(!range){
+    /* SCHED-based event label: nudge by rewriting dates on matching shows' ev only keeps label; extend means expand coverage via specialWeeks */
+    var dates=SCHED.filter(function(r){return r.v===curV&&r.ev===label;}).map(function(r){return r.d;}).sort();
+    if(!dates.length) return;
+    range={start:dates[0], end:dates[dates.length-1]};
+  }
+  var start=range.start, end=range.end;
+  if(edge==='start') start=_shiftYmd(start, delta);
+  else end=_shiftYmd(end, delta);
+  if(start>end){
+    if(edge==='start') start=end;
+    else end=start;
+  }
+  replaceSpecialWeekRange(label, start, end);
+  go();
+}
+var _swDrag = null;
+function swDragStart(e){
+  var el=e.target.closest('[data-sw-label]');
+  if(!el) return;
+  _swDrag={ type:'period', label:el.getAttribute('data-sw-label'), from:el.getAttribute('data-sw-from') };
+  try{ e.dataTransfer.setData('text/plain', 'period|'+_swDrag.label); e.dataTransfer.effectAllowed='move'; }catch(err){}
+}
+function showDragStart(e){
+  var el=e.target.closest('[data-show-idx]');
+  if(!el) return;
+  var idx=parseInt(el.getAttribute('data-show-idx'),10);
+  if(!(idx>=0) || !SCHED[idx]) return;
+  _swDrag={ type:'show', idx:idx, from:SCHED[idx].d };
+  try{ e.dataTransfer.setData('text/plain', 'show|'+idx); e.dataTransfer.effectAllowed='move'; }catch(err){}
+  e.stopPropagation();
+}
+function swDragEnd(){ _swDrag=null; document.querySelectorAll('.sc-row-drop').forEach(function(tr){ tr.classList.remove('sc-row-drop'); }); }
+function swDragOver(e){
+  if(!_swDrag) return;
+  e.preventDefault();
+  var tr=e.target.closest('tr[data-cal-ds]');
+  if(tr) tr.classList.add('sc-row-drop');
+}
+function swDragLeave(e){
+  var tr=e.target.closest('tr[data-cal-ds]');
+  if(tr && !tr.contains(e.relatedTarget)) tr.classList.remove('sc-row-drop');
+}
+function swDropOnDate(e, toDate){
+  e.preventDefault();
+  var drag=_swDrag; _swDrag=null;
+  document.querySelectorAll('.sc-row-drop').forEach(function(tr){ tr.classList.remove('sc-row-drop'); });
+  if(!drag || !toDate) return;
+  if(drag.type==='period'){
+    var range=findSpecialWeekRange(drag.label);
+    if(!range){
+      var dates=SCHED.filter(function(r){return r.v===curV&&r.ev===drag.label;}).map(function(r){return r.d;}).sort();
+      if(!dates.length) return;
+      range={start:dates[0], end:dates[dates.length-1]};
+    }
+    var from=drag.from||range.start;
+    var deltaDays=Math.round((new Date(toDate+'T12:00:00')-new Date(from+'T12:00:00'))/86400000);
+    if(!deltaDays) return;
+    replaceSpecialWeekRange(drag.label, _shiftYmd(range.start, deltaDays), _shiftYmd(range.end, deltaDays));
+    go();
+    return;
+  }
+  if(drag.type==='show'){
+    var rec=SCHED[drag.idx];
+    if(!rec || rec.d===toDate) return;
+    var oldKey=(rec.venue||rec.v)+'|'+rec.d;
+    rec.d=toDate;
+    rec.yr=parseInt(toDate.slice(0,4),10);
+    applyShowTargets(rec);
+    if(typeof clearPyMapCache==='function') clearPyMapCache();
+    if(typeof persistSchedShow==='function') persistSchedShow(rec);
+    /* If it was a baked date key, also clear old edit path when possible */
+    if(window._fbRef && oldKey!==((rec.venue||rec.v)+'|'+rec.d)){
+      try{ window._fbRef.child('schedOverrides/edits/'+oldKey.replace(/\//g,'_')).remove(); }catch(err){}
+    }
+    go();
+  }
 }
 
 function openAddSpecialWeek(){
