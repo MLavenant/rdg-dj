@@ -984,8 +984,9 @@ function buildIdx(arr) {
 }
 
 /* Prior-year match for PY columns:
-   Exact calendar date last year first; weekday near-anniversary only if that
-   prior show is not already claimed by another current-year date. */
+   Keep the same weekday (Sun→Sun, Sat→Sat). Exact calendar anniversary only
+   when that date is also the same weekday; otherwise closest same-weekday
+   show within 3 days. Each prior-year show used at most once per month. */
 function _ymdLocal(d){
   var y=d.getFullYear(), m=d.getMonth()+1, day=d.getDate();
   return y+'-'+(m<10?'0':'')+m+'-'+(day<10?'0':'')+day;
@@ -1016,6 +1017,11 @@ function _pyFieldsFromShow(m){
   };
 }
 function _pyShowKey(r){ return (r.d||'')+'|'+(r.dj||''); }
+function _sameWeekday(a, b){
+  var da=new Date(a+'T12:00:00'), db=new Date(b+'T12:00:00');
+  if(isNaN(da.getTime())||isNaN(db.getTime())) return false;
+  return da.getDay()===db.getDay();
+}
 
 /** Unique PY assignment for a venue-month: each prior-year show used at most once. */
 var _pyMapCache={key:'', map:null};
@@ -1038,10 +1044,12 @@ function buildPyMapForMonth(venue, yr, mm){
     return true;
   }
 
-  /* Pass 1 — exact calendar anniversary */
+  /* Pass 1 — exact calendar anniversary only when weekday also matches */
   for(var day=1; day<=days; day++){
     var ds=yr+'-'+mm+'-'+(day<10?'0':'')+day;
-    claim(ds, _schedShowOn(venue, pyYear+'-'+ds.slice(5)));
+    var pyDate=pyYear+'-'+ds.slice(5);
+    if(!_sameWeekday(ds, pyDate)) continue;
+    claim(ds, _schedShowOn(venue, pyDate));
   }
 
   /* Pass 2 — same weekday within 3 days of anniversary, unused shows only */
@@ -5696,8 +5704,8 @@ function renderBudgetTopLine(ytProj, ytFee){
 var HELP_FAQ = [
   {kw:['add','show','new dj','book'], q:'How do I add a show?',
    a:'Click <b>+ Add Show</b> on the Calendar or Accounting tab. Enter venue, date, DJ name and fee   BS Target and ROI Target are calculated automatically from the fee tier table.'},
-  {kw:['py','prior year','last year','2025','blank','empty'], q:"Why is a date's PY (prior year) column empty?",
-   a:"Prior-year (PY) matches the same calendar date last year first (so Dec 30 → last Dec 30). If none, it tries the closest same-weekday show within 3 days of that anniversary. Otherwise it stays blank rather than guessing."},
+  {kw:['py','prior year','last year','2025','blank','empty','monday','sunday','weekend'], q:"Why is a date's PY (prior year) column empty or on the wrong day?",
+   a:"Prior-year (PY) keeps the same weekday (Sunday→Sunday, Saturday→Saturday). Same calendar date is used only when that anniversary is also the same weekday; otherwise the closest same-weekday show within 3 days is used. Each prior-year show is used at most once. Otherwise it stays blank rather than guessing."},
   {kw:['budget','not show','missing','lounge','venue'], q:"Why don't I see my new show in the Budget tab?",
    a:"The Budget tab follows whatever venue you're viewing on the Calendar   switch venues using the pills at the top and Budget updates automatically. The Year dropdown inside Budget is independent, so make sure it's set to the year you want too."},
   {kw:['roi','target','tier','multiplier','suggested','fair value'], q:'How is the ROI Target / Suggested Fee calculated?',
