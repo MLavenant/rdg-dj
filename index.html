@@ -518,13 +518,22 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .cy-djname{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
 .cy-fee{text-align:right;color:var(--amb);font-size:8px;font-weight:700}
 .cy-target{text-align:right;color:var(--blue);font-size:8px;font-weight:700}
-.cy-actual{text-align:right;color:#0f766e;font-size:8px;font-weight:700}
+.cy-actual{text-align:right;color:var(--ink3);font-size:8px;font-weight:700}.cy-actual.hit{color:var(--beat)!important}.cy-actual.low{color:var(--miss)!important}
 .cy-row-beat{background:var(--beat-bg)}.cy-row-beat .cy-djname{color:var(--beat)}
 .cy-row-miss{background:var(--miss-bg)}.cy-row-miss .cy-djname{color:var(--miss)}
 .cy-row-fut{background:var(--blue-bg)}.cy-row-fut .cy-djname{color:var(--blue)}
 .cy-row-tbd{background:var(--amb-bg)}.cy-row-tbd .cy-djname{color:var(--amb)}
 .cy-row-today{outline:1.5px solid var(--amb) inset}
 .cy-empty-lbl{grid-column:2/5;font-size:8px;color:var(--amb);font-weight:700}
+
+.sc-vip{width:44px;min-width:40px;max-width:52px;text-align:center}
+.vip-bubble{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:1px solid var(--rule);background:var(--card2);cursor:pointer;font-size:13px;line-height:1;position:relative}
+.vip-bubble:hover{border-color:var(--blue);background:var(--blue-bg)}
+.vip-bubble.has-note{background:#fff7ed;border-color:#fdba74}
+.vip-bubble .vip-dot{position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:var(--amb)}
+.vip-preview{display:none;position:absolute;z-index:20;left:50%;transform:translateX(-50%);bottom:calc(100% + 6px);width:220px;padding:8px 10px;background:#111827;color:#f9fafb;font-size:10px;font-weight:600;line-height:1.4;border-radius:8px;box-shadow:var(--shadow);text-align:left;white-space:normal}
+.vip-bubble:hover .vip-preview{display:block}
+
 
 /* -- RDG Branding ----------------------------------------------- */
 .sb-logo{padding:22px 16px 16px;border-bottom:0.5px solid var(--hair);text-align:center;background:linear-gradient(180deg,#fbfbfd,var(--card))}
@@ -905,7 +914,6 @@ textarea#fldNote:focus{border-color:var(--blue)}
         <input id="fldEv" type="text" placeholder="Art Basel, NYE, WMC..."></div>
       <div class="fld"><label>Notes (rain, Super Bowl weekend, etc.)</label>
         <textarea id="fldNote" rows="2" placeholder="Any context worth remembering about this date..."></textarea></div>
-      <label class="fld-chk"><input id="fldTBD" type="checkbox"> Mark as TBD / unconfirmed</label>
       <input type="hidden" id="fldBSM"><input type="hidden" id="fldBSA">
       <input type="hidden" id="fldROIT"><input type="hidden" id="fldROIA">
     </div>
@@ -1243,7 +1251,7 @@ function recalcSchedStatuses(){
   TODAY = miamiToday();
   SCHED.forEach(function(r){
     if(!r || r._s==='empty' || !r.d) return;
-    if(r.tbd){ r._s='tbd'; return; }
+    if(r.tbd){ r.tbd=0; /* legacy TBD cleared */ }
     if(r.d > TODAY){ r._s='fut'; return; }
     var tgt = (typeof showTargets==='function') ? showTargets(r) : {bs_m:r.bs_m};
     var bsM = tgt && tgt.bs_m != null ? tgt.bs_m : r.bs_m;
@@ -1696,6 +1704,69 @@ function cappedSuggestedFee(avgBS, actualCost){
   if(fair==null) return null;
   if(actualCost&&actualCost>0) return Math.min(fair, Math.round(actualCost));
   return fair;
+}
+/* Past BS Actuals for a DJ (SCHED + BS), used to calibrate a realistic fee. */
+function historicalBsForDj(name){
+  var q=String(name||'').replace(/\?+/g,'').trim().toUpperCase();
+  if(!q) return [];
+  var out=[], seen={};
+  function push(d, bs, venue){
+    if(bs==null||!(bs>0)||!d) return;
+    var k=d+'|'+(venue||'');
+    if(seen[k]) return;
+    seen[k]=1;
+    out.push({d:d, bs_a:bs, venue:venue||null});
+  }
+  SCHED.forEach(function(r){
+    if(!r||r._s==='empty') return;
+    var n=String(r.dj||'').replace(/\?+/g,'').trim().toUpperCase();
+    if(n!==q && n.indexOf(q)<0 && q.indexOf(n)<0) return;
+    push(r.d, r.bs_a, r.v||r.venue);
+  });
+  BS.forEach(function(r){
+    if(!r) return;
+    var n=String(r.dj||'').replace(/\?+/g,'').trim().toUpperCase();
+    if(n!==q && n.indexOf(q)<0 && q.indexOf(n)<0) return;
+    push(r.d, r.bs_a, r.venue);
+  });
+  return out;
+}
+/* Target BS for a candidate fee on a given venue/date (venue rules, else FEE_TIERS). */
+function targetForFee(venue, dateStr, fee){
+  if(!fee||fee<=0) return null;
+  if(venue&&dateStr){
+    var look=venueRoiLookup(venue, dateStr, fee);
+    if(look&&look.bsTarget) return look.bsTarget;
+  }
+  return bsMinFor(fee);
+}
+/* Realistic suggested fee: raise/lower until historical beat-vs-target rate is about <=50%.
+   If they beat too often at a low fee, suggest paying more (harder target). */
+function realisticSuggestedFee(profile, venue, dateStr){
+  if(!profile) return null;
+  var past=historicalBsForDj(profile.name);
+  if(past.length<2){
+    return cappedSuggestedFee(profile.avg_bs, profile.avg_fee);
+  }
+  function beatRate(fee){
+    var n=0, hits=0;
+    past.forEach(function(p){
+      var tgt=targetForFee(p.venue||venue, p.d||dateStr, fee);
+      if(tgt==null) return;
+      n++;
+      if(p.bs_a>=tgt) hits++;
+    });
+    return n ? hits/n : 1;
+  }
+  var lo=500, hi=200000, best=cappedSuggestedFee(profile.avg_bs, profile.avg_fee)||profile.avg_fee||5000;
+  /* Minimal fee such that beat rate <= 50% (paying enough that target is realistic). */
+  for(var i=0;i<24;i++){
+    var mid=Math.round((lo+hi)/2);
+    if(beatRate(mid)<=0.5){ best=mid; hi=mid-1; }
+    else { lo=mid+1; }
+  }
+  best=Math.max(500, Math.round(best/100)*100);
+  return best;
 }
 function initBudget(){
   var venues=[];
@@ -2518,6 +2589,7 @@ function renderCal(){
   h+='<th class="sc-date">Date</th>';
   h+='<th class="sc-dj">DJ Guest</th>';
   h+='<th class="acct-status-hd sc-dj-st">DJ Status</th>';
+  h+='<th class="sc-vip" title="VIP team notes">VIP</th>';
   h+='<th class="sc-fee">Fee</th>';
   h+='<th class="sc-num">BS Target</th>';
   h+='<th class="sc-num">BS Actual</th>';
@@ -2555,7 +2627,7 @@ function renderCal(){
       h+='<tr class="'+dc+'">';
       h+='<td class="sc-ev-cell">'+(evLabel?'<span class="sc-ev-label" onclick="openEditSpecialWeek(\''+evLabel.replace(/'/g,"\\'")+'\')" title="Edit/delete this period" style="cursor:pointer">'+evLabel+'</span>':'')+'</td>';
       h+='<td class="sc-date-cell">'+dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
-      h+='<td colspan="7" class="sc-empty-day"><button type="button" class="sc-add-inline" onclick="openAddModal(\''+ds+'\')">+ Add show</button></td>';
+      h+='<td colspan="8" class="sc-empty-day"><button type="button" class="sc-add-inline" onclick="openAddModal(\''+ds+'\')">+ Add show</button></td>';
       h+='<td class="sc-sep"></td>';
       h+=_pyCellsHtml(resolvePyFields(curV, ds, null));
       h+='<td class="sc-act"><button class="sc-add-btn" onclick="openAddModal(\''+ds+'\')">+</button></td>';
@@ -2598,6 +2670,13 @@ function renderCal(){
         var bsM=tgt.bs_m, roiT=tgt.roi_t;
         bCls = r.bs_a&&bsM ? (r.bs_a>=bsM?'hit':'low') : '';
         rCls = r.roi_a&&roiT ? (r.roi_a>=roiT?'hit':'low') : '';
+        var vipTxt=(r.vipNote||r.note||'').trim();
+        var vipEsc=vipTxt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        h+='<td class="sc-vip" onclick="event.stopPropagation()">';
+        h+='<button type="button" class="vip-bubble'+(vipTxt?' has-note':'')+'" title="'+(vipTxt?'Edit VIP note':'Add VIP note')+'" onclick="editVipNote('+idx+')">';
+        h+='&#128172;'+(vipTxt?'<span class="vip-dot"></span>':'');
+        if(vipTxt) h+='<span class="vip-preview">'+vipEsc+'</span>';
+        h+='</button></td>';
         h+='<td class="sc-num">'+$k(r.fee||r.cost)+'</td>';
         h+='<td class="sc-num">'+$k(bsM)+'</td>';
         h+='<td class="sc-num '+bCls+'"><b>'+$k(r.bs_a)+'</b>'
@@ -2711,7 +2790,7 @@ function renderCalYear(){
         h+='<span class="cy-djname">'+nm+'</span>';
         h+='<span class="cy-fee">'+$k(r.fee||r.cost)+'</span>';
         h+='<span class="cy-target">'+$k(showTargets(r).bs_m)+'</span>';
-        h+='<span class="cy-actual">'+$k(r.bs_a)+'</span>';
+        var cyTgt=showTargets(r).bs_m;var cyACls=r.bs_a&&cyTgt?(r.bs_a>=cyTgt?'hit':'low'):'';h+='<span class="cy-actual '+cyACls+'">'+$k(r.bs_a)+'</span>';
         h+='</div>';
       });
     }
@@ -2860,7 +2939,7 @@ function renderLeaderboard(){
     var avgFeePaid=Math.round(d.tFee/d.n);
     var br=d.meas?Math.round(d.beats/d.meas*100):0;
     var score=avgROI*(d.meas?d.beats/d.meas:0.5)*Math.log(d.n+1);
-    var fairFee=cappedSuggestedFee(avgBS, avgFeePaid);
+    var fairFee=realisticSuggestedFee({name:d.dj,avg_bs:avgBS,avg_fee:avgFeePaid}, null, null) || cappedSuggestedFee(avgBS, avgFeePaid);
     var venueList=Object.keys(d.venues).sort(function(a,b){return d.venues[b]-d.venues[a];});
     return {dj:d.dj,n:d.n,beats:d.beats,meas:d.meas,avgROI:avgROI,br:br,score:score,
       tFee:d.tFee,tBS:d.tBS,shows:d.shows,avgBS:avgBS,avgFeePaid:avgFeePaid,fairFee:fairFee,venues:venueList};
@@ -2924,7 +3003,7 @@ function renderDJDetail(djEnc){
   var tFee=shows.reduce(function(s,r){return s+(r.cost||0);},0);
   var avgBS=shows.length?Math.round(tBS/shows.length):0;
   var avgFeePaid=shows.length?Math.round(tFee/shows.length):0;
-  var suggFee=cappedSuggestedFee(avgBS, avgFeePaid);
+  var suggFee=realisticSuggestedFee({name:djName,avg_bs:avgBS,avg_fee:avgFeePaid}, null, null) || cappedSuggestedFee(avgBS, avgFeePaid);
 
   var h='<div style="padding:12px 16px;background:var(--card);border-bottom:0.5px solid var(--hair);display:flex;align-items:center;gap:16px;flex-wrap:wrap">';
   h+='<button onclick="_lbDJ=null;renderLeaderboard()" style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:var(--r);border:0.5px solid var(--rule);background:var(--card);cursor:pointer;font-family:inherit">&#8592; Rankings</button>';
@@ -5147,7 +5226,7 @@ function openAddModal(ds){
   var f=getFields();
   f.venue.value=curV;
   f.date.value=ds||(curYr+'-'+(curM<9?'0':'')+(curM+1)+'-01');
-  f.dj.value=''; f.fee.value=''; f.ev.value=''; f.tbd.checked=false; f.note.value='';
+  f.dj.value=''; f.fee.value=''; f.ev.value=''; if(f.tbd) if(f.tbd) if(f.tbd) f.tbd.checked=false; f.note.value='';
   f.bsm.value=''; f.bsa.value=''; f.roit.value=''; f.roia.value='';
   document.getElementById('modalTitle').textContent='Add Show';
   document.getElementById('btnDelete').style.display='none';
@@ -5161,7 +5240,7 @@ function openEditModal(idx){
   f.dj.value=r.dj||''; f.fee.value=r.fee||r.cost||'';
   f.bsm.value=r.bs_m||''; f.bsa.value=r.bs_a||'';
   f.roit.value=r.roi_t||''; f.roia.value=r.roi_a||'';
-  f.ev.value=r.ev||''; f.tbd.checked=!!r.tbd; f.note.value=r.note||'';
+  f.ev.value=r.ev||''; if(f.tbd) if(f.tbd) f.tbd.checked=!!r.tbd; f.note.value=r.note||'';
   document.getElementById('modalTitle').textContent='Edit Show';
   document.getElementById('btnDelete').style.display='';
   checkDjSuggestion();
@@ -5173,7 +5252,7 @@ function getFields(){
     dj:document.getElementById('fldDJ'),       fee:document.getElementById('fldFee'),
     bsm:document.getElementById('fldBSM'),     bsa:document.getElementById('fldBSA'),
     roit:document.getElementById('fldROIT'),   roia:document.getElementById('fldROIA'),
-    ev:document.getElementById('fldEv'),       tbd:document.getElementById('fldTBD'),
+    ev:document.getElementById('fldEv'),       tbd:document.getElementById('fldTBD'), /* removed from UI */
     note:document.getElementById('fldNote'),
   };
 }
@@ -5196,7 +5275,7 @@ function checkDjSuggestion(){
     var currentSpend=SCHED.filter(function(r){
       return r.v===venue && r.yr===parseInt(yr,10) && r.d.slice(5,7)===mm && r._s!=='empty' && SCHED.indexOf(r)!==_editIdx;
     }).reduce(function(s,r){return s+(r.fee||r.cost||0);},0);
-    var feeToAdd = proposedFee || (proj.p?cappedSuggestedFee(proj.p.avg_bs,proj.p.avg_fee):0) || 0;
+    var feeToAdd = proposedFee || (proj.p?(realisticSuggestedFee(proj.p, venue, dateStr)||cappedSuggestedFee(proj.p.avg_bs,proj.p.avg_fee)):0) || 0;
     var afterBooking = currentSpend + feeToAdd;
     var remaining = budget!=null ? budget-afterBooking : null;
     budgetHtml='<div class="dj-sugg-budget">'
@@ -5215,7 +5294,7 @@ function checkDjSuggestion(){
     return;
   }
   var p=proj.p;
-  var fair=cappedSuggestedFee(p.avg_bs, p.avg_fee);
+  var fair=realisticSuggestedFee(p, venue, dateStr) || cappedSuggestedFee(p.avg_bs, p.avg_fee);
   box.style.display='block';
   box.innerHTML=
     '<div class="dj-sugg-hd">'+p.display+' &mdash; '+p.n+' shows on record</div>'
@@ -5223,8 +5302,19 @@ function checkDjSuggestion(){
     +'<div class="dj-sugg-row"><span>Avg BS delivered</span><b>'+$k(p.avg_bs)+'</b></div>'
     +'<div class="dj-sugg-row"><span>Avg ROI achieved</span><b class="kc-b">'+(p.avg_roi_a||'-')+'x</b></div>'
     +'<div class="dj-sugg-row"><span>Beat rate</span><b class="'+(p.beat_rate>=60?'hit':'low')+'">'+p.beat_rate+'%</b></div>'
-    +'<button type="button" class="dj-sugg-use" onclick="useSuggestedFee('+fair+')">Use suggested fee: '+$k(fair)+'</button>'
+    +'<div class="dj-sugg-row"><span style="color:var(--ink3)">Suggested fee aims for ≤50% historical beat vs target</span><b></b></div>'
+    +'<button type="button" class="dj-sugg-use" onclick="useSuggestedFee('+fair+')">Use realistic suggested fee: '+$k(fair)+'</button>'
     +budgetHtml;
+}
+
+function editVipNote(idx){
+  var r=SCHED[idx]; if(!r) return;
+  var cur=(r.vipNote||r.note||'');
+  var next=prompt('VIP team note (performance, vibe, requests — anything):', cur);
+  if(next===null) return;
+  r.vipNote=next.trim()||null;
+  if(typeof persistSchedShow==='function') persistSchedShow(r);
+  go();
 }
 function useSuggestedFee(fee){
   var f=getFields();
@@ -5255,7 +5345,7 @@ function saveEvent(){
   var v=f.venue.value, d=f.date.value, dj=(f.dj.value||'').trim();
   var fee=parseFloat(f.fee.value)||null;
   var ev=(f.ev.value||'').trim()||null;
-  var tbd=f.tbd.checked?1:0;
+  var tbd=0; /* TBD/unconfirmed checkbox removed */
   if(!d){alert('Date required');return;}
   var yr=parseInt(d.slice(0,4),10);
   /* auto-populate BS target and ROI target   venue-specific rules first, generic tier fallback */
@@ -5275,6 +5365,7 @@ function saveEvent(){
   if(_editIdx>=0){
     var prev=SCHED[_editIdx];
     if(prev){ rec.bs_a=prev.bs_a; rec.roi_a=prev.roi_a; rec.beat=prev.beat;
+      rec.vipNote=prev.vipNote||null;
       if(prev.bs_a&&prev._s!=='fut'&&prev._s!=='tbd') rec._s=prev._s; }
   }
   if(_editIdx>=0) SCHED[_editIdx]=rec; else SCHED.push(rec);
