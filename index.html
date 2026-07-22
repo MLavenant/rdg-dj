@@ -526,13 +526,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .cy-row-today{outline:1.5px solid var(--amb) inset}
 .cy-empty-lbl{grid-column:2/5;font-size:8px;color:var(--amb);font-weight:700}
 
-.sc-vip{width:44px;min-width:40px;max-width:52px;text-align:center}
-.vip-bubble{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;border:1px solid var(--rule);background:var(--card2);cursor:pointer;font-size:13px;line-height:1;position:relative}
+.sc-vip{width:140px;min-width:120px;max-width:180px;text-align:left;vertical-align:middle;padding:4px 6px!important}
+.vip-cell{display:flex;flex-direction:column;align-items:stretch;gap:4px;max-width:170px}
+.vip-bubble{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;border:1px solid var(--rule);background:var(--card2);cursor:pointer;font-size:12px;line-height:1;flex-shrink:0}
 .vip-bubble:hover{border-color:var(--blue);background:var(--blue-bg)}
 .vip-bubble.has-note{background:#fff7ed;border-color:#fdba74}
-.vip-bubble .vip-dot{position:absolute;top:2px;right:2px;width:7px;height:7px;border-radius:50%;background:var(--amb)}
-.vip-preview{display:none;position:absolute;z-index:20;left:50%;transform:translateX(-50%);bottom:calc(100% + 6px);width:220px;padding:8px 10px;background:#111827;color:#f9fafb;font-size:10px;font-weight:600;line-height:1.4;border-radius:8px;box-shadow:var(--shadow);text-align:left;white-space:normal}
-.vip-bubble:hover .vip-preview{display:block}
+.vip-text{display:block;font-size:10px;font-weight:600;color:var(--ink2);line-height:1.35;white-space:normal;word-break:break-word;max-height:3.9em;overflow:hidden;cursor:pointer}
+.vip-text.empty{color:var(--ink3);font-weight:500;font-style:italic}
 
 
 /* -- RDG Branding ----------------------------------------------- */
@@ -992,9 +992,8 @@ function buildIdx(arr) {
 }
 
 /* Prior-year match for PY columns:
-   1) Same calendar date last year (MM-DD) — keeps NYE / holiday artists aligned
-   2) Else nearest day within ±1 of that anniversary
-   3) Else closest same-weekday show within ±21 days of the 364-day anchor */
+   Exact calendar date last year first; weekday near-anniversary only if that
+   prior show is not already claimed by another current-year date. */
 function _ymdLocal(d){
   var y=d.getFullYear(), m=d.getMonth()+1, day=d.getDate();
   return y+'-'+(m<10?'0':'')+m+'-'+(day<10?'0':'')+day;
@@ -1011,76 +1010,117 @@ function _schedShowOn(venue, dateStr){
   });
   return best;
 }
+function _pyFieldsFromShow(m){
+  if(!m) return {py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
+  var fee=m.fee||m.cost||null;
+  var tgt=(typeof showTargets==='function')?showTargets(m):{bs_m:m.bs_m,roi_t:m.roi_t};
+  var bsM=tgt.bs_m!=null?tgt.bs_m:m.bs_m;
+  var roiT=tgt.roi_t!=null?tgt.roi_t:m.roi_t;
+  var beat=m.beat;
+  if(beat==null && m.bs_a!=null && bsM!=null) beat=m.bs_a>=bsM?1:0;
+  return {
+    py_dj:m.dj, py_fee:fee, py_bs_m:bsM, py_bs_a:m.bs_a||null,
+    py_roi_t:roiT, py_roi_a:m.roi_a||null, py_beat:beat
+  };
+}
+function _pyShowKey(r){ return (r.d||'')+'|'+(r.dj||''); }
+
+/** Unique PY assignment for a venue-month: each prior-year show used at most once. */
+var _pyMapCache={key:'', map:null};
+function clearPyMapCache(){ _pyMapCache={key:'', map:null}; }
+function buildPyMapForMonth(venue, yr, mm){
+  var cacheKey=venue+'|'+yr+'|'+mm;
+  if(_pyMapCache.key===cacheKey && _pyMapCache.map) return _pyMapCache.map;
+  var map={};
+  var used={};
+  var days=new Date(yr, parseInt(mm,10), 0).getDate();
+  var pyYear=yr-1;
+  var empty={py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
+
+  function claim(ds, show){
+    if(!show) return false;
+    var k=_pyShowKey(show);
+    if(used[k]) return false;
+    used[k]=true;
+    map[ds]=_pyFieldsFromShow(show);
+    return true;
+  }
+
+  /* Pass 1 — exact calendar anniversary */
+  for(var day=1; day<=days; day++){
+    var ds=yr+'-'+mm+'-'+(day<10?'0':'')+day;
+    claim(ds, _schedShowOn(venue, pyYear+'-'+ds.slice(5)));
+  }
+
+  /* Pass 2 — same weekday within 3 days of anniversary, unused shows only */
+  for(var day2=1; day2<=days; day2++){
+    var ds2=yr+'-'+mm+'-'+(day2<10?'0':'')+day2;
+    if(map[ds2]) continue;
+    var d=new Date(ds2+'T12:00:00');
+    if(isNaN(d.getTime())) continue;
+    var wantDow=d.getDay();
+    var anniversary=new Date(pyYear+'-'+ds2.slice(5)+'T12:00:00');
+    if(isNaN(anniversary.getTime())) continue;
+    var best=null, bestDist=1e15;
+    SCHED.forEach(function(r){
+      if((r.v||r.venue)!==venue) return;
+      if(r._s==='empty'||!r.d) return;
+      if(used[_pyShowKey(r)]) return;
+      var nm=(r.dj||'').replace(/\?+/g,'').trim();
+      if(!nm) return;
+      var rd=new Date(r.d+'T12:00:00');
+      if(isNaN(rd.getTime())||rd.getDay()!==wantDow||rd.getFullYear()!==pyYear) return;
+      var dist=Math.abs(rd.getTime()-anniversary.getTime());
+      if(dist<bestDist){ bestDist=dist; best=r; }
+    });
+    if(best && bestDist<=3*86400000) claim(ds2, best);
+  }
+
+  for(var day3=1; day3<=days; day3++){
+    var ds3=yr+'-'+mm+'-'+(day3<10?'0':'')+day3;
+    if(!map[ds3]) map[ds3]=empty;
+  }
+  _pyMapCache={key:cacheKey, map:map};
+  return map;
+}
+
 function findPriorYearMatch(venue, dateStr){
   if(!venue||!dateStr) return null;
-  var d=new Date(dateStr+'T12:00:00');
-  if(isNaN(d.getTime())) return null;
-  var pyYear=d.getFullYear()-1;
-  var mmdd=dateStr.slice(5);
-  var exact=_schedShowOn(venue, pyYear+'-'+mmdd);
-  if(exact) return exact;
-
-  var wantDow=d.getDay();
-  var anniversary=new Date(pyYear+'-'+mmdd+'T12:00:00');
-  if(isNaN(anniversary.getTime())) anniversary=new Date(d.getTime()-364*86400000);
-  var best=null, bestDist=1e15;
-  SCHED.forEach(function(r){
-    if((r.v||r.venue)!==venue) return;
-    if(r._s==='empty'||!r.d) return;
-    var nm=(r.dj||'').replace(/\?+/g,'').trim();
-    if(!nm) return;
-    var rd=new Date(r.d+'T12:00:00');
-    if(isNaN(rd.getTime())) return;
-    if(rd.getDay()!==wantDow) return;
-    if(rd.getFullYear()!==pyYear) return;
-    var dist=Math.abs(rd.getTime()-anniversary.getTime());
-    if(dist<bestDist){ bestDist=dist; best=r; }
-  });
-  /* Same-weekday fallback only within 3 days of the calendar anniversary,
-     and never steal a PY show whose anniversary date already has a 2026 booking. */
-  if(best && bestDist<=3*86400000){
-    var claimDate=d.getFullYear()+'-'+best.d.slice(5);
-    if(claimDate!==dateStr && _schedShowOn(venue, claimDate)) return null;
-    return best;
-  }
-  return null;
+  var yr=parseInt(dateStr.slice(0,4),10);
+  var mm=dateStr.slice(5,7);
+  var map=buildPyMapForMonth(venue, yr, mm);
+  var f=map[dateStr];
+  if(!f||!f.py_dj) return null;
+  return _schedShowOn(venue, (yr-1)+'-'+dateStr.slice(5)) ||
+    SCHED.find(function(r){
+      return (r.v||r.venue)===venue && r._s!=='empty' && r.d &&
+        String(r.dj||'')===String(f.py_dj||'') &&
+        r.d.slice(0,4)===String(yr-1) &&
+        Math.abs(new Date(r.d+'T12:00:00')-new Date((yr-1)+'-'+dateStr.slice(5)+'T12:00:00'))<=3*86400000;
+    }) || null;
 }
 function resolvePyFields(venue, dateStr, baked){
-  var m=findPriorYearMatch(venue, dateStr);
-  if(m){
-    var fee=m.fee||m.cost||null;
-    var tgt=(typeof showTargets==='function')?showTargets(m):{bs_m:m.bs_m,roi_t:m.roi_t};
-    var bsM=tgt.bs_m!=null?tgt.bs_m:m.bs_m;
-    var roiT=tgt.roi_t!=null?tgt.roi_t:m.roi_t;
-    var beat=m.beat;
-    if(beat==null && m.bs_a!=null && bsM!=null) beat=m.bs_a>=bsM?1:0;
-    return {
-      py_dj:m.dj, py_fee:fee, py_bs_m:bsM, py_bs_a:m.bs_a||null,
-      py_roi_t:roiT, py_roi_a:m.roi_a||null, py_beat:beat
-    };
+  if(venue&&dateStr&&dateStr.length>=7){
+    var map=buildPyMapForMonth(venue, parseInt(dateStr.slice(0,4),10), dateStr.slice(5,7));
+    if(map[dateStr] && map[dateStr].py_dj) return map[dateStr];
   }
-  if(baked && (baked.py_dj||baked.py_bs_a)){
-    return {
-      py_dj:baked.py_dj||null, py_fee:baked.py_fee||null, py_bs_m:baked.py_bs_m||null,
-      py_bs_a:baked.py_bs_a||null, py_roi_t:baked.py_roi_t||null, py_roi_a:baked.py_roi_a||null,
-      py_beat:baked.py_beat
-    };
-  }
+  /* Do not fall back to baked py_* — it caused duplicate PY names across days. */
   return {py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
 }
-function _pyCellsHtml(py){
+function _pyCellsHtml(py, rowspan){
   var pyNm=(py.py_dj||'').replace(/\?+/g,'').trim();
   var pyBeat=py.py_beat;
   var pyBCls=pyBeat===1?'hit':pyBeat===0?'low':'';
-  var h='<td class="sc-py">';
+  var rs=rowspan && rowspan>1 ? ' rowspan="'+rowspan+'"' : '';
+  var h='<td class="sc-py"'+rs+'>';
   if(pyNm) h+='<b class="'+(pyBeat===1?'hit':pyBeat===0?'low':'')+'">'+pyNm.slice(0,18)+'</b>';
   else h+='-';
   h+='</td>';
-  h+='<td class="sc-num py-dim">'+$k(py.py_fee)+'</td>';
-  h+='<td class="sc-num py-dim">'+$k(py.py_bs_m)+'</td>';
-  h+='<td class="sc-num '+pyBCls+'"><b>'+$k(py.py_bs_a)+'</b></td>';
-  h+='<td class="sc-num py-dim">'+rx(py.py_roi_t)+'</td>';
-  h+='<td class="sc-num '+pyBCls+'"><b>'+rx(py.py_roi_a)+'</b></td>';
+  h+='<td class="sc-num py-dim"'+rs+'>'+$k(py.py_fee)+'</td>';
+  h+='<td class="sc-num py-dim"'+rs+'>'+$k(py.py_bs_m)+'</td>';
+  h+='<td class="sc-num '+pyBCls+'"'+rs+'><b>'+$k(py.py_bs_a)+'</b></td>';
+  h+='<td class="sc-num py-dim"'+rs+'>'+rx(py.py_roi_t)+'</td>';
+  h+='<td class="sc-num '+pyBCls+'"'+rs+'><b>'+rx(py.py_roi_a)+'</b></td>';
   return h;
 }
 
@@ -1293,6 +1333,7 @@ function recalcSchedStatuses(){
 }
 
 function go() {
+  clearPyMapCache();
   recalcSchedStatuses();
   renderKPIs();
   if (curView==='calendar')    renderCal();
@@ -2608,6 +2649,9 @@ function renderCal(){
   if(calViewMode==='year'){ renderCalYear(); return; }
   if(calViewMode==='grid'){ renderCalGrid(yr,mo,mm,days,showMap); return; }
 
+  var pyMap=buildPyMapForMonth(curV, yr, mm);
+  var pyBlank={py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
+
   var h='<table class="sched-tbl"><thead><tr>';
   h+='<th class="sc-ev">Event</th>';
   h+='<th class="sc-date">Date</th>';
@@ -2653,7 +2697,8 @@ function renderCal(){
       h+='<td class="sc-date-cell">'+dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
       h+='<td colspan="8" class="sc-empty-day"><button type="button" class="sc-add-inline" onclick="openAddModal(\''+ds+'\')">+ Add show</button></td>';
       h+='<td class="sc-sep"></td>';
-      h+=_pyCellsHtml(resolvePyFields(curV, ds, null));
+      /* Empty days: no PY — avoids orphan / duplicate prior-year names */
+      h+=_pyCellsHtml(pyBlank);
       h+='<td class="sc-act"><button class="sc-add-btn" onclick="openAddModal(\''+ds+'\')">+</button></td>';
       h+='</tr>';
     } else {
@@ -2663,10 +2708,7 @@ function renderCal(){
         var idx  = SCHED.indexOf(r);
         var bCls = r.bs_a&&r.bs_m ? (r.bs_a>=r.bs_m?'hit':'low') : '';
         var rCls = r.roi_a&&r.roi_t ? (r.roi_a>=r.roi_t?'hit':'low') : '';
-        var py = resolvePyFields(curV, r.d, r);
-        var pyBeat= py.py_beat;
-        var pyBCls= pyBeat===1?'hit':pyBeat===0?'low':'';
-        var pyNm  = (py.py_dj||'').replace(/\?+/g,'').trim();
+        var py = (ri===0 ? (pyMap[ds]||pyBlank) : null);
 
         h+='<tr class="'+dc+' sc-'+st+'">';
         if(ri===0){
@@ -2697,10 +2739,10 @@ function renderCal(){
         var vipTxt=(r.vipNote||r.note||'').trim();
         var vipEsc=vipTxt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
         h+='<td class="sc-vip" onclick="event.stopPropagation()">';
-        h+='<button type="button" class="vip-bubble'+(vipTxt?' has-note':'')+'" title="'+(vipTxt?'Edit VIP note':'Add VIP note')+'" onclick="editVipNote('+idx+')">';
-        h+='&#128172;'+(vipTxt?'<span class="vip-dot"></span>':'');
-        if(vipTxt) h+='<span class="vip-preview">'+vipEsc+'</span>';
-        h+='</button></td>';
+        h+='<div class="vip-cell">';
+        h+='<button type="button" class="vip-bubble'+(vipTxt?' has-note':'')+'" title="VIP note" onclick="editVipNote('+idx+')">&#128172;</button>';
+        h+='<span class="vip-text'+(vipTxt?'':' empty')+'" onclick="editVipNote('+idx+')">'+(vipTxt||'Add VIP note')+'</span>';
+        h+='</div></td>';
         h+='<td class="sc-num">'+$k(r.fee||r.cost)+'</td>';
         h+='<td class="sc-num">'+$k(bsM)+'</td>';
         h+='<td class="sc-num '+bCls+'"><b>'+$k(r.bs_a)+'</b>'
@@ -2708,9 +2750,10 @@ function renderCal(){
         h+='<td class="sc-num">'+rx(roiT)+'</td>';
         h+='<td class="sc-num '+rCls+'"><b>'+rx(r.roi_a)+'</b>'
           +(rCls?'<div class="sc-beat-icon">'+(rCls==='hit'?'&#9650;':'&#9660;')+'</div>':'')+'</td>';
-        if(ri===0) h+='<td class="sc-sep" rowspan="'+nrows+'"></td>';
-        /* prior year columns ? live match from previous year */
-        h+=_pyCellsHtml(py);
+        if(ri===0){
+          h+='<td class="sc-sep" rowspan="'+nrows+'"></td>';
+          h+=_pyCellsHtml(py||pyBlank, nrows);
+        }
         h+='<td class="sc-act"><button class="sc-edit-btn" onclick="openEditModal('+idx+')">&#9998;</button></td>';
         h+='</tr>';
       });
