@@ -3074,6 +3074,20 @@ function renderAllShows(){
    ROI RANKING   venue all-time, click DJ for full history
                                                                   */
 var _lbDJ = null; /* selected DJ for detail view */
+var _lbSort = { key: 'score', dir: 'desc' };
+
+function lbSortBy(key){
+  if(_lbSort.key === key) _lbSort.dir = _lbSort.dir === 'desc' ? 'asc' : 'desc';
+  else { _lbSort.key = key; _lbSort.dir = 'desc'; }
+  renderLeaderboard();
+}
+function _lbSortMark(key){
+  if(_lbSort.key !== key) return '';
+  return _lbSort.dir === 'desc' ? ' ▾' : ' ▴';
+}
+function _lbTh(label, key){
+  return '<th style="cursor:pointer;user-select:none" onclick="event.stopPropagation();lbSortBy(\''+key+'\')" title="Sort by '+label+'">'+label+_lbSortMark(key)+'</th>';
+}
 
 function renderLeaderboard(){
   if(_lbDJ) { renderDJDetail(_lbDJ); return; }
@@ -3099,19 +3113,46 @@ function renderLeaderboard(){
     var avgROI=d.rois.reduce(function(a,b){return a+b;},0)/d.rois.length;
     var avgBS=Math.round(d.tBS/d.n);
     var avgFeePaid=Math.round(d.tFee/d.n);
+    var misses=Math.max(0, d.meas - d.beats);
     var br=d.meas?Math.round(d.beats/d.meas*100):0;
     var score=avgROI*(d.meas?d.beats/d.meas:0.5)*Math.log(d.n+1);
     var fairFee=leaderboardSuggestedFee(avgBS, avgFeePaid, br);
     var venueList=Object.keys(d.venues).sort(function(a,b){return d.venues[b]-d.venues[a];});
-    return {dj:d.dj,n:d.n,beats:d.beats,meas:d.meas,avgROI:avgROI,br:br,score:score,
+    return {dj:d.dj,n:d.n,beats:d.beats,misses:misses,meas:d.meas,avgROI:avgROI,br:br,score:score,
       tFee:d.tFee,tBS:d.tBS,shows:d.shows,avgBS:avgBS,avgFeePaid:avgFeePaid,fairFee:fairFee,venues:venueList};
   });
-  list.sort(function(a,b){return b.score-a.score;});
+
+  var sortKey = _lbSort.key || 'score';
+  var dir = _lbSort.dir === 'asc' ? 1 : -1;
+  list.sort(function(a,b){
+    var av=a[sortKey], bv=b[sortKey];
+    if(av==null && bv==null) return 0;
+    if(av==null) return 1;
+    if(bv==null) return -1;
+    if(typeof av === 'string'){
+      var cmp=String(av).localeCompare(String(bv));
+      return dir * (cmp || String(a.dj).localeCompare(String(b.dj)));
+    }
+    if(av === bv){
+      if(a.br !== b.br) return dir * (a.br - b.br);
+      return dir * (a.n - b.n);
+    }
+    return dir * (av - bv);
+  });
   if(qs) list=list.filter(function(r){return r.dj.toUpperCase().indexOf(qs)>=0;});
 
   var h='<table class="shows-tbl"><thead><tr>'
-    +'<th>#</th><th>DJ</th><th>Venue(s)</th><th>Shows</th><th>Beat/Meas</th><th>Beat %</th>'
-    +'<th>Avg ROI</th><th>Avg BS/show</th><th>Avg Fee Paid</th><th>Suggested Fee</th><th>Total BS Act</th>'
+    +'<th>#</th>'
+    +_lbTh('DJ','dj')
+    +'<th>Venue(s)</th>'
+    +_lbTh('Shows','n')
+    +_lbTh('Beat/Miss','beats')
+    +_lbTh('Beat %','br')
+    +_lbTh('Avg ROI','avgROI')
+    +_lbTh('Avg BS/show','avgBS')
+    +_lbTh('Avg Fee Paid','avgFeePaid')
+    +_lbTh('Suggested Fee','fairFee')
+    +_lbTh('Total BS Act','tBS')
     +'</tr></thead><tbody>';
   list.forEach(function(r,i){
     var fairCls = r.fairFee && r.avgFeePaid && r.fairFee<r.avgFeePaid ? 'low' : '';
@@ -3129,7 +3170,7 @@ function renderLeaderboard(){
     h+='<td class="td-dj lb-dj-link" style="font-weight:700">'+r.dj+'</td>';
     h+='<td>'+venueBadges+'</td>';
     h+='<td style="text-align:center">'+r.n+'</td>';
-    h+='<td style="text-align:center">'+r.beats+'/'+r.meas+'</td>';
+    h+='<td style="text-align:center" title="'+r.beats+' beat / '+r.misses+' miss">'+r.beats+'/'+r.misses+'</td>';
     h+='<td class="'+(r.br>=60?'hit':'low')+'" style="text-align:center;font-weight:700">'+r.br+'%</td>';
     h+='<td class="'+(r.br>=60?'hit':'low')+'" style="font-weight:700">'+r.avgROI.toFixed(2)+'x</td>';
     h+='<td>'+$k(r.avgBS)+'</td>';
