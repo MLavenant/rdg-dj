@@ -991,20 +991,38 @@ function buildIdx(arr) {
   return o;
 }
 
-/* Prior-year match: closest SAME-WEEKDAY show from previous calendar year
-   (prefer ~364 days back = 52 weeks). Used live so 2027 always sees 2026 DJs. */
+/* Prior-year match for PY columns:
+   1) Same calendar date last year (MM-DD) — keeps NYE / holiday artists aligned
+   2) Else nearest day within ±1 of that anniversary
+   3) Else closest same-weekday show within ±21 days of the 364-day anchor */
 function _ymdLocal(d){
   var y=d.getFullYear(), m=d.getMonth()+1, day=d.getDate();
   return y+'-'+(m<10?'0':'')+m+'-'+(day<10?'0':'')+day;
+}
+function _schedShowOn(venue, dateStr){
+  if(!venue||!dateStr) return null;
+  var best=null;
+  SCHED.forEach(function(r){
+    if((r.v||r.venue)!==venue) return;
+    if(r._s==='empty'||!r.d||r.d!==dateStr) return;
+    var nm=(r.dj||'').replace(/\?+/g,'').trim();
+    if(!nm) return;
+    if(!best || ((r.bs_a||0)>(best.bs_a||0))) best=r;
+  });
+  return best;
 }
 function findPriorYearMatch(venue, dateStr){
   if(!venue||!dateStr) return null;
   var d=new Date(dateStr+'T12:00:00');
   if(isNaN(d.getTime())) return null;
-  var wantDow=d.getDay();
   var pyYear=d.getFullYear()-1;
-  var anchor=new Date(d.getTime());
-  anchor.setDate(anchor.getDate()-364);
+  var mmdd=dateStr.slice(5);
+  var exact=_schedShowOn(venue, pyYear+'-'+mmdd);
+  if(exact) return exact;
+
+  var wantDow=d.getDay();
+  var anniversary=new Date(pyYear+'-'+mmdd+'T12:00:00');
+  if(isNaN(anniversary.getTime())) anniversary=new Date(d.getTime()-364*86400000);
   var best=null, bestDist=1e15;
   SCHED.forEach(function(r){
     if((r.v||r.venue)!==venue) return;
@@ -1015,10 +1033,16 @@ function findPriorYearMatch(venue, dateStr){
     if(isNaN(rd.getTime())) return;
     if(rd.getDay()!==wantDow) return;
     if(rd.getFullYear()!==pyYear) return;
-    var dist=Math.abs(rd.getTime()-anchor.getTime());
+    var dist=Math.abs(rd.getTime()-anniversary.getTime());
     if(dist<bestDist){ bestDist=dist; best=r; }
   });
-  if(best && bestDist<=21*86400000) return best;
+  /* Same-weekday fallback only within 3 days of the calendar anniversary,
+     and never steal a PY show whose anniversary date already has a 2026 booking. */
+  if(best && bestDist<=3*86400000){
+    var claimDate=d.getFullYear()+'-'+best.d.slice(5);
+    if(claimDate!==dateStr && _schedShowOn(venue, claimDate)) return null;
+    return best;
+  }
   return null;
 }
 function resolvePyFields(venue, dateStr, baked){
@@ -5656,11 +5680,11 @@ var HELP_FAQ = [
   {kw:['add','show','new dj','book'], q:'How do I add a show?',
    a:'Click <b>+ Add Show</b> on the Calendar or Accounting tab. Enter venue, date, DJ name and fee   BS Target and ROI Target are calculated automatically from the fee tier table.'},
   {kw:['py','prior year','last year','2025','blank','empty'], q:"Why is a date's PY (prior year) column empty?",
-   a:"The system matches each date to the closest SAME-WEEKDAY show from last year (Saturday matches Saturday, Sunday matches Sunday). If no matching weekday show exists nearby, it's left blank rather than guessing wrong."},
+   a:"Prior-year (PY) matches the same calendar date last year first (so Dec 30 → last Dec 30). If none, it tries the closest same-weekday show within 3 days of that anniversary. Otherwise it stays blank rather than guessing."},
   {kw:['budget','not show','missing','lounge','venue'], q:"Why don't I see my new show in the Budget tab?",
    a:"The Budget tab follows whatever venue you're viewing on the Calendar   switch venues using the pills at the top and Budget updates automatically. The Year dropdown inside Budget is independent, so make sure it's set to the year you want too."},
   {kw:['roi','target','tier','multiplier','suggested','fair value'], q:'How is the ROI Target / Suggested Fee calculated?',
-   a:'ROI Target comes from the DJ fee, using the tier table from the minimum reporting file (e.g. a $20K&ndash;$30K fee carries a 5x BS target). Suggested Fee is a ceiling based on that DJ has proven to deliver on average   it will never suggest paying more than they already get.'},
+   a:'ROI Target comes from the DJ fee (venue fee-tier rules). Suggested Fee is calibrated from that DJ\'s past BS Actuals so historical beat-vs-target rate stays around ≤50% — a realistic pay level, not an automatic raise or cut.'},
   {kw:['special week','f1','art basel','wmc','event','festival'], q:'Can I add a Special Week (like F1, Art Basel)?',
    a:'Yes   click <b>+ Special Week</b>, name it, and pick a start/end date. It can span multiple months and shows as an amber label on every day in range.'},
   {kw:['2026','2027','plan','year','current'], q:'Can I budget for 2026 as well as 2027?',
