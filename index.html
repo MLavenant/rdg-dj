@@ -635,6 +635,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 
 .acct-status-hd{min-width:88px;max-width:110px;width:100px}
 .sc-dj-st{width:110px;min-width:100px;max-width:120px}
+.sc-vip{width:78px;min-width:72px;max-width:78px;text-align:left;vertical-align:middle;padding:4px 4px!important}
+.vip-link{display:block;max-width:70px;font-size:9px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;color:var(--ink3)}
+.vip-link.has-note{color:var(--ink2);font-weight:700}
 .sched-tbl .acct-status-sel{min-width:96px;background:#fff;border:1px solid #93c5fd}
 .acct-status-sel{width:100%;max-width:108px;font-size:9px;font-weight:600;padding:4px 4px;border-radius:6px;border:0.5px solid var(--rule);outline:none;font-family:inherit;cursor:pointer}
 .acct-status-wrap{display:flex;flex-direction:column;align-items:stretch;gap:3px;min-width:88px;max-width:112px}
@@ -2660,6 +2663,7 @@ function renderCal(){
   h+='<th class="sc-date">Date</th>';
   h+='<th class="sc-dj">DJ Guest</th>';
   h+='<th class="acct-status-hd sc-dj-st">DJ Status</th>';
+  h+='<th class="sc-vip" title="VIP team notes">VIP</th>';
   h+='<th class="sc-fee">Fee</th>';
   h+='<th class="sc-num">BS Target</th>';
   h+='<th class="sc-num">BS Actual</th>';
@@ -2697,7 +2701,7 @@ function renderCal(){
       h+='<tr class="'+dc+'">';
       h+='<td class="sc-ev-cell">'+(evLabel?'<span class="sc-ev-label" onclick="openEditSpecialWeek(\''+evLabel.replace(/'/g,"\\'")+'\')" title="Edit/delete this period" style="cursor:pointer">'+evLabel+'</span>':'')+'</td>';
       h+='<td class="sc-date-cell">'+dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
-      h+='<td colspan="7" class="sc-empty-day"><button type="button" class="sc-add-inline" onclick="openAddModal(\''+ds+'\')">+ Add show</button></td>';
+      h+='<td colspan="8" class="sc-empty-day"><button type="button" class="sc-add-inline" onclick="openAddModal(\''+ds+'\')">+ Add show</button></td>';
       h+='<td class="sc-sep"></td>';
       /* Show prior-year match on empty days so planners still see last year's lineup */
       h+=_pyCellsHtml(pyMap[ds]||pyBlank);
@@ -2738,6 +2742,11 @@ function renderCal(){
         var bsM=tgt.bs_m, roiT=tgt.roi_t;
         bCls = r.bs_a&&bsM ? (r.bs_a>=bsM?'hit':'low') : '';
         rCls = r.roi_a&&roiT ? (r.roi_a>=roiT?'hit':'low') : '';
+        var vipTxt=(r.vipNote||'').trim();
+        var vipEsc=vipTxt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        h+='<td class="sc-vip" onclick="event.stopPropagation()">';
+        h+='<span class="vip-link'+(vipTxt?' has-note':'')+'" title="'+(vipTxt||'Add VIP note')+'" onclick="editVipNote('+idx+')">'+(vipTxt?vipEsc:'Add VIP note')+'</span>';
+        h+='</td>';
         h+='<td class="sc-num">'+$k(r.fee||r.cost)+'</td>';
         h+='<td class="sc-num">'+$k(bsM)+'</td>';
         h+='<td class="sc-num '+bCls+'"><b>'+$k(r.bs_a)+'</b>'
@@ -3880,10 +3889,12 @@ function renderLive(animate){
   if(!el) return;
   var biz=_liveBizDate();
   var live=window._liveNight;
-  var salesByVenue=(live && live.salesByVenue) || {};
-  var statsByVenue=(live && live.statsByVenue) || {};
+  // Always show tonight (biz date). Ignore stale Firebase nights like Jul 17.
+  var showDate = biz;
+  var liveFresh = !!(live && live.date === biz);
+  var salesByVenue = liveFresh ? ((live && live.salesByVenue) || {}) : {};
+  var statsByVenue = liveFresh ? ((live && live.statsByVenue) || {}) : {};
   var inWin=_liveWindowActive();
-  var showDate = (live && live.date) ? live.date : biz;
 
   // LIVE is always all venues for the night — ignore sidebar venue selection (curV)
   var shows = SCHED.filter(function(r){
@@ -3892,8 +3903,8 @@ function renderLive(animate){
     var dj=String(r.dj||'').replace(/\?+/g,'').trim();
     return !!dj && dj.toUpperCase()!=='TBD';
   });
-  // Also surface any Toast live rows that aren't in SCHED yet
-  if(live && live.rows && live.rows.length){
+  // Also surface any Toast live rows that aren't in SCHED yet (tonight only)
+  if(liveFresh && live && live.rows && live.rows.length){
     live.rows.forEach(function(row){
       if(!row || row.date!==showDate) return;
       var already = shows.some(function(r){
@@ -3925,6 +3936,17 @@ function renderLive(animate){
     + '<div style="font-size:11px;color:var(--ink3);margin-top:2px">All venues · night of '+showDate+'</div></div>';
   if(inWin) h += '<div style="font-size:11px;font-weight:800;color:#dc2626">UPDATING</div>';
   h += '</div>';
+  if(live && live.date && live.date !== biz){
+    var staleLbl = (function(){
+      var d=new Date(live.date+'T12:00:00');
+      return d.toLocaleDateString('en-US',{weekday:'short', month:'short', day:'numeric'});
+    })();
+    h += '<div style="font-size:11px;color:#b45309;margin:0 0 10px;background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:8px 10px">'
+      + 'Last Toast pull was <b>'+staleLbl+'</b>. Press <b>Refresh</b> for tonight\'s LIVE numbers.'
+      + '</div>';
+  } else if(!liveFresh){
+    h += '<div style="font-size:11px;color:var(--ink3);margin:0 0 10px">Press <b>Refresh</b> to pull tonight\'s Toast BS for all venues.</div>';
+  }
 
   if(!shows.length){
     h += '<div style="background:var(--card);border-radius:12px;padding:20px;color:var(--ink3)">No shows tonight across MILA / Casa Neos Beach Club / Lounge.</div>';
@@ -5402,6 +5424,16 @@ function checkDjSuggestion(){
     +budgetHtml;
 }
 
+function editVipNote(idx){
+  var r=SCHED[idx]; if(!r) return;
+  var cur=(r.vipNote||'');
+  var next=prompt('VIP note:', cur);
+  if(next===null) return;
+  r.vipNote=next.trim()||null;
+  if(typeof persistSchedShow==='function') persistSchedShow(r);
+  if(typeof clearPyMapCache==='function') clearPyMapCache();
+  go();
+}
 function useSuggestedFee(fee){
   var f=getFields();
   f.fee.value=fee;
