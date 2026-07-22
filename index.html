@@ -784,12 +784,13 @@ textarea#fldNote:focus{border-color:var(--blue)}
   <div id="view-leaderboard" style="display:none">
     <div class="pg-section" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div class="pg-title2">ROI Ranking</div>
-      <div style="display:flex;align-items:center;gap:8px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <span id="lbMeta" style="font-size:10px;color:var(--ink3)"></span>
         <input id="lbSearch" type="text" placeholder="Search DJ..." oninput="renderLeaderboard()"
           style="font-size:11px;padding:5px 9px;border:0.5px solid var(--rule);border-radius:var(--r);font-family:inherit;outline:none;width:160px">
       </div>
     </div>
+    <div id="lbSortBar" style="padding:0 16px 10px;display:flex;gap:6px;flex-wrap:wrap;align-items:center"></div>
     <div id="lbBody"></div>
   </div>
 
@@ -1838,6 +1839,20 @@ function realisticSuggestedFee(profile, venue, dateStr){
   }
   best=Math.max(500, Math.round(best/100)*100);
   return best;
+}
+/* Suggested fee for rankings:
+   - Beat % >= 50%: match avg fee paid (working — don't inflate)
+   - Beat % < 50%: judgment — fee supported by proven BS, never above avg paid */
+function leaderboardSuggestedFee(avgBS, avgFeePaid, beatRatePct){
+  var paid = avgFeePaid > 0 ? Math.round(avgFeePaid / 100) * 100 : null;
+  if(paid != null && beatRatePct >= 50) return paid;
+  var fair = cappedSuggestedFee(avgBS, avgFeePaid);
+  if(fair == null) return paid;
+  fair = Math.round(fair / 100) * 100;
+  if(paid == null) return fair;
+  /* Soft judgment: don't slash more than ~25% below avg paid in one step */
+  var floor = Math.round(paid * 0.75 / 100) * 100;
+  return Math.max(floor, Math.min(paid, fair));
 }
 function initBudget(){
   var venues=[];
@@ -2983,6 +2998,30 @@ function renderAllShows(){
    ROI RANKING   venue all-time, click DJ for full history
                                                                   */
 var _lbDJ = null; /* selected DJ for detail view */
+var _lbSort = { key: 'score', dir: 'desc' };
+var _lbPreset = 'score'; /* score | beat | roi | bestDj */
+
+function lbSortBy(key){
+  if(_lbSort.key === key) _lbSort.dir = _lbSort.dir === 'desc' ? 'asc' : 'desc';
+  else { _lbSort.key = key; _lbSort.dir = 'desc'; }
+  _lbPreset = null;
+  renderLeaderboard();
+}
+function lbApplyPreset(preset){
+  _lbPreset = preset;
+  if(preset === 'beat'){ _lbSort = { key: 'br', dir: 'desc' }; }
+  else if(preset === 'roi'){ _lbSort = { key: 'avgROI', dir: 'desc' }; }
+  else if(preset === 'bestDj'){ _lbSort = { key: 'bestDj', dir: 'desc' }; }
+  else { _lbSort = { key: 'score', dir: 'desc' }; _lbPreset = 'score'; }
+  renderLeaderboard();
+}
+function _lbSortArrow(key){
+  if(_lbSort.key !== key) return ' <span style="opacity:.35">&#8597;</span>';
+  return _lbSort.dir === 'desc' ? ' <span>&#9660;</span>' : ' <span>&#9650;</span>';
+}
+function _lbTh(label, key){
+  return '<th style="cursor:pointer;user-select:none" onclick="event.stopPropagation();lbSortBy(\''+key+'\')" title="Sort by '+label+'">'+label+_lbSortArrow(key)+'</th>';
+}
 
 function renderLeaderboard(){
   if(_lbDJ) { renderDJDetail(_lbDJ); return; }
@@ -3010,18 +3049,58 @@ function renderLeaderboard(){
     var avgFeePaid=Math.round(d.tFee/d.n);
     var br=d.meas?Math.round(d.beats/d.meas*100):0;
     var score=avgROI*(d.meas?d.beats/d.meas:0.5)*Math.log(d.n+1);
-    var fairFee=realisticSuggestedFee({name:d.dj,avg_bs:avgBS,avg_fee:avgFeePaid}, null, null) || cappedSuggestedFee(avgBS, avgFeePaid);
+    /* Best DJ: shows × beat% × fee footprint (established acts with volume + consistency) */
+    var bestDj = Math.log(d.n + 1) * (br / 100) * Math.log10((avgFeePaid || 0) + 100);
+    var fairFee=leaderboardSuggestedFee(avgBS, avgFeePaid, br);
     var venueList=Object.keys(d.venues).sort(function(a,b){return d.venues[b]-d.venues[a];});
-    return {dj:d.dj,n:d.n,beats:d.beats,meas:d.meas,avgROI:avgROI,br:br,score:score,
+    return {dj:d.dj,n:d.n,beats:d.beats,meas:d.meas,avgROI:avgROI,br:br,score:score,bestDj:bestDj,
       tFee:d.tFee,tBS:d.tBS,shows:d.shows,avgBS:avgBS,avgFeePaid:avgFeePaid,fairFee:fairFee,venues:venueList};
   });
-  list.sort(function(a,b){return b.score-a.score;});
+
+  var sortKey = _lbSort.key || 'score';
+  var dir = _lbSort.dir === 'asc' ? 1 : -1;
+  list.sort(function(a,b){
+    var av=a[sortKey], bv=b[sortKey];
+    if(av==null && bv==null) return 0;
+    if(av==null) return 1;
+    if(bv==null) return -1;
+    if(typeof av === 'string') return dir * String(av).localeCompare(String(bv));
+    if(av === bv){
+      /* tie-breakers */
+      if(a.br !== b.br) return dir * (a.br - b.br);
+      return dir * (a.n - b.n);
+    }
+    return dir * (av - bv);
+  });
   if(qs) list=list.filter(function(r){return r.dj.toUpperCase().indexOf(qs)>=0;});
   document.getElementById('lbMeta').textContent=list.length+' DJs across all venues (all time)   click a DJ for full history';
 
+  var bar = document.getElementById('lbSortBar');
+  if(bar){
+    function pill(id, label){
+      var on = _lbPreset === id;
+      return '<button type="button" onclick="lbApplyPreset(\''+id+'\')" style="font-size:10px;font-weight:700;padding:5px 10px;border-radius:999px;border:0.5px solid '+(on?'var(--ink)':'var(--rule)')+';background:'+(on?'var(--ink)':'var(--card)')+';color:'+(on?'#fff':'var(--ink2)')+';cursor:pointer;font-family:inherit">'+label+'</button>';
+    }
+    bar.innerHTML = '<span style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin-right:4px">Order</span>'
+      + pill('score','Default score')
+      + pill('beat','Best % Beat')
+      + pill('roi','Best Avg ROI')
+      + pill('bestDj','Best DJ')
+      + '<span style="font-size:10px;color:var(--ink3);margin-left:6px">or click any column header</span>';
+  }
+
   var h='<table class="shows-tbl"><thead><tr>'
-    +'<th>#</th><th>DJ</th><th>Venue(s)</th><th>Shows</th><th>Beat/Meas</th><th>Beat %</th>'
-    +'<th>Avg ROI</th><th>Avg BS/show</th><th>Avg Fee Paid</th><th>Suggested Fee</th><th>Total BS Act</th>'
+    +'<th>#</th>'
+    +_lbTh('DJ','dj')
+    +'<th>Venue(s)</th>'
+    +_lbTh('Shows','n')
+    +_lbTh('Beat/Meas','beats')
+    +_lbTh('Beat %','br')
+    +_lbTh('Avg ROI','avgROI')
+    +_lbTh('Avg BS/show','avgBS')
+    +_lbTh('Avg Fee Paid','avgFeePaid')
+    +_lbTh('Suggested Fee','fairFee')
+    +_lbTh('Total BS Act','tBS')
     +'</tr></thead><tbody>';
   list.forEach(function(r,i){
     var fairCls = r.fairFee && r.avgFeePaid && r.fairFee<r.avgFeePaid ? 'low' : '';
@@ -3031,6 +3110,9 @@ function renderLeaderboard(){
       var short=VENUE_SHORT[v]||v.slice(0,4).toUpperCase();
       return '<span class="lb-venue-badge" style="background:'+c.a+'1a;color:'+c.a+'" title="'+v+'">'+short+'</span>';
     }).join('') + '</div>';
+    var suggTitle = r.br >= 50
+      ? 'Beat % ≥ 50% → match avg fee paid'
+      : 'Beat % under 50% → judgment fee from proven BS (capped at avg paid)';
     h+='<tr class="lb-row" onclick="showDJDetail(\''+encodeURIComponent(r.dj)+'\')">';
     h+='<td style="color:var(--ink3);font-weight:700">'+(i+1)+'</td>';
     h+='<td class="td-dj lb-dj-link" style="font-weight:700">'+r.dj+'</td>';
@@ -3041,7 +3123,7 @@ function renderLeaderboard(){
     h+='<td class="'+(r.br>=60?'hit':'low')+'" style="font-weight:700">'+r.avgROI.toFixed(2)+'x</td>';
     h+='<td>'+$k(r.avgBS)+'</td>';
     h+='<td style="color:var(--ink3)">'+$k(r.avgFeePaid)+'</td>';
-    h+='<td class="'+fairCls+'" style="font-weight:800" title="Fair-value fee implied by this DJ has proven to deliver, using the standard fee tiers">'+$k(r.fairFee)+'</td>';
+    h+='<td class="'+fairCls+'" style="font-weight:800" title="'+suggTitle+'">'+$k(r.fairFee)+'</td>';
     h+='<td style="font-weight:700">'+$k(r.tBS)+'</td>';
     h+='</tr>';
   });
@@ -3074,7 +3156,7 @@ function renderDJDetail(djEnc){
   var tFee=shows.reduce(function(s,r){return s+(r.cost||0);},0);
   var avgBS=shows.length?Math.round(tBS/shows.length):0;
   var avgFeePaid=shows.length?Math.round(tFee/shows.length):0;
-  var suggFee=realisticSuggestedFee({name:djName,avg_bs:avgBS,avg_fee:avgFeePaid}, null, null) || cappedSuggestedFee(avgBS, avgFeePaid);
+  var suggFee=leaderboardSuggestedFee(avgBS, avgFeePaid, meas?Math.round(beats/meas*100):0);
 
   var h='<div style="padding:12px 16px;background:var(--card);border-bottom:0.5px solid var(--hair);display:flex;align-items:center;gap:16px;flex-wrap:wrap">';
   h+='<button onclick="_lbDJ=null;renderLeaderboard()" style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:var(--r);border:0.5px solid var(--rule);background:var(--card);cursor:pointer;font-family:inherit">&#8592; Rankings</button>';
@@ -5483,6 +5565,7 @@ function saveEvent(){
   if(_editIdx>=0){
     var prev=SCHED[_editIdx];
     if(prev){ rec.bs_a=prev.bs_a; rec.roi_a=prev.roi_a; rec.beat=prev.beat;
+      rec.vipNote=prev.vipNote||null;
       if(prev.bs_a&&prev._s!=='fut'&&prev._s!=='tbd') rec._s=prev._s; }
   }
   if(_editIdx>=0) SCHED[_editIdx]=rec; else SCHED.push(rec);
