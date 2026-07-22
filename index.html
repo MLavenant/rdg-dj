@@ -837,7 +837,7 @@ textarea#fldNote:focus{border-color:var(--blue)}
     <div class="pg-section" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div>
         <div class="pg-title2">&#9650; Forecast</div>
-        <div id="fcastMeta" style="font-size:10px;color:var(--ink3)">BS Actual = FourVenues Sales Overview export (Base price Accepted + Not completed)</div>
+        <div id="fcastMeta" style="font-size:10px;color:var(--ink3)">BS Actual = FourVenues Integrations API (price · Accepted + Not completed)</div>
       </div>
       <button type="button" class="btn-pdf no-print" onclick="exportViewPdf('forecast')">Export PDF</button>
     </div>
@@ -4506,7 +4506,7 @@ function renderForecast(venueIdx, view){
   }
 
   document.getElementById('fcastBody').innerHTML = h;
-  document.getElementById('fcastMeta').textContent = 'BS Actual = FourVenues Sales Overview export \u00b7 Results \u00b7 Pick up pace \u00b7 Projected sales \u00b7 Tables \u00b7 Weather';
+  document.getElementById('fcastMeta').textContent = 'BS Actual = FourVenues Integrations API \u00b7 Results \u00b7 Pick up pace \u00b7 Projected sales \u00b7 Tables \u00b7 Weather';
   try{
     var _wxEvts = (typeof events!=='undefined') ? events : FORECAST_DATA.filter(function(e){ return e.venue===curV; });
     _wxEnsureMounted(_wxEvts);
