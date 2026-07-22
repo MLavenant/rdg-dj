@@ -848,7 +848,10 @@ textarea#fldNote:focus{border-color:var(--blue)}
   <!-- LIVE (Toast BS night-of) -->
   <div id="view-live" style="display:none">
     <div class="pg-section" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-      <div class="pg-title2" style="color:#dc2626;margin:0"><span class="live-pulse"></span>LIVE</div>
+      <div>
+        <div class="pg-title2" style="color:#dc2626;margin:0"><span class="live-pulse"></span>LIVE</div>
+        <div style="font-size:10px;color:var(--ink3);margin-top:2px">All venues · night-of Toast BS (ignores venue filter)</div>
+      </div>
       <button type="button" id="liveRefreshBtn" onclick="refreshLive()" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;border:0.5px solid var(--rule);background:var(--card2);cursor:pointer;font-family:inherit">Refresh</button>
     </div>
     <div id="liveBody" style="padding:14px 16px"></div>
@@ -3800,7 +3803,7 @@ function refreshLive(){
 
   function pollUntilUpdated(tries){
     tries = tries || 0;
-    if(tries > 40){
+    if(tries > 45){
       done(false, 'Toast pull timed out — check Sanity / GitHub Actions Live Refresh.');
       return;
     }
@@ -3810,7 +3813,8 @@ function refreshLive(){
       done(req.status !== 'failed', req.message || (cur && cur !== prevAt ? 'Toast LIVE updated.' : 'Refresh finished.'));
       return;
     }
-    setTimeout(function(){ pollUntilUpdated(tries + 1); }, 3000);
+    // Faster poll — Firebase usually updates as soon as the worker finishes
+    setTimeout(function(){ pollUntilUpdated(tries + 1); }, 1200);
   }
 
   // Mark request in Firebase (Sanity + workers can see it)
@@ -3822,7 +3826,7 @@ function refreshLive(){
     }).catch(function(){});
   }
 
-  var kick = Promise.resolve();
+  var kick = Promise.resolve(null);
   if(url){
     kick = fetch(url.replace(/\/$/, '') + (url.indexOf('/live-refresh') >= 0 ? '' : '/live-refresh'), {
       method: 'POST',
@@ -3846,13 +3850,26 @@ function refreshLive(){
       body: JSON.stringify({ event_type: 'live-refresh' })
     }).then(function(r){
       if(r.status !== 204 && !r.ok) throw new Error('GitHub dispatch HTTP ' + r.status);
+      return { dispatched: true };
     });
   } else {
     done(false, 'Live Refresh not configured. Open Sanity → set liveRefreshUrl or githubDispatchToken.');
     return;
   }
 
-  kick.then(function(){
+  kick.then(function(result){
+    // HTTP endpoint already finished the Toast pull — no long wait
+    if(result && result.payload && result.payload.date){
+      window._liveNight = result.payload;
+      done(!!result.ok, result.payload && result.message
+        ? result.message
+        : (result.ok ? 'Toast LIVE updated (all venues).' : 'Toast pull finished with errors.'));
+      return;
+    }
+    if(result && result.ok === false && result.error){
+      done(false, 'Toast pull failed: ' + result.error);
+      return;
+    }
     pollUntilUpdated(0);
   }).catch(function(err){
     done(false, 'Could not start Toast pull: ' + (err && err.message ? err.message : err));
@@ -3868,30 +3885,49 @@ function renderLive(animate){
   var inWin=_liveWindowActive();
   var showDate = (live && live.date) ? live.date : biz;
 
+  // LIVE is always all venues for the night — ignore sidebar venue selection (curV)
   var shows = SCHED.filter(function(r){
     if(r.d!==showDate) return false;
     if(r._s==='empty') return false;
     var dj=String(r.dj||'').replace(/\?+/g,'').trim();
     return !!dj && dj.toUpperCase()!=='TBD';
-  }).sort(function(a,b){
+  });
+  // Also surface any Toast live rows that aren't in SCHED yet
+  if(live && live.rows && live.rows.length){
+    live.rows.forEach(function(row){
+      if(!row || row.date!==showDate) return;
+      var already = shows.some(function(r){
+        return (r.v||r.venue)===row.venue && String(r.dj||'')===String(row.dj||'');
+      });
+      if(already) return;
+      var dj=String(row.dj||'').replace(/\?+/g,'').trim();
+      if(!dj || dj.toUpperCase()==='TBD') return;
+      shows.push({
+        v: row.venue, venue: row.venue, d: row.date, dj: row.dj,
+        fee: row.fee, cost: row.fee, bs_m: row.bs_m, bs_a: row.bs_a,
+        roi_t: row.roi_t, roi_a: row.roi_a, _s: 'fut'
+      });
+    });
+  }
+  shows.sort(function(a,b){
     var va=(a.v||a.venue||'').localeCompare(b.v||b.venue||'');
     if(va) return va;
     return (a.dj||'').localeCompare(b.dj||'');
   });
 
   var h='';
-  // Simple night label only ? no status essay
   var nightLabel = (function(){
     var d=new Date(showDate+'T12:00:00');
     return d.toLocaleDateString('en-US',{weekday:'short', month:'short', day:'numeric'});
   })();
   h += '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap">';
-  h += '<div style="font-size:15px;font-weight:900">'+nightLabel+'</div>';
+  h += '<div><div style="font-size:15px;font-weight:900">'+nightLabel+'</div>'
+    + '<div style="font-size:11px;color:var(--ink3);margin-top:2px">All venues · night of '+showDate+'</div></div>';
   if(inWin) h += '<div style="font-size:11px;font-weight:800;color:#dc2626">UPDATING</div>';
   h += '</div>';
 
   if(!shows.length){
-    h += '<div style="background:var(--card);border-radius:12px;padding:20px;color:var(--ink3)">No shows tonight.</div>';
+    h += '<div style="background:var(--card);border-radius:12px;padding:20px;color:var(--ink3)">No shows tonight across MILA / Casa Neos Beach Club / Lounge.</div>';
     el.innerHTML=h;
     return;
   }
