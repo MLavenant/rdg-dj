@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RDG DJ Dashboard v3.3</title>
+<title>RDG DJ Dashboard v3.4</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -459,9 +459,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 /* DJ column ? narrower and clickable */
 .sc-dj{width:160px!important;min-width:140px!important;max-width:180px!important}
 .sc-dj-cell{font-size:11px;padding:4px 6px!important;max-width:180px;overflow:hidden}
-.dj-clickname{display:block;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}.sc-beat .dj-clickname,.dj-clickname.hit{color:var(--beat)!important}.sc-miss .dj-clickname,.dj-clickname.low{color:var(--miss)!important}.dj-clickname.near,.sc-miss .dj-clickname.near,.sc-beat .dj-clickname.near{color:var(--amb)!important}
+.dj-clickname{display:block;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.dj-clickname.hit{color:var(--beat)!important}
+.dj-clickname.near{color:var(--amb)!important}
+.dj-clickname.low{color:var(--miss)!important}
 .dj-fee-inline{display:block;font-size:9px;color:var(--ink3);margin-top:1px}
-.sc-dj-cell:hover .dj-clickname{color:var(--blue);text-decoration:underline}
+.sc-dj-cell:hover .dj-clickname{text-decoration:underline}
+.sc-tone-near .sc-dj-cell{border-left:3px solid var(--amb)!important}
+.sc-tone-hit .sc-dj-cell{border-left:3px solid var(--beat)!important}
+.sc-tone-low .sc-dj-cell{border-left:3px solid var(--miss)!important}
 /* Budget KPI */
 .bgt-kpi{flex:1;padding:11px 14px;border-right:0.5px solid var(--hair);min-width:100px}
 .bgt-kpi:last-child{border-right:none}
@@ -1180,18 +1186,29 @@ function roiTone(actual, target){
   var a=Math.round(+actual*10)/10;
   var t=Math.round(+target*10)/10;
   if(a > t) return 'hit';
-  if(a >= t - 0.1) return 'near';
+  if(a >= t - 0.1) return 'near'; /* equal or within 0.1x below = gold */
   return 'low';
 }
-/* One shared tone for DJ name + BS Actual + ROI Act (ROI-space, never diverge) */
+/* Shared tone for DJ name + BS Actual + ROI Act � compare the same 1-decimal ROI the user sees */
 function perfTone(bs_a, bs_m, fee, roi_a, roi_t){
   var feeN = fee != null ? +fee : 0;
-  if(feeN > 0 && bs_a != null && !isNaN(+bs_a)){
-    var ra = roi_a != null && !isNaN(+roi_a) ? +roi_a : (+bs_a / feeN);
-    var rt = roi_t != null && !isNaN(+roi_t) ? +roi_t : (bs_m != null && !isNaN(+bs_m) ? (+bs_m / feeN) : null);
-    return roiTone(ra, rt);
-  }
+  var ra = null, rt = null;
+  if(roi_a != null && !isNaN(+roi_a)) ra = +roi_a;
+  else if(feeN > 0 && bs_a != null && !isNaN(+bs_a)) ra = +bs_a / feeN;
+  if(roi_t != null && !isNaN(+roi_t)) rt = +roi_t;
+  else if(feeN > 0 && bs_m != null && !isNaN(+bs_m)) rt = +bs_m / feeN;
+  if(ra != null && rt != null) return roiTone(ra, rt);
   return bsTone(bs_a, bs_m, fee);
+}
+function toneColor(cls){
+  if(cls==='hit') return 'var(--beat)';
+  if(cls==='near') return 'var(--amb)';
+  if(cls==='low') return 'var(--miss)';
+  return '';
+}
+function toneStyle(cls){
+  var c=toneColor(cls);
+  return c ? ('color:'+c+'!important') : '';
 }
 /* BS Actual color � same near band as ROI (0.1x of fee in $), so Calussa etc. match gold across columns */
 function bsTone(actual, target, fee){
@@ -2802,7 +2819,7 @@ function openMonthSummary(mo){
   var br=perf.measured?Math.round(perf.beats/perf.measured*100):null;
   var rowsHtml=perf.shows.map(function(x){
     var dt=new Date(x.d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-    var st=x._s==='beat'?'Beat':x._s==='miss'?'Miss':x._s==='fut'?'Upcoming':x._s==='nd'?'No actual':(x._s||'—');
+    var st=x._s==='beat'?'Beat':x._s==='miss'?'Miss':x._s==='fut'?'Upcoming':x._s==='nd'?'No actual':(x._s||'�');
     return '<tr>'
       +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair);white-space:nowrap;color:var(--ink3)">'+dt+'</td>'
       +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair);font-weight:800" class="'+x.bTone+'">'+(djLabel(x.dj)||'TBD')+'</td>'
@@ -2819,14 +2836,14 @@ function openMonthSummary(mo){
   modal.className='modal-bg';
   modal.onclick=function(ev){ if(ev.target===modal) closeMonthSummary(); };
   modal.innerHTML='<div class="modal" style="width:min(720px,96vw)" onclick="event.stopPropagation()">'
-    +'<div class="modal-hd"><h3>'+title+' · '+curV+'</h3>'
+    +'<div class="modal-hd"><h3>'+title+' � '+curV+'</h3>'
     +'<button class="modal-close" onclick="closeMonthSummary()">&#10005;</button></div>'
     +'<div class="modal-body" style="gap:12px">'
     +'<div style="display:flex;gap:10px;flex-wrap:wrap">'
     +'<div style="flex:1;min-width:110px;background:var(--card2);border-radius:10px;padding:10px 12px"><div style="font-size:9px;font-weight:800;color:var(--ink3);text-transform:uppercase">BS Actual</div><div style="font-size:20px;font-weight:900">'+$k(perf.tBS)+'</div></div>'
     +'<div style="flex:1;min-width:110px;background:var(--card2);border-radius:10px;padding:10px 12px"><div style="font-size:9px;font-weight:800;color:var(--ink3);text-transform:uppercase">BS Target</div><div style="font-size:20px;font-weight:900">'+$k(perf.tBSM)+'</div></div>'
-    +'<div style="flex:1;min-width:110px;background:var(--card2);border-radius:10px;padding:10px 12px"><div style="font-size:9px;font-weight:800;color:var(--ink3);text-transform:uppercase">Beat</div><div style="font-size:20px;font-weight:900" class="'+(br!=null&&br>=60?'beat':'miss')+'">'+(perf.measured?perf.beats+'/'+perf.measured:'—')+(br!=null?' <span style="font-size:12px">('+br+'%)</span>':'')+'</div></div>'
-    +'<div style="flex:1;min-width:110px;background:var(--card2);border-radius:10px;padding:10px 12px"><div style="font-size:9px;font-weight:800;color:var(--ink3);text-transform:uppercase">Avg ROI</div><div style="font-size:20px;font-weight:900;color:var(--blue)">'+(perf.avgR!=null?perf.avgR.toFixed(1)+'x':'—')+'</div></div>'
+    +'<div style="flex:1;min-width:110px;background:var(--card2);border-radius:10px;padding:10px 12px"><div style="font-size:9px;font-weight:800;color:var(--ink3);text-transform:uppercase">Beat</div><div style="font-size:20px;font-weight:900" class="'+(br!=null&&br>=60?'beat':'miss')+'">'+(perf.measured?perf.beats+'/'+perf.measured:'�')+(br!=null?' <span style="font-size:12px">('+br+'%)</span>':'')+'</div></div>'
+    +'<div style="flex:1;min-width:110px;background:var(--card2);border-radius:10px;padding:10px 12px"><div style="font-size:9px;font-weight:800;color:var(--ink3);text-transform:uppercase">Avg ROI</div><div style="font-size:20px;font-weight:900;color:var(--blue)">'+(perf.avgR!=null?perf.avgR.toFixed(1)+'x':'�')+'</div></div>'
     +'</div>'
     +'<div style="overflow:auto;max-height:55vh;border:0.5px solid var(--hair);border-radius:10px">'
     +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
@@ -2946,23 +2963,23 @@ function renderCal(){
         var nm   = djLabel(r.dj);
         var idx  = SCHED.indexOf(r);
         var py = (ri===0 ? (pyMap[ds]||pyBlank) : null);
-
-        h+='<tr class="'+dc+' sc-'+st+'" data-cal-ds="'+ds+'" ondragover="swDragOver(event)" ondragleave="swDragLeave(event)" ondrop="swDropOnDate(event,\''+ds+'\')">';
-        if(ri===0){
-          h+='<td class="sc-ev-cell" rowspan="'+nrows+'">'+_evLabelHtml(evLabel, ds)+'</td>';
-          h+='<td class="sc-date-cell" rowspan="'+nrows+'">'
-            +dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
-        }
-        /* current year columns */
         var tgt=showTargets(r);
         var bsM=tgt.bs_m, roiT=tgt.roi_t;
         var fee=r.fee||r.cost;
         var bCls = perfTone(r.bs_a, bsM, fee, r.roi_a, roiT);
         var rCls = bCls;
+        var tSty = toneStyle(bCls);
+
+        h+='<tr class="'+dc+' sc-'+st+(bCls?' sc-tone-'+bCls:'')+'" data-cal-ds="'+ds+'" ondragover="swDragOver(event)" ondragleave="swDragLeave(event)" ondrop="swDropOnDate(event,\''+ds+'\')">';
+        if(ri===0){
+          h+='<td class="sc-ev-cell" rowspan="'+nrows+'">'+_evLabelHtml(evLabel, ds)+'</td>';
+          h+='<td class="sc-date-cell" rowspan="'+nrows+'">'
+            +dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
+        }
         h+='<td class="sc-dj-cell" draggable="true" data-show-idx="'+idx+'" '
           +'ondragstart="showDragStart(event)" ondragend="swDragEnd(event)" '
-          +'onclick="openEditModal('+idx+')" style="cursor:grab" title="Drag to move date � click to edit">'
-          +'<b class="dj-clickname '+bCls+'">'+nm+'</b>'
+          +'onclick="openEditModal('+idx+')" style="cursor:grab" title="Drag to move date / click to edit">'
+          +'<b class="dj-clickname '+bCls+'"'+(tSty?' style="'+tSty+'"':'')+'>'+nm+'</b>'
           +'<span class="dj-fee-inline">'+$k(fee)+'</span>'
           +(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')
           +'</td>';
@@ -2979,10 +2996,10 @@ function renderCal(){
         h+='</td>';
         h+='<td class="sc-num">'+$k(fee)+'</td>';
         h+='<td class="sc-num">'+$k(bsM)+'</td>';
-        h+='<td class="sc-num '+bCls+'"><b>'+$k(r.bs_a)+'</b>'
+        h+='<td class="sc-num '+bCls+'"'+(tSty?' style="'+tSty+'"':'')+'><b>'+$k(r.bs_a)+'</b>'
           +(bCls?'<div class="sc-beat-icon">'+bsToneIcon(bCls)+'</div>':'')+'</td>';
         h+='<td class="sc-num">'+rx(roiT)+'</td>';
-        h+='<td class="sc-num '+rCls+'"><b>'+rx(r.roi_a)+'</b>'
+        h+='<td class="sc-num '+rCls+'"'+(tSty?' style="'+tSty+'"':'')+'><b>'+rx(r.roi_a)+'</b>'
           +(rCls?'<div class="sc-beat-icon">'+roiToneIcon(rCls)+'</div>':'')+'</td>';
         if(ri===0){
           h+='<td class="sc-sep" rowspan="'+nrows+'"></td>';
@@ -3036,7 +3053,8 @@ function renderCalGrid(yr,mo,mm,days,showMap){
       if(bsM||r.bs_a){
         h+='<div class="cg-chip-nums">';
         h+='<span>'+$k(bsM)+'</span>';
-        h+='<span class="'+perfTone(r.bs_a, bsM, (r.fee||r.cost), r.roi_a, (typeof showTargets==='function'?showTargets(r).roi_t:r.roi_t))+'">'+$k(r.bs_a)+'</span>';
+        var gTone=perfTone(r.bs_a, bsM, (r.fee||r.cost), r.roi_a, (typeof showTargets==='function'?showTargets(r).roi_t:r.roi_t)); var gSty=toneStyle(gTone);
+        h+='<span class="'+gTone+'"'+(gSty?' style="'+gSty+'"':'')+'>'+$k(r.bs_a)+'</span>';
         h+='</div>';
       } else if(r.fee||r.cost) {
         h+='<div class="cg-chip-nums"><span>'+$k(r.fee||r.cost)+'</span></div>';
@@ -3088,11 +3106,11 @@ function renderCalYear(){
         var idx=SCHED.indexOf(r);
         h+='<div class="cy-row cy-row-'+st+(isToday?' cy-row-today':'')+'" onclick="openEditModal('+idx+')">';
         h+='<span class="cy-daynum">'+(ri===0?day:'')+'</span>';
-        var cyTgtObj=showTargets(r); var cyFee=r.fee||r.cost; var cyTone=perfTone(r.bs_a, cyTgtObj.bs_m, cyFee, r.roi_a, cyTgtObj.roi_t);
-        h+='<span class="cy-djname '+cyTone+'">'+nm+'</span>';
+        var cyTgtObj=showTargets(r); var cyFee=r.fee||r.cost; var cyTone=perfTone(r.bs_a, cyTgtObj.bs_m, cyFee, r.roi_a, cyTgtObj.roi_t); var cySty=toneStyle(cyTone);
+        h+='<span class="cy-djname '+cyTone+'"'+(cySty?' style="'+cySty+'"':'')+'>'+nm+'</span>';
         h+='<span class="cy-fee">'+$k(cyFee)+'</span>';
         h+='<span class="cy-target">'+$k(cyTgtObj.bs_m)+'</span>';
-        h+='<span class="cy-actual '+cyTone+'">'+$k(r.bs_a)+'</span>';
+        h+='<span class="cy-actual '+cyTone+'"'+(cySty?' style="'+cySty+'"':'')+'>'+$k(r.bs_a)+'</span>';
         h+='</div>';
       });
     }
