@@ -4267,9 +4267,9 @@ function renderSystem(){
     ? '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">forecastLive: <b style="color:var(--ink2)">'+forecastLive.updatedAt+'</b>'
       + (forecastLive.source ? ' � '+forecastLive.source : '') + '</div>'
     : '';
-  h += card('FourVenues (Forecast BS Actual)', 'Daily ~8:30 AM ET � Integrations API (laptop off)', fv, 36, fvExtra);
+  h += card('FourVenues (Forecast BS Actual)', 'Daily ~8:30 AM ET (same window as Toast) · Integrations API · laptop off', fv, 36, fvExtra);
 
-  h += card('Toast BS Actual (calendar / history)', 'Wed�Sun ~8:30 AM ET � GitHub Actions ? GitHub Pages', toast, 84, '');
+  h += card('Toast BS Actual (calendar / history)', 'Wed-Sun ~8:30 AM ET · GitHub Actions → GitHub Pages', toast, 84, '');
 
   var liveExtra = '';
   if(liveNight && liveNight.updatedAt){
