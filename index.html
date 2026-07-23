@@ -126,6 +126,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .dj-name{font-size:11px;font-weight:700}
 .sc-empty-day{color:var(--ink4)}
 .hit{color:var(--beat)!important;font-weight:700}.low{color:var(--miss)!important}
+.near{color:var(--amb)!important;font-weight:700}
 .kc-b{color:var(--blue)}.beat{color:var(--beat)}.miss{color:var(--miss)}
 /* PY columns */
 .sc-py{background:rgba(0,0,0,.01)}
@@ -842,7 +843,7 @@ textarea#fldNote:focus{border-color:var(--blue)}
     <div class="pg-section" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div>
         <div class="pg-title2">&#9650; Forecast</div>
-        <div id="fcastMeta" style="font-size:10px;color:var(--ink3)">BS Actual = FourVenues Integrations API (price ¬∑ Accepted + Not completed)</div>
+        <div id="fcastMeta" style="font-size:10px;color:var(--ink3)">BS Actual = FourVenues Integrations API (price ù Accepted + Not completed)</div>
       </div>
       <button type="button" class="btn-pdf no-print" onclick="exportViewPdf('forecast')">Export PDF</button>
     </div>
@@ -854,7 +855,7 @@ textarea#fldNote:focus{border-color:var(--blue)}
     <div class="pg-section" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div>
         <div class="pg-title2" style="color:#dc2626;margin:0"><span class="live-pulse"></span>LIVE</div>
-        <div style="font-size:10px;color:var(--ink3);margin-top:2px">All venues ¬∑ night-of Toast BS (ignores venue filter)</div>
+        <div style="font-size:10px;color:var(--ink3);margin-top:2px">All venues ù night-of Toast BS (ignores venue filter)</div>
       </div>
       <button type="button" id="liveRefreshBtn" onclick="refreshLive()" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;border:0.5px solid var(--rule);background:var(--card2);cursor:pointer;font-family:inherit">Refresh</button>
     </div>
@@ -879,7 +880,7 @@ textarea#fldNote:focus{border-color:var(--blue)}
   <div id="view-system" style="display:none">
     <div class="pg-section">
       <div class="pg-title2">Sanity</div>
-      <div style="font-size:10px;color:var(--ink3);margin-top:2px">What we pull, when it runs, and whether it‚Äôs healthy</div>
+      <div style="font-size:10px;color:var(--ink3);margin-top:2px">What we pull, when it runs, and whether itùs healthy</div>
     </div>
     <div id="systemBody" style="padding:14px 16px;display:flex;flex-direction:column;gap:14px"></div>
   </div>
@@ -911,8 +912,8 @@ textarea#fldNote:focus{border-color:var(--blue)}
       <div id="fldFeeTargets" style="display:none;margin:0 0 10px;padding:10px 12px;background:var(--card2);border-radius:10px;border:0.5px solid var(--hair)">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin-bottom:6px">From DJ fee (venue ROI rules)</div>
         <div style="display:flex;gap:16px;flex-wrap:wrap">
-          <div><div style="font-size:9px;color:var(--ink3);text-transform:uppercase">BS Target</div><div id="fldFeeBsTgt" style="font-size:16px;font-weight:900;color:#7D5A00">‚Äî</div></div>
-          <div><div style="font-size:9px;color:var(--ink3);text-transform:uppercase">ROI Target</div><div id="fldFeeRoiTgt" style="font-size:16px;font-weight:900">‚Äî</div></div>
+          <div><div style="font-size:9px;color:var(--ink3);text-transform:uppercase">BS Target</div><div id="fldFeeBsTgt" style="font-size:16px;font-weight:900;color:#7D5A00">ù</div></div>
+          <div><div style="font-size:9px;color:var(--ink3);text-transform:uppercase">ROI Target</div><div id="fldFeeRoiTgt" style="font-size:16px;font-weight:900">ù</div></div>
         </div>
       </div>
       <div class="dj-sugg-box" id="fldDjSuggest"></div>
@@ -998,7 +999,7 @@ function buildIdx(arr) {
 }
 
 /* Prior-year match for PY columns:
-   Keep the same weekday (Sun‚ÜíSun, Sat‚ÜíSat). Exact calendar anniversary only
+   Keep the same weekday (Sun?Sun, Sat?Sat). Exact calendar anniversary only
    when that date is also the same weekday; otherwise closest same-weekday
    show within 3 days. Each prior-year show used at most once per month. */
 function _ymdLocal(d){
@@ -1058,7 +1059,7 @@ function buildPyMapForMonth(venue, yr, mm){
     return true;
   }
 
-  /* Pass 1 ‚Äî exact calendar anniversary only when weekday also matches */
+  /* Pass 1 ù exact calendar anniversary only when weekday also matches */
   for(var day=1; day<=days; day++){
     var ds=yr+'-'+mm+'-'+(day<10?'0':'')+day;
     var pyDate=pyYear+'-'+ds.slice(5);
@@ -1066,7 +1067,7 @@ function buildPyMapForMonth(venue, yr, mm){
     claim(ds, _schedShowOn(venue, pyDate));
   }
 
-  /* Pass 2 ‚Äî same weekday within 3 days of anniversary, unused shows only */
+  /* Pass 2 ù same weekday within 3 days of anniversary, unused shows only */
   for(var day2=1; day2<=days; day2++){
     var ds2=yr+'-'+mm+'-'+(day2<10?'0':'')+day2;
     if(map[ds2]) continue;
@@ -1118,7 +1119,7 @@ function resolvePyFields(venue, dateStr, baked){
     var map=buildPyMapForMonth(venue, parseInt(dateStr.slice(0,4),10), dateStr.slice(5,7));
     if(map[dateStr] && map[dateStr].py_dj) return map[dateStr];
   }
-  /* Do not fall back to baked py_* ‚Äî it caused duplicate PY names across days. */
+  /* Do not fall back to baked py_* ù it caused duplicate PY names across days. */
   return {py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
 }
 function _pyCellsHtml(py, rowspan){
@@ -1134,7 +1135,7 @@ function _pyCellsHtml(py, rowspan){
   h+='<td class="sc-num py-dim"'+rs+'>'+$k(py.py_bs_m)+'</td>';
   h+='<td class="sc-num '+pyBCls+'"'+rs+'><b>'+$k(py.py_bs_a)+'</b></td>';
   h+='<td class="sc-num py-dim"'+rs+'>'+rx(py.py_roi_t)+'</td>';
-  h+='<td class="sc-num '+pyBCls+'"'+rs+'><b>'+rx(py.py_roi_a)+'</b></td>';
+  h+='<td class="sc-num '+roiTone(py.py_roi_a, py.py_roi_t)+'"'+rs+'><b>'+rx(py.py_roi_a)+'</b></td>';
   return h;
 }
 
@@ -1154,6 +1155,21 @@ function $kv(n) {
   return s + '$' + Math.round(a/1000) + 'K';
 }
 function rx(n) { return n != null ? (+n).toFixed(1) + 'x' : '-'; }
+/* ROI color vs target (1-decimal): above = green, equal or within 0.1 below = orange, else red */
+function roiTone(actual, target){
+  if(actual==null||target==null||isNaN(+actual)||isNaN(+target)) return '';
+  var a=Math.round(+actual*10)/10;
+  var t=Math.round(+target*10)/10;
+  if(a > t) return 'hit';
+  if(a >= t - 0.1) return 'near';
+  return 'low';
+}
+function roiToneIcon(cls){
+  if(cls==='hit') return '&#9650;';
+  if(cls==='near') return '&#9679;';
+  if(cls==='low') return '&#9660;';
+  return '';
+}
 
 /*    Get venue-year shows                                            */
 function getShows(yr, venue, mm) {
@@ -1383,7 +1399,7 @@ function renderKPIs() {
   if(curView==='leaderboard'||curView==='budget'){
     clearGlobalCalChrome();
     if(curView==='leaderboard'){
-      document.getElementById('pgSub').innerHTML = '<span>ROI Ranking ¬∑ all venues</span>';
+      document.getElementById('pgSub').innerHTML = '<span>ROI Ranking ù all venues</span>';
     } else {
       document.getElementById('pgSub').innerHTML = '<span>Budget Planner</span>';
     }
@@ -1572,13 +1588,13 @@ function monthAgg(mm){
   return {n:n,tFee:tFee,roi_t:roi_t,projBS:tProjBS||null,bsTgt:tBSTgt||null,tPY:tPY,shows:shows};
 }
 
-/* Display DJ name as stored ‚Äî ? / ??? / ???? are valid and shown as entered. */
+/* Display DJ name as stored ù ? / ??? / ???? are valid and shown as entered. */
 function djLabel(dj, empty){
   var s=String(dj==null?'':dj).trim();
   if(!s) return empty!=null?empty:'TBD';
   return s;
 }
-/* Live beat/ROI from SCHED ‚Äî same rules as ROI Ranking (not baked DJ_PROFILES). */
+/* Live beat/ROI from SCHED ù same rules as ROI Ranking (not baked DJ_PROFILES). */
 function liveDjPerfStats(name){
   var q=String(name||'').replace(/\?+/g,'').trim().toUpperCase();
   if(!q) return null;
@@ -1610,7 +1626,7 @@ function djProj(name, fee){
   var raw=String(name||'').trim();
   if(!raw) return {bs:null,roi:null,p:null};
   var q=raw.replace(/\?+/g,'').trim().toUpperCase(), p=null;
-  /* Pure placeholders like ???? ‚Äî no profile lookup, but name is valid */
+  /* Pure placeholders like ???? ù no profile lookup, but name is valid */
   if(!q) return {bs:null,roi:null,p:null};
   for(var i=0;i<DJ_PROFILES.length;i++){
     if(DJ_PROFILES[i].name===q){p=DJ_PROFILES[i];break;}
@@ -1920,8 +1936,8 @@ function realisticSuggestedFee(profile, venue, dateStr){
   return best;
 }
 /* Suggested fee for rankings:
-   - Beat % >= 50%: match avg fee paid (working ‚Äî don't inflate)
-   - Beat % < 50%: judgment ‚Äî fee supported by proven BS, never above avg paid */
+   - Beat % >= 50%: match avg fee paid (working ù don't inflate)
+   - Beat % < 50%: judgment ù fee supported by proven BS, never above avg paid */
 function leaderboardSuggestedFee(avgBS, avgFeePaid, beatRatePct){
   var paid = avgFeePaid > 0 ? Math.round(avgFeePaid / 100) * 100 : null;
   if(paid != null && beatRatePct >= 50) return paid;
@@ -2136,7 +2152,7 @@ function renderYearGrid(){
   var ytPct = ytTotal ? Math.round(ytMeasured/ytTotal*100) : 0;
 
   document.getElementById('budgetMeta').textContent=bgtVenue+'   '+bgtYear+' budget';
-  /* Top KPI strip removed ‚Äî Budget stays focused on the planner grid */
+  /* Top KPI strip removed ù Budget stays focused on the planner grid */
   var bKpiEl=document.getElementById('budgetKPIs');
   if(bKpiEl){ bKpiEl.innerHTML=''; bKpiEl.style.display='none'; }
 
@@ -2310,7 +2326,7 @@ function renderMonthDrill(mm){
       html+='<div><input class="bgtm-fi" type="number" min="0" placeholder="Enter fee" value="'+(fee||'')+'" data-si="'+si+'"></div>';
       html+='<div style="font-size:10px;color:var(--ink3)">'+(bpy.py_dj||'-')+''+pyB+'</div>';
       html+='<div class="'+pyBCls+'" style="font-weight:600">'+(bpy.py_bs_a?$m(bpy.py_bs_a):'-')+'</div>';
-      html+='<div class="'+pyBCls+'">'+(bpy.py_roi_a!=null?Number(bpy.py_roi_a).toFixed(1)+'x':'-')+'</div>';
+      html+='<div class="'+roiTone(bpy.py_roi_a, bpy.py_roi_t)+'">'+(bpy.py_roi_a!=null?Number(bpy.py_roi_a).toFixed(1)+'x':'-')+'</div>';
       html+='<div class="'+pCls+'" style="font-weight:800">'+(projBSrow?$m(projBSrow):'-')+'</div>';
       html+='<div style="color:var(--blue);font-weight:600">'+(projBSrow&&fee?+(projBSrow/fee).toFixed(2)+'x':'-')+'</div>';
       html+='<div style="font-size:9px;color:var(--ink3)">'+(r.ev||'')+'</div>';
@@ -2603,7 +2619,7 @@ var SCHED_BAKED = SCHED.map(function(r){ return Object.assign({},r); }); // immu
     if(meta && live && live.updatedAt){
       try{
         var when = new Date(live.updatedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-        meta.textContent = 'BS Actual = FourVenues live ('+when+') ¬∑ '+(live.source||'export math')+' ¬∑ synced for all users';
+        meta.textContent = 'BS Actual = FourVenues live ('+when+') ù '+(live.source||'export math')+' ù synced for all users';
       }catch(e){}
     }
   });
@@ -2805,7 +2821,7 @@ function renderCal(){
         var nm   = djLabel(r.dj);
         var idx  = SCHED.indexOf(r);
         var bCls = r.bs_a&&r.bs_m ? (r.bs_a>=r.bs_m?'hit':'low') : '';
-        var rCls = r.roi_a&&r.roi_t ? (r.roi_a>=r.roi_t?'hit':'low') : '';
+        var rCls = roiTone(r.roi_a, r.roi_t);
         var py = (ri===0 ? (pyMap[ds]||pyBlank) : null);
 
         h+='<tr class="'+dc+' sc-'+st+'" data-cal-ds="'+ds+'" ondragover="swDragOver(event)" ondragleave="swDragLeave(event)" ondrop="swDropOnDate(event,\''+ds+'\')">';
@@ -2817,7 +2833,7 @@ function renderCal(){
         /* current year columns */
         h+='<td class="sc-dj-cell" draggable="true" data-show-idx="'+idx+'" '
           +'ondragstart="showDragStart(event)" ondragend="swDragEnd(event)" '
-          +'onclick="openEditModal('+idx+')" style="cursor:grab" title="Drag to move date ¬∑ click to edit">'
+          +'onclick="openEditModal('+idx+')" style="cursor:grab" title="Drag to move date ù click to edit">'
           +'<b class="dj-clickname '+(st==='beat'?'hit':st==='miss'?'low':'')+'">'+nm+'</b>'
           +'<span class="dj-fee-inline">'+$k(r.fee||r.cost)+'</span>'
           +(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')
@@ -2831,7 +2847,7 @@ function renderCal(){
         var tgt=showTargets(r);
         var bsM=tgt.bs_m, roiT=tgt.roi_t;
         bCls = r.bs_a&&bsM ? (r.bs_a>=bsM?'hit':'low') : '';
-        rCls = r.roi_a&&roiT ? (r.roi_a>=roiT?'hit':'low') : '';
+        rCls = roiTone(r.roi_a, roiT);
         var vipTxt=(r.vipNote||'').trim();
         var vipEsc=vipTxt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
         h+='<td class="sc-vip" onclick="event.stopPropagation()">';
@@ -2843,7 +2859,7 @@ function renderCal(){
           +(bCls?'<div class="sc-beat-icon">'+(bCls==='hit'?'&#9650;':'&#9660;')+'</div>':'')+'</td>';
         h+='<td class="sc-num">'+rx(roiT)+'</td>';
         h+='<td class="sc-num '+rCls+'"><b>'+rx(r.roi_a)+'</b>'
-          +(rCls?'<div class="sc-beat-icon">'+(rCls==='hit'?'&#9650;':'&#9660;')+'</div>':'')+'</td>';
+          +(rCls?'<div class="sc-beat-icon">'+roiToneIcon(rCls)+'</div>':'')+'</td>';
         if(ri===0){
           h+='<td class="sc-sep" rowspan="'+nrows+'"></td>';
           h+=_pyCellsHtml(py||pyBlank, nrows);
@@ -3052,7 +3068,7 @@ function renderAllShows(){
     +'</tr></thead><tbody>';
   recs.forEach(function(r){
     var bCls=r.bs_a&&r.bs_m?(r.bs_a>=r.bs_m?'hit':'low'):'';
-    var rCls=r.roi_a&&r.roi_t?(r.roi_a>=r.roi_t?'hit':'low'):'';
+    var rCls=roiTone(r.roi_a, r.roi_t);
     var dt=new Date(r.d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
     h+='<tr>';
     h+='<td class="td-dt">'+dt+'</td>';
@@ -3083,7 +3099,7 @@ function lbSortBy(key){
 }
 function _lbSortMark(key){
   if(_lbSort.key !== key) return '';
-  return _lbSort.dir === 'desc' ? ' ‚ñæ' : ' ‚ñ¥';
+  return _lbSort.dir === 'desc' ? ' ?' : ' ?';
 }
 function _lbTh(label, key){
   return '<th style="cursor:pointer;user-select:none" onclick="event.stopPropagation();lbSortBy(\''+key+'\')" title="Sort by '+label+'">'+label+_lbSortMark(key)+'</th>';
@@ -3163,8 +3179,8 @@ function renderLeaderboard(){
       return '<span class="lb-venue-badge" style="background:'+c.a+'1a;color:'+c.a+'" title="'+v+'">'+short+'</span>';
     }).join('') + '</div>';
     var suggTitle = r.br >= 50
-      ? 'Beat % ‚â• 50% ‚Üí match avg fee paid'
-      : 'Beat % under 50% ‚Üí judgment fee from proven BS (capped at avg paid)';
+      ? 'Beat % ? 50% ? match avg fee paid'
+      : 'Beat % under 50% ? judgment fee from proven BS (capped at avg paid)';
     h+='<tr class="lb-row" onclick="showDJDetail(\''+encodeURIComponent(r.dj)+'\')">';
     h+='<td style="color:var(--ink3);font-weight:700">'+(i+1)+'</td>';
     h+='<td class="td-dj lb-dj-link" style="font-weight:700">'+r.dj+'</td>';
@@ -3236,7 +3252,7 @@ function renderDJDetail(djEnc){
     +'</tr></thead><tbody>';
   shows.forEach(function(r){
     var bsCls=r.bs_a&&r.bs_m?(r.bs_a>=r.bs_m?'hit':'low'):'';
-    var rCls=r.roi_a&&r.roi_t?(r.roi_a>=r.roi_t?'hit':'low'):'';
+    var rCls=roiTone(r.roi_a, r.roi_t);
     var dt=new Date(r.d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
     h+='<tr>';
     h+='<td class="td-dt">'+dt+'</td>';
@@ -3725,7 +3741,7 @@ var FORECAST_DATA = [
   {"venue":"Casa Neos Lounge","date":"2026-07-18","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-19","dj":"AFTERDARK","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-23","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
-  {"venue":"Casa Neos Lounge","date":"2026-07-24","dj":"MalÔøΩne Morez","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
+  {"venue":"Casa Neos Lounge","date":"2026-07-24","dj":"Malùne Morez","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-25","dj":"AMOG","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-26","dj":"AFTERDARK","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-30","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
@@ -3818,7 +3834,7 @@ function _sparkline(pacingObj, capacity){
   return svg;
 }
 
-/** DJ name for Forecast UI ‚Äî keep ? placeholders as entered. */
+/** DJ name for Forecast UI ù keep ? placeholders as entered. */
 function _fcastDjName(dj){
   if(dj==null) return '';
   return String(dj).trim();
@@ -3930,7 +3946,7 @@ function _liveAnimateMoney(el, from, to, deltaEl){
 }
 function refreshLive(){
   var btn = document.getElementById('liveRefreshBtn');
-  if(btn){ btn.textContent = 'Pulling Toast‚Ä¶'; btn.disabled = true; }
+  if(btn){ btn.textContent = 'Pulling Toastù'; btn.disabled = true; }
   var prevAt = (window._liveNight && window._liveNight.updatedAt) || '';
   var cfg = window._rdgConfig || {};
   var url = (cfg.liveRefreshUrl || '').trim();
@@ -3957,7 +3973,7 @@ function refreshLive(){
   function pollUntilUpdated(tries){
     tries = tries || 0;
     if(tries > 45){
-      done(false, 'Toast pull timed out ‚Äî check Sanity / GitHub Actions Live Refresh.');
+      done(false, 'Toast pull timed out ù check Sanity / GitHub Actions Live Refresh.');
       return;
     }
     var cur = (window._liveNight && window._liveNight.updatedAt) || '';
@@ -3966,7 +3982,7 @@ function refreshLive(){
       done(req.status !== 'failed', req.message || (cur && cur !== prevAt ? 'Toast LIVE updated.' : 'Refresh finished.'));
       return;
     }
-    // Faster poll ‚Äî Firebase usually updates as soon as the worker finishes
+    // Faster poll ù Firebase usually updates as soon as the worker finishes
     setTimeout(function(){ pollUntilUpdated(tries + 1); }, 1200);
   }
 
@@ -4006,12 +4022,12 @@ function refreshLive(){
       return { dispatched: true };
     });
   } else {
-    done(false, 'Live Refresh not configured. Open Sanity ‚Üí set liveRefreshUrl or githubDispatchToken.');
+    done(false, 'Live Refresh not configured. Open Sanity ? set liveRefreshUrl or githubDispatchToken.');
     return;
   }
 
   kick.then(function(result){
-    // HTTP endpoint already finished the Toast pull ‚Äî no long wait
+    // HTTP endpoint already finished the Toast pull ù no long wait
     if(result && result.payload && result.payload.date){
       window._liveNight = result.payload;
       done(!!result.ok, result.payload && result.message
@@ -4040,7 +4056,7 @@ function renderLive(animate){
   var statsByVenue = liveFresh ? ((live && live.statsByVenue) || {}) : {};
   var inWin=_liveWindowActive();
 
-  // LIVE is always all venues for the night ‚Äî ignore sidebar venue selection (curV)
+  // LIVE is always all venues for the night ù ignore sidebar venue selection (curV)
   var shows = SCHED.filter(function(r){
     if(r.d!==showDate) return false;
     if(r._s==='empty') return false;
@@ -4077,7 +4093,7 @@ function renderLive(animate){
   })();
   h += '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap">';
   h += '<div><div style="font-size:15px;font-weight:900">'+nightLabel+'</div>'
-    + '<div style="font-size:11px;color:var(--ink3);margin-top:2px">All venues ¬∑ night of '+showDate+'</div></div>';
+    + '<div style="font-size:11px;color:var(--ink3);margin-top:2px">All venues ù night of '+showDate+'</div></div>';
   if(inWin) h += '<div style="font-size:11px;font-weight:800;color:#dc2626">UPDATING</div>';
   h += '</div>';
   if(live && live.date && live.date !== biz){
@@ -4233,9 +4249,9 @@ function renderSystem(){
     + (overallBad ? 'NEEDS ATTENTION' : (overallWarn ? 'CHECK STALE DATA' : 'HEALTHY'))
     + '</span></div>'
     + '<div style="margin-top:8px;font-size:11px;color:var(--ink3);line-height:1.55">'
-    + 'GitHub Pages hosts the site. Toast BS updates Wed‚ÄìSun via GitHub Actions. '
-    + 'FourVenues Forecast updates daily via Integrations API ‚Üí Firebase (laptop off). '
-    + 'LIVE only updates when someone presses Refresh (Toast API ‚Üí Firebase).'
+    + 'GitHub Pages hosts the site. Toast BS updates WedùSun via GitHub Actions. '
+    + 'FourVenues Forecast updates daily via Integrations API ? Firebase (laptop off). '
+    + 'LIVE only updates when someone presses Refresh (Toast API ? Firebase).'
     + '</div></div>';
 
   h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid '+(fbOk?'#22c55e':'#f59e0b')+'">'
@@ -4248,33 +4264,33 @@ function renderSystem(){
 
   var fvExtra = forecastLive && forecastLive.updatedAt
     ? '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">forecastLive: <b style="color:var(--ink2)">'+forecastLive.updatedAt+'</b>'
-      + (forecastLive.source ? ' ¬∑ '+forecastLive.source : '') + '</div>'
+      + (forecastLive.source ? ' ù '+forecastLive.source : '') + '</div>'
     : '';
-  h += card('FourVenues (Forecast BS Actual)', 'Daily ~8:30 AM ET ¬∑ Integrations API (laptop off)', fv, 36, fvExtra);
+  h += card('FourVenues (Forecast BS Actual)', 'Daily ~8:30 AM ET ù Integrations API (laptop off)', fv, 36, fvExtra);
 
-  h += card('Toast BS Actual (calendar / history)', 'Wed‚ÄìSun ~8:30 AM ET ¬∑ GitHub Actions ‚Üí GitHub Pages', toast, 84, '');
+  h += card('Toast BS Actual (calendar / history)', 'WedùSun ~8:30 AM ET ù GitHub Actions ? GitHub Pages', toast, 84, '');
 
   var liveExtra = '';
   if(liveNight && liveNight.updatedAt){
-    liveExtra += '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">liveNight: <b style="color:var(--ink2)">'+(liveNight.updatedAtLocal||liveNight.updatedAt)+'</b> ¬∑ night '+(liveNight.date||'')+'</div>';
+    liveExtra += '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">liveNight: <b style="color:var(--ink2)">'+(liveNight.updatedAtLocal||liveNight.updatedAt)+'</b> ù night '+(liveNight.date||'')+'</div>';
   }
   if(liveReq && liveReq.status){
     liveExtra += '<div style="margin-top:4px;font-size:11px;color:var(--ink3)">Last Refresh request: <b style="color:var(--ink2)">'+liveReq.status+'</b>'
-      + (liveReq.requestedAt || liveReq.finishedAt ? ' ¬∑ '+(liveReq.finishedAt||liveReq.requestedAt) : '') + '</div>';
+      + (liveReq.requestedAt || liveReq.finishedAt ? ' ù '+(liveReq.finishedAt||liveReq.requestedAt) : '') + '</div>';
   }
   liveExtra += '<div style="margin-top:6px;font-size:11px;color:'+(liveCfgOk?'#0f766e':'#b91c1c')+'">'
     + (liveCfgOk
       ? 'Refresh button wired ('+(cfg.liveRefreshUrl ? 'HTTP endpoint' : 'GitHub dispatch')+').'
-      : 'Refresh not wired ‚Äî set rdg/config/liveRefreshUrl or githubDispatchToken in Firebase.')
+      : 'Refresh not wired ù set rdg/config/liveRefreshUrl or githubDispatchToken in Firebase.')
     + '</div>';
-  h += card('Toast LIVE (on-demand only)', 'Only when someone presses Refresh ‚Äî no night schedule', toastLive, 36, liveExtra);
+  h += card('Toast LIVE (on-demand only)', 'Only when someone presses Refresh ù no night schedule', toastLive, 36, liveExtra);
 
   h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px">'
     + '<div style="font-size:13px;font-weight:800;margin-bottom:6px">How the pieces fit</div>'
     + '<div style="font-size:11px;color:var(--ink3);line-height:1.6">'
     + '<b style="color:var(--ink2)">GitHub Pages (rdg-dj):</b> the published website everyone opens.<br>'
-    + '<b style="color:var(--ink2)">GitHub Actions (boh-dashboard):</b> cloud robot that pulls data on a schedule ‚Äî laptop can be off.<br>'
-    + '<b style="color:var(--ink2)">FourVenues:</b> Integrations API bookings (accepted + not-completed price) ‚Üí Forecast Actuals.<br>'
+    + '<b style="color:var(--ink2)">GitHub Actions (boh-dashboard):</b> cloud robot that pulls data on a schedule ù laptop can be off.<br>'
+    + '<b style="color:var(--ink2)">FourVenues:</b> Integrations API bookings (accepted + not-completed price) ? Forecast Actuals.<br>'
     + '<b style="color:var(--ink2)">Firebase:</b> instant overlays (Forecast Actuals, LIVE night, Sanity status).'
     + '</div></div>';
 
@@ -5059,7 +5075,10 @@ function renderVIP(venueIdx){
     var vbs=sh.bsActual-sh.bsMin, vtbl=(sh.tablesActual!=null&&sh.tablesBudget!=null)?sh.tablesActual-sh.tablesBudget:null;
     var avg=(sh.tablesActual||0)?Math.round(sh.bsActual/sh.tablesActual):0;
     var roiA=_fmtROI(sh.bsActual,sh.fee), roiT=_fmtROI(sh.bsMin,sh.fee);
-    var roiBeat=sh.fee>0&&sh.bsActual>=sh.bsMin;
+    var roiANum=sh.fee>0?sh.bsActual/sh.fee:null;
+    var roiTNum=sh.fee>0?sh.bsMin/sh.fee:null;
+    var roiCls=roiTone(roiANum, roiTNum);
+    var vipRoiCls=roiCls==='hit'?'beat':(roiCls==='near'?'near':(roiCls==='low'?'miss':''));
     totBS+=sh.bsActual; totMin+=sh.bsMin; totTbl+=(sh.tablesActual||0); totBudget+=(sh.tablesBudget||0); totFee+=sh.fee;
     h += '<tr>'
        + '<td class="l"><b>'+sh.dj+'</b><br><span style="font-size:9px;color:var(--ink3)">'+sh.label+'</span></td>'
@@ -5067,7 +5086,7 @@ function renderVIP(venueIdx){
        + '<td><b class="'+(b?'beat':'miss')+'">'+$kv(sh.bsActual)+'</b></td>'
        + '<td style="'+_TARGET_BG+'">'+$kv(sh.bsMin)+'</td>'
        + '<td>'+_fmtVar(vbs)+'</td>'
-       + '<td class="'+(roiBeat?'beat':sh.fee>0?'miss':'')+'" style="font-weight:700">'+roiA+'</td>'
+       + '<td class="'+vipRoiCls+'" style="font-weight:700">'+roiA+'</td>'
        + '<td style="'+_TARGET_BG+'">'+roiT+'</td>'
        + '<td>'+(sh.tablesActual!=null?sh.tablesActual:'\u2014')+'</td>'
        + '<td style="'+_TARGET_BG+'">'+(sh.tablesBudget!=null?sh.tablesBudget:'\u2014')+'</td>'
@@ -5079,13 +5098,15 @@ function renderVIP(venueIdx){
   var totAvg=totTbl?Math.round(totBS/totTbl):0;
   var totVbs=totBS-totMin, totVtbl=totTbl-totBudget;
   var totROIA=_fmtROI(totBS,totFee), totROIT=_fmtROI(totMin,totFee);
+  var totRoiCls=roiTone(totFee>0?totBS/totFee:null, totFee>0?totMin/totFee:null);
+  var totVipRoi=totRoiCls==='hit'?'beat':(totRoiCls==='near'?'near':(totRoiCls==='low'?'miss':''));
   h += '<tr>'
      + '<td class="l">Total</td>'
      + '<td>'+$kv(totFee)+'</td>'
      + '<td><b class="'+(totVbs>=0?'beat':'miss')+'">'+$kv(totBS)+'</b></td>'
      + '<td style="'+_TARGET_BG+'">'+$kv(totMin)+'</td>'
      + '<td>'+_fmtVar(totVbs)+'</td>'
-     + '<td class="'+(totVbs>=0?'beat':'miss')+'" style="font-weight:700">'+totROIA+'</td>'
+     + '<td class="'+totVipRoi+'" style="font-weight:700">'+totROIA+'</td>'
      + '<td style="'+_TARGET_BG+'">'+totROIT+'</td>'
      + '<td>'+(totTbl||'\u2014')+'</td>'
      + '<td style="'+_TARGET_BG+'">'+(totBudget||'\u2014')+'</td>'
@@ -5564,7 +5585,7 @@ function checkDjSuggestion(){
     +'<div class="dj-sugg-row"><span>Avg BS delivered</span><b>'+$k(p.avg_bs)+'</b></div>'
     +'<div class="dj-sugg-row"><span>Avg ROI achieved</span><b class="kc-b">'+(p.avg_roi_a||'-')+'x</b></div>'
     +'<div class="dj-sugg-row"><span>Beat rate</span><b class="'+(p.beat_rate>=60?'hit':'low')+'">'+p.beat_rate+'%</b></div>'
-    +'<div class="dj-sugg-row"><span style="color:var(--ink3)">Suggested fee aims for ‚â§50% historical beat vs target</span><b></b></div>'
+    +'<div class="dj-sugg-row"><span style="color:var(--ink3)">Suggested fee aims for ?50% historical beat vs target</span><b></b></div>'
     +'<button type="button" class="dj-sugg-use" onclick="useSuggestedFee('+fair+')">Use realistic suggested fee: '+$k(fair)+'</button>'
     +budgetHtml;
 }
@@ -5599,8 +5620,8 @@ function updateFeeTargetsPreview(){
   }
   var tgt=showTargets({v:venue, venue:venue, d:dateStr, fee:fee, cost:fee});
   box.style.display='block';
-  bsEl.textContent = tgt.bs_m!=null ? $k(tgt.bs_m) : '‚Äî';
-  roiEl.textContent = tgt.roi_t!=null ? (Number(tgt.roi_t).toFixed(1)+'x') : '‚Äî';
+  bsEl.textContent = tgt.bs_m!=null ? $k(tgt.bs_m) : 'ù';
+  roiEl.textContent = tgt.roi_t!=null ? (Number(tgt.roi_t).toFixed(1)+'x') : 'ù';
   if(f.bsm) f.bsm.value = tgt.bs_m!=null ? tgt.bs_m : '';
   if(f.roit) f.roit.value = tgt.roi_t!=null ? tgt.roi_t : '';
 }
@@ -6068,11 +6089,11 @@ var HELP_FAQ = [
   {kw:['add','show','new dj','book'], q:'How do I add a show?',
    a:'Click <b>+ Add Show</b> on the Calendar or Accounting tab. Enter venue, date, DJ name and fee   BS Target and ROI Target are calculated automatically from the fee tier table.'},
   {kw:['py','prior year','last year','2025','blank','empty','monday','sunday','weekend'], q:"Why is a date's PY (prior year) column empty or on the wrong day?",
-   a:"Prior-year (PY) keeps the same weekday (Sunday‚ÜíSunday, Saturday‚ÜíSaturday). Same calendar date is used only when that anniversary is also the same weekday; otherwise the closest same-weekday show within 3 days is used. Each prior-year show is used at most once. Otherwise it stays blank rather than guessing."},
+   a:"Prior-year (PY) keeps the same weekday (Sunday?Sunday, Saturday?Saturday). Same calendar date is used only when that anniversary is also the same weekday; otherwise the closest same-weekday show within 3 days is used. Each prior-year show is used at most once. Otherwise it stays blank rather than guessing."},
   {kw:['budget','not show','missing','lounge','venue'], q:"Why don't I see my new show in the Budget tab?",
    a:"The Budget tab follows whatever venue you're viewing on the Calendar   switch venues using the pills at the top and Budget updates automatically. The Year dropdown inside Budget is independent, so make sure it's set to the year you want too."},
   {kw:['roi','target','tier','multiplier','suggested','fair value'], q:'How is the ROI Target / Suggested Fee calculated?',
-   a:'ROI Target comes from the DJ fee (venue fee-tier rules). Suggested Fee is calibrated from that DJ\'s past BS Actuals so historical beat-vs-target rate stays around ‚â§50% ‚Äî a realistic pay level, not an automatic raise or cut.'},
+   a:'ROI Target comes from the DJ fee (venue fee-tier rules). Suggested Fee is calibrated from that DJ\'s past BS Actuals so historical beat-vs-target rate stays around ?50% ù a realistic pay level, not an automatic raise or cut.'},
   {kw:['special week','f1','art basel','wmc','event','festival'], q:'Can I add a Special Week (like F1, Art Basel)?',
    a:'Yes   click <b>+ Special Week</b>, name it, and pick a start/end date. It can span multiple months and shows as an amber label on every day in range.'},
   {kw:['2026','2027','plan','year','current'], q:'Can I budget for 2026 as well as 2027?',
@@ -6407,7 +6428,7 @@ function _wireHelpEggClick(){
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', _wireHelpEggClick);
 else _wireHelpEggClick();
 
-/* Shift then type gallardochristophe ‚Üí Gallardo portrait; matisse ‚Üí Matisse photo */
+/* Shift then type gallardochristophe ? Gallardo portrait; matisse ? Matisse photo */
 var _gallardoArmed = false;
 var _gallardoBuf = '';
 var _gallardoTimer = null;
