@@ -16,12 +16,14 @@ Single-file HTML dashboard for Riviera Dining Group DJ / bottle-service performa
 2. Commit and push to `main` on this repo (`MLavenant/rdg-dj`)
 3. GitHub Pages serves it at https://mlavenant.github.io/rdg-dj/
 
-## Automated refresh (Task Scheduler on this PC)
-- **FourVenues** — daily at **8:30 AM** (`RDG DJ FourVenues Daily 830`)
-- **Toast** — **Mondays** at **8:30 AM** (`RDG DJ Toast Monday 830`)
-- Status is written to Firebase and shown in the dashboard **System Status** page
+## Automated refresh
+- **Cloud (laptop off):** GitHub Actions `RDG Daily Forecast + Toast` ~**8:30 AM ET**
+  - **FourVenues** — daily (Integrations API → Firebase)
+  - **Toast BS** — Wed–Sun → GitHub Pages
+- **Local backup (this PC):** Task Scheduler at **8:30 / 8:35 AM** runs the same Integrations API + Toast path
+- Status is written to Firebase and shown on the dashboard **System** page
 
-PC must be powered on at run time (or move jobs to a cloud VM later).
+PC does **not** need to be on for cloud jobs. Local tasks are a backup if Actions is delayed.
 
 ## Related repos (not this app)
 - `rdg-ai-dashboard` — separate project
