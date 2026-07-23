@@ -138,7 +138,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .sc-empty-day{color:var(--ink4)}
 .hit{color:var(--beat)!important;font-weight:700}.low{color:var(--miss)!important}
 .near{color:var(--amb)!important;font-weight:700}
-.cy-actual.near{color:var(--amb)!important}
 .kc-b{color:var(--blue)}.beat{color:var(--beat)}.miss{color:var(--miss)}
 /* PY columns */
 .sc-py{background:rgba(0,0,0,.01)}
@@ -534,12 +533,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .cy-djname{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
 .cy-fee{text-align:right;color:var(--amb);font-size:8px;font-weight:700}
 .cy-target{text-align:right;color:var(--blue);font-size:8px;font-weight:700}
-.cy-actual{text-align:right;color:var(--ink3);font-size:8px;font-weight:700}.cy-actual.hit{color:var(--beat)!important}.cy-actual.low{color:var(--miss)!important}
-.cy-row-beat{background:var(--beat-bg)}.cy-row-beat .cy-djname{color:var(--beat)}
-.cy-row-miss{background:var(--miss-bg)}.cy-row-miss .cy-djname{color:var(--miss)}
-.cy-row-fut{background:var(--blue-bg)}.cy-row-fut .cy-djname{color:var(--blue)}
-.cy-row-tbd{background:var(--amb-bg)}.cy-row-tbd .cy-djname{color:var(--amb)}
+.cy-actual{text-align:right;color:var(--ink3);font-size:8px;font-weight:700}
+.cy-actual.hit,.cy-djname.hit{color:var(--beat)!important}
+.cy-actual.near,.cy-djname.near{color:var(--amb)!important}
+.cy-actual.low,.cy-djname.low{color:var(--miss)!important}
+.cy-row-beat{background:var(--beat-bg)}
+.cy-row-miss{background:var(--miss-bg)}
+.cy-row-fut{background:var(--blue-bg)}.cy-row-fut .cy-djname:not(.hit):not(.near):not(.low){color:var(--blue)}
+.cy-row-tbd{background:var(--amb-bg)}.cy-row-tbd .cy-djname:not(.hit):not(.near):not(.low){color:var(--amb)}
 .cy-row-today{outline:1.5px solid var(--amb) inset}
+/* Tone classes always win over beat/miss row tint (full-year + all venues) */
+.cy-row-beat .cy-djname.hit,.cy-row-miss .cy-djname.hit{color:var(--beat)!important}
+.cy-row-beat .cy-djname.near,.cy-row-miss .cy-djname.near{color:var(--amb)!important}
+.cy-row-beat .cy-djname.low,.cy-row-miss .cy-djname.low{color:var(--miss)!important}
 .cy-empty-lbl{grid-column:2/5;font-size:8px;color:var(--amb);font-weight:700}
 
 
@@ -1137,8 +1143,8 @@ function resolvePyFields(venue, dateStr, baked){
 }
 function _pyCellsHtml(py, rowspan){
   var pyNm=djLabel(py.py_dj, '');
-  var pyBCls=bsTone(py.py_bs_a, py.py_bs_m, py.py_fee);
-  var pyRCls=roiTone(py.py_roi_a, py.py_roi_t);
+  var pyBCls=perfTone(py.py_bs_a, py.py_bs_m, py.py_fee, py.py_roi_a, py.py_roi_t);
+  var pyRCls=pyBCls;
   var rs=rowspan && rowspan>1 ? ' rowspan="'+rowspan+'"' : '';
   var h='<td class="sc-py"'+rs+'>';
   if(pyNm) h+='<b class="'+pyBCls+'">'+pyNm.slice(0,18)+'</b>';
@@ -1177,13 +1183,23 @@ function roiTone(actual, target){
   if(a >= t - 0.1) return 'near';
   return 'low';
 }
+/* One shared tone for DJ name + BS Actual + ROI Act (ROI-space, never diverge) */
+function perfTone(bs_a, bs_m, fee, roi_a, roi_t){
+  var feeN = fee != null ? +fee : 0;
+  if(feeN > 0 && bs_a != null && !isNaN(+bs_a)){
+    var ra = roi_a != null && !isNaN(+roi_a) ? +roi_a : (+bs_a / feeN);
+    var rt = roi_t != null && !isNaN(+roi_t) ? +roi_t : (bs_m != null && !isNaN(+bs_m) ? (+bs_m / feeN) : null);
+    return roiTone(ra, rt);
+  }
+  return bsTone(bs_a, bs_m, fee);
+}
 /* BS Actual color � same near band as ROI (0.1x of fee in $), so Calussa etc. match gold across columns */
 function bsTone(actual, target, fee){
   if(actual==null||target==null||isNaN(+actual)||isNaN(+target)) return '';
+  if(fee!=null && +fee>0) return roiTone(+actual/+fee, +target/+fee);
   var a=+actual, t=+target;
   if(a >= t) return 'hit';
-  var slack = (fee!=null && +fee>0) ? (+fee * 0.1) : Math.max(t * 0.02, 2500);
-  if(a >= t - slack) return 'near';
+  if(a >= t - Math.max(t * 0.02, 2500)) return 'near';
   return 'low';
 }
 function roiToneIcon(cls){
@@ -1192,12 +1208,7 @@ function roiToneIcon(cls){
   if(cls==='low') return '&#9660;';
   return '';
 }
-function bsToneIcon(cls){
-  if(cls==='hit') return '&#9650;';
-  if(cls==='near') return '&#9679;';
-  if(cls==='low') return '&#9660;';
-  return '';
-}
+function bsToneIcon(cls){ return roiToneIcon(cls); }
 /* Live month stats from SCHED (same beat/miss rules as calendar) */
 function monthPerfFromSched(yr, venue, mm){
   var shows = SCHED.filter(function(r){
@@ -1212,7 +1223,7 @@ function monthPerfFromSched(yr, venue, mm){
     return {
       r:r, dj:r.dj, d:r.d, fee:fee, bs_a:r.bs_a, bs_m:bsM, roi_a:roiA, roi_t:roiT,
       _s:r._s, beat:r._s==='beat'?1:r._s==='miss'?0:null,
-      bTone:bsTone(r.bs_a, bsM, fee), rTone:roiTone(roiA, roiT)
+      bTone:perfTone(r.bs_a, bsM, fee, roiA, roiT), rTone:perfTone(r.bs_a, bsM, fee, roiA, roiT)
     };
   });
   var measured = rows.filter(function(x){ return x._s==='beat' || x._s==='miss'; });
@@ -2946,8 +2957,8 @@ function renderCal(){
         var tgt=showTargets(r);
         var bsM=tgt.bs_m, roiT=tgt.roi_t;
         var fee=r.fee||r.cost;
-        var bCls = bsTone(r.bs_a, bsM, fee);
-        var rCls = roiTone(r.roi_a, roiT);
+        var bCls = perfTone(r.bs_a, bsM, fee, r.roi_a, roiT);
+        var rCls = bCls;
         h+='<td class="sc-dj-cell" draggable="true" data-show-idx="'+idx+'" '
           +'ondragstart="showDragStart(event)" ondragend="swDragEnd(event)" '
           +'onclick="openEditModal('+idx+')" style="cursor:grab" title="Drag to move date � click to edit">'
@@ -3025,7 +3036,7 @@ function renderCalGrid(yr,mo,mm,days,showMap){
       if(bsM||r.bs_a){
         h+='<div class="cg-chip-nums">';
         h+='<span>'+$k(bsM)+'</span>';
-        h+='<span class="'+bsTone(r.bs_a, bsM, (r.fee||r.cost))+'">'+$k(r.bs_a)+'</span>';
+        h+='<span class="'+perfTone(r.bs_a, bsM, (r.fee||r.cost), r.roi_a, (typeof showTargets==='function'?showTargets(r).roi_t:r.roi_t))+'">'+$k(r.bs_a)+'</span>';
         h+='</div>';
       } else if(r.fee||r.cost) {
         h+='<div class="cg-chip-nums"><span>'+$k(r.fee||r.cost)+'</span></div>';
@@ -3077,10 +3088,11 @@ function renderCalYear(){
         var idx=SCHED.indexOf(r);
         h+='<div class="cy-row cy-row-'+st+(isToday?' cy-row-today':'')+'" onclick="openEditModal('+idx+')">';
         h+='<span class="cy-daynum">'+(ri===0?day:'')+'</span>';
-        h+='<span class="cy-djname">'+nm+'</span>';
-        h+='<span class="cy-fee">'+$k(r.fee||r.cost)+'</span>';
-        h+='<span class="cy-target">'+$k(showTargets(r).bs_m)+'</span>';
-        var cyTgt=showTargets(r).bs_m;var cyACls=bsTone(r.bs_a, cyTgt, (r.fee||r.cost));h+='<span class="cy-actual '+cyACls+'">'+$k(r.bs_a)+'</span>';
+        var cyTgtObj=showTargets(r); var cyFee=r.fee||r.cost; var cyTone=perfTone(r.bs_a, cyTgtObj.bs_m, cyFee, r.roi_a, cyTgtObj.roi_t);
+        h+='<span class="cy-djname '+cyTone+'">'+nm+'</span>';
+        h+='<span class="cy-fee">'+$k(cyFee)+'</span>';
+        h+='<span class="cy-target">'+$k(cyTgtObj.bs_m)+'</span>';
+        h+='<span class="cy-actual '+cyTone+'">'+$k(r.bs_a)+'</span>';
         h+='</div>';
       });
     }
@@ -3177,8 +3189,8 @@ function renderAllShows(){
     var tgt=showTargets(r);
     var bsM=tgt.bs_m, roiT=tgt.roi_t;
     var fee=r.fee||r.cost;
-    var bCls=bsTone(r.bs_a, bsM, fee);
-    var rCls=roiTone(r.roi_a, roiT);
+    var bCls=perfTone(r.bs_a, bsM, fee, r.roi_a, roiT);
+    var rCls=bCls;
     var dt=new Date(r.d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
     var stLabel=r._s==='beat'?'Beat':r._s==='miss'?'Miss':r._s==='fut'?'Upcoming':r._s==='nd'?'N/A':(r._s||'N/A');
     var stPill=r._s==='beat'?'p-beat':r._s==='miss'?'p-miss':'p-nd';
@@ -3362,8 +3374,8 @@ function renderDJDetail(djEnc){
     +'<th>ROI Tgt</th><th>ROI Act</th><th>Status</th>'
     +'</tr></thead><tbody>';
   shows.forEach(function(r){
-    var bsCls=r.bs_a&&r.bs_m?(r.bs_a>=r.bs_m?'hit':'low'):'';
-    var rCls=roiTone(r.roi_a, r.roi_t);
+    var bsCls=perfTone(r.bs_a, r.bs_m, (r.fee||r.cost), r.roi_a, r.roi_t);
+    var rCls=bsCls;
     var dt=new Date(r.d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
     h+='<tr>';
     h+='<td class="td-dt">'+dt+'</td>';
@@ -5616,7 +5628,7 @@ function renderAccounting(){
       var idx=SCHED.indexOf(r);
       var tgt=showTargets(r);
       var bsM=tgt.bs_m;
-      var bsCls=bsTone(r.bs_a, bsM, (r.fee||r.cost));
+      var bsCls=perfTone(r.bs_a, bsM, (r.fee||r.cost), r.roi_a, tgt.roi_t);
 
       h+='<tr class="'+dc+'">';
       if(ri===0){
