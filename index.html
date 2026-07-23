@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RDG DJ Dashboard v3.4</title>
+<title>RDG DJ Dashboard v3.5</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -104,7 +104,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .sched-tbl{width:100%;border-collapse:collapse;font-size:11px;background:var(--card)}
 .sched-tbl thead th{background:var(--card2);padding:8px 8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);border-bottom:0.5px solid var(--hair);position:sticky;top:0;z-index:4;text-align:left;white-space:nowrap}
 .sched-tbl td{padding:5px 8px;border-bottom:0.5px solid var(--hair);vertical-align:middle}
-.sc-ev{width:80px}.sc-date{width:195px}.sc-dj{min-width:130px}
+.sc-ev{width:80px}.sc-date{width:195px}.sc-dj{min-width:130px;position:relative}
+.sc-dj-resizer{position:absolute;top:0;right:0;bottom:0;width:6px;cursor:col-resize;user-select:none;z-index:5}
+.sc-dj-resizer:hover,.sc-dj-resizer.dragging{background:var(--blue)}
 .sc-fee,.sc-num{width:70px;text-align:right!important}
 .sc-sep{width:4px;background:var(--card4);padding:0!important;border:none!important}
 .sc-py{width:100px}.sc-py-hd{background:var(--card4)!important;color:var(--ink2)!important}
@@ -457,8 +459,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .acct-inp-cell{padding:3px 6px!important;vertical-align:middle!important}
 
 /* DJ column ? narrower and clickable */
-.sc-dj{width:160px!important;min-width:140px!important;max-width:180px!important}
-.sc-dj-cell{font-size:11px;padding:4px 6px!important;max-width:180px;overflow:hidden}
+.sc-dj{width:160px!important;min-width:140px!important;max-width:180px!important;position:relative}
+.sc-dj-cell{font-size:11px;padding:4px 6px!important;max-width:none;overflow:hidden}
 .dj-clickname{display:block;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
 .dj-clickname.hit{color:var(--beat)!important}
 .dj-clickname.near{color:var(--amb)!important}
@@ -798,7 +800,7 @@ textarea#fldNote:focus{border-color:var(--blue)}
 
   <!-- MONTHLY SUMMARY -->
   <div id="view-summary" style="display:none">
-    <div class="pg-section"><div class="pg-title2">Monthly Summary</div></div>
+    <div class="pg-section"><div class="pg-title2">Bottle Service Monthly Summary</div></div>
     <div class="summary-grid" id="summaryBody"></div>
   </div>
 
@@ -902,6 +904,11 @@ textarea#fldNote:focus{border-color:var(--blue)}
   </div>
 
   <!-- SANITY / HEALTH -->
+  <div id="view-3d" style="display:none;height:calc(100vh - 0px)">
+    <div class="pg-section"><div class="pg-title2">3D Venue View</div></div>
+    <iframe src="https://music.mila-miami.com/?id=axaz2aok2fi0d7tlh7fw7t9ia94p8lmg" style="width:100%;height:calc(100vh - 90px);border:none;display:block;background:#fff" allow="fullscreen" title="3D Venue Plan"></iframe>
+  </div>
+
   <div id="view-system" style="display:none">
     <div class="pg-section">
       <div class="pg-title2">Sanity</div>
@@ -1301,7 +1308,7 @@ function buildSidebar() {
   var html = '<div class="sb-section-lbl">Views</div>';
   [
     {id:'calendar',   ic:'&#9783;',  lb:'Calendar'},
-    {id:'summary',    ic:'&#9776;',  lb:'Monthly Summary'},
+    {id:'summary',    ic:'&#9776;',  lb:'Bottle Service Monthly Summary'},
     {id:'allshows',   ic:'&#9776;',  lb:'All Shows'},
     {id:'leaderboard',ic:'&#9650;',  lb:'ROI Ranking'},
     {id:'budget',     ic:'&#36;',    lb:'Budget'},
@@ -1320,6 +1327,8 @@ function buildSidebar() {
   });
   html += '<button class="sb-btn sb-btn-live" data-view="live" onclick="setView(\'live\')">'
         + '<span class="sb-ic">&#9679;</span>LIVE</button>';
+  html += '<button class="sb-btn" data-view="3d" onclick="setView(\'3d\')">'
+        + '<span class="sb-ic">&#127760;</span>3D View</button>';
   html += '<div class="sb-section-lbl" style="margin-top:8px">Admin</div>';
   html += '<button class="sb-btn" data-view="system" onclick="setView(\'system\')">'
         + '<span class="sb-ic">&#9881;</span>Sanity</button>';
@@ -1378,7 +1387,7 @@ function selYr(yr) {
 var _budgetInited = false;
 function setView(v) {
   curView = v;
-  ['calendar','summary','allshows','leaderboard','budget','accounting','vip','forecast','live','system'].forEach(function(id){
+  ['calendar','summary','allshows','leaderboard','budget','accounting','vip','forecast','live','system','3d'].forEach(function(id){
     var el = document.getElementById('view-'+id);
     if (!el) return;
     var on = id===v;
@@ -1420,6 +1429,10 @@ function setView(v) {
   }
   if (v === 'system') {
     renderSystem();
+    return;
+  }
+  if (v === '3d') {
+    clearGlobalCalChrome();
     return;
   }
   go();
@@ -2910,7 +2923,7 @@ function renderCal(){
   var h='<table class="sched-tbl"><thead><tr>';
   h+='<th class="sc-ev">Event</th>';
   h+='<th class="sc-date">Date</th>';
-  h+='<th class="sc-dj">DJ Guest</th>';
+  h+='<th class="sc-dj" id="scDjTh">DJ Guest<span class="sc-dj-resizer" id="scDjResizer" title="Drag to resize"></span></th>';
   h+='<th class="acct-status-hd sc-dj-st">DJ Status</th>';
   h+='<th class="sc-vip" title="VIP team notes">VIP</th>';
   h+='<th class="sc-fee">Fee</th>';
@@ -3015,6 +3028,33 @@ function renderCal(){
   document.querySelectorAll('#calBody [data-action="djStatus"]').forEach(function(sel){
     sel.addEventListener('change',function(){ updateAcctDjStatus(sel.dataset.ds, sel.value, sel); });
   });
+  initDjColResize();
+}
+
+/* Draggable DJ Guest column width, persisted across sessions */
+function _applyDjColWidth(px){
+  var w=Math.max(90, Math.min(420, px|0));
+  var styleEl=document.getElementById('djColWidthStyle');
+  if(!styleEl){ styleEl=document.createElement('style'); styleEl.id='djColWidthStyle'; document.head.appendChild(styleEl); }
+  styleEl.textContent='.sc-dj{width:'+w+'px!important;min-width:'+w+'px!important;max-width:'+w+'px!important}.sc-dj-cell{max-width:'+(w-14)+'px!important}';
+  try{ localStorage.setItem('rdg_dj_col_w', String(w)); }catch(e){}
+}
+function initDjColResize(){
+  var saved=parseInt(localStorage.getItem('rdg_dj_col_w')||'0',10);
+  if(saved) _applyDjColWidth(saved);
+  var handle=document.getElementById('scDjResizer');
+  var th=document.getElementById('scDjTh');
+  if(!handle||!th||handle._wired) return;
+  handle._wired=true;
+  handle.addEventListener('mousedown', function(ev){
+    ev.preventDefault(); ev.stopPropagation();
+    handle.classList.add('dragging');
+    var startX=ev.clientX, startW=th.getBoundingClientRect().width;
+    function onMove(e){ _applyDjColWidth(startW + (e.clientX-startX)); }
+    function onUp(){ handle.classList.remove('dragging'); document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp); }
+    document.addEventListener('mousemove',onMove);
+    document.addEventListener('mouseup',onUp);
+  });
 }
 
 /*     CALENDAR   grid (box) view                                   */
@@ -3102,11 +3142,14 @@ function renderCalYear(){
       }
       shows.forEach(function(r,ri){
         var st=r._s||'nd';
+        var idxTgt=(typeof showTargets==='function')?showTargets(r):{bs_m:r.bs_m,roi_t:r.roi_t};
+        var idxTone=(typeof perfTone==='function')?perfTone(r.bs_a, idxTgt.bs_m, (r.fee||r.cost), r.roi_a, idxTgt.roi_t):'';
+        if(st==='miss' && idxTone==='near') st='beat';
         var nm=djLabel(r.dj).slice(0,14);
         var idx=SCHED.indexOf(r);
         h+='<div class="cy-row cy-row-'+st+(isToday?' cy-row-today':'')+'" onclick="openEditModal('+idx+')">';
         h+='<span class="cy-daynum">'+(ri===0?day:'')+'</span>';
-        var cyTgtObj=showTargets(r); var cyFee=r.fee||r.cost; var cyTone=perfTone(r.bs_a, cyTgtObj.bs_m, cyFee, r.roi_a, cyTgtObj.roi_t); var cySty=toneStyle(cyTone);
+        var cyTgtObj=showTargets(r); var cyFee=r.fee||r.cost; var cyTone=perfTone(r.bs_a, cyTgtObj.bs_m, cyFee, r.roi_a, cyTgtObj.roi_t); if(cyTone==='near') cyTone='hit'; var cySty=toneStyle(cyTone);
         h+='<span class="cy-djname '+cyTone+'"'+(cySty?' style="'+cySty+'"':'')+'>'+nm+'</span>';
         h+='<span class="cy-fee">'+$k(cyFee)+'</span>';
         h+='<span class="cy-target">'+$k(cyTgtObj.bs_m)+'</span>';
@@ -5779,7 +5822,7 @@ function checkDjSuggestion(){
   var fair=realisticSuggestedFee(p, venue, dateStr) || cappedSuggestedFee(p.avg_bs, p.avg_fee);
   box.style.display='block';
   box.innerHTML=
-    '<div class="dj-sugg-hd">'+p.display+' &mdash; '+p.n+' shows on record</div>'
+    '<div class="dj-sugg-hd" style="cursor:pointer;text-decoration:underline" onclick="openDjShowHistory('+JSON.stringify(p.name)+')" title="Click to see every booking">'+p.display+' &mdash; '+p.n+' shows on record</div>'
     +'<div class="dj-sugg-row"><span>Avg fee historically paid</span><b>'+$k(p.avg_fee)+'</b></div>'
     +'<div class="dj-sugg-row"><span>Avg BS delivered</span><b>'+$k(p.avg_bs)+'</b></div>'
     +'<div class="dj-sugg-row"><span>Avg ROI achieved</span><b class="kc-b">'+(p.avg_roi_a||'-')+'x</b></div>'
@@ -5789,6 +5832,62 @@ function checkDjSuggestion(){
     +budgetHtml;
 }
 
+function closeDjShowHistory(){
+  var el=document.getElementById('djHistModal');
+  if(el) el.remove();
+}
+function openDjShowHistory(name){
+  closeDjShowHistory();
+  if(!name) return;
+  var q=String(name).trim().toUpperCase();
+  var rows=SCHED.filter(function(r){
+    if(r._s==='empty'||!r.dj) return false;
+    var nm=String(r.dj).trim().toUpperCase();
+    if(nm===q) return true;
+    var ws=q.split(/\s+/);
+    for(var w=0;w<ws.length;w++){ if(ws[w].length>=4 && nm.indexOf(ws[w])>=0) return true; }
+    return false;
+  }).sort(function(a,b){ return a.d<b.d?1:-1; });
+  var rowsHtml=rows.map(function(r){
+    var tgt=(typeof showTargets==='function')?showTargets(r):{bs_m:r.bs_m,roi_t:r.roi_t};
+    var bsM=tgt.bs_m, roiT=tgt.roi_t, fee=r.fee||r.cost;
+    var tone=(typeof perfTone==='function')?perfTone(r.bs_a,bsM,fee,r.roi_a,roiT):'';
+    var dt=new Date(r.d+'T12:00:00').toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});
+    var st=r._s==='beat'?'Beat':r._s==='miss'?'Miss':r._s==='fut'?'Upcoming':'—';
+    return '<tr>'
+      +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair);white-space:nowrap;color:var(--ink3)">'+dt+'</td>'
+      +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair)">'+(r.v||r.venue||'')+'</td>'
+      +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair);text-align:right">'+$k(fee)+'</td>'
+      +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair);text-align:right">'+$k(bsM)+'</td>'
+      +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair);text-align:right"'+(tone?' class="'+tone+'"':'')+'><b>'+$k(r.bs_a)+'</b></td>'
+      +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair);text-align:right"'+(tone?' class="'+tone+'"':'')+'><b>'+rx(r.roi_a)+'</b></td>'
+      +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair);text-align:center"><span class="pill '+(r._s==='beat'?'p-beat':r._s==='miss'?'p-miss':'p-nd')+'">'+st+'</span></td>'
+      +'</tr>';
+  }).join('') || '<tr><td colspan="7" style="padding:16px;color:var(--ink3)">No shows found</td></tr>';
+
+  var modal=document.createElement('div');
+  modal.id='djHistModal';
+  modal.className='modal-bg';
+  modal.onclick=function(ev){ if(ev.target===modal) closeDjShowHistory(); };
+  modal.innerHTML='<div class="modal" style="width:min(700px,96vw)" onclick="event.stopPropagation()">'
+    +'<div class="modal-hd"><h3>'+name+' &middot; '+rows.length+' show'+(rows.length===1?'':'s')+' on record</h3>'
+    +'<button class="modal-close" onclick="closeDjShowHistory()">&#10005;</button></div>'
+    +'<div class="modal-body" style="gap:12px">'
+    +'<div style="overflow:auto;max-height:60vh;border:0.5px solid var(--hair);border-radius:10px">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+    +'<th style="text-align:left;padding:8px;background:var(--card3);font-size:9px;color:var(--ink3)">Date</th>'
+    +'<th style="text-align:left;padding:8px;background:var(--card3);font-size:9px;color:var(--ink3)">Venue</th>'
+    +'<th style="text-align:right;padding:8px;background:var(--card3);font-size:9px;color:var(--ink3)">Fee</th>'
+    +'<th style="text-align:right;padding:8px;background:var(--card3);font-size:9px;color:var(--ink3)">Target</th>'
+    +'<th style="text-align:right;padding:8px;background:var(--card3);font-size:9px;color:var(--ink3)">Actual</th>'
+    +'<th style="text-align:right;padding:8px;background:var(--card3);font-size:9px;color:var(--ink3)">ROI</th>'
+    +'<th style="text-align:center;padding:8px;background:var(--card3);font-size:9px;color:var(--ink3)">Status</th>'
+    +'</tr></thead><tbody>'+rowsHtml+'</tbody></table></div>'
+    +'</div>'
+    +'<div class="modal-foot"><button type="button" class="btn-pdf" onclick="closeDjShowHistory()">Close</button></div>'
+    +'</div>';
+  document.body.appendChild(modal);
+}
 function editVipNote(idx){
   var r=SCHED[idx]; if(!r) return;
   var cur=(r.vipNote||'');
