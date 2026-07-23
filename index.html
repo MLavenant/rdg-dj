@@ -138,6 +138,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .sc-empty-day{color:var(--ink4)}
 .hit{color:var(--beat)!important;font-weight:700}.low{color:var(--miss)!important}
 .near{color:var(--amb)!important;font-weight:700}
+.cy-actual.near{color:var(--amb)!important}
 .kc-b{color:var(--blue)}.beat{color:var(--beat)}.miss{color:var(--miss)}
 /* PY columns */
 .sc-py{background:rgba(0,0,0,.01)}
@@ -459,7 +460,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 /* DJ column ? narrower and clickable */
 .sc-dj{width:160px!important;min-width:140px!important;max-width:180px!important}
 .sc-dj-cell{font-size:11px;padding:4px 6px!important;max-width:180px;overflow:hidden}
-.dj-clickname{display:block;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}.sc-beat .dj-clickname,.dj-clickname.hit{color:var(--beat)!important}.sc-miss .dj-clickname,.dj-clickname.low{color:var(--miss)!important}
+.dj-clickname{display:block;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}.sc-beat .dj-clickname,.dj-clickname.hit{color:var(--beat)!important}.sc-miss .dj-clickname,.dj-clickname.low{color:var(--miss)!important}.dj-clickname.near,.sc-miss .dj-clickname.near,.sc-beat .dj-clickname.near{color:var(--amb)!important}
 .dj-fee-inline{display:block;font-size:9px;color:var(--ink3);margin-top:1px}
 .sc-dj-cell:hover .dj-clickname{color:var(--blue);text-decoration:underline}
 /* Budget KPI */
@@ -855,7 +856,7 @@ textarea#fldNote:focus{border-color:var(--blue)}
     <div class="pg-section" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div>
         <div class="pg-title2">&#9650; Forecast</div>
-        <div id="fcastMeta" style="font-size:10px;color:var(--ink3)">BS Actual = FourVenues Integrations API (price ù Accepted + Not completed)</div>
+        <div id="fcastMeta" style="font-size:10px;color:var(--ink3)">BS Actual = FourVenues Integrations API (price ÔøΩ Accepted + Not completed)</div>
       </div>
       <button type="button" class="btn-pdf no-print" onclick="exportViewPdf('forecast')">Export PDF</button>
     </div>
@@ -867,7 +868,7 @@ textarea#fldNote:focus{border-color:var(--blue)}
     <div class="pg-section" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div>
         <div class="pg-title2" style="color:#dc2626;margin:0"><span class="live-pulse"></span>LIVE</div>
-        <div style="font-size:10px;color:var(--ink3);margin-top:2px">All venues ù night-of Toast BS (ignores venue filter)</div>
+        <div style="font-size:10px;color:var(--ink3);margin-top:2px">All venues ÔøΩ night-of Toast BS (ignores venue filter)</div>
       </div>
       <button type="button" id="liveRefreshBtn" onclick="refreshLive()" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;border:0.5px solid var(--rule);background:var(--card2);cursor:pointer;font-family:inherit">Refresh</button>
     </div>
@@ -892,7 +893,7 @@ textarea#fldNote:focus{border-color:var(--blue)}
   <div id="view-system" style="display:none">
     <div class="pg-section">
       <div class="pg-title2">Sanity</div>
-      <div style="font-size:10px;color:var(--ink3);margin-top:2px">What we pull, when it runs, and whether itùs healthy</div>
+      <div style="font-size:10px;color:var(--ink3);margin-top:2px">What we pull, when it runs, and whether itÔøΩs healthy</div>
     </div>
     <div id="systemBody" style="padding:14px 16px;display:flex;flex-direction:column;gap:14px"></div>
   </div>
@@ -924,8 +925,8 @@ textarea#fldNote:focus{border-color:var(--blue)}
       <div id="fldFeeTargets" style="display:none;margin:0 0 10px;padding:10px 12px;background:var(--card2);border-radius:10px;border:0.5px solid var(--hair)">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin-bottom:6px">From DJ fee (venue ROI rules)</div>
         <div style="display:flex;gap:16px;flex-wrap:wrap">
-          <div><div style="font-size:9px;color:var(--ink3);text-transform:uppercase">BS Target</div><div id="fldFeeBsTgt" style="font-size:16px;font-weight:900;color:#7D5A00">ù</div></div>
-          <div><div style="font-size:9px;color:var(--ink3);text-transform:uppercase">ROI Target</div><div id="fldFeeRoiTgt" style="font-size:16px;font-weight:900">ù</div></div>
+          <div><div style="font-size:9px;color:var(--ink3);text-transform:uppercase">BS Target</div><div id="fldFeeBsTgt" style="font-size:16px;font-weight:900;color:#7D5A00">ÔøΩ</div></div>
+          <div><div style="font-size:9px;color:var(--ink3);text-transform:uppercase">ROI Target</div><div id="fldFeeRoiTgt" style="font-size:16px;font-weight:900">ÔøΩ</div></div>
         </div>
       </div>
       <div class="dj-sugg-box" id="fldDjSuggest"></div>
@@ -1071,7 +1072,7 @@ function buildPyMapForMonth(venue, yr, mm){
     return true;
   }
 
-  /* Pass 1 ù exact calendar anniversary only when weekday also matches */
+  /* Pass 1 ÔøΩ exact calendar anniversary only when weekday also matches */
   for(var day=1; day<=days; day++){
     var ds=yr+'-'+mm+'-'+(day<10?'0':'')+day;
     var pyDate=pyYear+'-'+ds.slice(5);
@@ -1079,7 +1080,7 @@ function buildPyMapForMonth(venue, yr, mm){
     claim(ds, _schedShowOn(venue, pyDate));
   }
 
-  /* Pass 2 ù same weekday within 3 days of anniversary, unused shows only */
+  /* Pass 2 ÔøΩ same weekday within 3 days of anniversary, unused shows only */
   for(var day2=1; day2<=days; day2++){
     var ds2=yr+'-'+mm+'-'+(day2<10?'0':'')+day2;
     if(map[ds2]) continue;
@@ -1131,23 +1132,23 @@ function resolvePyFields(venue, dateStr, baked){
     var map=buildPyMapForMonth(venue, parseInt(dateStr.slice(0,4),10), dateStr.slice(5,7));
     if(map[dateStr] && map[dateStr].py_dj) return map[dateStr];
   }
-  /* Do not fall back to baked py_* ù it caused duplicate PY names across days. */
+  /* Do not fall back to baked py_* ÔøΩ it caused duplicate PY names across days. */
   return {py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
 }
 function _pyCellsHtml(py, rowspan){
   var pyNm=djLabel(py.py_dj, '');
-  var pyBeat=py.py_beat;
-  var pyBCls=pyBeat===1?'hit':pyBeat===0?'low':'';
+  var pyBCls=bsTone(py.py_bs_a, py.py_bs_m, py.py_fee);
+  var pyRCls=roiTone(py.py_roi_a, py.py_roi_t);
   var rs=rowspan && rowspan>1 ? ' rowspan="'+rowspan+'"' : '';
   var h='<td class="sc-py"'+rs+'>';
-  if(pyNm) h+='<b class="'+(pyBeat===1?'hit':pyBeat===0?'low':'')+'">'+pyNm.slice(0,18)+'</b>';
+  if(pyNm) h+='<b class="'+pyBCls+'">'+pyNm.slice(0,18)+'</b>';
   else h+='-';
   h+='</td>';
   h+='<td class="sc-num py-dim"'+rs+'>'+$k(py.py_fee)+'</td>';
   h+='<td class="sc-num py-dim"'+rs+'>'+$k(py.py_bs_m)+'</td>';
   h+='<td class="sc-num '+pyBCls+'"'+rs+'><b>'+$k(py.py_bs_a)+'</b></td>';
   h+='<td class="sc-num py-dim"'+rs+'>'+rx(py.py_roi_t)+'</td>';
-  h+='<td class="sc-num '+roiTone(py.py_roi_a, py.py_roi_t)+'"'+rs+'><b>'+rx(py.py_roi_a)+'</b></td>';
+  h+='<td class="sc-num '+pyRCls+'"'+rs+'><b>'+rx(py.py_roi_a)+'</b></td>';
   return h;
 }
 
@@ -1176,11 +1177,56 @@ function roiTone(actual, target){
   if(a >= t - 0.1) return 'near';
   return 'low';
 }
+/* BS Actual color ÔøΩ same near band as ROI (0.1x of fee in $), so Calussa etc. match gold across columns */
+function bsTone(actual, target, fee){
+  if(actual==null||target==null||isNaN(+actual)||isNaN(+target)) return '';
+  var a=+actual, t=+target;
+  if(a >= t) return 'hit';
+  var slack = (fee!=null && +fee>0) ? (+fee * 0.1) : Math.max(t * 0.02, 2500);
+  if(a >= t - slack) return 'near';
+  return 'low';
+}
 function roiToneIcon(cls){
   if(cls==='hit') return '&#9650;';
   if(cls==='near') return '&#9679;';
   if(cls==='low') return '&#9660;';
   return '';
+}
+function bsToneIcon(cls){
+  if(cls==='hit') return '&#9650;';
+  if(cls==='near') return '&#9679;';
+  if(cls==='low') return '&#9660;';
+  return '';
+}
+/* Live month stats from SCHED (same beat/miss rules as calendar) */
+function monthPerfFromSched(yr, venue, mm){
+  var shows = SCHED.filter(function(r){
+    return r.v===venue && r.yr===yr && r.d && r.d.slice(5,7)===mm && r._s!=='empty';
+  });
+  var rows = shows.map(function(r){
+    var tgt = (typeof showTargets==='function') ? showTargets(r) : {bs_m:r.bs_m, roi_t:r.roi_t};
+    var bsM = tgt && tgt.bs_m != null ? tgt.bs_m : r.bs_m;
+    var fee = r.fee || r.cost || 0;
+    var roiT = tgt && tgt.roi_t != null ? tgt.roi_t : (fee && bsM ? +(bsM/fee).toFixed(4) : r.roi_t);
+    var roiA = r.roi_a != null ? r.roi_a : (fee && r.bs_a != null ? +(r.bs_a/fee).toFixed(4) : null);
+    return {
+      r:r, dj:r.dj, d:r.d, fee:fee, bs_a:r.bs_a, bs_m:bsM, roi_a:roiA, roi_t:roiT,
+      _s:r._s, beat:r._s==='beat'?1:r._s==='miss'?0:null,
+      bTone:bsTone(r.bs_a, bsM, fee), rTone:roiTone(roiA, roiT)
+    };
+  });
+  var measured = rows.filter(function(x){ return x._s==='beat' || x._s==='miss'; });
+  var beats = measured.filter(function(x){ return x._s==='beat'; }).length;
+  var tBS = rows.reduce(function(s,x){ return s+(x.bs_a||0); },0);
+  var tBSM = rows.reduce(function(s,x){ return s+(x.bs_m||0); },0);
+  var tFee = rows.reduce(function(s,x){ return s+(x.fee||0); },0);
+  var rois = measured.filter(function(x){ return x.roi_a!=null; }).map(function(x){ return +x.roi_a; });
+  var avgR = rois.length ? (rois.reduce(function(a,b){return a+b;},0)/rois.length) : null;
+  return {
+    shows:rows, nShows:rows.length, measured:measured.length, beats:beats,
+    tBS:tBS, tBSM:tBSM, tFee:tFee, avgR:avgR,
+    isEmpty:!rows.length, isFuture:!tBS && rows.some(function(x){ return x._s==='fut'||x._s==='tbd'||!x.bs_a; }) && !measured.length
+  };
 }
 
 /*    Get venue-year shows                                            */
@@ -1411,7 +1457,7 @@ function renderKPIs() {
   if(curView==='leaderboard'||curView==='budget'){
     clearGlobalCalChrome();
     if(curView==='leaderboard'){
-      document.getElementById('pgSub').innerHTML = '<span>ROI Ranking ù all venues</span>';
+      document.getElementById('pgSub').innerHTML = '<span>ROI Ranking ÔøΩ all venues</span>';
     } else {
       document.getElementById('pgSub').innerHTML = '<span>Budget Planner</span>';
     }
@@ -1600,13 +1646,13 @@ function monthAgg(mm){
   return {n:n,tFee:tFee,roi_t:roi_t,projBS:tProjBS||null,bsTgt:tBSTgt||null,tPY:tPY,shows:shows};
 }
 
-/* Display DJ name as stored ù ? / ??? / ???? are valid and shown as entered. */
+/* Display DJ name as stored ÔøΩ ? / ??? / ???? are valid and shown as entered. */
 function djLabel(dj, empty){
   var s=String(dj==null?'':dj).trim();
   if(!s) return empty!=null?empty:'TBD';
   return s;
 }
-/* Live beat/ROI from SCHED ù same rules as ROI Ranking (not baked DJ_PROFILES). */
+/* Live beat/ROI from SCHED ÔøΩ same rules as ROI Ranking (not baked DJ_PROFILES). */
 function liveDjPerfStats(name){
   var q=String(name||'').replace(/\?+/g,'').trim().toUpperCase();
   if(!q) return null;
@@ -1638,7 +1684,7 @@ function djProj(name, fee){
   var raw=String(name||'').trim();
   if(!raw) return {bs:null,roi:null,p:null};
   var q=raw.replace(/\?+/g,'').trim().toUpperCase(), p=null;
-  /* Pure placeholders like ???? ù no profile lookup, but name is valid */
+  /* Pure placeholders like ???? ÔøΩ no profile lookup, but name is valid */
   if(!q) return {bs:null,roi:null,p:null};
   for(var i=0;i<DJ_PROFILES.length;i++){
     if(DJ_PROFILES[i].name===q){p=DJ_PROFILES[i];break;}
@@ -1948,8 +1994,8 @@ function realisticSuggestedFee(profile, venue, dateStr){
   return best;
 }
 /* Suggested fee for rankings:
-   - Beat % >= 50%: match avg fee paid (working ù don't inflate)
-   - Beat % < 50%: judgment ù fee supported by proven BS, never above avg paid */
+   - Beat % >= 50%: match avg fee paid (working ÔøΩ don't inflate)
+   - Beat % < 50%: judgment ÔøΩ fee supported by proven BS, never above avg paid */
 function leaderboardSuggestedFee(avgBS, avgFeePaid, beatRatePct){
   var paid = avgFeePaid > 0 ? Math.round(avgFeePaid / 100) * 100 : null;
   if(paid != null && beatRatePct >= 50) return paid;
@@ -2164,7 +2210,7 @@ function renderYearGrid(){
   var ytPct = ytTotal ? Math.round(ytMeasured/ytTotal*100) : 0;
 
   document.getElementById('budgetMeta').textContent=bgtVenue+'   '+bgtYear+' budget';
-  /* Top KPI strip removed ù Budget stays focused on the planner grid */
+  /* Top KPI strip removed ÔøΩ Budget stays focused on the planner grid */
   var bKpiEl=document.getElementById('budgetKPIs');
   if(bKpiEl){ bKpiEl.innerHTML=''; bKpiEl.style.display='none'; }
 
@@ -2631,7 +2677,7 @@ var SCHED_BAKED = SCHED.map(function(r){ return Object.assign({},r); }); // immu
     if(meta && live && live.updatedAt){
       try{
         var when = new Date(live.updatedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-        meta.textContent = 'BS Actual = FourVenues live ('+when+') ù '+(live.source||'export math')+' ù synced for all users';
+        meta.textContent = 'BS Actual = FourVenues live ('+when+') ÔøΩ '+(live.source||'export math')+' ÔøΩ synced for all users';
       }catch(e){}
     }
   });
@@ -2733,6 +2779,62 @@ function nextM(){ curM++; if(curM>11){curM=0;curYr++;buildYrPills();} go(); }
 function prevAcctM(){ acctM--; if(acctM<0) acctM=11; renderAccounting(); }
 function nextAcctM(){ acctM++; if(acctM>11) acctM=0; renderAccounting(); }
 function jumpMonth(m){ curM=m; setView('calendar'); }
+function closeMonthSummary(){
+  var el=document.getElementById('monthSumModal');
+  if(el) el.remove();
+}
+function openMonthSummary(mo){
+  closeMonthSummary();
+  var mm=(mo+1<10?'0':'')+(mo+1);
+  var perf=monthPerfFromSched(curYr, curV, mm);
+  var title=MN_FULL[mo]+' '+curYr;
+  var br=perf.measured?Math.round(perf.beats/perf.measured*100):null;
+  var rowsHtml=perf.shows.map(function(x){
+    var dt=new Date(x.d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    var st=x._s==='beat'?'Beat':x._s==='miss'?'Miss':x._s==='fut'?'Upcoming':x._s==='nd'?'No actual':(x._s||'‚Äî');
+    return '<tr>'
+      +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair);white-space:nowrap;color:var(--ink3)">'+dt+'</td>'
+      +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair);font-weight:800" class="'+x.bTone+'">'+(djLabel(x.dj)||'TBD')+'</td>'
+      +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair);text-align:right">'+$k(x.fee)+'</td>'
+      +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair);text-align:right">'+$k(x.bs_m)+'</td>'
+      +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair);text-align:right" class="'+x.bTone+'"><b>'+$k(x.bs_a)+'</b></td>'
+      +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair);text-align:right" class="'+x.rTone+'"><b>'+rx(x.roi_a)+'</b></td>'
+      +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair);text-align:center"><span class="pill '+(x._s==='beat'?'p-beat':x._s==='miss'?'p-miss':'p-nd')+'">'+st+'</span></td>'
+      +'</tr>';
+  }).join('') || '<tr><td colspan="7" style="padding:16px;color:var(--ink3)">No shows</td></tr>';
+
+  var modal=document.createElement('div');
+  modal.id='monthSumModal';
+  modal.className='modal-bg';
+  modal.onclick=function(ev){ if(ev.target===modal) closeMonthSummary(); };
+  modal.innerHTML='<div class="modal" style="width:min(720px,96vw)" onclick="event.stopPropagation()">'
+    +'<div class="modal-hd"><h3>'+title+' ¬∑ '+curV+'</h3>'
+    +'<button class="modal-close" onclick="closeMonthSummary()">&#10005;</button></div>'
+    +'<div class="modal-body" style="gap:12px">'
+    +'<div style="display:flex;gap:10px;flex-wrap:wrap">'
+    +'<div style="flex:1;min-width:110px;background:var(--card2);border-radius:10px;padding:10px 12px"><div style="font-size:9px;font-weight:800;color:var(--ink3);text-transform:uppercase">BS Actual</div><div style="font-size:20px;font-weight:900">'+$k(perf.tBS)+'</div></div>'
+    +'<div style="flex:1;min-width:110px;background:var(--card2);border-radius:10px;padding:10px 12px"><div style="font-size:9px;font-weight:800;color:var(--ink3);text-transform:uppercase">BS Target</div><div style="font-size:20px;font-weight:900">'+$k(perf.tBSM)+'</div></div>'
+    +'<div style="flex:1;min-width:110px;background:var(--card2);border-radius:10px;padding:10px 12px"><div style="font-size:9px;font-weight:800;color:var(--ink3);text-transform:uppercase">Beat</div><div style="font-size:20px;font-weight:900" class="'+(br!=null&&br>=60?'beat':'miss')+'">'+(perf.measured?perf.beats+'/'+perf.measured:'‚Äî')+(br!=null?' <span style="font-size:12px">('+br+'%)</span>':'')+'</div></div>'
+    +'<div style="flex:1;min-width:110px;background:var(--card2);border-radius:10px;padding:10px 12px"><div style="font-size:9px;font-weight:800;color:var(--ink3);text-transform:uppercase">Avg ROI</div><div style="font-size:20px;font-weight:900;color:var(--blue)">'+(perf.avgR!=null?perf.avgR.toFixed(1)+'x':'‚Äî')+'</div></div>'
+    +'</div>'
+    +'<div style="overflow:auto;max-height:55vh;border:0.5px solid var(--hair);border-radius:10px">'
+    +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
+    +'<th style="text-align:left;padding:8px;background:var(--card3);font-size:9px;color:var(--ink3)">Date</th>'
+    +'<th style="text-align:left;padding:8px;background:var(--card3);font-size:9px;color:var(--ink3)">DJ</th>'
+    +'<th style="text-align:right;padding:8px;background:var(--card3);font-size:9px;color:var(--ink3)">Fee</th>'
+    +'<th style="text-align:right;padding:8px;background:var(--card3);font-size:9px;color:var(--ink3)">Target</th>'
+    +'<th style="text-align:right;padding:8px;background:var(--card3);font-size:9px;color:var(--ink3)">Actual</th>'
+    +'<th style="text-align:right;padding:8px;background:var(--card3);font-size:9px;color:var(--ink3)">ROI</th>'
+    +'<th style="text-align:center;padding:8px;background:var(--card3);font-size:9px;color:var(--ink3)">Status</th>'
+    +'</tr></thead><tbody>'+rowsHtml+'</tbody></table></div>'
+    +'</div>'
+    +'<div class="modal-foot">'
+    +'<button type="button" class="btn-pdf" onclick="closeMonthSummary()">Close</button>'
+    +'<button type="button" class="btn-pdf" style="background:var(--ink);color:#fff;border-color:var(--ink)" onclick="closeMonthSummary();jumpMonth('+mo+')">Open calendar</button>'
+    +'</div></div>';
+  document.body.appendChild(modal);
+}
+
 
 /*                                                               
    CALENDAR   full scheduling list view
@@ -2832,8 +2934,6 @@ function renderCal(){
         var st   = r._s||'nd';
         var nm   = djLabel(r.dj);
         var idx  = SCHED.indexOf(r);
-        var bCls = r.bs_a&&r.bs_m ? (r.bs_a>=r.bs_m?'hit':'low') : '';
-        var rCls = roiTone(r.roi_a, r.roi_t);
         var py = (ri===0 ? (pyMap[ds]||pyBlank) : null);
 
         h+='<tr class="'+dc+' sc-'+st+'" data-cal-ds="'+ds+'" ondragover="swDragOver(event)" ondragleave="swDragLeave(event)" ondrop="swDropOnDate(event,\''+ds+'\')">';
@@ -2843,11 +2943,16 @@ function renderCal(){
             +dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
         }
         /* current year columns */
+        var tgt=showTargets(r);
+        var bsM=tgt.bs_m, roiT=tgt.roi_t;
+        var fee=r.fee||r.cost;
+        var bCls = bsTone(r.bs_a, bsM, fee);
+        var rCls = roiTone(r.roi_a, roiT);
         h+='<td class="sc-dj-cell" draggable="true" data-show-idx="'+idx+'" '
           +'ondragstart="showDragStart(event)" ondragend="swDragEnd(event)" '
-          +'onclick="openEditModal('+idx+')" style="cursor:grab" title="Drag to move date ù click to edit">'
-          +'<b class="dj-clickname '+(st==='beat'?'hit':st==='miss'?'low':'')+'">'+nm+'</b>'
-          +'<span class="dj-fee-inline">'+$k(r.fee||r.cost)+'</span>'
+          +'onclick="openEditModal('+idx+')" style="cursor:grab" title="Drag to move date ÔøΩ click to edit">'
+          +'<b class="dj-clickname '+bCls+'">'+nm+'</b>'
+          +'<span class="dj-fee-inline">'+$k(fee)+'</span>'
           +(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')
           +'</td>';
         if(ri===0){
@@ -2856,19 +2961,15 @@ function renderCal(){
             +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status (shared with Accounting)"')
             +'</div></td>';
         }
-        var tgt=showTargets(r);
-        var bsM=tgt.bs_m, roiT=tgt.roi_t;
-        bCls = r.bs_a&&bsM ? (r.bs_a>=bsM?'hit':'low') : '';
-        rCls = roiTone(r.roi_a, roiT);
         var vipTxt=(r.vipNote||'').trim();
         var vipEsc=vipTxt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
         h+='<td class="sc-vip" onclick="event.stopPropagation()">';
         h+='<span class="vip-link'+(vipTxt?' has-note':'')+'" title="'+(vipTxt||'Add VIP note')+'" onclick="editVipNote('+idx+')">'+(vipTxt?vipEsc:'Add VIP note')+'</span>';
         h+='</td>';
-        h+='<td class="sc-num">'+$k(r.fee||r.cost)+'</td>';
+        h+='<td class="sc-num">'+$k(fee)+'</td>';
         h+='<td class="sc-num">'+$k(bsM)+'</td>';
         h+='<td class="sc-num '+bCls+'"><b>'+$k(r.bs_a)+'</b>'
-          +(bCls?'<div class="sc-beat-icon">'+(bCls==='hit'?'&#9650;':'&#9660;')+'</div>':'')+'</td>';
+          +(bCls?'<div class="sc-beat-icon">'+bsToneIcon(bCls)+'</div>':'')+'</td>';
         h+='<td class="sc-num">'+rx(roiT)+'</td>';
         h+='<td class="sc-num '+rCls+'"><b>'+rx(r.roi_a)+'</b>'
           +(rCls?'<div class="sc-beat-icon">'+roiToneIcon(rCls)+'</div>':'')+'</td>';
@@ -2924,7 +3025,7 @@ function renderCalGrid(yr,mo,mm,days,showMap){
       if(bsM||r.bs_a){
         h+='<div class="cg-chip-nums">';
         h+='<span>'+$k(bsM)+'</span>';
-        h+='<span class="'+(r.bs_a&&bsM?(r.bs_a>=bsM?'hit':'low'):'')+'">'+$k(r.bs_a)+'</span>';
+        h+='<span class="'+bsTone(r.bs_a, bsM, (r.fee||r.cost))+'">'+$k(r.bs_a)+'</span>';
         h+='</div>';
       } else if(r.fee||r.cost) {
         h+='<div class="cg-chip-nums"><span>'+$k(r.fee||r.cost)+'</span></div>';
@@ -2979,7 +3080,7 @@ function renderCalYear(){
         h+='<span class="cy-djname">'+nm+'</span>';
         h+='<span class="cy-fee">'+$k(r.fee||r.cost)+'</span>';
         h+='<span class="cy-target">'+$k(showTargets(r).bs_m)+'</span>';
-        var cyTgt=showTargets(r).bs_m;var cyACls=r.bs_a&&cyTgt?(r.bs_a>=cyTgt?'hit':'low'):'';h+='<span class="cy-actual '+cyACls+'">'+$k(r.bs_a)+'</span>';
+        var cyTgt=showTargets(r).bs_m;var cyACls=bsTone(r.bs_a, cyTgt, (r.fee||r.cost));h+='<span class="cy-actual '+cyACls+'">'+$k(r.bs_a)+'</span>';
         h+='</div>';
       });
     }
@@ -3024,22 +3125,16 @@ function renderSummary(){
   var h='';
   for(var mi=1;mi<=12;mi++){
     var mm=(mi<10?'0':'')+mi;
-    var bsRecs=BS.filter(function(r){return r.venue===curV&&r.yr===curYr&&r.d.slice(5,7)===mm&&(r.bs_a||r.bs_m);});
-    var scRecs=SCHED.filter(function(r){return r.v===curV&&r.yr===curYr&&r.d.slice(5,7)===mm&&r._s!=='empty';});
-    var isEmpty=!bsRecs.length&&!scRecs.length;
-
-    var tBS =bsRecs.reduce(function(s,r){return s+(r.bs_a||0);},0);
-    var tBSM=bsRecs.reduce(function(s,r){return s+(r.bs_m||0);},0)||scRecs.reduce(function(s,r){return s+(r.bs_m||0);},0);
-    var tFee=bsRecs.reduce(function(s,r){return s+(r.cost||0);},0)||scRecs.reduce(function(s,r){return s+(r.fee||r.cost||0);},0);
-    var beats=bsRecs.filter(function(r){return r.beat===1;}).length;
-    var meas =bsRecs.filter(function(r){return r.beat!==null&&r.beat!==undefined;}).length;
-    var rois =bsRecs.filter(function(r){return r.roi_a;}).map(function(r){return r.roi_a;});
-    var avgR =rois.length?(rois.reduce(function(a,b){return a+b;},0)/rois.length).toFixed(1)+'x':'-';
-    var nShows=bsRecs.length||scRecs.length;
-    var isFuture=!tBS;
+    var perf=monthPerfFromSched(curYr, curV, mm);
+    var isEmpty=perf.isEmpty;
+    var tBS=perf.tBS, tBSM=perf.tBSM, tFee=perf.tFee;
+    var beats=perf.beats, meas=perf.measured;
+    var avgR=perf.avgR!=null?perf.avgR.toFixed(1)+'x':'-';
+    var nShows=perf.nShows;
+    var isFuture=isEmpty?false:(!meas && !tBS);
     var varV=tBS-tBSM;
 
-    h+='<div class="sum-card'+(isEmpty?' sum-card-empty':isFuture?' sum-future':'')+'" onclick="jumpMonth('+(mi-1)+')">';
+    h+='<div class="sum-card'+(isEmpty?' sum-card-empty':isFuture?' sum-future':'')+'" onclick="openMonthSummary('+(mi-1)+')">';
     h+='<div class="sum-mname">'+MN_FULL[mi-1]+(isFuture&&!isEmpty?' <span class="sum-fut-tag">Planned</span>':'')+'</div>';
     if(isEmpty){
       h+='<div class="sum-no-data">No shows</div>';
@@ -3068,7 +3163,7 @@ function renderSummary(){
    ALL SHOWS
                                                                   */
 function renderAllShows(){
-  var recs=BS.filter(function(r){return r.venue===curV&&r.yr===curYr&&(r.bs_a||r.bs_m);});
+  var recs=SCHED.filter(function(r){return r.v===curV&&r.yr===curYr&&r._s!=='empty'&&(r.bs_a||r.bs_m||r._s==='beat'||r._s==='miss'||r._s==='fut'||r._s==='nd');});
   recs.sort(function(a,b){return a.d<b.d?-1:1;});
   if(!recs.length){
     document.getElementById('allshowsBody').innerHTML='<div class="empty">No data for '+curV+' '+curYr+'</div>';
@@ -3079,19 +3174,23 @@ function renderAllShows(){
     +'<th>ROI Tgt</th><th>ROI Act</th><th>Status</th>'
     +'</tr></thead><tbody>';
   recs.forEach(function(r){
-    var bCls=r.bs_a&&r.bs_m?(r.bs_a>=r.bs_m?'hit':'low'):'';
-    var rCls=roiTone(r.roi_a, r.roi_t);
+    var tgt=showTargets(r);
+    var bsM=tgt.bs_m, roiT=tgt.roi_t;
+    var fee=r.fee||r.cost;
+    var bCls=bsTone(r.bs_a, bsM, fee);
+    var rCls=roiTone(r.roi_a, roiT);
     var dt=new Date(r.d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    var stLabel=r._s==='beat'?'Beat':r._s==='miss'?'Miss':r._s==='fut'?'Upcoming':r._s==='nd'?'N/A':(r._s||'N/A');
+    var stPill=r._s==='beat'?'p-beat':r._s==='miss'?'p-miss':'p-nd';
     h+='<tr>';
     h+='<td class="td-dt">'+dt+'</td>';
-    h+='<td class="td-dj">'+(r.dj||'-')+'</td>';
-    h+='<td>'+$k(r.cost)+'</td>';
-    h+='<td>'+$k(r.bs_m)+'</td>';
+    h+='<td class="td-dj '+bCls+'">'+(r.dj||'-')+'</td>';
+    h+='<td>'+$k(fee)+'</td>';
+    h+='<td>'+$k(bsM)+'</td>';
     h+='<td class="'+bCls+'"><b>'+$k(r.bs_a)+'</b></td>';
-    h+='<td>'+rx(r.roi_t)+'</td>';
+    h+='<td>'+rx(roiT)+'</td>';
     h+='<td class="'+rCls+'"><b>'+rx(r.roi_a)+'</b></td>';
-    h+='<td><span class="pill '+(r.beat===1?'p-beat':r.beat===0?'p-miss':'p-nd')+'">'
-      +(r.beat===1?'Beat':r.beat===0?'Miss':'N/A')+'</span></td>';
+    h+='<td><span class="pill '+stPill+'">'+stLabel+'</span></td>';
     h+='</tr>';
   });
   h+='</tbody></table>';
@@ -3753,7 +3852,7 @@ var FORECAST_DATA = [
   {"venue":"Casa Neos Lounge","date":"2026-07-18","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-19","dj":"AFTERDARK","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-23","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
-  {"venue":"Casa Neos Lounge","date":"2026-07-24","dj":"Malùne Morez","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
+  {"venue":"Casa Neos Lounge","date":"2026-07-24","dj":"MalÔøΩne Morez","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-25","dj":"AMOG","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-26","dj":"AFTERDARK","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-30","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
@@ -3846,7 +3945,7 @@ function _sparkline(pacingObj, capacity){
   return svg;
 }
 
-/** DJ name for Forecast UI ù keep ? placeholders as entered. */
+/** DJ name for Forecast UI ÔøΩ keep ? placeholders as entered. */
 function _fcastDjName(dj){
   if(dj==null) return '';
   return String(dj).trim();
@@ -3958,7 +4057,7 @@ function _liveAnimateMoney(el, from, to, deltaEl){
 }
 function refreshLive(){
   var btn = document.getElementById('liveRefreshBtn');
-  if(btn){ btn.textContent = 'Pulling Toastù'; btn.disabled = true; }
+  if(btn){ btn.textContent = 'Pulling ToastÔøΩ'; btn.disabled = true; }
   var prevAt = (window._liveNight && window._liveNight.updatedAt) || '';
   var cfg = window._rdgConfig || {};
   var url = (cfg.liveRefreshUrl || '').trim();
@@ -3985,7 +4084,7 @@ function refreshLive(){
   function pollUntilUpdated(tries){
     tries = tries || 0;
     if(tries > 45){
-      done(false, 'Toast pull timed out ù check Sanity / GitHub Actions Live Refresh.');
+      done(false, 'Toast pull timed out ÔøΩ check Sanity / GitHub Actions Live Refresh.');
       return;
     }
     var cur = (window._liveNight && window._liveNight.updatedAt) || '';
@@ -3994,7 +4093,7 @@ function refreshLive(){
       done(req.status !== 'failed', req.message || (cur && cur !== prevAt ? 'Toast LIVE updated.' : 'Refresh finished.'));
       return;
     }
-    // Faster poll ù Firebase usually updates as soon as the worker finishes
+    // Faster poll ÔøΩ Firebase usually updates as soon as the worker finishes
     setTimeout(function(){ pollUntilUpdated(tries + 1); }, 1200);
   }
 
@@ -4039,7 +4138,7 @@ function refreshLive(){
   }
 
   kick.then(function(result){
-    // HTTP endpoint already finished the Toast pull ù no long wait
+    // HTTP endpoint already finished the Toast pull ÔøΩ no long wait
     if(result && result.payload && result.payload.date){
       window._liveNight = result.payload;
       done(!!result.ok, result.payload && result.message
@@ -4068,7 +4167,7 @@ function renderLive(animate){
   var statsByVenue = liveFresh ? ((live && live.statsByVenue) || {}) : {};
   var inWin=_liveWindowActive();
 
-  // LIVE is always all venues for the night ù ignore sidebar venue selection (curV)
+  // LIVE is always all venues for the night ÔøΩ ignore sidebar venue selection (curV)
   var shows = SCHED.filter(function(r){
     if(r.d!==showDate) return false;
     if(r._s==='empty') return false;
@@ -4105,7 +4204,7 @@ function renderLive(animate){
   })();
   h += '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap">';
   h += '<div><div style="font-size:15px;font-weight:900">'+nightLabel+'</div>'
-    + '<div style="font-size:11px;color:var(--ink3);margin-top:2px">All venues ù night of '+showDate+'</div></div>';
+    + '<div style="font-size:11px;color:var(--ink3);margin-top:2px">All venues ÔøΩ night of '+showDate+'</div></div>';
   if(inWin) h += '<div style="font-size:11px;font-weight:800;color:#dc2626">UPDATING</div>';
   h += '</div>';
   if(live && live.date && live.date !== biz){
@@ -4280,32 +4379,32 @@ function renderSystem(){
 
   var fvExtra = forecastLive && forecastLive.updatedAt
     ? '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">forecastLive: <b style="color:var(--ink2)">'+forecastLive.updatedAt+'</b>'
-      + (forecastLive.source ? ' ù '+forecastLive.source : '') + '</div>'
+      + (forecastLive.source ? ' ÔøΩ '+forecastLive.source : '') + '</div>'
     : '';
-  h += card('FourVenues (Forecast BS Actual)', 'Daily ~8:30 AM ET (same window as Toast) ù Integrations API ù laptop off', fv, 36, fvExtra);
+  h += card('FourVenues (Forecast BS Actual)', 'Daily ~8:30 AM ET (same window as Toast) ÔøΩ Integrations API ÔøΩ laptop off', fv, 36, fvExtra);
 
-  h += card('Toast BS Actual (calendar / history)', 'Wed-Sun ~8:30 AM ET ù GitHub Actions ? GitHub Pages', toast, 84, '');
+  h += card('Toast BS Actual (calendar / history)', 'Wed-Sun ~8:30 AM ET ÔøΩ GitHub Actions ? GitHub Pages', toast, 84, '');
 
   var liveExtra = '';
   if(liveNight && liveNight.updatedAt){
-    liveExtra += '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">liveNight: <b style="color:var(--ink2)">'+(liveNight.updatedAtLocal||liveNight.updatedAt)+'</b> ù night '+(liveNight.date||'')+'</div>';
+    liveExtra += '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">liveNight: <b style="color:var(--ink2)">'+(liveNight.updatedAtLocal||liveNight.updatedAt)+'</b> ÔøΩ night '+(liveNight.date||'')+'</div>';
   }
   if(liveReq && liveReq.status){
     liveExtra += '<div style="margin-top:4px;font-size:11px;color:var(--ink3)">Last Refresh request: <b style="color:var(--ink2)">'+liveReq.status+'</b>'
-      + (liveReq.requestedAt || liveReq.finishedAt ? ' ù '+(liveReq.finishedAt||liveReq.requestedAt) : '') + '</div>';
+      + (liveReq.requestedAt || liveReq.finishedAt ? ' ÔøΩ '+(liveReq.finishedAt||liveReq.requestedAt) : '') + '</div>';
   }
   liveExtra += '<div style="margin-top:6px;font-size:11px;color:'+(liveCfgOk?'#0f766e':'#b91c1c')+'">'
     + (liveCfgOk
       ? 'Refresh button wired ('+(cfg.liveRefreshUrl ? 'HTTP endpoint' : 'GitHub dispatch')+').'
-      : 'Refresh not wired ù set rdg/config/liveRefreshUrl or githubDispatchToken in Firebase.')
+      : 'Refresh not wired ÔøΩ set rdg/config/liveRefreshUrl or githubDispatchToken in Firebase.')
     + '</div>';
-  h += card('Toast LIVE (on-demand only)', 'Only when someone presses Refresh ù no night schedule', toastLive, 36, liveExtra);
+  h += card('Toast LIVE (on-demand only)', 'Only when someone presses Refresh ÔøΩ no night schedule', toastLive, 36, liveExtra);
 
   h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px">'
     + '<div style="font-size:13px;font-weight:800;margin-bottom:6px">How the pieces fit</div>'
     + '<div style="font-size:11px;color:var(--ink3);line-height:1.6">'
     + '<b style="color:var(--ink2)">GitHub Pages (rdg-dj):</b> the published website everyone opens.<br>'
-    + '<b style="color:var(--ink2)">GitHub Actions (boh-dashboard):</b> cloud robot that pulls data on a schedule ù laptop can be off.<br>'
+    + '<b style="color:var(--ink2)">GitHub Actions (boh-dashboard):</b> cloud robot that pulls data on a schedule ÔøΩ laptop can be off.<br>'
     + '<b style="color:var(--ink2)">FourVenues:</b> Integrations API bookings (accepted + not-completed price) ? Forecast Actuals.<br>'
     + '<b style="color:var(--ink2)">Firebase:</b> instant overlays (Forecast Actuals, LIVE night, Sanity status).'
     + '</div></div>';
@@ -4750,7 +4849,7 @@ function renderForecast(venueIdx, view){
     events.forEach(function(e){ Object.keys(e.tierSummary||{}).forEach(function(t){ if(allTiers.indexOf(t)<0) allTiers.push(t); }); });
     allTiers.sort(function(a,b){ var ai=TIER_ORDER_FC.indexOf(a),bi=TIER_ORDER_FC.indexOf(b); return (ai<0?99:ai)-(bi<0?99:bi); });
 
-    // KPI strip ù compute targets live from VENUE_ROI_RULES
+    // KPI strip ÔøΩ compute targets live from VENUE_ROI_RULES
     var totalRev = events.reduce(function(s,e){return s+e.totalRevenue;},0);
     var totalTarget = events.reduce(function(s,e){
       if(e.bsTarget) return s+e.bsTarget;
@@ -4780,7 +4879,7 @@ function renderForecast(venueIdx, view){
       : String(curV||'VENUE').toUpperCase();
 
     // ============================================================
-    // 1) RESULTS ù booking performance snapshot (PDF page 1)
+    // 1) RESULTS ÔøΩ booking performance snapshot (PDF page 1)
     // ============================================================
     h += '<div class="fcast-chart-wrap fcast-print-snap" style="padding:0;overflow:hidden">';
     if(!viewRows.length){
@@ -4803,12 +4902,12 @@ function renderForecast(venueIdx, view){
     h += '</div>';
 
     // ============================================================
-    // 2) DETAILS ù booking performance detail table (PDF page 2)
+    // 2) DETAILS ÔøΩ booking performance detail table (PDF page 2)
     // ============================================================
     h += _fcastDetailsTableHtml(upcoming, venueShort);
 
     // ============================================================
-    // 3ù5) Pick up / Projected / Breakdown ù below snap + details (screen only in PDF)
+    // 3ÔøΩ5) Pick up / Projected / Breakdown ÔøΩ below snap + details (screen only in PDF)
     // ============================================================
     h += '<div class="fcast-chart-wrap fcast-print-below" style="padding:0;overflow:hidden">';
     h += '<div class="fcast-chart-title" style="padding:12px 16px 0">3. Pick up Pace &mdash; How Fast We\u2019re Closing the Gap</div>';
@@ -5517,7 +5616,7 @@ function renderAccounting(){
       var idx=SCHED.indexOf(r);
       var tgt=showTargets(r);
       var bsM=tgt.bs_m;
-      var bsCls=r.bs_a&&bsM?(r.bs_a>=bsM?'hit':'low'):'';
+      var bsCls=bsTone(r.bs_a, bsM, (r.fee||r.cost));
 
       h+='<tr class="'+dc+'">';
       if(ri===0){
@@ -5690,8 +5789,8 @@ function updateFeeTargetsPreview(){
   }
   var tgt=showTargets({v:venue, venue:venue, d:dateStr, fee:fee, cost:fee});
   box.style.display='block';
-  bsEl.textContent = tgt.bs_m!=null ? $k(tgt.bs_m) : 'ù';
-  roiEl.textContent = tgt.roi_t!=null ? (Number(tgt.roi_t).toFixed(1)+'x') : 'ù';
+  bsEl.textContent = tgt.bs_m!=null ? $k(tgt.bs_m) : 'ÔøΩ';
+  roiEl.textContent = tgt.roi_t!=null ? (Number(tgt.roi_t).toFixed(1)+'x') : 'ÔøΩ';
   if(f.bsm) f.bsm.value = tgt.bs_m!=null ? tgt.bs_m : '';
   if(f.roit) f.roit.value = tgt.roi_t!=null ? tgt.roi_t : '';
 }
@@ -6163,7 +6262,7 @@ var HELP_FAQ = [
   {kw:['budget','not show','missing','lounge','venue'], q:"Why don't I see my new show in the Budget tab?",
    a:"The Budget tab follows whatever venue you're viewing on the Calendar   switch venues using the pills at the top and Budget updates automatically. The Year dropdown inside Budget is independent, so make sure it's set to the year you want too."},
   {kw:['roi','target','tier','multiplier','suggested','fair value'], q:'How is the ROI Target / Suggested Fee calculated?',
-   a:'ROI Target comes from the DJ fee (venue fee-tier rules). Suggested Fee is calibrated from that DJ\'s past BS Actuals so historical beat-vs-target rate stays around ?50% ù a realistic pay level, not an automatic raise or cut.'},
+   a:'ROI Target comes from the DJ fee (venue fee-tier rules). Suggested Fee is calibrated from that DJ\'s past BS Actuals so historical beat-vs-target rate stays around ?50% ÔøΩ a realistic pay level, not an automatic raise or cut.'},
   {kw:['special week','f1','art basel','wmc','event','festival'], q:'Can I add a Special Week (like F1, Art Basel)?',
    a:'Yes   click <b>+ Special Week</b>, name it, and pick a start/end date. It can span multiple months and shows as an amber label on every day in range.'},
   {kw:['2026','2027','plan','year','current'], q:'Can I budget for 2026 as well as 2027?',
