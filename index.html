@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RDG DJ Dashboard v3.13</title>
+<title>RDG DJ Dashboard v3.14</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -109,8 +109,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .sc-col-resizer{position:absolute;top:0;right:-3px;bottom:0;width:7px;cursor:col-resize;user-select:none;z-index:8}
 .sc-col-resizer:hover,.sc-col-resizer.dragging{background:var(--blue)}
 .sc-fee,.sc-num{width:70px;text-align:right!important}
-.sc-sep{width:4px;background:var(--card4);padding:0!important;border:none!important}
-.sc-py{width:100px}.sc-py-hd{background:var(--card4)!important;color:var(--ink2)!important}
+.sc-sep{width:3px;min-width:3px;max-width:3px;background:var(--card4);padding:0!important;border:none!important}
+.sc-py{width:145px;min-width:145px;overflow-wrap:anywhere;line-height:1.12}.sc-py-hd{background:var(--card4)!important;color:var(--ink2)!important}
 .sc-act{width:24px;text-align:center!important}
 /* Day row colours */
 .sc-sat td:not(.sc-sep){background:#f2f2f7}.sc-sun td:not(.sc-sep){background:#f2f2f7}
@@ -591,12 +591,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .cal-recap-l{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)}
 .cal-recap-v{font-size:15px;font-weight:900;letter-spacing:-.3px;margin-top:2px}
 .cal-recap-s{font-size:9px;color:var(--ink3);margin-top:1px}
-.sc-3d{width:42px;text-align:center!important}
-.sc-3d-btn{font-size:9px;font-weight:800;padding:3px 7px;border-radius:7px;border:1px solid #c4b5e8;background:#f4effc;color:#5b368c;cursor:pointer;font-family:inherit}
+.sc-3d{width:34px;text-align:center!important}
+.sc-3d-btn{font-size:8px;font-weight:800;padding:3px 5px;border-radius:6px;border:1px solid #c4b5e8;background:#f4effc;color:#5b368c;cursor:pointer;font-family:inherit}
 .sc-3d-btn:hover{background:#5b368c;color:#fff;border-color:#5b368c}
 #view-calendar.cal-list-fit #calBody{overflow-x:auto!important;overflow-y:hidden!important}
 #view-calendar.cal-list-fit .sched-tbl{height:100%}
 #view-calendar.cal-list-fit .sched-tbl thead th{padding:4px 6px!important;font-size:8px!important}
+#view-calendar.cal-list-fit .sched-tbl .sc-sep{width:3px!important;min-width:3px!important;max-width:3px!important;padding:0!important}
 #view-calendar.cal-list-fit .sched-tbl td{padding:1px 6px!important;font-size:10px;line-height:1.15;height:var(--cal-row-h,22px);max-height:var(--cal-row-h,22px);overflow:hidden;vertical-align:middle}
 #view-calendar.cal-list-fit .dj-clickname{font-size:10px}
 #view-calendar.cal-list-fit .dj-fee-inline{font-size:8px;margin-top:0}
@@ -626,6 +627,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .show3d-layout{display:grid;grid-template-columns:minmax(0,1.2fr) 320px;gap:12px;min-height:420px}
 .show3d-host{position:relative;min-height:420px;border-radius:12px;overflow:hidden;background:radial-gradient(circle at 50% 30%,#1a1622,#050405)}
 .show3d-side{overflow:auto;max-height:60vh}
+.fv3d-hotspot{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:50px;padding:4px 6px;border:1.5px solid var(--tier-color);border-radius:6px;background:rgba(14,14,18,.88);color:#fff;box-shadow:0 2px 9px rgba(0,0,0,.45);font-family:inherit;line-height:1;cursor:pointer;pointer-events:auto;transform:translate(-50%,-100%);transition:opacity .15s,transform .15s;white-space:nowrap}
+.fv3d-hotspot:hover,.fv3d-hotspot.is-selected{transform:translate(-50%,-100%) scale(1.1);z-index:20}
+.fv3d-hotspot.is-muted{opacity:.22}
+.fv3d-hotspot-tier{font-size:8px;font-weight:900;color:var(--tier-color);letter-spacing:.03em;text-transform:uppercase}
+.fv3d-hotspot-price{font-size:8px;font-weight:800}
+.fv3d-hotspot-price::before{content:'FROM ';font-size:6px;font-weight:700;color:#d4d4d8}
+.fv3d-hotspot::after{content:'';position:absolute;left:50%;top:100%;width:1px;height:8px;background:var(--tier-color)}
+model-viewer{--min-hotspot-opacity:0}
 @media(max-width:900px){
   .show3d-layout{grid-template-columns:1fr}
   .show3d-host{min-height:280px}
@@ -828,7 +837,7 @@ textarea#fldNote:focus{border-color:var(--blue)}
   <div class="sb-logo">
     <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAADECAYAAAChvqwpAAAx9klEQVR42u2de3xcZZ3/v89zztySec5t7pdcmSZpoCkQKRWR0WW7VhAVIbis4gUUryvqrrLiYsSfKOCyKOgq6E9Zd0Gl/sQL1LLK2kCtUCiUAqHQQJM0zW2SXnKZzMw553l+f8w54WQ6SW9pzeV5v17zSjtz5sy5PJ/neznf53kAOBwOh8PhcDgcDofD4XA4HA6Hw+FwOBwOh8PhcDgcDofD4XA4HA6Hw+FwOBwOh8PhcDgcDofD4XA4HA6Hw+FwOBwOh8M5ThC/BEsW7LjHzPHicDgLuEMWjyBqgV8mboE5Cw8BAEwAAIQQpFKpxNjYVMI0cx6PxzMWDAZ7du587iBjM+47t8hcwJwFgAgARmtra8WePXs+a5r0asZYdVGgjAIgAQB0hNAOt9t1+8jIyK9YUcnToudwAXNOThyLAYBar9J7Z3/GwuHwulwu/58A4BIE8W5RxBu9Xm93ZWVlPpvNStlstlnXzX+glF6JMXo0Fot+YNeuXQOW+GmZGNneP7JEzq01hzMPbrIAryeoAGMMqqreLEkyU1X1zrVr1/rm2kE8Hm+UZeUJQqSxSCTyjlliZMwvNYdzYpYXQqFQm6qq304kEisQet1ZQghg3bp1laFQ6HJJkl8iRDoUCEQucXzfAwBu6+Wy/trvAUIIVFX9piTJTFGU/xeJRNZgPFOzDzzwgBAKhd6mqoGbk8lmjXts3IXmHN39ECx3lUYikbZcLnczY1AHAH0IoX0YowKlVLXe82KM7w8GA1/s6urKWCItHMHddVkusxkKxc8rFCZvYQzeAAAHEEJ9GONJSqnEGKsFABVj/EdNUz/62muv7XUcG4+buYA5R+EumwghCIfDawoF83wAsx4h5GYMRgUB71AU5X8t4drC1IvbJ9YYxlTaNFmKUrNCEPABQRB2VlZW/rGnp6fb2t5tiR1qa2trJiYm1pmm2YwQ8lMKYxgLLxJS8SfH9jzhxQXMmeM+sHg83pjLFdqSyfgdO3funLREph/Bok5vEw6H35nL5W8FgAYA1AvAehmDKYyRAsDqGYMAQvCwJEmf27t376vWd80jCFO0rW40Gk0XCoWa/fv3/zfwwhAOZ0bMi5LJ5AWSJO+VJHkgHA6vmyWmdTtiWhcAQFtbm1tR1J9YMe0P4vF4ozNmtmPacDh8oSTJf5YkWVfV4Eccm7gBmkv2n5oRM2ua1l7cv/azVCrlAZ7o4nBmeEEIAODaa691qar6naJY1H9vbW2tmOvL4XB4LSFyFyHS3nA4sbZkv6L1mq6+ssT4j4RITJaVnzc0NATn2n8ymUxJkvw4IVJW00LvKXfMHO5CL2vX2RFjYssdhmAweFGhoP+IMfAIgvAjr9e9EQC6DcMoiKKoGIZxpq4bVzHG3o4Q+tnppzd/bOvWreOWZWYAYMDMZ8eCJWYTAIxYLHb25GT2PsZYNcbCvW639zc+n6srm4Upj8f067renM/rVzBG/x4APRYKBT7w6quv7rWsPoPXn00j7kpzli2MMVzq7tqu69q1a32qGrheluWXJUnOSZKcJ0TKS5JckCTpoCwrD0cikbc4vudyWlrGGG5ra3OXPiKyRA6MMRQIBD4mSfIOSZKzkiQXXt+/PCHL8pZQKHSZ4/jcr++/+Ayawy3wco15aSJRu3py8uBGSqEgCOh5hMRfrlnT+otNmzblLTHqthhra0+P5PP7Y6ZpegRBOLhixYqejo6OnEO4OgBANBo9J5crfIQxej4ACzOGRACWQwj1CAL+nSzLP9qzZ8+QZZEpADCEEKxcuVIbGRlLIKRXIOQZr66O9m3btm3MYb0pALDa2tqaQ4cOfZRS9jYAqBUE8SejoyPXIwQYeJaaC3g5uc6NjY2No6MHV1OqhymlbzJNehFCaMrtdl03MjLyC4e1nO3Zrh3f5puamgKDg4M/oJRdjhDajrGwCWPYhTGeYoxphkFbKTUvYYwF3G7XV/bv33+bVQ/tscRPy+zfdrvz7e3t4ne+c9fXKTX+CSHUgzF+CCH0nM/nGz7vvPM2bdiwgYuXs7xJpVKSoii3WNnkn6xfv97jELxdUWW/REci60JJkkckSX4hFAq9qYxLbrvrSFUDH5MkKSdJyp/q6uoiJe532f1HozUrJUnulCR5OBQKtc22fw5nObrSouNlCTKxVpKkPkmSuoPB4DtmE0xNTU1UltXvSpLMZFm9kzGGZtnvjP3X1tbWyLK8jRBpXNOC17S3t5cdQ5xOp/2Kot0gSbIpy/JvWltb5Vn2zxXNXehldc3tqqbS0T/MKZ7nnnv+DkrNawBYjyAIjzGGdjPGcoKAIpTSsyml5wNAf0VFxacGBwc3Oiw1hWIWurSzsF8Fqx76K7pu3IAQGsMYbUYIdVIKExhjhVK6mlIzDYAMj8d1/ejo6A8tl7vs8Tr2bfBbzFn6KkYI2tvbxYaGhmBra6sLAGD9+vWeVCqVdHauyWQypWlau6Koj8qysosQ+VVFUZ+VZfW/Q6HQexxW1wWO4gqEEKxdu9aXSqWka6+91lVixV32/uvr68OaFrxOlpWNsqx0EkJek2XleUVRfxUMBq9Zt25dpeM7UFdX12K79s3Nzf7Vq1crPBvNWS6WF1VVVcVVVf2JLMudsqxkQqHIPW1tbUJra6ssy8ojhJADicR0QYanVPTOvw6mK6YikchbZFm5X5KU1wiRDhEiTRIi75ckeaeiaLfW1NTUlsTVR7N/DwBAMBi+slgAov5u7dq1vvr6+upAIPikLMsDsqw8pWnaje3t7Zh7dtyFXooIAGCGw+HPFgqFizEWfycIqC+TyTyYSqUSw8Mjv6HUPBsAphBCPq/Xc1kmk/mVJU5n4YR937DDjTVWrFiRGB7O/Igxth4AOgRB3Igx7BIE9xSlumoYtNU0zfcgBHWCgL958ODBGy2XeLb9T08YgBCYmha4vlDQbwFgPYxBDcZ4SzKZePvg4KAsiuJbdF1vYAwukiTysd7e3mfg9ckGOJylQ+mA+0Qi0UKI1OP3E6aqgS9WVzfUESI/TYjENC30aYf4neWLotNdDofD7yJEmpBl5clEIrF6Lrc9EAj8AyHSIVlWtjmssf0bzoQUtr+jqupdVunlxlWrVqnBYPBKQiQmSdLzqVQq5Nz/kUo/OZylgAcAIBqNXuT3k6zfT8xgMPL39ofr1q2rVBTlV4RITFG0Wx0u7YwYNxaraZJl5WfWbBxfd2xni7H0haw4NiJJyv8SIuUDgcD1q1evVsp4C5BOp/2yLP+aEImpqvo9xpiz01hHiJQjRNqXTCZXOeNkDmcphywiAEAoFPoQIRIjRBqIx+NvtD6fHnhgWb7vFEWs3J9Op70AADU1NWcGAoF7JUneKUkylSTl2VAodr5D4C4oP3Ws/dtuhzX+FCHyqFU22REKhb5ui/m0006rkuWiJxAIBP7Z6hxst1q0vIfVhEj9hJDxWCz2Ji5izpJPYlmjgW4oild+qra2tsYhXuecVLiYOAp+vuiuyo81NDQEU6mUR9O0WzVNuz0WizmLNlzOnAbGGFavXq1EIpFwOp32lySmpl3wdDrtDQaDV2ia9sNAIHAVAEAsFjubEGkfIYSGQqHLS9x4wSni0047rUqS5OcIkVgkMj2tD09Lc5aceHF7O8Oqqn7XsqobWlpaKh3icDZ6XGKt2yzB766qqjqtzP5dtlWNRqMXybL6W1mWByRJyvr9JCdJ8rgsK7tVVf1eTU1NU4mQZxAMRt9OiJQnRBpOJBLnOrZDMDPpOT1J/HnnnUeKGXSJhUKhD3MRc5YaGCEEsqzeW4wntW+WxLUiAEAkEjk9FIqWWjzRsopv8vvJAb+fHIpGo2lHLI0BAKqrq+skSX6sWJUlbwwEAp8IBAIXqqp6XjAYvFjTtBstt5tpmna7I54VbLc6EAh83EpOPVvGMwCEEASDwc/EYrGm0s8YY1hRlB9Lkswikci5zliaw1ns1hfa2trcsiwPaJp2XTkrG4lE1hAiDVkx5xcsfc/Yxhpcv8uydG32fkKh0GWSJOuSJG+ura1tnPVAivNrvZsQeVSWlc7q6up6261X1cD/sZ7x/ua8884jpZ7BAw88ICiKdrcdtycSiZYSEdv7uTMUinyIC5izpATc2NhITjvttNZy1tXKRuf8fjIlScqjVtb3zhIrLQAANDc3a/Y2gUDgnyzL+VZHoskWlZ0Qs1/T1rKhoSEYCAS+EY/HA+3t7aIsqz+1fvM75X7TKjL5vd8vMVVVf2olriZjsdiby7nYa9askfht5yxZd9qRDIJgMHi1308YIVImGo1egBACRdFut+LkXzmeq9pCBEt0ljuu3lHy+OhIsee0VVyzZo0kScqfis+cg58rZ/VrampqCZGee90zQBCPxxsIkXcTIrFwOPzOOeJkDmfJiRfbMbGmaV/2+4sFEfF4vMGZWNK0kDVvlfxkdXV1rLy7qn7NFnpzc7P/KN1WW5hNtghDoem5rsSZbn1yDSHSkN9PTEc22gVQrKGWJPnPhEgsGAxezUXMWS4Ctp/xfs9Z3eQUl/23GK9KlBCpJ5lMnlEiEtuCf8QS+hM1Nc3Rkv2UFW8sFjufEHKIECkTiSTXlBNvOBx+l99PDEKkoZJs9HQnkU6nvYqi/NKyzv9iWXCBC5izZGPhtWvX+uwqK1VV/6MkG3yY2JLJ5BpCpAwhJBsOhy8sJzbr0U+BEKmnqqrq9DIidgr+Cuu58s6STLNdpAGBQOhTxW2U0mz0bJ3RnUU3XLvd4c5zEXOWlHhxIpFIynLR7SxT3VT672nRWI+Inrfc3avKJcLi8fiZxeSSVCr0aZc9EAj8s2X1Hy6Xabbc+lsti/7rkm1KY/jp40UIIBAIfNHa9/2OeaO5iDlLAhEAQFW17xIis3A4fGmJCEstFi5NOlmZ4E2WpbvBEv+MhFMqlUpKkvSMJfQPTPcejgEJltV3DlgQAIpjkWVZ+Zm1zbfL1V+XCLl0cAVomvZhSZJzjrmmuYA5Syf2DYfj7wyH439bxiXFlkgrqqur68qIRQCwiyW0e6zE1ffLCbE4AEH9nSX0L5955pkhWZYfej1OPVz4LS0tYUmSt1gJqevKWNrpY0gmk+c4MuOHibuurqmhubnZzW85ZylzmDitcsQ/+P1kIhqNXjCLyO1a6n+13NyH0um0v5wrbBdd+P3+0aJ4p13vGfFzTU3NSkKkPYRINBwOv7tkmxnxcygU+qDlJm8qKQMtZ605nCVpicvEuE0xWZaf9PsJ8/vJoaIlDF85l5g0LfQBu+zRMQ2P+HpcWlzPiBB5NBKJ/E058UYikbcWZ+yQhqLR6DlH6DS+Yv3eK34/YZIkP+FwlbmIOcszLrafxxarnAL/XIxj5a12pVVJccWM74bD4QsJIVlrSOJZJSJFllseLIm3Beu777c7gPr6+uoy4hUApksobbf9wXQ67Q+FQpdZmexdDpdf5LeUs6xi4ng8/ka/Xxrx+wkLh8Pvtz9Mp9Peo0goiQAAVVVVpxMi9RAiFaLR6NvLiRgOLyC5wXLBfztLAciMEsoyj4ggGo2m/X4yTog0FI/Hz+TWl7OsxBuJRC7x+4nh95ODJS6uM4691bJ8/88xFY9QxopHJUl+wkpCfaTE4iJHEgwpinL3LLXWJW59dZ0kyTtLpvaZkfyqrq5uLnYeZMpaDhVxEXOWfPKqWAklMUmSXq6pqVlZxgU9rKiiWGlVE53N1bWqojYUxRn4muMZswugWPdsW1NVDX7ekY0+TLxWCeWw308KjkH6Yjk3vrm5Jmqt2tBjzUjJBcxZsiBLwNWapt1XX18fnkW8ACVljYRIJiFS9yyVVs6qqH+3hgXe29bW5rYsdK2jEKRtluTYdPmm3y+ZhEh9sVjs7DmOb7rzSKVSIccYZS5gzvJzqcuId4ali0aj5xStojRZ4nIfZrU1Lfg5y2r/TyQSudjvJ6OESIfi8fh5c38v9Glr5o8nV6xYkZitoyg5Pl6swVm2wnUKFtlWdLa4tLa2tsaOSwOB6aRXuSlnIRgMvrf4HJgwQuTdpaOdSi23omi3WfXPG0qGMM6wto7PUMnvcsvLWb6uNUIAqhr4uiyrjzvmWhZLRWzFshutzPCX5oplw+Hwhaqq/qqpqSkwW+xslVD+wprC9ra5OpBkMrmKEHl3McbmN43DAQDAra2tLlVVv20VcjBC5C7H5HOHic4qqbSzyf9xFHXLZQVpjem1nzl/ooxnML1tKBR7m99PJq3JB5iqqnc1NjYS4IMWOMsYEQAgEAjcTIjMJEn5ZTgcf6ffTyYIIYdKpqyZ4XrbEwJYse7vSkoqnduWFaT1CKibEEmPRCIXOz4rV0L5YWsurL3JZHKNoii3S5LMotGqN5TpHDicZRUHQzAYPEvTgrfZ6/QWxSW/aj3XveII4rJLKp8pKamctcOIRCJ/Q4iUJUTqdxRhzNZJ3Gh1ElvtxBZCCKqqpsXL4XAcOKesedwS8efncm8dghyYRZBOwV9lCfLpxsbG+GxuulVC+UNr8MLPHIUkvGSSwynBFhhyishKMN1fZvK6uUoq9WBwRknlYS53mcnyZoh39erVij1Ru6oGvjHL73K3mcM5knttPeK5xRLeL+cqqTzjjLqILE+XVH7U/tCadP2eo+kIrBLKF0r2wRNVHM4JWGYIBAKftEYAHbGkUpKKE82pqvq1xsbGuCzLf7AE+dm5XfHEucXBFVI2Fou9rUzszeFwjkPEdqx7CSGSMcfkdc6Syu9YhRxjR0iG2c+ML7UyzXtKZsDkcDjzgF1S+QZrCZYjllQGAoF/kSR5MBabXn50lhJK7TOWdd9SV1cX4eLlcE6iiK2SSmu1hPD7HC70YaWNjsW7hXKWWtO0f7Pc7fvWr1/vKbMth8OZRwSAw0oq20ss6wyhQpkBE62trRX2ZHeqGvj6LIktDodzskTMGMOqqt4pSfJkIBC4N5ls1uDwBFXpv3FtbW2jqmodsqy86ljPl6+owOGcQqbF1traKkej0Yuampoayoi29DuotrZ2dSKRWI0x5laXw/kri/hExcfjXQ5nAQj5WFxgPvUNh8PhcDgcDofD4XA4HA6Hw+FwOBwOh8PhcDgcDofD4XA4HA6Hw+Fw/mqgRXzcx1KMz2b5u1A41lkfF/r5LIS2zLiAly7O0TjUei2V82HW+bAl2FadL1ji57t0BdzS0lI5NTV1BsbYNAw0p/gQMlg+ny9gjCerqqoOPf7444cwxpQxVs4CnvKG0NbWJjz77LMtCCEXpYJxpO1NM2fm8/m8pmmTXq937Omnnx4vcz4Ar4/zXcyN2+6YGACYs99jBAghuPHGG8Vf//rXfl3Xjc7Ozgku4IV5Q2lTU1PrwMDg06ZpgmNWidn9zZmNexghtFsQ8HZR9DyuafLWV155pd+xjTBXY5nna88aGxvJ4ODQHkppAB3lmp2OY2UAkEEI7cEYvygIeLvL5XvqDW8488WHHnooWyJmtkg8DeQQLXWcM66rq6vKZrMpXTdTjLHTGKM1jLE4AIQAQAFgPoSwJIrCzaOjo/8KxUkADS7gBSbgFStWnDk4OPQMQugvAPh3AEycrXFijAWXS/AahqEwxqKU0lpKWQohJDm22eTxuO8eGvrEbxG6iZ4iESMAYK2trRW7dr3cixDkXC7Xd02TzdkjiSIWMMY+0zQVxliEMVZtmqwOIQg4GvsBURQecbm8v6yrq/7Dtm3bxhxCXqgW2RauaVvVqqqqusnJyYsMw3wHpexchEB1dlwAqB8htA8hNIAQGhIElEFIOOT1up/au3fvi/Y15umBhSVgaGhoaJEkmYXD4W8dcytBCNLptLempmZlMBi8WpbV39lr3kqS9EwsFltXEnOd1M5z7dq1Pms50SePaycIQXt7u1hbW1sTiUQuVhTtW5IkP29N0s4IkYY0TftmdfWK+jLu9UJh+njWr1/vCQTC/yBJ8p+te8IkSXlGUdQ7gsHge5PJ5Bmtra0yxhgQX2V8cQs4GAx+z3KTvNbfI70Om3YGIQS1tbU1qhr4ht9PqDVN662MMXSSRewU8Dgh5Jl0Oi1CcXVC8XjPx/IoIJFItKhq4GZCpIHiCg1SXlG02xoaGoIO0aCFIt729nYxEAh8wj5eSZJ3BgKBTzQ1NcXmECq2vl96Xfh0QYtEwHfZnuVxumuis/evra1tlCR5s99PmKIo97e3t+OT2NBLBbzdaqjoOPflbMzTrFmzRgqFQp8mhPRZnsbeYDByxSnyMo50zAiguDyqJMmdlsXdEg6HLywRrfNe4b/ycXMWgIDL7Ve0LYGqqvf5/RJTVfWuk+hyzqeA5zwnAIDm5mZN07Rv+f2E+f2EqWrgLntB8b+CxcLWtcaqqn3TcvUHQ6HQ5Q7h2us2caFyAR+TO4ceeOABQZKUP/n9EotEIpecJBGfbAGXCgEAAMLh+IWESN1+P2GyrPw+lUpJp1jEGKA4l7W9soQsq/c1NzdrJW4xhwv4+GOy6urqer+fZAmRd7e1tblPgtt2qgR8mJBTqVRSluWtRRHLHS0tLZVwatYAxrY3YK9jHAgErndYXb6g2vFcUM4MTAAQe3t7XxME8R4Aluro6LgIio8jFrNlYFB8Jip2dXX1NTY2rhcE/Jhp0gt6evbez4oPl/FJ7kAgnU57+/r2/cY02bkej/ujo6OjtzLG7DyDwZsfF/B8NXakKNLdAAC5XOEqx/uLHQMAhG3bto0lEolLMcYvmKbxzmAweJPVeZ2sNoERQnTHjp0/pJSd73a7rxsZGfkRFLPuy7YUkgv45Flh6O7u3gWAXqXU/Jt0Ou213kdL5PyEzs7O/YoivxcADuXzhS/H4/Hz7M/m+fcEADADgcDVlJrvd7mE7+/fP3KnJV6di5cL+GQgIIQYxvgvCCGlt7e32ukKLqFQodPr9XwRAPDExMRd1rNoBvObDafV1dWxfL7wbYTgpXPPPfdzlqi5y8wFfJJVLKBXAIBls9nEEhOw7U6Lo6Oj92CMt1DKzn7ppZfea7m082WFEQCwsbHxmwGAVFZWXrtp06b8EgpJuIAXMgihkeIfpC5BAQMAMMYYVFZWfAkAYGoq9y+WFTbnqX2ZqVTqNNM0P4QQ+s3AwMAWOHUDRriAlzuMsQIAAozxUn3EYQIAHhwc3IIxfpwxdsauXbvOh/nJumMAgJGR0U8DACLE3w68MIML+BTjA2BgGEZ+KbcDxhhyuTw/QAhBPp+/ch68DQQAxtq1a32GYXwIAD3V39//nPU+t75cwKfKAqNYMRYWRpdw3GYCAAuFtEcYY1OmSS+2ileMExAxBgB47bWe8xFCisfj+pE1QIS3OS7gU6NdAABKjVUAAD6fr3cJC5gBAN61a9eoIAhbACCxdevWphO0wggAIJ/PvQMAwO/3PwKLZ1IBLuBFDgIAM51Oe02TnQcAvbfccsu+JSxguy0gQcAdAMAKhcKZJ9hGTIQQMGa+FQB6ent7eqz3uYC5gE86AgCgl1565c0IQUAUhYevuOIKE4q1uktVwAwAmMvleg4AkK6bZ5xgB8guuOACP2OwEmP8JKXMvq4cLuBTYIIRYvn81BcBACorK+9d4tZ3+txcLle3ZSjrT+CcEQBAT09PAgBEQcAvnqA7fio8LsQFvDRwAYARCASuME3zbzFGj+zbt28bOOZrWsr4/f5RxhhQyuyZMI5bwLlcLoIQAkEQeheD98EFvPjjXhcA6IlEYnUul78bALKVlep1VvZ0qcMAACRJmkQIcgAgWwKmxytgXdfVYmdA9y9kDyadTntTqZSHC3jxhhF2bKvHYrE3j42NPQIAisfj+2h/f/fL1jbLIvkSDocNAFSglLnLzDV9TIiixwcAQCldiM/QEUBxBpYdO3bsHB4evtk+bC7gxXX+FACMdDrt1zTtX8fHJx4DQBGv1/PR0dHh+2GZlf0NDw+LAODCGBknOuujaZp0oYti8+bNYJq0llIaXIz3a7nPgECrq6vrJycnL3/mmWc/zRhUIYS7fD7Px4eHhx+FZVizOzIy4mWM+RBCBywLfDzeh2W6zQmEELjdbuK0egvM42CMsRzGSOcu9OKJdVFLS0ulpmkP7N9/4IV8vnArY4y43e4bV65sbF2m4i3O54OQhBACjNH4iYrO4/GMMsZA1/XIYmgTXMCnGNOkx3PRGQDgSy+9dMo0TS9jzCcI4n11dbX1+/ePfN1axWA5jpZBAADZbDYKAMAYGjmBGJhZAh4o7ovV81QLF/Dh/i897uwwu+mmm2goFPocxlin1DyjqalpDIpZaAzLs9geAQAYhpECABAEtPsELDADALjqqqsGGWPjpsnsohBehcUF/Doul3C8DYICgNDV1fWqIAg/BYDVmzdv/gAUp3dZ1ok9wzBaiwIWnj+B3TAAwF/72k0FjPFzlJpnX3vttfbcVwvSVWUMcRd6kcEAAEkSuZkxls/lCl9ev369B5bOvFfHHJEwxpBpmm9hjDGv1/vcCVpNzBiAIOD/RQgpGzdubDzRmPqkCgHzGHjReeAAgHt7e/e4XOL/BWCnbd++/UpY/NPHHm87YHV1dQ2UstMxRp1XX331Hnh9zeTjjoMrKip+DwAwOTm1nrc5LuCTYoU1TbuFMTaVyxVuXKZWGAMAjI2NvQcAIUFw/eamm2460XmxKACgiy++eDsADBqG/kHruTIfzM8FPL9W+NVXX90riuIPAFj9MrTCCADo+vXrPbpufgSAscpK389P0H22O0fhnnvu0UVR+CEAnBGNRs+2Pltw1/ZoFornAl7AVjgajXyLMTY5NZW70ZqNYrlYYQEA6Pbt269kjNYLgvDHffv2PQ/zUz5KAQCCweDdAGBMTk79KyzcQQM8Bl7MVnjXrl0DLpfrLoRQ/ebNm5eLFUYAQBsbG0kul28HAPB6Pd+wnv+iebq2wu7du/eJonAPY/TSeDx+FpycyeO5C73crXAoFLydMTaWyxW+skyssAgAdHh4+GbGWK0oCr8eHh7eDPNbyMIAAAUCga8yxsYnJia/71jEbcFc28U64owL2GEpXnnllRGXS7wDgC0HK+wCAD0cDl+q68Y/AsBBWZY/ZzVkNs/XFnd1dWV8Pu91jLFzVVX9EliTyv+1L8Lw8DBCCBAA5gJe5JgAgJLJ5HcYYwcdVnjBFh+cqHhjsVhrNjv1YwAAj8f3qZ6enm44OUMnTQAQRkZGfoIx/oWuG98IBqNvh2LhjIs3PS7g+XL1hOeff/6A2+26DYDVP/ro5r+H+V1mZMGINx6PnzkxMflbAFBcLvc3raGT87UiQ1lLzBjDNTXV1yAEO3K57G+txdQWgIgRAFBugZeKFW5qavouAIwUCrmvLiErLFj3W4/FYuvGxyf+wBiLu1yu/zh4cP8NlnhP5mJjDABg586dk7FY7GKEUPfY2PjmWCz2d5aIBd4euYDnxQpv3bp1XBTd30QI1S0BK4ytYzcZYywQCFw/Pj7xP4yxoMvluuXgwQOfshbYPhUFFhQAhJdffrk/Egm9FWO8a2Ji8hFNC34WIWRan4unsrNsbGxctEMJuYDnsMJVVfG7AWBI1/NfXeiF+LPcV9ERz5rxePyNsqz8KZ8v3AIA4z6f90MHDuz/kiXeU7nAtgnFgSR9K1ak3owQflDXC3dIkryptra20fIC7OShcOquOU9iLSkrvHPnzkm32/U1AKh78MEHr1ygVti2HraVta0XBQADIUSrqqreoKrqf4+NjW+llKYFQXw4ENDWZDKZ/4TXHxed6uIKEwDw9u3bD42PH3qPx+O+jlLz70ZH9+9SFO3fUqlU0trGPjbR4WLzxdG4gI+ugZ1xxhk/BoB9udwpscLo8ssvFxyWZ66X3ZDt6VCpdcwGQoilUqlkKBT6MCHynw4cOPiUYZjvQwg94/N5Lx8bO/iOnp6eXfDXn7SAAgBijOGRkZE7FUVZgTH+hWka/zQ0NLxXUZQfx2KxN1mPtQzrWG1PATk6LOer3HWa8/Xyyy8LxcdInFPW4TQ0NLRIkkyDweCd1vsn43miCAAQDAavIURigUD4/fP8WwgAYO3atT6/n4wRQp7EGANCaM4XAEz/mzGGVq9erVRXVzeHw7FLFUW7RZLkJwiRmP2SZfnhcDj8TsYYdvzuQuu4pz2beDx+liyrPyVEooTIjBBpn6IoPwiHw5dWV1fXtbe3i2geh+4ihIAQMinL6n+dxLZ0Ul2wxSZgumLFitVDQ8M73G7X90dGRj4JJyeDigAAtbW1iZs2PbIbAFxnn31WfUdHx3ytLo8AgLW0tFS+9tqefQDgcbncjwFQPNfpM2ZiSpkPAGTGWBAAQsV9FQ0yY2xCEPDjouh+SNOUTV1dXa85psZZyFMFYYdlhpaWlvDAwMBFhUKhjVKWRghVAgAwxiYQQvsQQnsxRv2MoUFBQCOMsf0Yu8ZN05yoqPBkdV3P5/P5PCFE93q9pq7rFGNMEfIygLxVeeUBQtzuPXv2bMNY3HDo0IEPwsnPxs+/lVlsuFwuHSE0hBA6cJJjYbxhw4ZCMBi8vlDQv9vZ2XkRAPxqvoWAMe4xTRorFPLnH6lTRQiZGOMcpXRcEIQehNAWjIUuQUAvulyu508//fRX/vjHP0wyBjA6mgGHu01hYQ/low4ho507dw4DwL0AcO/69es9L7zwQkMuVzjDNM0mAFrLGItRyk4HYOfpOq0AQB4A08UYEycmDMwYw4xRND4+jiYmJhBjgBhjiDGGnJ7MgQMACAmA8eJcmWGx+v64ubm5olAo6F1dXflTcI1YS0tL5cDAAMpkMhPz/QORSKQyEomAqh6aQ2C10N3dDWvWrKEPPPCAgTGmlkWazZrZGejFOg+VHeeyuToepxgvu+wy94svvuiWJMk9NDTkKhQKLkEQXIIguCilwtjYmEApFV0ul+D1egXGGBJFEYmiiBFCQ11dXa86cgtcwEuIhXpTbeuKHF4DhaW3CBsqE7uzkteybZiL/djZEvi94575kTPnNUTHsD1ffJzD4XA4HA6Hw+FwOBwOh8PhcDgcDofD4XA4HM5RwSvmOMsKfJwiQUv8HOfjuxwO51hoamqKwSIdOcZZuL34QnErS4vccSqVuiydTotHcEFnFMivWrVqVX19/fllros9KkaAuettyw2Ut6e6Od7rLAAAPnjw4DWSJEnOY6uqqnpnKpUKlTkG5zGXngc0NzdrDQ0N7ypzXVDJMR+pjvhotputzeFZrslc1/Joric6Sq9qyUzPs5h7dQavD5lzFvYzURQ3d3R0mCXblvv+NG63+9VCoSCUfGaPQjJLGgU7iuMAOP7ieLthmQAAlNJs6XEzxrbIsjxecrzOv2bJ8TIAgFAoNJbJZB4vcw1YmWMuPVdbEMcz4ulohjfOdS2PZq1idoT/g/O6znGeXMAnm+bm5mhnZ+dgMplMAECir69vm33TDMOY0UOnUqlkV1fXADjWOqqurlYAAHp7ew8AAOi6jvx+P3bceAQALBaLVYiieD4AeBBCT/f29g44b/g555wTfeqppwZjsVgQIdTQ39//hC2YmpqalZTSpGmaI/39/c8eg3gZAEA8Hq8SRTE8MTERc7lcunOjWCyGKKUzvnPmmWeGbrjhhv2f+cxnGkRRbCoUCgPDw8NPlDZQSqnT0rHW1lYXxljq6+ubEgThHMMwQqZpbslkMoMl32UAwGpra2sopQmEkDubzT5tjZGeSwQIAGg6nRa7urqaRVHUEEIHuru7n5tWGmNo1apV4RdeeGEoEonUejyeQG9v73ZnB5RIJM51u92hfD6/v7+/f2u5UKOysnJk+/btOgBAS0tLJca4YseOHRl7PzU1NV7TNM9FCJmGYYwMDAzsct7vxaaDxTjXMbLmhLrB5/OtMk1zNcZ43/j4eB8AoPb2drxly5YvZLPZP9ttQxCEq/x+P56cnOyD4ioApsfj+ThCaN/4+Ph+S8DpqampsycmJp63OjaWTCY10zQ/hRDqBYADuVzufYSQ7snJyYPWNhQAPldRUXEupXS1IAgj4+Pj3XZjkGU5rOu6aprmSp/Pd4ksy09NTEwYRxJvIBCI+/3+j2OM46IomrqupwBg89TUVMG6Z8ztdv/joUOHusfHx8fsY8EYf3zjxo2XQHFKmEHDMNZVVFRUZLPZ3fb3TNOMjY+PX53NZrfY74VCId/evXvvwBgHKKWTAHDQNM1rVFV9enx8fMq2vJFIpLKysvKTpmnWA8ABSunfGoaRzWazPZblZLNYXhYMBltHR0c/CAAgimI2n89fOTEx8T/2dzo7O4WXXnqp3efzrQSAVQDQPTExMWi7y6FQ6NOU0gqXy9VVKBRSPp9vXTabfcrhFTAA+MzY2NjL2Wx2AgDA5XKduX///rdks9lnrPtOXS7XKsbYFQih3aZptlRWVl5CCOmemJg4uBhd6sVogREr4kEIPZXJZP5c+rmu63lwjO/EGD9MKW0DgL8AgFFXVxeZnJzE+/bt221dA8M0TUPXdd3R6IxCodAmiuKmffv2PQsAkEgkDui6/m4AuMNuWLquuxljz4yMjDxcehy9vb2dANBpNcDLTdN8GwA8CHNMyROJRCpN0/y0KIo/tawDBIPBxkKhMGP5EV3XCwghVtKzUVEUH7S9kVgs1kcpfR8A/N5unAghZhjGjFlMrNkpBgYHB++xBRUOhxt1XV8JAFusa2RSSj8JAFsHBwf/DACQTCZVr9d7RG8iHA7XM8bebZrmbcPDw+PWd9e0tbWhDRs2AACg5uZm1tHR4UEIdWQymR2O+2AGg8E0FFdRvM96/7lgMHh1KBRal8lkNtni1HU97/F4pq8JxtiklOqlHYqu688NDQ1tBoDNoVDoNMMwPlVTU/OVnp6ePBfwqYl9wePxDOzdu3crQggfId7EQ0ND3aFQCOLxeFV/f//ebDabFkXxiTkSXPZ0NU0ej8esr69vscTiYYxNObdBCI0CQIcj8WK76ayxsZGMj4+nASBAKa3VdX1wjt8ULJGcDwDPWeL1AIDBGHOXirXsiWKcc7vd++3OhVIqiKI4edgPCcKMfeXzeWydBwMALwAUBEHIGoZhX1MjFotVG4aBrQ7T3sZLKWVHiHtNSulbBUF4KJPJjAOA2NraigYHB0tn10CiKPb09/fvcCSp7E7nDIxxhyOJRTHGmwHgXQCwyfmDk5MzT7dMB8MYYx5rX95MJvNqNBrtnpycbAaAZ+DkLO7GBVzmLgjBYNAPAONHdaKi+BfDMC4AgPsAoE5RlF/39/ej2Syh5aYfRAhtmJqa0gVBYIIgsP7+/pxTwJRSDAAEACbAMW+0pmnJAwcOXCMIwhOCIPxR1/VaURSbjpBcAUppECHUB6/PB0UxProktmmaYBiG6OhcqCNOnuvaMGuFBjvBQ71eL5im6TwuoSQxBnCU09lgjAXDMKZ35vf7mcvlYmXuqQsA3ABQKAnxMMbYcCagMMaHrd0siiJ2u91ocnLSdqtRLpeDEs+FYYxZSU5ARwgtytk4Fu1jJEEQqHUjyomPllhTpKrqNoRQIJFInIsQeq2zs7PgPH+EEHNYOcwYA4RQ78TExDkDAwPZvr6+qZ6enly5vsSeYM4Z87lcrrdhjP80MDDwSF9f3z5K6egRGjuzzut5AHiz1VALAMBmaVy0jAvNylhqWqaTYLN5Hc5r6NiXMDQ01AsAJBqNrgSAKQCghmEUHPNNz5UV/gvG+B2WqIyOjg7DMAw2S3aYlrmfvaZprnR8Rg3DOJ1SOliynbuioiJnd3yU0gI+vPdDlFJ7+ZZsJBIJM8aSFRUVu44y080t8DxksWBqaopkMhk0S48vlfTOuLOzsxAOh/cWCoUvV1RUfMBxs5D1HY8gCBWOxowB4AHG2BcikYgmiuKzPp9v6qyzzhrYsGGD6ej1ia7rQqk7SCndDgDviUQi+2VZHhwfH6+ilFbMcVoUAPDw8PDOQCBwRjgc/rzb7f4DpbTfNE2tdAV5jDExDEMoea/SMAyXwyKLbrfbXyJe22OYplAoYOuaTTM1NVWh67rbYXFNAPi+YRjXxGKxPW63+6V8Pl+fy+UyR3FOz4dCoUQkEvkCxvhZt9s9ks1mZSv+dR4bSafT0NHR4RQ0Qgj9kVL6xXA4PODz+Xbl8/mUaZpv8vv9tw0PD09njxFCB7LZ7LpkMvmoYRj1+Xz+SgDoKXHHTZfLFamurm7Wdb3BNM1mAPgvq3NedEmsxWiBGWMMKioqfg8AhyUdbrrpJubxeB4ucY2pJbbHMMb39PT0HCx1Ad1u98sej2eb0xIMDQ1NZjKZmwRB2A8Ab9R1/c3j4+Oi07p4vd5HMMZjjvcoAEAmk9khCMLPRVE8e2pq6iKXy1Xj9Xr/fAQXmgIAGh0dvR9j/HsAOB0ALqGU9p111lljznPxer1/kCTpgPM9t9u9mVI6YO+MEDJSWVn5qHMbWZYPVlRUPOJ8L5FIZN1u9++dLmpFRcUTXq+3y/leJpMZHBkZuZkx9ophGFHTNKNut/tIk6BTAECZTGaTy+X6kSAIBUppNQBUMsamO9CvfvWrzOv1buzo6DjMAg4NDU3Ksnw7xjjFGLsMAE73eDy3v/baa4fsGN2Koe9FCCmU0isQQprf77/b5/M96jwHhJABALWU0gaE0HBVVdW3MplMFyziZ8HLETTP2833dxdFxxoKha63nsMf0/nGYrHqcDj82WM4VzQP1xhbGf2zNU37wDzeK+5Cn0Ajp8f4mTNTPFtjKFed5FxMjB7lb7GS7832/VldzxKrcDS/i0sSS2iWuA4fxXul+4JkMulDCMVN04yYpvlmxthLfX19+44mcxuNRkNutzuk63qDYRhnmaZ5TxmrN9e1RI5jmq0azLkNlGxru+kuURSD4FjwfDFb3sUsYHocn801yz+b598COLGECD2Oz2mZc2LH+d3DSiorKyvVycnJcxFCh3w+38+7u7t7jiLxgwCAeb3elaZpxgRBGFBV9WYriXgs5zznCg1zbDOjzFSW5W5RFPPDw8Mm8HmgOcucE3H1+RjnUxgLcjhOFxXg2Ac04GMMI07mOSy6x0UcDofD4XA4HA6Hw+FwOBwOh8PhcDgcDofD4XA4HA6Hw+FwOBwOh8PhcDgcDofD4XA4HA6Hw+FwOBwOh8PhcDgcDofD4cw7/x9VnPR5jlOdMQAAAABJRU5ErkJggg==" alt="RDG" class="sb-logo-img">
     <div class="sb-logo-title">DJ Dashboard</div>
-    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v3.13 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
+    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v3.14 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
   </div>
   <div id="sidebar"></div>
   <div class="sb-tools-section">
@@ -944,7 +953,7 @@ textarea#fldNote:focus{border-color:var(--blue)}
     <div class="pg-section" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div>
         <div class="pg-title2">&#9650; Forecast</div>
-        <div id="fcastMeta" style="font-size:10px;color:var(--ink3)">BS Actual = FourVenues Integrations API (price ÔøΩ Accepted + Not completed)</div>
+        <div id="fcastMeta" style="font-size:10px;color:var(--ink3)">BS Actual = FourVenues Integrations API (price ù Accepted + Not completed)</div>
       </div>
       <button type="button" class="btn-pdf no-print" onclick="exportViewPdf('forecast')">Export PDF</button>
     </div>
@@ -956,7 +965,7 @@ textarea#fldNote:focus{border-color:var(--blue)}
     <div class="pg-section" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div>
         <div class="pg-title2" style="color:#dc2626;margin:0"><span class="live-pulse"></span>LIVE</div>
-        <div style="font-size:10px;color:var(--ink3);margin-top:2px">All venues ÔøΩ night-of Toast BS (ignores venue filter)</div>
+        <div style="font-size:10px;color:var(--ink3);margin-top:2px">All venues ù night-of Toast BS (ignores venue filter)</div>
       </div>
       <button type="button" id="liveRefreshBtn" onclick="refreshLive()" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;border:0.5px solid var(--rule);background:var(--card2);cursor:pointer;font-family:inherit">Refresh</button>
     </div>
@@ -1016,7 +1025,7 @@ textarea#fldNote:focus{border-color:var(--blue)}
   <div id="view-system" style="display:none">
     <div class="pg-section">
       <div class="pg-title2">Sanity</div>
-      <div style="font-size:10px;color:var(--ink3);margin-top:2px">What we pull, when it runs, and whether itÔøΩs healthy</div>
+      <div style="font-size:10px;color:var(--ink3);margin-top:2px">What we pull, when it runs, and whether itùs healthy</div>
     </div>
     <div id="systemBody" style="padding:14px 16px;display:flex;flex-direction:column;gap:14px"></div>
   </div>
@@ -1048,8 +1057,8 @@ textarea#fldNote:focus{border-color:var(--blue)}
       <div id="fldFeeTargets" style="display:none;margin:0 0 10px;padding:10px 12px;background:var(--card2);border-radius:10px;border:0.5px solid var(--hair)">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin-bottom:6px">From DJ fee (venue ROI rules)</div>
         <div style="display:flex;gap:16px;flex-wrap:wrap">
-          <div><div style="font-size:9px;color:var(--ink3);text-transform:uppercase">BS Target</div><div id="fldFeeBsTgt" style="font-size:16px;font-weight:900;color:#7D5A00">ÔøΩ</div></div>
-          <div><div style="font-size:9px;color:var(--ink3);text-transform:uppercase">ROI Target</div><div id="fldFeeRoiTgt" style="font-size:16px;font-weight:900">ÔøΩ</div></div>
+          <div><div style="font-size:9px;color:var(--ink3);text-transform:uppercase">BS Target</div><div id="fldFeeBsTgt" style="font-size:16px;font-weight:900;color:#7D5A00">ù</div></div>
+          <div><div style="font-size:9px;color:var(--ink3);text-transform:uppercase">ROI Target</div><div id="fldFeeRoiTgt" style="font-size:16px;font-weight:900">ù</div></div>
         </div>
       </div>
       <div id="fldVipMinimums" style="display:none;margin:-2px 0 10px;padding:10px 12px;background:#f3eefb;border-radius:10px;border:0.5px solid #c9b5e8"></div>
@@ -1196,7 +1205,7 @@ function buildPyMapForMonth(venue, yr, mm){
     return true;
   }
 
-  /* Pass 1 ÔøΩ exact calendar anniversary only when weekday also matches */
+  /* Pass 1 ù exact calendar anniversary only when weekday also matches */
   for(var day=1; day<=days; day++){
     var ds=yr+'-'+mm+'-'+(day<10?'0':'')+day;
     var pyDate=pyYear+'-'+ds.slice(5);
@@ -1204,7 +1213,7 @@ function buildPyMapForMonth(venue, yr, mm){
     claim(ds, _schedShowOn(venue, pyDate));
   }
 
-  /* Pass 2 ÔøΩ same weekday within 3 days of anniversary, unused shows only */
+  /* Pass 2 ù same weekday within 3 days of anniversary, unused shows only */
   for(var day2=1; day2<=days; day2++){
     var ds2=yr+'-'+mm+'-'+(day2<10?'0':'')+day2;
     if(map[ds2]) continue;
@@ -1256,7 +1265,7 @@ function resolvePyFields(venue, dateStr, baked){
     var map=buildPyMapForMonth(venue, parseInt(dateStr.slice(0,4),10), dateStr.slice(5,7));
     if(map[dateStr] && map[dateStr].py_dj) return map[dateStr];
   }
-  /* Do not fall back to baked py_* ÔøΩ it caused duplicate PY names across days. */
+  /* Do not fall back to baked py_* ù it caused duplicate PY names across days. */
   return {py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
 }
 function _pyCellsHtml(py, rowspan){
@@ -1265,7 +1274,7 @@ function _pyCellsHtml(py, rowspan){
   var pyRCls=pyBCls;
   var rs=rowspan && rowspan>1 ? ' rowspan="'+rowspan+'"' : '';
   var h='<td class="sc-py"'+rs+'>';
-  if(pyNm) h+='<b class="'+pyBCls+'">'+pyNm.slice(0,18)+'</b>';
+  if(pyNm) h+='<b class="'+pyBCls+'">'+pyNm+'</b>';
   else h+='-';
   h+='</td>';
   h+='<td class="sc-num py-dim"'+rs+'>'+$k(py.py_fee)+'</td>';
@@ -1301,7 +1310,7 @@ function roiTone(actual, target){
   if(a >= t - 0.1) return 'near'; /* equal or within 0.1x below = gold */
   return 'low';
 }
-/* Shared tone for DJ name + BS Actual + ROI Act ÔøΩ compare the same 1-decimal ROI the user sees */
+/* Shared tone for DJ name + BS Actual + ROI Act ù compare the same 1-decimal ROI the user sees */
 function perfTone(bs_a, bs_m, fee, roi_a, roi_t){
   var feeN = fee != null ? +fee : 0;
   var ra = null, rt = null;
@@ -1322,7 +1331,7 @@ function toneStyle(cls){
   var c=toneColor(cls);
   return c ? ('color:'+c+'!important') : '';
 }
-/* BS Actual color ÔøΩ same near band as ROI (0.1x of fee in $), so Calussa etc. match gold across columns */
+/* BS Actual color ù same near band as ROI (0.1x of fee in $), so Calussa etc. match gold across columns */
 function bsTone(actual, target, fee){
   if(actual==null||target==null||isNaN(+actual)||isNaN(+target)) return '';
   if(fee!=null && +fee>0) return roiTone(+actual/+fee, +target/+fee);
@@ -1546,12 +1555,12 @@ function setView(v) {
   go();
 }
 
-/* Standalone 3D floor plan ÔøΩ renders the raw venue model directly (no events,
+/* Standalone 3D floor plan ù renders the raw venue model directly (no events,
    no booking widget). Uses Google <model-viewer> loading the GLB assets. */
 var FV_3D_MODELS = [
-  {key:'mila-lounge', venue:'MILA Lounge', label:'MILA Lounge', url:'https://fvwebs-storage.fourvenues.com/mila-lounge/model.glb?v=1'},
-  {key:'casa-neos-lounge', venue:'Casa Neos Lounge', label:'Casa Neos Lounge', url:'https://fvwebs-storage.fourvenues.com/casa-neos/lounge/model.glb?v=3'},
-  {key:'casa-neos-beach-club', venue:'Casa Neos Beach Club', label:'Casa Neos Beach Club', url:'https://fvwebs-storage.fourvenues.com/casa-neos/model2.glb?v=1'}
+  {key:'mila-lounge', venue:'MILA Lounge', label:'MILA Lounge', orbit:'45deg 60deg 72%', url:'https://fvwebs-storage.fourvenues.com/mila-lounge/model.glb?v=1'},
+  {key:'casa-neos-lounge', venue:'Casa Neos Lounge', label:'Casa Neos Lounge', orbit:'45deg 60deg 86%', url:'https://fvwebs-storage.fourvenues.com/casa-neos/lounge/model.glb?v=3'},
+  {key:'casa-neos-beach-club', venue:'Casa Neos Beach Club', label:'Casa Neos Beach Club', orbit:'45deg 60deg 110%', url:'https://fvwebs-storage.fourvenues.com/casa-neos/model2.glb?v=1'}
 ];
 /* Static reference copied from the source floor-plan configuration. It is
    intentionally local and contains no events, availability or performance. */
@@ -1573,6 +1582,37 @@ var FV_3D_TABLES = {
     {name:'PRESTIGE',color:'rgb(139,195,74)',minimum:2500,capacity:10,tables:['31','41']},
     {name:'DIAMOND',color:'rgb(3,169,244)',minimum:3000,capacity:10,tables:['34','51','52']}
   ]
+};
+/* Model-space table centers read from each raw GLB. model-viewer hotspots use
+   these anchors so tier/price badges remain attached while rotating/zooming. */
+var FV_3D_HOTSPOTS = {
+  'mila-lounge':{
+    '301':[-3.070,1.05,-0.987],'302':[-0.626,1.05,-0.987],'303':[0.626,1.05,-0.987],
+    '304':[3.070,1.05,-0.987],'305':[3.070,1.05,1.664],'306':[0.626,1.05,1.664],
+    '307':[-0.626,1.05,1.664],'308':[-3.070,1.05,1.664],'402':[5.788,1.15,-4.227],
+    '403':[5.735,1.15,-1.144],'404':[5.735,1.15,0.999],'405':[5.788,1.15,4.058],
+    '407':[2.373,1.05,4.398],'408':[-3.017,1.05,4.482],'409':[-4.782,1.05,4.426],
+    '410':[-4.800,1.05,2.469]
+  },
+  'casa-neos-lounge':{
+    '803':[9.014,0.92,2.139],'804':[9.014,0.92,0.905],'805':[9.014,0.92,-0.349],
+    '806':[9.014,0.92,-1.595],'807':[7.090,0.92,-2.864],'808':[3.946,0.92,-2.864],
+    '809':[-2.151,0.92,-2.864],'810':[-5.270,0.92,-2.864],'901':[5.785,0.92,0.062],
+    '902':[4.686,0.92,0.062],'903':[2.176,0.92,0.886],'904':[-0.336,0.92,0.886],
+    '905':[-3.237,0.92,0.886],'906':[-3.237,0.92,2.014],'907':[-0.336,0.92,1.976],
+    '908':[2.176,0.92,1.976],'909':[4.686,0.92,2.795],'910':[5.785,0.92,2.795]
+  },
+  'casa-neos-beach-club':{
+    '19':[20.747,1.02,5.469],'20':[18.422,1.02,5.513],'21':[16.302,1.02,5.522],
+    '22':[14.090,1.02,5.533],'23':[11.923,1.02,5.530],'25':[6.390,1.02,3.809],
+    '26':[-2.006,1.02,3.547],'27':[-4.357,1.02,3.542],'28':[-6.783,1.02,3.542],
+    '31':[3.014,1.02,3.385],'32':[1.649,1.02,1.543],'33':[1.649,1.02,-0.211],
+    '34':[3.027,1.02,-2.058],'35':[4.403,1.02,-0.220],'36':[4.403,1.02,1.533],
+    '41':[6.741,1.02,1.161],'42':[5.954,1.02,-1.738],'43':[5.954,1.02,-3.529],
+    '46':[0.157,1.02,-2.391],'48':[-2.569,1.02,-0.706],'49':[-1.008,1.02,1.400],
+    '51':[5.744,1.02,-5.890],'52':[0.461,1.02,-5.890],'53':[-3.755,1.02,-2.964],
+    '54':[-4.631,1.02,-1.438],'55':[-5.511,1.02,0.084],'56':[-3.730,1.02,1.698]
+  }
 };
 var _fv3dModelKey = 'mila-lounge';
 var _fv3dTierFilter = null;
@@ -1613,6 +1653,55 @@ function calcTierPricesForShow(venue, dateStr, fee){
     tiers: scaleTiersToBsTarget(key, tgt && tgt.bs_m)
   };
 }
+function renderFv3dHotspots(viewer, modelKey, tiers){
+  if(!viewer) return;
+  Array.prototype.slice.call(viewer.querySelectorAll('.fv3d-hotspot')).forEach(function(el){el.remove();});
+  var anchors=FV_3D_HOTSPOTS[modelKey]||{};
+  var frag=document.createDocumentFragment();
+  (tiers||[]).forEach(function(t){
+    var price=t.suggested!=null?t.suggested:t.minimum;
+    (t.tables||[]).forEach(function(id){
+      var p=anchors[id];
+      if(!p) return;
+      var btn=document.createElement('button');
+      btn.type='button';
+      btn.className='fv3d-hotspot'+(_fv3dTierFilter&&_fv3dTierFilter!==t.name?' is-muted':'')+(_fv3dTierFilter===t.name?' is-selected':'');
+      btn.slot='hotspot-'+modelKey+'-'+id;
+      btn.dataset.position=p[0]+' '+p[1]+' '+p[2];
+      btn.dataset.normal='0 1 0';
+      btn.dataset.tier=t.name;
+      btn.style.setProperty('--tier-color',t.color);
+      btn.setAttribute('aria-label','Table '+id+', '+t.name+', '+formatFv3dMoney(price));
+      btn.title='Table #'+id+' ù '+t.name+' ù '+formatFv3dMoney(price);
+      btn.innerHTML='<span class="fv3d-hotspot-tier">'+t.name+'</span><span class="fv3d-hotspot-price">'+formatFv3dMoney(price)+'</span>';
+      btn.onclick=function(ev){ev.stopPropagation();selectFv3dHotspot(btn);};
+      frag.appendChild(btn);
+    });
+  });
+  viewer.appendChild(frag);
+}
+function selectFv3dHotspot(btn){
+  var viewer=btn&&btn.closest('model-viewer');
+  if(!viewer) return;
+  var tier=btn.dataset.tier;
+  if(viewer.id==='fv3dViewer'){
+    setFv3dTierFilter(tier);
+    return;
+  }
+  var selected=btn.classList.contains('is-selected');
+  viewer.querySelectorAll('.fv3d-hotspot').forEach(function(el){
+    el.classList.toggle('is-selected',!selected&&el.dataset.tier===tier);
+    el.classList.toggle('is-muted',!selected&&el.dataset.tier!==tier);
+  });
+  var layout=viewer.closest('.show3d-layout');
+  if(!layout) return;
+  layout.querySelectorAll('.fv3d-tier[data-tier]').forEach(function(el){
+    el.classList.toggle('is-active',!selected&&el.dataset.tier===tier);
+    el.classList.toggle('is-muted',!selected&&el.dataset.tier!==tier);
+  });
+  var card=!selected&&layout.querySelector('.fv3d-tier[data-tier="'+tier+'"]');
+  if(card) card.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
 function _ensureModelViewerScript(cb){
   if(window.customElements && customElements.get('model-viewer')) { cb(); return; }
   if(document.getElementById('modelViewerScript')){
@@ -1648,8 +1737,9 @@ function setFv3dModel(key){
   if(mv){
     if(mv.getAttribute('src')===m.url) return;
     var l=document.getElementById('fv3dLoading');
-    if(l){ l.style.display='flex'; l.style.color='#cbb8e8'; l.textContent='Loading '+m.venue+' floor planÔøΩ'; }
+    if(l){ l.style.display='flex'; l.style.color='#cbb8e8'; l.textContent='Loading '+m.venue+' floor planù'; }
     mv.setAttribute('alt', m.venue+' 3D floor plan');
+    mv.setAttribute('camera-orbit',m.orbit||'45deg 60deg 110%');
     mv.setAttribute('src', m.url);
   }
 }
@@ -1683,11 +1773,12 @@ function renderFv3dReference(){
       : (formatFv3dMoney(t.minimum)+' min.');
     return '<button type="button" class="fv3d-tier'+(active?' is-active':'')+(muted?' is-muted':'')+'" style="--tier-color:'+t.color+'" onclick="setFv3dTierFilter(\''+t.name+'\')" aria-pressed="'+active+'">'
       +'<span class="fv3d-tier-top"><span class="fv3d-tier-name">'+t.name+'</span><span class="fv3d-tier-min">'+priceLbl+'</span></span>'
-      +'<span class="fv3d-tier-meta">'+t.tables.length+' table'+(t.tables.length===1?'':'s')+' ¬∑ up to '+t.capacity+' guests each'
-      +(t.suggested!=null?' ¬∑ base '+formatFv3dMoney(t.minimum):'')+'</span>'
-      +'<span class="fv3d-tables">'+t.tables.map(function(id){return '<span class="fv3d-table">#'+id+' ¬∑ '+formatFv3dMoney(price)+'</span>';}).join('')+'</span>'
+      +'<span class="fv3d-tier-meta">'+t.tables.length+' table'+(t.tables.length===1?'':'s')+' ù up to '+t.capacity+' guests each'
+      +(t.suggested!=null?' ù base '+formatFv3dMoney(t.minimum):'')+'</span>'
+      +'<span class="fv3d-tables">'+t.tables.map(function(id){return '<span class="fv3d-table">#'+id+' ù '+formatFv3dMoney(price)+'</span>';}).join('')+'</span>'
       +'</button>';
   }).join('');
+  renderFv3dHotspots(document.getElementById('fv3dViewer'),m.key,tiers);
 }
 function updateFv3dPricing(){
   var feeEl=document.getElementById('fv3dDjFee');
@@ -1710,8 +1801,8 @@ function updateFv3dPricing(){
   var priced=calcTierPricesForShow(m.venue, dateStr, fee);
   _fv3dPriceOverride=priced;
   if(meta){
-    meta.innerHTML=(djName?('<b>'+djName.replace(/</g,'&lt;')+'</b> ¬∑ '):'')
-      +'Fee <b>'+$k(fee)+'</b> ¬∑ BS Target <b>'+$k(priced&&priced.bsTarget)+'</b> ¬∑ ROI Target <b>'+(priced&&priced.roiTarget!=null?(+priced.roiTarget).toFixed(1)+'x':'-')+'</b>';
+    meta.innerHTML=(djName?('<b>'+djName.replace(/</g,'&lt;')+'</b> ù '):'')
+      +'Fee <b>'+$k(fee)+'</b> ù BS Target <b>'+$k(priced&&priced.bsTarget)+'</b> ù ROI Target <b>'+(priced&&priced.roiTarget!=null?(+priced.roiTarget).toFixed(1)+'x':'-')+'</b>';
   }
   renderFv3dReference();
 }
@@ -1738,7 +1829,7 @@ function render3dView(){
     mv.setAttribute('interaction-prompt','none');
     mv.setAttribute('shadow-intensity','1');
     mv.setAttribute('exposure','1.1');
-    mv.setAttribute('camera-orbit','45deg 60deg 110%');
+    mv.setAttribute('camera-orbit',m.orbit||'45deg 60deg 110%');
     mv.setAttribute('min-camera-orbit','auto auto 5%');
     mv.setAttribute('max-camera-orbit','auto auto 300%');
     mv.style.cssText='width:100%;height:100%;background:transparent;--poster-color:transparent';
@@ -1750,6 +1841,10 @@ function render3dView(){
       if(l){ l.style.display='flex'; l.style.color='#e6a0a0'; l.textContent='Could not load the 3D model.'; }
     });
     host.appendChild(mv);
+    var tiers=_fv3dPriceOverride&&_fv3dPriceOverride.modelKey===m.key
+      ? _fv3dPriceOverride.tiers
+      : scaleTiersToBsTarget(m.key,null);
+    renderFv3dHotspots(mv,m.key,tiers);
     _fv3dLoaded=true;
   });
 }
@@ -1813,7 +1908,7 @@ function renderKPIs() {
   if(curView==='leaderboard'||curView==='budget'){
     clearGlobalCalChrome();
     if(curView==='leaderboard'){
-      document.getElementById('pgSub').innerHTML = '<span>ROI Ranking ÔøΩ all venues</span>';
+      document.getElementById('pgSub').innerHTML = '<span>ROI Ranking ù all venues</span>';
     } else {
       document.getElementById('pgSub').innerHTML = '<span>Budget Planner</span>';
     }
@@ -2002,13 +2097,13 @@ function monthAgg(mm){
   return {n:n,tFee:tFee,roi_t:roi_t,projBS:tProjBS||null,bsTgt:tBSTgt||null,tPY:tPY,shows:shows};
 }
 
-/* Display DJ name as stored ÔøΩ ? / ??? / ???? are valid and shown as entered. */
+/* Display DJ name as stored ù ? / ??? / ???? are valid and shown as entered. */
 function djLabel(dj, empty){
   var s=String(dj==null?'':dj).trim();
   if(!s) return empty!=null?empty:'TBD';
   return s;
 }
-/* Live beat/ROI from SCHED ÔøΩ same rules as ROI Ranking (not baked DJ_PROFILES). */
+/* Live beat/ROI from SCHED ù same rules as ROI Ranking (not baked DJ_PROFILES). */
 function liveDjPerfStats(name){
   var q=String(name||'').replace(/\?+/g,'').trim().toUpperCase();
   if(!q) return null;
@@ -2040,7 +2135,7 @@ function djProj(name, fee){
   var raw=String(name||'').trim();
   if(!raw) return {bs:null,roi:null,p:null};
   var q=raw.replace(/\?+/g,'').trim().toUpperCase(), p=null;
-  /* Pure placeholders like ???? ÔøΩ no profile lookup, but name is valid */
+  /* Pure placeholders like ???? ù no profile lookup, but name is valid */
   if(!q) return {bs:null,roi:null,p:null};
   for(var i=0;i<DJ_PROFILES.length;i++){
     if(DJ_PROFILES[i].name===q){p=DJ_PROFILES[i];break;}
@@ -2350,8 +2445,8 @@ function realisticSuggestedFee(profile, venue, dateStr){
   return best;
 }
 /* Suggested fee for rankings:
-   - Beat % >= 50%: match avg fee paid (working ÔøΩ don't inflate)
-   - Beat % < 50%: judgment ÔøΩ fee supported by proven BS, never above avg paid */
+   - Beat % >= 50%: match avg fee paid (working ù don't inflate)
+   - Beat % < 50%: judgment ù fee supported by proven BS, never above avg paid */
 function leaderboardSuggestedFee(avgBS, avgFeePaid, beatRatePct){
   var paid = avgFeePaid > 0 ? Math.round(avgFeePaid / 100) * 100 : null;
   if(paid != null && beatRatePct >= 50) return paid;
@@ -2631,7 +2726,7 @@ function renderYearGrid(){
   var ytPct = ytTotal ? Math.round(ytMeasured/ytTotal*100) : 0;
 
   document.getElementById('budgetMeta').textContent=bgtVenue+'   '+bgtYear+' budget';
-  /* Top KPI strip removed ÔøΩ Budget stays focused on the planner grid */
+  /* Top KPI strip removed ù Budget stays focused on the planner grid */
   var bKpiEl=document.getElementById('budgetKPIs');
   if(bKpiEl){ bKpiEl.innerHTML=''; bKpiEl.style.display='none'; }
 
@@ -3099,7 +3194,7 @@ var SCHED_BAKED = SCHED.map(function(r){ return Object.assign({},r); }); // immu
     if(meta && live && live.updatedAt){
       try{
         var when = new Date(live.updatedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-        meta.textContent = 'BS Actual = FourVenues live ('+when+') ÔøΩ '+(live.source||'export math')+' ÔøΩ synced for all users';
+        meta.textContent = 'BS Actual = FourVenues live ('+when+') ù '+(live.source||'export math')+' ù synced for all users';
       }catch(e){}
     }
   });
@@ -3213,7 +3308,7 @@ function openMonthSummary(mo){
   var br=perf.measured?Math.round(perf.beats/perf.measured*100):null;
   var rowsHtml=perf.shows.map(function(x){
     var dt=new Date(x.d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
-    var st=x._s==='beat'?'Beat':x._s==='miss'?'Miss':x._s==='fut'?'Upcoming':x._s==='nd'?'No actual':(x._s||'ÔøΩ');
+    var st=x._s==='beat'?'Beat':x._s==='miss'?'Miss':x._s==='fut'?'Upcoming':x._s==='nd'?'No actual':(x._s||'ù');
     return '<tr>'
       +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair);white-space:nowrap;color:var(--ink3)">'+dt+'</td>'
       +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair);font-weight:800" class="'+x.bTone+'">'+(djLabel(x.dj)||'TBD')+'</td>'
@@ -3230,14 +3325,14 @@ function openMonthSummary(mo){
   modal.className='modal-bg';
   modal.onclick=function(ev){ if(ev.target===modal) closeMonthSummary(); };
   modal.innerHTML='<div class="modal" style="width:min(720px,96vw)" onclick="event.stopPropagation()">'
-    +'<div class="modal-hd"><h3>'+title+' ÔøΩ '+curV+'</h3>'
+    +'<div class="modal-hd"><h3>'+title+' ù '+curV+'</h3>'
     +'<button class="modal-close" onclick="closeMonthSummary()">&#10005;</button></div>'
     +'<div class="modal-body" style="gap:12px">'
     +'<div style="display:flex;gap:10px;flex-wrap:wrap">'
     +'<div style="flex:1;min-width:110px;background:var(--card2);border-radius:10px;padding:10px 12px"><div style="font-size:9px;font-weight:800;color:var(--ink3);text-transform:uppercase">BS Actual</div><div style="font-size:20px;font-weight:900">'+$k(perf.tBS)+'</div></div>'
     +'<div style="flex:1;min-width:110px;background:var(--card2);border-radius:10px;padding:10px 12px"><div style="font-size:9px;font-weight:800;color:var(--ink3);text-transform:uppercase">BS Target</div><div style="font-size:20px;font-weight:900">'+$k(perf.tBSM)+'</div></div>'
-    +'<div style="flex:1;min-width:110px;background:var(--card2);border-radius:10px;padding:10px 12px"><div style="font-size:9px;font-weight:800;color:var(--ink3);text-transform:uppercase">Beat</div><div style="font-size:20px;font-weight:900" class="'+(br!=null&&br>=60?'beat':'miss')+'">'+(perf.measured?perf.beats+'/'+perf.measured:'ÔøΩ')+(br!=null?' <span style="font-size:12px">('+br+'%)</span>':'')+'</div></div>'
-    +'<div style="flex:1;min-width:110px;background:var(--card2);border-radius:10px;padding:10px 12px"><div style="font-size:9px;font-weight:800;color:var(--ink3);text-transform:uppercase">Avg ROI</div><div style="font-size:20px;font-weight:900;color:var(--blue)">'+(perf.avgR!=null?perf.avgR.toFixed(1)+'x':'ÔøΩ')+'</div></div>'
+    +'<div style="flex:1;min-width:110px;background:var(--card2);border-radius:10px;padding:10px 12px"><div style="font-size:9px;font-weight:800;color:var(--ink3);text-transform:uppercase">Beat</div><div style="font-size:20px;font-weight:900" class="'+(br!=null&&br>=60?'beat':'miss')+'">'+(perf.measured?perf.beats+'/'+perf.measured:'ù')+(br!=null?' <span style="font-size:12px">('+br+'%)</span>':'')+'</div></div>'
+    +'<div style="flex:1;min-width:110px;background:var(--card2);border-radius:10px;padding:10px 12px"><div style="font-size:9px;font-weight:800;color:var(--ink3);text-transform:uppercase">Avg ROI</div><div style="font-size:20px;font-weight:900;color:var(--blue)">'+(perf.avgR!=null?perf.avgR.toFixed(1)+'x':'ù')+'</div></div>'
     +'</div>'
     +'<div style="overflow:auto;max-height:55vh;border:0.5px solid var(--hair);border-radius:10px">'
     +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr>'
@@ -3425,19 +3520,32 @@ function initCalColResize(){
   var heads=Array.prototype.slice.call(table.querySelectorAll('thead th'));
   if(!heads.length) return;
   var saved={};
-  try{ saved=JSON.parse(localStorage.getItem('rdg_cal_col_widths')||'{}')||{}; }catch(e){}
+  try{ saved=JSON.parse(localStorage.getItem('rdg_cal_col_widths_v2')||'{}')||{}; }catch(e){}
+  var inPy=false;
+  var keys=heads.map(function(th,i){
+    if(th.classList.contains('sc-sep')){inPy=true;return 'py-separator';}
+    var text=(th.textContent||'').trim().toLowerCase().replace(/\(\d{4}\)/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    return (inPy?'py-':'current-')+(text||('column-'+i));
+  });
   var legacy=parseInt(localStorage.getItem('rdg_dj_col_w')||'0',10);
-  if(legacy && !saved[2]) saved[2]=legacy;
+  if(legacy && !saved['current-dj-guest']) saved['current-dj-guest']=legacy;
 
-  /* Freeze current browser-calculated widths first, then apply saved choices. */
+  /* Stable name-based keys prevent new columns from shifting old saved widths
+     onto the PY separator or neighboring columns. */
   var widths=heads.map(function(th,i){
-    return Math.round(saved[i] || th.getBoundingClientRect().width || 70);
+    if(keys[i]==='py-separator') return 3;
+    var natural=th.getBoundingClientRect().width||70;
+    if(keys[i]==='py-py-dj' && !saved[keys[i]]) natural=Math.max(145,natural);
+    if(keys[i]==='current-3d' && !saved[keys[i]]) natural=34;
+    return Math.round(saved[keys[i]] || natural);
   });
   table.style.tableLayout='fixed';
   function applyWidths(){
     var total=0;
     heads.forEach(function(th,i){
-      var w=Math.max((i===heads.length-1)?28:36, Math.min(600, widths[i]|0));
+      var w=keys[i]==='py-separator'
+        ? 3
+        : Math.max((i===heads.length-1)?28:28, Math.min(600, widths[i]|0));
       widths[i]=w; total+=w;
       th.style.setProperty('width',w+'px','important');
       th.style.setProperty('min-width',w+'px','important');
@@ -3463,8 +3571,8 @@ function initCalColResize(){
         handle.classList.remove('dragging');
         document.removeEventListener('mousemove',onMove);
         document.removeEventListener('mouseup',onUp);
-        var out={}; widths.forEach(function(w,j){out[j]=Math.round(w);});
-        try{localStorage.setItem('rdg_cal_col_widths',JSON.stringify(out));}catch(e){}
+        var out={}; widths.forEach(function(w,j){out[keys[j]]=Math.round(w);});
+        try{localStorage.setItem('rdg_cal_col_widths_v2',JSON.stringify(out));}catch(e){}
       }
       document.addEventListener('mousemove',onMove);
       document.addEventListener('mouseup',onUp);
@@ -3525,10 +3633,10 @@ function openShow3dModal(idx){
   var tgt=showTargets(r);
   var tiersHtml=(priced?priced.tiers:[]).map(function(t){
     var price=t.suggested!=null?t.suggested:t.minimum;
-    return '<div class="fv3d-tier" style="--tier-color:'+t.color+';cursor:default">'
+    return '<div class="fv3d-tier" data-tier="'+t.name+'" style="--tier-color:'+t.color+';cursor:default">'
       +'<div class="fv3d-tier-top"><span class="fv3d-tier-name">'+t.name+'</span><span class="fv3d-tier-min">'+formatFv3dMoney(price)+'</span></div>'
-      +'<div class="fv3d-tier-meta">'+t.tables.length+' tables ¬∑ up to '+t.capacity+' guests ¬∑ base '+formatFv3dMoney(t.minimum)+'</div>'
-      +'<div class="fv3d-tables">'+t.tables.map(function(id){return '<span class="fv3d-table">#'+id+' ¬∑ '+formatFv3dMoney(price)+'</span>';}).join('')+'</div>'
+      +'<div class="fv3d-tier-meta">'+t.tables.length+' tables ù up to '+t.capacity+' guests ù base '+formatFv3dMoney(t.minimum)+'</div>'
+      +'<div class="fv3d-tables">'+t.tables.map(function(id){return '<span class="fv3d-table">#'+id+' ù '+formatFv3dMoney(price)+'</span>';}).join('')+'</div>'
       +'</div>';
   }).join('');
 
@@ -3537,10 +3645,10 @@ function openShow3dModal(idx){
   modal.className='modal-bg show3d-modal';
   modal.onclick=function(ev){ if(ev.target===modal) closeShow3dModal(); };
   modal.innerHTML='<div class="modal" onclick="event.stopPropagation()">'
-    +'<div class="modal-hd"><h3>'+venue+' ¬∑ 3D tier pricing</h3><button class="modal-close" onclick="closeShow3dModal()">&#10005;</button></div>'
+    +'<div class="modal-hd"><h3>'+venue+' ù 3D tier pricing</h3><button class="modal-close" onclick="closeShow3dModal()">&#10005;</button></div>'
     +'<div class="modal-body">'
-    +'<div style="font-size:11px;color:var(--ink2);margin-bottom:8px"><b>'+(djLabel(r.dj)||'TBD')+'</b> ¬∑ '+r.d
-      +' ¬∑ Fee <b>'+$k(fee)+'</b> ¬∑ BS Target <b>'+$k(tgt.bs_m)+'</b> ¬∑ ROI Target <b>'+rx(tgt.roi_t)+'</b></div>'
+    +'<div style="font-size:11px;color:var(--ink2);margin-bottom:8px"><b>'+(djLabel(r.dj)||'TBD')+'</b> ù '+r.d
+      +' ù Fee <b>'+$k(fee)+'</b> ù BS Target <b>'+$k(tgt.bs_m)+'</b> ù ROI Target <b>'+rx(tgt.roi_t)+'</b></div>'
     +'<div class="show3d-layout">'
     +'<div class="show3d-host" id="show3dHost"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cbb8e8;font-size:12px">Loading floor plan&hellip;</div></div>'
     +'<div class="show3d-side"><div class="fv3d-pricing-hd">Table minimums to hit ROI</div>'
@@ -3563,9 +3671,10 @@ function openShow3dModal(idx){
     mv.setAttribute('interaction-prompt','none');
     mv.setAttribute('shadow-intensity','1');
     mv.setAttribute('exposure','1.1');
-    mv.setAttribute('camera-orbit','45deg 60deg 110%');
+    mv.setAttribute('camera-orbit',model.orbit||'45deg 60deg 110%');
     mv.style.cssText='width:100%;height:100%;background:transparent;--poster-color:transparent';
     host.appendChild(mv);
+    renderFv3dHotspots(mv,key,priced?priced.tiers:[]);
   });
 }
 
@@ -4437,7 +4546,7 @@ var FORECAST_DATA = [
   {"venue":"Casa Neos Lounge","date":"2026-07-18","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-19","dj":"AFTERDARK","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-23","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
-  {"venue":"Casa Neos Lounge","date":"2026-07-24","dj":"MalÔøΩne Morez","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
+  {"venue":"Casa Neos Lounge","date":"2026-07-24","dj":"Malùne Morez","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-25","dj":"AMOG","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-26","dj":"AFTERDARK","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-07-30","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
@@ -4530,7 +4639,7 @@ function _sparkline(pacingObj, capacity){
   return svg;
 }
 
-/** DJ name for Forecast UI ÔøΩ keep ? placeholders as entered. */
+/** DJ name for Forecast UI ù keep ? placeholders as entered. */
 function _fcastDjName(dj){
   if(dj==null) return '';
   return String(dj).trim();
@@ -4642,7 +4751,7 @@ function _liveAnimateMoney(el, from, to, deltaEl){
 }
 function refreshLive(){
   var btn = document.getElementById('liveRefreshBtn');
-  if(btn){ btn.textContent = 'Pulling ToastÔøΩ'; btn.disabled = true; }
+  if(btn){ btn.textContent = 'Pulling Toastù'; btn.disabled = true; }
   var prevAt = (window._liveNight && window._liveNight.updatedAt) || '';
   var cfg = window._rdgConfig || {};
   var url = (cfg.liveRefreshUrl || '').trim();
@@ -4669,7 +4778,7 @@ function refreshLive(){
   function pollUntilUpdated(tries){
     tries = tries || 0;
     if(tries > 45){
-      done(false, 'Toast pull timed out ÔøΩ check Sanity / GitHub Actions Live Refresh.');
+      done(false, 'Toast pull timed out ù check Sanity / GitHub Actions Live Refresh.');
       return;
     }
     var cur = (window._liveNight && window._liveNight.updatedAt) || '';
@@ -4678,7 +4787,7 @@ function refreshLive(){
       done(req.status !== 'failed', req.message || (cur && cur !== prevAt ? 'Toast LIVE updated.' : 'Refresh finished.'));
       return;
     }
-    // Faster poll ÔøΩ Firebase usually updates as soon as the worker finishes
+    // Faster poll ù Firebase usually updates as soon as the worker finishes
     setTimeout(function(){ pollUntilUpdated(tries + 1); }, 1200);
   }
 
@@ -4723,7 +4832,7 @@ function refreshLive(){
   }
 
   kick.then(function(result){
-    // HTTP endpoint already finished the Toast pull ÔøΩ no long wait
+    // HTTP endpoint already finished the Toast pull ù no long wait
     if(result && result.payload && result.payload.date){
       window._liveNight = result.payload;
       done(!!result.ok, result.payload && result.message
@@ -4752,7 +4861,7 @@ function renderLive(animate){
   var statsByVenue = liveFresh ? ((live && live.statsByVenue) || {}) : {};
   var inWin=_liveWindowActive();
 
-  // LIVE is always all venues for the night ÔøΩ ignore sidebar venue selection (curV)
+  // LIVE is always all venues for the night ù ignore sidebar venue selection (curV)
   var shows = SCHED.filter(function(r){
     if(r.d!==showDate) return false;
     if(r._s==='empty') return false;
@@ -4789,7 +4898,7 @@ function renderLive(animate){
   })();
   h += '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap">';
   h += '<div><div style="font-size:15px;font-weight:900">'+nightLabel+'</div>'
-    + '<div style="font-size:11px;color:var(--ink3);margin-top:2px">All venues ÔøΩ night of '+showDate+'</div></div>';
+    + '<div style="font-size:11px;color:var(--ink3);margin-top:2px">All venues ù night of '+showDate+'</div></div>';
   if(inWin) h += '<div style="font-size:11px;font-weight:800;color:#dc2626">UPDATING</div>';
   h += '</div>';
   if(live && live.date && live.date !== biz){
@@ -4964,32 +5073,32 @@ function renderSystem(){
 
   var fvExtra = forecastLive && forecastLive.updatedAt
     ? '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">forecastLive: <b style="color:var(--ink2)">'+forecastLive.updatedAt+'</b>'
-      + (forecastLive.source ? ' ÔøΩ '+forecastLive.source : '') + '</div>'
+      + (forecastLive.source ? ' ù '+forecastLive.source : '') + '</div>'
     : '';
-  h += card('FourVenues (Forecast BS Actual)', 'Daily ~8:30 AM ET (same window as Toast) ÔøΩ Integrations API ÔøΩ laptop off', fv, 36, fvExtra);
+  h += card('FourVenues (Forecast BS Actual)', 'Daily ~8:30 AM ET (same window as Toast) ù Integrations API ù laptop off', fv, 36, fvExtra);
 
-  h += card('Toast BS Actual (calendar / history)', 'Wed-Sun ~8:30 AM ET ÔøΩ GitHub Actions ? GitHub Pages', toast, 84, '');
+  h += card('Toast BS Actual (calendar / history)', 'Wed-Sun ~8:30 AM ET ù GitHub Actions ? GitHub Pages', toast, 84, '');
 
   var liveExtra = '';
   if(liveNight && liveNight.updatedAt){
-    liveExtra += '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">liveNight: <b style="color:var(--ink2)">'+(liveNight.updatedAtLocal||liveNight.updatedAt)+'</b> ÔøΩ night '+(liveNight.date||'')+'</div>';
+    liveExtra += '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">liveNight: <b style="color:var(--ink2)">'+(liveNight.updatedAtLocal||liveNight.updatedAt)+'</b> ù night '+(liveNight.date||'')+'</div>';
   }
   if(liveReq && liveReq.status){
     liveExtra += '<div style="margin-top:4px;font-size:11px;color:var(--ink3)">Last Refresh request: <b style="color:var(--ink2)">'+liveReq.status+'</b>'
-      + (liveReq.requestedAt || liveReq.finishedAt ? ' ÔøΩ '+(liveReq.finishedAt||liveReq.requestedAt) : '') + '</div>';
+      + (liveReq.requestedAt || liveReq.finishedAt ? ' ù '+(liveReq.finishedAt||liveReq.requestedAt) : '') + '</div>';
   }
   liveExtra += '<div style="margin-top:6px;font-size:11px;color:'+(liveCfgOk?'#0f766e':'#b91c1c')+'">'
     + (liveCfgOk
       ? 'Refresh button wired ('+(cfg.liveRefreshUrl ? 'HTTP endpoint' : 'GitHub dispatch')+').'
-      : 'Refresh not wired ÔøΩ set rdg/config/liveRefreshUrl or githubDispatchToken in Firebase.')
+      : 'Refresh not wired ù set rdg/config/liveRefreshUrl or githubDispatchToken in Firebase.')
     + '</div>';
-  h += card('Toast LIVE (on-demand only)', 'Only when someone presses Refresh ÔøΩ no night schedule', toastLive, 36, liveExtra);
+  h += card('Toast LIVE (on-demand only)', 'Only when someone presses Refresh ù no night schedule', toastLive, 36, liveExtra);
 
   h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px">'
     + '<div style="font-size:13px;font-weight:800;margin-bottom:6px">How the pieces fit</div>'
     + '<div style="font-size:11px;color:var(--ink3);line-height:1.6">'
     + '<b style="color:var(--ink2)">GitHub Pages (rdg-dj):</b> the published website everyone opens.<br>'
-    + '<b style="color:var(--ink2)">GitHub Actions (boh-dashboard):</b> cloud robot that pulls data on a schedule ÔøΩ laptop can be off.<br>'
+    + '<b style="color:var(--ink2)">GitHub Actions (boh-dashboard):</b> cloud robot that pulls data on a schedule ù laptop can be off.<br>'
     + '<b style="color:var(--ink2)">FourVenues:</b> Integrations API bookings (accepted + not-completed price) ? Forecast Actuals.<br>'
     + '<b style="color:var(--ink2)">Firebase:</b> instant overlays (Forecast Actuals, LIVE night, Sanity status).'
     + '</div></div>';
@@ -5434,7 +5543,7 @@ function renderForecast(venueIdx, view){
     events.forEach(function(e){ Object.keys(e.tierSummary||{}).forEach(function(t){ if(allTiers.indexOf(t)<0) allTiers.push(t); }); });
     allTiers.sort(function(a,b){ var ai=TIER_ORDER_FC.indexOf(a),bi=TIER_ORDER_FC.indexOf(b); return (ai<0?99:ai)-(bi<0?99:bi); });
 
-    // KPI strip ÔøΩ compute targets live from VENUE_ROI_RULES
+    // KPI strip ù compute targets live from VENUE_ROI_RULES
     var totalRev = events.reduce(function(s,e){return s+e.totalRevenue;},0);
     var totalTarget = events.reduce(function(s,e){
       if(e.bsTarget) return s+e.bsTarget;
@@ -5464,7 +5573,7 @@ function renderForecast(venueIdx, view){
       : String(curV||'VENUE').toUpperCase();
 
     // ============================================================
-    // 1) RESULTS ÔøΩ booking performance snapshot (PDF page 1)
+    // 1) RESULTS ù booking performance snapshot (PDF page 1)
     // ============================================================
     h += '<div class="fcast-chart-wrap fcast-print-snap" style="padding:0;overflow:hidden">';
     if(!viewRows.length){
@@ -5487,12 +5596,12 @@ function renderForecast(venueIdx, view){
     h += '</div>';
 
     // ============================================================
-    // 2) DETAILS ÔøΩ booking performance detail table (PDF page 2)
+    // 2) DETAILS ù booking performance detail table (PDF page 2)
     // ============================================================
     h += _fcastDetailsTableHtml(upcoming, venueShort);
 
     // ============================================================
-    // 3ÔøΩ5) Pick up / Projected / Breakdown ÔøΩ below snap + details (screen only in PDF)
+    // 3ù5) Pick up / Projected / Breakdown ù below snap + details (screen only in PDF)
     // ============================================================
     h += '<div class="fcast-chart-wrap fcast-print-below" style="padding:0;overflow:hidden">';
     h += '<div class="fcast-chart-title" style="padding:12px 16px 0">3. Pick up Pace &mdash; How Fast We\u2019re Closing the Gap</div>';
@@ -6363,7 +6472,7 @@ function openDjShowHistory(name){
     var bsM=tgt.bs_m, roiT=tgt.roi_t, fee=r.fee||r.cost;
     var tone=(typeof perfTone==='function')?perfTone(r.bs_a,bsM,fee,r.roi_a,roiT):'';
     var dt=new Date(r.d+'T12:00:00').toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'short',day:'numeric'});
-    var st=r._s==='beat'?'Beat':r._s==='miss'?'Miss':r._s==='fut'?'Upcoming':'ÔøΩ';
+    var st=r._s==='beat'?'Beat':r._s==='miss'?'Miss':r._s==='fut'?'Upcoming':'ù';
     return '<tr>'
       +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair);white-space:nowrap;color:var(--ink3)">'+dt+'</td>'
       +'<td style="padding:7px 8px;border-bottom:0.5px solid var(--hair)">'+(r.v||r.venue||'')+'</td>'
@@ -6430,8 +6539,8 @@ function updateFeeTargetsPreview(){
   }
   var tgt=showTargets({v:venue, venue:venue, d:dateStr, fee:fee, cost:fee});
   box.style.display='block';
-  bsEl.textContent = tgt.bs_m!=null ? $k(tgt.bs_m) : 'ÔøΩ';
-  roiEl.textContent = tgt.roi_t!=null ? (Number(tgt.roi_t).toFixed(1)+'x') : 'ÔøΩ';
+  bsEl.textContent = tgt.bs_m!=null ? $k(tgt.bs_m) : 'ù';
+  roiEl.textContent = tgt.roi_t!=null ? (Number(tgt.roi_t).toFixed(1)+'x') : 'ù';
   if(f.bsm) f.bsm.value = tgt.bs_m!=null ? tgt.bs_m : '';
   if(f.roit) f.roit.value = tgt.roi_t!=null ? tgt.roi_t : '';
   renderVipMinimumGuidance(venue,tgt.bs_m,vipEl);
@@ -6935,7 +7044,7 @@ var HELP_FAQ = [
   {kw:['budget','not show','missing','lounge','venue'], q:"Why don't I see my new show in the Budget tab?",
    a:"The Budget tab follows whatever venue you're viewing on the Calendar   switch venues using the pills at the top and Budget updates automatically. The Year dropdown inside Budget is independent, so make sure it's set to the year you want too."},
   {kw:['roi','target','tier','multiplier','suggested','fair value'], q:'How is the ROI Target / Suggested Fee calculated?',
-   a:'ROI Target comes from the DJ fee (venue fee-tier rules). Suggested Fee is calibrated from that DJ\'s past BS Actuals so historical beat-vs-target rate stays around ?50% ÔøΩ a realistic pay level, not an automatic raise or cut.'},
+   a:'ROI Target comes from the DJ fee (venue fee-tier rules). Suggested Fee is calibrated from that DJ\'s past BS Actuals so historical beat-vs-target rate stays around ?50% ù a realistic pay level, not an automatic raise or cut.'},
   {kw:['special week','f1','art basel','wmc','event','festival'], q:'Can I add a Special Week (like F1, Art Basel)?',
    a:'Yes   click <b>+ Special Week</b>, name it, and pick a start/end date. It can span multiple months and shows as an amber label on every day in range.'},
   {kw:['2026','2027','plan','year','current'], q:'Can I budget for 2026 as well as 2027?',
