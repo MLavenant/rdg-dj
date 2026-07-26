@@ -3946,8 +3946,13 @@ function renderCalMonthRecap(yr, mo, mm, showMap){
     });
   });
   var pct=bsT>0 ? Math.round(bsA/bsT*100) : null;
+  var budget=(typeof getMonthlyBudget==='function')?getMonthlyBudget(curV, yr, mm):null;
+  var feeVar=budget!=null?budget-fees:null;
+  var feePct=budget?Math.round(fees/budget*100):null;
   box.innerHTML=
     '<div class="cal-recap-item"><div class="cal-recap-l">Total DJ Fees</div><div class="cal-recap-v">'+$k(fees)+'</div></div>'
+    +'<div class="cal-recap-item"><div class="cal-recap-l">Total Budget</div><div class="cal-recap-v">'+(budget!=null?$k(budget):'-')+'</div><div class="cal-recap-s">Guest DJ monthly budget</div></div>'
+    +'<div class="cal-recap-item"><div class="cal-recap-l">Budget Variance</div><div class="cal-recap-v '+(feeVar!=null?(feeVar>=0?'hit':'low'):'')+'">'+(feeVar!=null?$kv(feeVar):'-')+'</div><div class="cal-recap-s">'+(feePct!=null?feePct+'% of budget used':'set budget in Budget tab')+'</div></div>'
     +'<div class="cal-recap-item"><div class="cal-recap-l">Total BS Target</div><div class="cal-recap-v">'+$k(bsT||null)+'</div></div>'
     +'<div class="cal-recap-item"><div class="cal-recap-l">Total Actual</div><div class="cal-recap-v">'+$k(bsA||null)+'</div></div>'
     +'<div class="cal-recap-item"><div class="cal-recap-l">ROI Beat &amp; Miss</div><div class="cal-recap-v"><span class="hit">'+beats+'</span> / <span class="low">'+misses+'</span></div><div class="cal-recap-s">'+(measured?Math.round(beats/measured*100)+'% beat rate':'-')+'</div></div>'
@@ -4493,18 +4498,25 @@ function _acctPushLog(acct, field, fromVal, toVal, by){
   acct.updatedAt=new Date().toISOString();
   acct.updatedBy=by;
 }
+function _acctSoftEditorName(){
+  /* DJ Status: no name prompt required ù use presence/session if known */
+  try{
+    var p=(typeof _presenceName==='function')?_presenceName():'';
+    if(p) return p;
+  }catch(e){}
+  try{
+    var s=sessionStorage.getItem('rdg_acct_editor')||'';
+    if(s) return s;
+  }catch(e2){}
+  return 'Unknown';
+}
 function updateAcctDjStatus(ds,val,sel){
   var acct=_acctNormalize(getAcct(ds));
   var prev=acct.djStatus||'';
   var next=val||'';
-  /* Once a DJ status is set, do not allow switching back to Not set */
-  if(prev && !next){
-    if(sel) sel.value=prev;
-    return;
-  }
   if(prev===next) return;
   _pushAcctUndo('Change DJ status');
-  var by=_acctEditorName()||'Unknown';
+  var by=_acctSoftEditorName();
   acct.djStatus=next||null;
   acct.status=_acctEffectiveStatus(acct); /* keep legacy field in sync for filters */
   _acctPushLog(acct,'DJ Status',prev,next,by);
@@ -4518,7 +4530,8 @@ function updateAcctDjStatus(ds,val,sel){
 function _djStatusSelectHtml(djSt, extraAttrs){
   var opts=(typeof ACCT_DJ_STATUS!=='undefined'?ACCT_DJ_STATUS:['Offer sent','Hold 1','Confirmed']);
   var h='<select class="acct-status-sel '+acctStatusClass(djSt||null)+'" '+(extraAttrs||'')+'>';
-  if(!djSt) h+='<option value="" selected>Not set</option>';
+  /* Always keep Not set available (including when clearing a prior status) */
+  h+='<option value=""'+(!djSt?' selected':'')+'>Not set</option>';
   h+=opts.map(function(opt){return '<option value="'+opt+'"'+(djSt===opt?' selected':'')+'>'+opt+'</option>';}).join('');
   return h+'</select>';
 }
