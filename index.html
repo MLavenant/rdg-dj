@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RDG DJ Dashboard v3.29</title>
+<title>RDG DJ Dashboard v3.30</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -484,17 +484,21 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .bgt-kpi-main{font-size:18px;font-weight:900;letter-spacing:-.4px;line-height:1.15;margin:2px 0 4px}
 .bgt-kpi-cmp{font-size:11px;color:var(--ink2);font-weight:600}
 .bgt-kpi-var{font-size:12px;font-weight:800;margin-top:6px}
-.bgt-monthly{margin:10px 0;background:var(--card);border:0.5px solid var(--rule);border-radius:10px;overflow:hidden}
-.bgt-monthly-hd{padding:9px 12px;font-size:11px;font-weight:800;border-bottom:0.5px solid var(--hair)}
-.bgt-monthly-grid{display:grid;grid-template-columns:112px repeat(12,minmax(58px,1fr));min-width:820px}
+.bgt-monthly{margin:10px 0;background:var(--card);border:0.5px solid var(--rule);border-radius:10px;overflow:auto}
+.bgt-monthly-hd{padding:9px 12px;font-size:11px;font-weight:800;border-bottom:0.5px solid var(--hair);display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.bgt-monthly-hd span{font-size:9px;font-weight:600;color:var(--ink3)}
+.bgt-monthly-grid{display:grid;grid-template-columns:128px repeat(12,minmax(54px,1fr)) 68px;min-width:980px}
 .bgt-monthly-cell{padding:6px 4px;text-align:center;border-right:0.5px solid var(--hair);border-bottom:0.5px solid var(--hair);min-width:0}
-.bgt-monthly-cell:nth-child(13n){border-right:none}
+.bgt-monthly-cell:nth-child(14n){border-right:none}
 .bgt-monthly-month{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);background:var(--card2)}
+.bgt-monthly-ytd{background:#eef4ff;color:var(--blue)}
 .bgt-monthly-label{text-align:left;padding-left:10px;background:var(--card2);display:flex;flex-direction:column;justify-content:center}
 .bgt-monthly-label b{font-size:10px}.bgt-monthly-label span{font-size:7px;color:var(--ink3);margin-top:2px}
 .bgt-monthly-value{font-size:10px;font-weight:900;line-height:1.1;white-space:nowrap}
 .bgt-monthly-vs{font-size:7px;color:var(--ink3);margin-top:2px;white-space:nowrap}
 .bgt-monthly-var{font-size:8px;font-weight:800;margin-top:2px;white-space:nowrap}
+.bgt-exec-wrap{padding:0 0 8px}
+.bgt-narrative{background:#eef6ff;border:0.5px solid #b7d0ef;border-radius:10px;padding:10px 14px;margin:10px 0;font-size:12px;line-height:1.55;color:var(--ink2)}
 .bgt-details{margin:10px 0;border:0.5px solid var(--rule);border-radius:10px;background:var(--card);overflow:hidden}
 .bgt-details>summary{cursor:pointer;padding:10px 14px;font-size:11px;font-weight:800;color:var(--ink2);list-style:none;user-select:none}
 .bgt-details>summary::-webkit-details-marker{display:none}
@@ -913,7 +917,7 @@ textarea#fldNote:focus{border-color:var(--blue)}
   <div class="sb-logo">
     <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAPAAAADECAYAAAChvqwpAAAx9klEQVR42u2de3xcZZ3/v89zztySec5t7pdcmSZpoCkQKRWR0WW7VhAVIbis4gUUryvqrrLiYsSfKOCyKOgq6E9Zd0Gl/sQL1LLK2kCtUCiUAqHQQJM0zW2SXnKZzMw553l+f8w54WQ6SW9pzeV5v17zSjtz5sy5PJ/neznf53kAOBwOh8PhcDgcDofD4XA4HA6Hw+FwOBwOh8PhcDgcDofD4XA4HA6Hw+FwOBwOh8PhcDgcDofD4XA4HA6Hw+FwOBwOh8M5ThC/BEsW7LjHzPHicDgLuEMWjyBqgV8mboE5Cw8BAEwAAIQQpFKpxNjYVMI0cx6PxzMWDAZ7du587iBjM+47t8hcwJwFgAgARmtra8WePXs+a5r0asZYdVGgjAIgAQB0hNAOt9t1+8jIyK9YUcnToudwAXNOThyLAYBar9J7Z3/GwuHwulwu/58A4BIE8W5RxBu9Xm93ZWVlPpvNStlstlnXzX+glF6JMXo0Fot+YNeuXQOW+GmZGNneP7JEzq01hzMPbrIAryeoAGMMqqreLEkyU1X1zrVr1/rm2kE8Hm+UZeUJQqSxSCTyjlliZMwvNYdzYpYXQqFQm6qq304kEisQet1ZQghg3bp1laFQ6HJJkl8iRDoUCEQucXzfAwBu6+Wy/trvAUIIVFX9piTJTFGU/xeJRNZgPFOzDzzwgBAKhd6mqoGbk8lmjXts3IXmHN39ECx3lUYikbZcLnczY1AHAH0IoX0YowKlVLXe82KM7w8GA1/s6urKWCItHMHddVkusxkKxc8rFCZvYQzeAAAHEEJ9GONJSqnEGKsFABVj/EdNUz/62muv7XUcG4+buYA5R+EumwghCIfDawoF83wAsx4h5GYMRgUB71AU5X8t4drC1IvbJ9YYxlTaNFmKUrNCEPABQRB2VlZW/rGnp6fb2t5tiR1qa2trJiYm1pmm2YwQ8lMKYxgLLxJS8SfH9jzhxQXMmeM+sHg83pjLFdqSyfgdO3funLREph/Bok5vEw6H35nL5W8FgAYA1AvAehmDKYyRAsDqGYMAQvCwJEmf27t376vWd80jCFO0rW40Gk0XCoWa/fv3/zfwwhAOZ0bMi5LJ5AWSJO+VJHkgHA6vmyWmdTtiWhcAQFtbm1tR1J9YMe0P4vF4ozNmtmPacDh8oSTJf5YkWVfV4Eccm7gBmkv2n5oRM2ua1l7cv/azVCrlAZ7o4nBmeEEIAODaa691qar6naJY1H9vbW2tmOvL4XB4LSFyFyHS3nA4sbZkv6L1mq6+ssT4j4RITJaVnzc0NATn2n8ymUxJkvw4IVJW00LvKXfMHO5CL2vX2RFjYssdhmAweFGhoP+IMfAIgvAjr9e9EQC6DcMoiKKoGIZxpq4bVzHG3o4Q+tnppzd/bOvWreOWZWYAYMDMZ8eCJWYTAIxYLHb25GT2PsZYNcbCvW639zc+n6srm4Upj8f067renM/rVzBG/x4APRYKBT7w6quv7rWsPoPXn00j7kpzli2MMVzq7tqu69q1a32qGrheluWXJUnOSZKcJ0TKS5JckCTpoCwrD0cikbc4vudyWlrGGG5ra3OXPiKyRA6MMRQIBD4mSfIOSZKzkiQXXt+/PCHL8pZQKHSZ4/jcr++/+Ayawy3wco15aSJRu3py8uBGSqEgCOh5hMRfrlnT+otNmzblLTHqthhra0+P5PP7Y6ZpegRBOLhixYqejo6OnEO4OgBANBo9J5crfIQxej4ACzOGRACWQwj1CAL+nSzLP9qzZ8+QZZEpADCEEKxcuVIbGRlLIKRXIOQZr66O9m3btm3MYb0pALDa2tqaQ4cOfZRS9jYAqBUE8SejoyPXIwQYeJaaC3g5uc6NjY2No6MHV1OqhymlbzJNehFCaMrtdl03MjLyC4e1nO3Zrh3f5puamgKDg4M/oJRdjhDajrGwCWPYhTGeYoxphkFbKTUvYYwF3G7XV/bv33+bVQ/tscRPy+zfdrvz7e3t4ne+c9fXKTX+CSHUgzF+CCH0nM/nGz7vvPM2bdiwgYuXs7xJpVKSoii3WNnkn6xfv97jELxdUWW/REci60JJkkckSX4hFAq9qYxLbrvrSFUDH5MkKSdJyp/q6uoiJe532f1HozUrJUnulCR5OBQKtc22fw5nObrSouNlCTKxVpKkPkmSuoPB4DtmE0xNTU1UltXvSpLMZFm9kzGGZtnvjP3X1tbWyLK8jRBpXNOC17S3t5cdQ5xOp/2Kot0gSbIpy/JvWltb5Vn2zxXNXehldc3tqqbS0T/MKZ7nnnv+DkrNawBYjyAIjzGGdjPGcoKAIpTSsyml5wNAf0VFxacGBwc3Oiw1hWIWurSzsF8Fqx76K7pu3IAQGsMYbUYIdVIKExhjhVK6mlIzDYAMj8d1/ejo6A8tl7vs8Tr2bfBbzFn6KkYI2tvbxYaGhmBra6sLAGD9+vWeVCqVdHauyWQypWlau6Koj8qysosQ+VVFUZ+VZfW/Q6HQexxW1wWO4gqEEKxdu9aXSqWka6+91lVixV32/uvr68OaFrxOlpWNsqx0EkJek2XleUVRfxUMBq9Zt25dpeM7UFdX12K79s3Nzf7Vq1crPBvNWS6WF1VVVcVVVf2JLMudsqxkQqHIPW1tbUJra6ssy8ojhJADicR0QYanVPTOvw6mK6YikchbZFm5X5KU1wiRDhEiTRIi75ckeaeiaLfW1NTUlsTVR7N/DwBAMBi+slgAov5u7dq1vvr6+upAIPikLMsDsqw8pWnaje3t7Zh7dtyFXooIAGCGw+HPFgqFizEWfycIqC+TyTyYSqUSw8Mjv6HUPBsAphBCPq/Xc1kmk/mVJU5n4YR937DDjTVWrFiRGB7O/Igxth4AOgRB3Igx7BIE9xSlumoYtNU0zfcgBHWCgL958ODBGy2XeLb9T08YgBCYmha4vlDQbwFgPYxBDcZ4SzKZePvg4KAsiuJbdF1vYAwukiTysd7e3mfg9ckGOJylQ+mA+0Qi0UKI1OP3E6aqgS9WVzfUESI/TYjENC30aYf4neWLotNdDofD7yJEmpBl5clEIrF6Lrc9EAj8AyHSIVlWtjmssf0bzoQUtr+jqupdVunlxlWrVqnBYPBKQiQmSdLzqVQq5Nz/kUo/OZylgAcAIBqNXuT3k6zfT8xgMPL39ofr1q2rVBTlV4RITFG0Wx0u7YwYNxaraZJl5WfWbBxfd2xni7H0haw4NiJJyv8SIuUDgcD1q1evVsp4C5BOp/2yLP+aEImpqvo9xpiz01hHiJQjRNqXTCZXOeNkDmcphywiAEAoFPoQIRIjRBqIx+NvtD6fHnhgWb7vFEWs3J9Op70AADU1NWcGAoF7JUneKUkylSTl2VAodr5D4C4oP3Ws/dtuhzX+FCHyqFU22REKhb5ui/m0006rkuWiJxAIBP7Z6hxst1q0vIfVhEj9hJDxWCz2Ji5izpJPYlmjgW4oild+qra2tsYhXuecVLiYOAp+vuiuyo81NDQEU6mUR9O0WzVNuz0WizmLNlzOnAbGGFavXq1EIpFwOp32lySmpl3wdDrtDQaDV2ia9sNAIHAVAEAsFjubEGkfIYSGQqHLS9x4wSni0047rUqS5OcIkVgkMj2tD09Lc5aceHF7O8Oqqn7XsqobWlpaKh3icDZ6XGKt2yzB766qqjqtzP5dtlWNRqMXybL6W1mWByRJyvr9JCdJ8rgsK7tVVf1eTU1NU4mQZxAMRt9OiJQnRBpOJBLnOrZDMDPpOT1J/HnnnUeKGXSJhUKhD3MRc5YaGCEEsqzeW4wntW+WxLUiAEAkEjk9FIqWWjzRsopv8vvJAb+fHIpGo2lHLI0BAKqrq+skSX6sWJUlbwwEAp8IBAIXqqp6XjAYvFjTtBstt5tpmna7I54VbLc6EAh83EpOPVvGMwCEEASDwc/EYrGm0s8YY1hRlB9Lkswikci5zliaw1ns1hfa2trcsiwPaJp2XTkrG4lE1hAiDVkx5xcsfc/Yxhpcv8uydG32fkKh0GWSJOuSJG+ura1tnPVAivNrvZsQeVSWlc7q6up6261X1cD/sZ7x/ua8884jpZ7BAw88ICiKdrcdtycSiZYSEdv7uTMUinyIC5izpATc2NhITjvttNZy1tXKRuf8fjIlScqjVtb3zhIrLQAANDc3a/Y2gUDgnyzL+VZHoskWlZ0Qs1/T1rKhoSEYCAS+EY/HA+3t7aIsqz+1fvM75X7TKjL5vd8vMVVVf2olriZjsdiby7nYa9askfht5yxZd9qRDIJgMHi1308YIVImGo1egBACRdFut+LkXzmeq9pCBEt0ljuu3lHy+OhIsee0VVyzZo0kScqfis+cg58rZ/VrampqCZGee90zQBCPxxsIkXcTIrFwOPzOOeJkDmfJiRfbMbGmaV/2+4sFEfF4vMGZWNK0kDVvlfxkdXV1rLy7qn7NFnpzc7P/KN1WW5hNtghDoem5rsSZbn1yDSHSkN9PTEc22gVQrKGWJPnPhEgsGAxezUXMWS4Ctp/xfs9Z3eQUl/23GK9KlBCpJ5lMnlEiEtuCf8QS+hM1Nc3Rkv2UFW8sFjufEHKIECkTiSTXlBNvOBx+l99PDEKkoZJs9HQnkU6nvYqi/NKyzv9iWXCBC5izZGPhtWvX+uwqK1VV/6MkG3yY2JLJ5BpCpAwhJBsOhy8sJzbr0U+BEKmnqqrq9DIidgr+Cuu58s6STLNdpAGBQOhTxW2U0mz0bJ3RnUU3XLvd4c5zEXOWlHhxIpFIynLR7SxT3VT672nRWI+Inrfc3avKJcLi8fiZxeSSVCr0aZc9EAj8s2X1Hy6Xabbc+lsti/7rkm1KY/jp40UIIBAIfNHa9/2OeaO5iDlLAhEAQFW17xIis3A4fGmJCEstFi5NOlmZ4E2WpbvBEv+MhFMqlUpKkvSMJfQPTPcejgEJltV3DlgQAIpjkWVZ+Zm1zbfL1V+XCLl0cAVomvZhSZJzjrmmuYA5Syf2DYfj7wyH439bxiXFlkgrqqur68qIRQCwiyW0e6zE1ffLCbE4AEH9nSX0L5955pkhWZYfej1OPVz4LS0tYUmSt1gJqevKWNrpY0gmk+c4MuOHibuurqmhubnZzW85ZylzmDitcsQ/+P1kIhqNXjCLyO1a6n+13NyH0um0v5wrbBdd+P3+0aJ4p13vGfFzTU3NSkKkPYRINBwOv7tkmxnxcygU+qDlJm8qKQMtZ605nCVpicvEuE0xWZaf9PsJ8/vJoaIlDF85l5g0LfQBu+zRMQ2P+HpcWlzPiBB5NBKJ/E058UYikbcWZ+yQhqLR6DlH6DS+Yv3eK34/YZIkP+FwlbmIOcszLrafxxarnAL/XIxj5a12pVVJccWM74bD4QsJIVlrSOJZJSJFllseLIm3Beu777c7gPr6+uoy4hUApksobbf9wXQ67Q+FQpdZmexdDpdf5LeUs6xi4ng8/ka/Xxrx+wkLh8Pvtz9Mp9Peo0goiQAAVVVVpxMi9RAiFaLR6NvLiRgOLyC5wXLBfztLAciMEsoyj4ggGo2m/X4yTog0FI/Hz+TWl7OsxBuJRC7x+4nh95ODJS6uM4691bJ8/88xFY9QxopHJUl+wkpCfaTE4iJHEgwpinL3LLXWJW59dZ0kyTtLpvaZkfyqrq5uLnYeZMpaDhVxEXOWfPKqWAklMUmSXq6pqVlZxgU9rKiiWGlVE53N1bWqojYUxRn4muMZswugWPdsW1NVDX7ekY0+TLxWCeWw308KjkH6Yjk3vrm5Jmqt2tBjzUjJBcxZsiBLwNWapt1XX18fnkW8ACVljYRIJiFS9yyVVs6qqH+3hgXe29bW5rYsdK2jEKRtluTYdPmm3y+ZhEh9sVjs7DmOb7rzSKVSIccYZS5gzvJzqcuId4ali0aj5xStojRZ4nIfZrU1Lfg5y2r/TyQSudjvJ6OESIfi8fh5c38v9Glr5o8nV6xYkZitoyg5Pl6swVm2wnUKFtlWdLa4tLa2tsaOSwOB6aRXuSlnIRgMvrf4HJgwQuTdpaOdSi23omi3WfXPG0qGMM6wto7PUMnvcsvLWb6uNUIAqhr4uiyrjzvmWhZLRWzFshutzPCX5oplw+Hwhaqq/qqpqSkwW+xslVD+wprC9ra5OpBkMrmKEHl3McbmN43DAQDAra2tLlVVv20VcjBC5C7H5HOHic4qqbSzyf9xFHXLZQVpjem1nzl/ooxnML1tKBR7m99PJq3JB5iqqnc1NjYS4IMWOMsYEQAgEAjcTIjMJEn5ZTgcf6ffTyYIIYdKpqyZ4XrbEwJYse7vSkoqnduWFaT1CKibEEmPRCIXOz4rV0L5YWsurL3JZHKNoii3S5LMotGqN5TpHDicZRUHQzAYPEvTgrfZ6/QWxSW/aj3XveII4rJLKp8pKamctcOIRCJ/Q4iUJUTqdxRhzNZJ3Gh1ElvtxBZCCKqqpsXL4XAcOKesedwS8efncm8dghyYRZBOwV9lCfLpxsbG+GxuulVC+UNr8MLPHIUkvGSSwynBFhhyishKMN1fZvK6uUoq9WBwRknlYS53mcnyZoh39erVij1Ru6oGvjHL73K3mcM5knttPeK5xRLeL+cqqTzjjLqILE+XVH7U/tCadP2eo+kIrBLKF0r2wRNVHM4JWGYIBAKftEYAHbGkUpKKE82pqvq1xsbGuCzLf7AE+dm5XfHEucXBFVI2Fou9rUzszeFwjkPEdqx7CSGSMcfkdc6Syu9YhRxjR0iG2c+ML7UyzXtKZsDkcDjzgF1S+QZrCZYjllQGAoF/kSR5MBabXn50lhJK7TOWdd9SV1cX4eLlcE6iiK2SSmu1hPD7HC70YaWNjsW7hXKWWtO0f7Pc7fvWr1/vKbMth8OZRwSAw0oq20ss6wyhQpkBE62trRX2ZHeqGvj6LIktDodzskTMGMOqqt4pSfJkIBC4N5ls1uDwBFXpv3FtbW2jqmodsqy86ljPl6+owOGcQqbF1traKkej0Yuampoayoi29DuotrZ2dSKRWI0x5laXw/kri/hExcfjXQ5nAQj5WFxgPvUNh8PhcDgcDofD4XA4HA6Hw+FwOBwOh8PhcDgcDofD4XA4HA6Hw+Fw/mqgRXzcx1KMz2b5u1A41lkfF/r5LIS2zLiAly7O0TjUei2V82HW+bAl2FadL1ji57t0BdzS0lI5NTV1BsbYNAw0p/gQMlg+ny9gjCerqqoOPf7444cwxpQxVs4CnvKG0NbWJjz77LMtCCEXpYJxpO1NM2fm8/m8pmmTXq937Omnnx4vcz4Ar4/zXcyN2+6YGACYs99jBAghuPHGG8Vf//rXfl3Xjc7Ozgku4IV5Q2lTU1PrwMDg06ZpgmNWidn9zZmNexghtFsQ8HZR9DyuafLWV155pd+xjTBXY5nna88aGxvJ4ODQHkppAB3lmp2OY2UAkEEI7cEYvygIeLvL5XvqDW8488WHHnooWyJmtkg8DeQQLXWcM66rq6vKZrMpXTdTjLHTGKM1jLE4AIQAQAFgPoSwJIrCzaOjo/8KxUkADS7gBSbgFStWnDk4OPQMQugvAPh3AEycrXFijAWXS/AahqEwxqKU0lpKWQohJDm22eTxuO8eGvrEbxG6iZ4iESMAYK2trRW7dr3cixDkXC7Xd02TzdkjiSIWMMY+0zQVxliEMVZtmqwOIQg4GvsBURQecbm8v6yrq/7Dtm3bxhxCXqgW2RauaVvVqqqqusnJyYsMw3wHpexchEB1dlwAqB8htA8hNIAQGhIElEFIOOT1up/au3fvi/Y15umBhSVgaGhoaJEkmYXD4W8dcytBCNLptLempmZlMBi8WpbV39lr3kqS9EwsFltXEnOd1M5z7dq1Pms50SePaycIQXt7u1hbW1sTiUQuVhTtW5IkP29N0s4IkYY0TftmdfWK+jLu9UJh+njWr1/vCQTC/yBJ8p+te8IkSXlGUdQ7gsHge5PJ5Bmtra0yxhgQX2V8cQs4GAx+z3KTvNbfI70Om3YGIQS1tbU1qhr4ht9PqDVN662MMXSSRewU8Dgh5Jl0Oi1CcXVC8XjPx/IoIJFItKhq4GZCpIHiCg1SXlG02xoaGoIO0aCFIt729nYxEAh8wj5eSZJ3BgKBTzQ1NcXmECq2vl96Xfh0QYtEwHfZnuVxumuis/evra1tlCR5s99PmKIo97e3t+OT2NBLBbzdaqjoOPflbMzTrFmzRgqFQp8mhPRZnsbeYDByxSnyMo50zAiguDyqJMmdlsXdEg6HLywRrfNe4b/ycXMWgIDL7Ve0LYGqqvf5/RJTVfWuk+hyzqeA5zwnAIDm5mZN07Rv+f2E+f2EqWrgLntB8b+CxcLWtcaqqn3TcvUHQ6HQ5Q7h2us2caFyAR+TO4ceeOABQZKUP/n9EotEIpecJBGfbAGXCgEAAMLh+IWESN1+P2GyrPw+lUpJp1jEGKA4l7W9soQsq/c1NzdrJW4xhwv4+GOy6urqer+fZAmRd7e1tblPgtt2qgR8mJBTqVRSluWtRRHLHS0tLZVwatYAxrY3YK9jHAgErndYXb6g2vFcUM4MTAAQe3t7XxME8R4Aluro6LgIio8jFrNlYFB8Jip2dXX1NTY2rhcE/Jhp0gt6evbez4oPl/FJ7kAgnU57+/r2/cY02bkej/ujo6OjtzLG7DyDwZsfF/B8NXakKNLdAAC5XOEqx/uLHQMAhG3bto0lEolLMcYvmKbxzmAweJPVeZ2sNoERQnTHjp0/pJSd73a7rxsZGfkRFLPuy7YUkgv45Flh6O7u3gWAXqXU/Jt0Ou213kdL5PyEzs7O/YoivxcADuXzhS/H4/Hz7M/m+fcEADADgcDVlJrvd7mE7+/fP3KnJV6di5cL+GQgIIQYxvgvCCGlt7e32ukKLqFQodPr9XwRAPDExMRd1rNoBvObDafV1dWxfL7wbYTgpXPPPfdzlqi5y8wFfJJVLKBXAIBls9nEEhOw7U6Lo6Oj92CMt1DKzn7ppZfea7m082WFEQCwsbHxmwGAVFZWXrtp06b8EgpJuIAXMgihkeIfpC5BAQMAMMYYVFZWfAkAYGoq9y+WFTbnqX2ZqVTqNNM0P4QQ+s3AwMAWOHUDRriAlzuMsQIAAozxUn3EYQIAHhwc3IIxfpwxdsauXbvOh/nJumMAgJGR0U8DACLE3w68MIML+BTjA2BgGEZ+KbcDxhhyuTw/QAhBPp+/ch68DQQAxtq1a32GYXwIAD3V39//nPU+t75cwKfKAqNYMRYWRpdw3GYCAAuFtEcYY1OmSS+2ileMExAxBgB47bWe8xFCisfj+pE1QIS3OS7gU6NdAABKjVUAAD6fr3cJC5gBAN61a9eoIAhbACCxdevWphO0wggAIJ/PvQMAwO/3PwKLZ1IBLuBFDgIAM51Oe02TnQcAvbfccsu+JSxguy0gQcAdAMAKhcKZJ9hGTIQQMGa+FQB6ent7eqz3uYC5gE86AgCgl1565c0IQUAUhYevuOIKE4q1uktVwAwAmMvleg4AkK6bZ5xgB8guuOACP2OwEmP8JKXMvq4cLuBTYIIRYvn81BcBACorK+9d4tZ3+txcLle3ZSjrT+CcEQBAT09PAgBEQcAvnqA7fio8LsQFvDRwAYARCASuME3zbzFGj+zbt28bOOZrWsr4/f5RxhhQyuyZMI5bwLlcLoIQAkEQeheD98EFvPjjXhcA6IlEYnUul78bALKVlep1VvZ0qcMAACRJmkQIcgAgWwKmxytgXdfVYmdA9y9kDyadTntTqZSHC3jxhhF2bKvHYrE3j42NPQIAisfj+2h/f/fL1jbLIvkSDocNAFSglLnLzDV9TIiixwcAQCldiM/QEUBxBpYdO3bsHB4evtk+bC7gxXX+FACMdDrt1zTtX8fHJx4DQBGv1/PR0dHh+2GZlf0NDw+LAODCGBknOuujaZp0oYti8+bNYJq0llIaXIz3a7nPgECrq6vrJycnL3/mmWc/zRhUIYS7fD7Px4eHhx+FZVizOzIy4mWM+RBCBywLfDzeh2W6zQmEELjdbuK0egvM42CMsRzGSOcu9OKJdVFLS0ulpmkP7N9/4IV8vnArY4y43e4bV65sbF2m4i3O54OQhBACjNH4iYrO4/GMMsZA1/XIYmgTXMCnGNOkx3PRGQDgSy+9dMo0TS9jzCcI4n11dbX1+/ePfN1axWA5jpZBAADZbDYKAMAYGjmBGJhZAh4o7ovV81QLF/Dh/i897uwwu+mmm2goFPocxlin1DyjqalpDIpZaAzLs9geAQAYhpECABAEtPsELDADALjqqqsGGWPjpsnsohBehcUF/Doul3C8DYICgNDV1fWqIAg/BYDVmzdv/gAUp3dZ1ok9wzBaiwIWnj+B3TAAwF/72k0FjPFzlJpnX3vttfbcVwvSVWUMcRd6kcEAAEkSuZkxls/lCl9ev369B5bOvFfHHJEwxpBpmm9hjDGv1/vcCVpNzBiAIOD/RQgpGzdubDzRmPqkCgHzGHjReeAAgHt7e/e4XOL/BWCnbd++/UpY/NPHHm87YHV1dQ2UstMxRp1XX331Hnh9zeTjjoMrKip+DwAwOTm1nrc5LuCTYoU1TbuFMTaVyxVuXKZWGAMAjI2NvQcAIUFw/eamm2460XmxKACgiy++eDsADBqG/kHruTIfzM8FPL9W+NVXX90riuIPAFj9MrTCCADo+vXrPbpufgSAscpK389P0H22O0fhnnvu0UVR+CEAnBGNRs+2Pltw1/ZoFornAl7AVjgajXyLMTY5NZW70ZqNYrlYYQEA6Pbt269kjNYLgvDHffv2PQ/zUz5KAQCCweDdAGBMTk79KyzcQQM8Bl7MVnjXrl0DLpfrLoRQ/ebNm5eLFUYAQBsbG0kul28HAPB6Pd+wnv+iebq2wu7du/eJonAPY/TSeDx+FpycyeO5C73crXAoFLydMTaWyxW+skyssAgAdHh4+GbGWK0oCr8eHh7eDPNbyMIAAAUCga8yxsYnJia/71jEbcFc28U64owL2GEpXnnllRGXS7wDgC0HK+wCAD0cDl+q68Y/AsBBWZY/ZzVkNs/XFnd1dWV8Pu91jLFzVVX9EliTyv+1L8Lw8DBCCBAA5gJe5JgAgJLJ5HcYYwcdVnjBFh+cqHhjsVhrNjv1YwAAj8f3qZ6enm44OUMnTQAQRkZGfoIx/oWuG98IBqNvh2LhjIs3PS7g+XL1hOeff/6A2+26DYDVP/ro5r+H+V1mZMGINx6PnzkxMflbAFBcLvc3raGT87UiQ1lLzBjDNTXV1yAEO3K57G+txdQWgIgRAFBugZeKFW5qavouAIwUCrmvLiErLFj3W4/FYuvGxyf+wBiLu1yu/zh4cP8NlnhP5mJjDABg586dk7FY7GKEUPfY2PjmWCz2d5aIBd4euYDnxQpv3bp1XBTd30QI1S0BK4ytYzcZYywQCFw/Pj7xP4yxoMvluuXgwQOfshbYPhUFFhQAhJdffrk/Egm9FWO8a2Ji8hFNC34WIWRan4unsrNsbGxctEMJuYDnsMJVVfG7AWBI1/NfXeiF+LPcV9ERz5rxePyNsqz8KZ8v3AIA4z6f90MHDuz/kiXeU7nAtgnFgSR9K1ak3owQflDXC3dIkryptra20fIC7OShcOquOU9iLSkrvHPnzkm32/U1AKh78MEHr1ygVti2HraVta0XBQADIUSrqqreoKrqf4+NjW+llKYFQXw4ENDWZDKZ/4TXHxed6uIKEwDw9u3bD42PH3qPx+O+jlLz70ZH9+9SFO3fUqlU0trGPjbR4WLzxdG4gI+ugZ1xxhk/BoB9udwpscLo8ssvFxyWZ66X3ZDt6VCpdcwGQoilUqlkKBT6MCHynw4cOPiUYZjvQwg94/N5Lx8bO/iOnp6eXfDXn7SAAgBijOGRkZE7FUVZgTH+hWka/zQ0NLxXUZQfx2KxN1mPtQzrWG1PATk6LOer3HWa8/Xyyy8LxcdInFPW4TQ0NLRIkkyDweCd1vsn43miCAAQDAavIURigUD4/fP8WwgAYO3atT6/n4wRQp7EGANCaM4XAEz/mzGGVq9erVRXVzeHw7FLFUW7RZLkJwiRmP2SZfnhcDj8TsYYdvzuQuu4pz2beDx+liyrPyVEooTIjBBpn6IoPwiHw5dWV1fXtbe3i2geh+4ihIAQMinL6n+dxLZ0Ul2wxSZgumLFitVDQ8M73G7X90dGRj4JJyeDigAAtbW1iZs2PbIbAFxnn31WfUdHx3ytLo8AgLW0tFS+9tqefQDgcbncjwFQPNfpM2ZiSpkPAGTGWBAAQsV9FQ0yY2xCEPDjouh+SNOUTV1dXa85psZZyFMFYYdlhpaWlvDAwMBFhUKhjVKWRghVAgAwxiYQQvsQQnsxRv2MoUFBQCOMsf0Yu8ZN05yoqPBkdV3P5/P5PCFE93q9pq7rFGNMEfIygLxVeeUBQtzuPXv2bMNY3HDo0IEPwsnPxs+/lVlsuFwuHSE0hBA6cJJjYbxhw4ZCMBi8vlDQv9vZ2XkRAPxqvoWAMe4xTRorFPLnH6lTRQiZGOMcpXRcEIQehNAWjIUuQUAvulyu508//fRX/vjHP0wyBjA6mgGHu01hYQ/low4ho507dw4DwL0AcO/69es9L7zwQkMuVzjDNM0mAFrLGItRyk4HYOfpOq0AQB4A08UYEycmDMwYw4xRND4+jiYmJhBjgBhjiDGGnJ7MgQMACAmA8eJcmWGx+v64ubm5olAo6F1dXflTcI1YS0tL5cDAAMpkMhPz/QORSKQyEomAqh6aQ2C10N3dDWvWrKEPPPCAgTGmlkWazZrZGejFOg+VHeeyuToepxgvu+wy94svvuiWJMk9NDTkKhQKLkEQXIIguCilwtjYmEApFV0ul+D1egXGGBJFEYmiiBFCQ11dXa86cgtcwEuIhXpTbeuKHF4DhaW3CBsqE7uzkteybZiL/djZEvi94575kTPnNUTHsD1ffJzD4XA4HA6Hw+FwOBwOh8PhcDgcDofD4XA4HM5RwSvmOMsKfJwiQUv8HOfjuxwO51hoamqKwSIdOcZZuL34QnErS4vccSqVuiydTotHcEFnFMivWrVqVX19/fllros9KkaAuettyw2Ut6e6Od7rLAAAPnjw4DWSJEnOY6uqqnpnKpUKlTkG5zGXngc0NzdrDQ0N7ypzXVDJMR+pjvhotputzeFZrslc1/Joric6Sq9qyUzPs5h7dQavD5lzFvYzURQ3d3R0mCXblvv+NG63+9VCoSCUfGaPQjJLGgU7iuMAOP7ieLthmQAAlNJs6XEzxrbIsjxecrzOv2bJ8TIAgFAoNJbJZB4vcw1YmWMuPVdbEMcz4ulohjfOdS2PZq1idoT/g/O6znGeXMAnm+bm5mhnZ+dgMplMAECir69vm33TDMOY0UOnUqlkV1fXADjWOqqurlYAAHp7ew8AAOi6jvx+P3bceAQALBaLVYiieD4AeBBCT/f29g44b/g555wTfeqppwZjsVgQIdTQ39//hC2YmpqalZTSpGmaI/39/c8eg3gZAEA8Hq8SRTE8MTERc7lcunOjWCyGKKUzvnPmmWeGbrjhhv2f+cxnGkRRbCoUCgPDw8NPlDZQSqnT0rHW1lYXxljq6+ubEgThHMMwQqZpbslkMoMl32UAwGpra2sopQmEkDubzT5tjZGeSwQIAGg6nRa7urqaRVHUEEIHuru7n5tWGmNo1apV4RdeeGEoEonUejyeQG9v73ZnB5RIJM51u92hfD6/v7+/f2u5UKOysnJk+/btOgBAS0tLJca4YseOHRl7PzU1NV7TNM9FCJmGYYwMDAzsct7vxaaDxTjXMbLmhLrB5/OtMk1zNcZ43/j4eB8AoPb2drxly5YvZLPZP9ttQxCEq/x+P56cnOyD4ioApsfj+ThCaN/4+Ph+S8DpqampsycmJp63OjaWTCY10zQ/hRDqBYADuVzufYSQ7snJyYPWNhQAPldRUXEupXS1IAgj4+Pj3XZjkGU5rOu6aprmSp/Pd4ksy09NTEwYRxJvIBCI+/3+j2OM46IomrqupwBg89TUVMG6Z8ztdv/joUOHusfHx8fsY8EYf3zjxo2XQHFKmEHDMNZVVFRUZLPZ3fb3TNOMjY+PX53NZrfY74VCId/evXvvwBgHKKWTAHDQNM1rVFV9enx8fMq2vJFIpLKysvKTpmnWA8ABSunfGoaRzWazPZblZLNYXhYMBltHR0c/CAAgimI2n89fOTEx8T/2dzo7O4WXXnqp3efzrQSAVQDQPTExMWi7y6FQ6NOU0gqXy9VVKBRSPp9vXTabfcrhFTAA+MzY2NjL2Wx2AgDA5XKduX///rdks9lnrPtOXS7XKsbYFQih3aZptlRWVl5CCOmemJg4uBhd6sVogREr4kEIPZXJZP5c+rmu63lwjO/EGD9MKW0DgL8AgFFXVxeZnJzE+/bt221dA8M0TUPXdd3R6IxCodAmiuKmffv2PQsAkEgkDui6/m4AuMNuWLquuxljz4yMjDxcehy9vb2dANBpNcDLTdN8GwA8CHNMyROJRCpN0/y0KIo/tawDBIPBxkKhMGP5EV3XCwghVtKzUVEUH7S9kVgs1kcpfR8A/N5unAghZhjGjFlMrNkpBgYHB++xBRUOhxt1XV8JAFusa2RSSj8JAFsHBwf/DACQTCZVr9d7RG8iHA7XM8bebZrmbcPDw+PWd9e0tbWhDRs2AACg5uZm1tHR4UEIdWQymR2O+2AGg8E0FFdRvM96/7lgMHh1KBRal8lkNtni1HU97/F4pq8JxtiklOqlHYqu688NDQ1tBoDNoVDoNMMwPlVTU/OVnp6ePBfwqYl9wePxDOzdu3crQggfId7EQ0ND3aFQCOLxeFV/f//ebDabFkXxiTkSXPZ0NU0ej8esr69vscTiYYxNObdBCI0CQIcj8WK76ayxsZGMj4+nASBAKa3VdX1wjt8ULJGcDwDPWeL1AIDBGHOXirXsiWKcc7vd++3OhVIqiKI4edgPCcKMfeXzeWydBwMALwAUBEHIGoZhX1MjFotVG4aBrQ7T3sZLKWVHiHtNSulbBUF4KJPJjAOA2NraigYHB0tn10CiKPb09/fvcCSp7E7nDIxxhyOJRTHGmwHgXQCwyfmDk5MzT7dMB8MYYx5rX95MJvNqNBrtnpycbAaAZ+DkLO7GBVzmLgjBYNAPAONHdaKi+BfDMC4AgPsAoE5RlF/39/ej2Syh5aYfRAhtmJqa0gVBYIIgsP7+/pxTwJRSDAAEACbAMW+0pmnJAwcOXCMIwhOCIPxR1/VaURSbjpBcAUppECHUB6/PB0UxProktmmaYBiG6OhcqCNOnuvaMGuFBjvBQ71eL5im6TwuoSQxBnCU09lgjAXDMKZ35vf7mcvlYmXuqQsA3ABQKAnxMMbYcCagMMaHrd0siiJ2u91ocnLSdqtRLpeDEs+FYYxZSU5ARwgtytk4Fu1jJEEQqHUjyomPllhTpKrqNoRQIJFInIsQeq2zs7PgPH+EEHNYOcwYA4RQ78TExDkDAwPZvr6+qZ6enly5vsSeYM4Z87lcrrdhjP80MDDwSF9f3z5K6egRGjuzzut5AHiz1VALAMBmaVy0jAvNylhqWqaTYLN5Hc5r6NiXMDQ01AsAJBqNrgSAKQCghmEUHPNNz5UV/gvG+B2WqIyOjg7DMAw2S3aYlrmfvaZprnR8Rg3DOJ1SOliynbuioiJnd3yU0gI+vPdDlFJ7+ZZsJBIJM8aSFRUVu44y080t8DxksWBqaopkMhk0S48vlfTOuLOzsxAOh/cWCoUvV1RUfMBxs5D1HY8gCBWOxowB4AHG2BcikYgmiuKzPp9v6qyzzhrYsGGD6ej1ia7rQqk7SCndDgDviUQi+2VZHhwfH6+ilFbMcVoUAPDw8PDOQCBwRjgc/rzb7f4DpbTfNE2tdAV5jDExDEMoea/SMAyXwyKLbrfbXyJe22OYplAoYOuaTTM1NVWh67rbYXFNAPi+YRjXxGKxPW63+6V8Pl+fy+UyR3FOz4dCoUQkEvkCxvhZt9s9ks1mZSv+dR4bSafT0NHR4RQ0Qgj9kVL6xXA4PODz+Xbl8/mUaZpv8vv9tw0PD09njxFCB7LZ7LpkMvmoYRj1+Xz+SgDoKXHHTZfLFamurm7Wdb3BNM1mAPgvq3NedEmsxWiBGWMMKioqfg8AhyUdbrrpJubxeB4ucY2pJbbHMMb39PT0HCx1Ad1u98sej2eb0xIMDQ1NZjKZmwRB2A8Ab9R1/c3j4+Oi07p4vd5HMMZjjvcoAEAmk9khCMLPRVE8e2pq6iKXy1Xj9Xr/fAQXmgIAGh0dvR9j/HsAOB0ALqGU9p111lljznPxer1/kCTpgPM9t9u9mVI6YO+MEDJSWVn5qHMbWZYPVlRUPOJ8L5FIZN1u9++dLmpFRcUTXq+3y/leJpMZHBkZuZkx9ophGFHTNKNut/tIk6BTAECZTGaTy+X6kSAIBUppNQBUMsamO9CvfvWrzOv1buzo6DjMAg4NDU3Ksnw7xjjFGLsMAE73eDy3v/baa4fsGN2Koe9FCCmU0isQQprf77/b5/M96jwHhJABALWU0gaE0HBVVdW3MplMFyziZ8HLETTP2833dxdFxxoKha63nsMf0/nGYrHqcDj82WM4VzQP1xhbGf2zNU37wDzeK+5Cn0Ajp8f4mTNTPFtjKFed5FxMjB7lb7GS7832/VldzxKrcDS/i0sSS2iWuA4fxXul+4JkMulDCMVN04yYpvlmxthLfX19+44mcxuNRkNutzuk63qDYRhnmaZ5TxmrN9e1RI5jmq0azLkNlGxru+kuURSD4FjwfDFb3sUsYHocn801yz+b598COLGECD2Oz2mZc2LH+d3DSiorKyvVycnJcxFCh3w+38+7u7t7jiLxgwCAeb3elaZpxgRBGFBV9WYriXgs5zznCg1zbDOjzFSW5W5RFPPDw8Mm8HmgOcucE3H1+RjnUxgLcjhOFxXg2Ac04GMMI07mOSy6x0UcDofD4XA4HA6Hw+FwOBwOh8PhcDgcDofD4XA4HA6Hw+FwOBwOh8PhcDgcDofD4XA4HA6Hw+FwOBwOh8PhcDgcDofD4cw7/x9VnPR5jlOdMQAAAABJRU5ErkJggg==" alt="RDG" class="sb-logo-img">
     <div class="sb-logo-title">DJ Dashboard</div>
-    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v3.29 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
+    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v3.30 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
   </div>
   <div id="sidebar"></div>
   <div class="sb-tools-section">
@@ -997,8 +1001,10 @@ textarea#fldNote:focus{border-color:var(--blue)}
       </div>
     </div>
     <div id="budgetNarrative"></div>
-    <div class="kpi-strip" id="budgetKPIs"></div>
-    <div id="budgetTopLine"></div>
+    <div class="kpi-strip" id="budgetKPIs" style="display:none"></div>
+    <div class="bgt-exec-wrap" id="budgetTopLine"></div>
+    <div class="bgt-exec-wrap" id="budgetGuestDjTable"></div>
+    <div class="bgt-exec-wrap" id="budgetYoYCompare"></div>
     <div id="budgetSpendTracker"></div>
     <div style="padding:14px" id="budgetMonths"></div>
     <div class="modal-bg hidden" id="djPickerModal">
@@ -2826,26 +2832,118 @@ function setMonthlyBudget(venue, year, mm, val){
   saveMonthlyBudget();
 }
 
-/* YTD Budget decision KPIs: Guest DJ, Live Ent $, Live Ent margin */
+/* ---- Budget Executive Tables helpers ---- */
+function padMm(mi){ return mi<10?'0'+mi:''+mi; }
+function miamiMonthNum(){
+  try{
+    var p=String(TODAY||'').split('-');
+    var m=parseInt(p[1],10);
+    if(m>=1&&m<=12) return m;
+  }catch(e){}
+  return (new Date()).getMonth()+1;
+}
+function getBgtLastActualMonth(venue, year){
+  var last=0;
+  for(var mi=1;mi<=12;mi++){
+    var mm=padMm(mi);
+    if(getBgtActual(venue,year,mm,'sales')!=null||getBgtActual(venue,year,mm,'live')!=null) last=mi;
+  }
+  return last||null;
+}
+function getDjYtdCutoff(year){
+  var cy=parseInt(String(TODAY||'').slice(0,4),10)||(new Date()).getFullYear();
+  if(+year===cy) return miamiMonthNum();
+  return 12;
+}
+function monthPerf(venue, year, mm){
+  /* Prefer live SCHED for fees/BS; fall back to historical BS aggregate. */
+  var shows=SCHED.filter(function(r){
+    return r.v===venue && r.yr===year && (!mm||r.d.slice(5,7)===mm) && r._s!=='empty';
+  });
+  var tFee=0, tBS=0, hasFee=false, hasBS=false;
+  shows.forEach(function(r){
+    var f=r.cost||r.fee||0;
+    if(f){ tFee+=f; hasFee=true; }
+    if(r.bs_a!=null){ tBS+=r.bs_a; hasBS=true; }
+  });
+  if(hasFee||hasBS){
+    return {
+      tFee:hasFee?Math.round(tFee):null,
+      tBS:hasBS?Math.round(tBS):null,
+      roi:(hasFee&&hasBS&&tFee>0)?+(tBS/tFee).toFixed(1):null
+    };
+  }
+  var h=hs(venue,year,mm);
+  if(!h) return {tFee:null,tBS:null,roi:null};
+  return {
+    tFee:h.tFee||null,
+    tBS:h.tBS||null,
+    roi:(h.tFee&&h.tBS)?+(h.tBS/h.tFee).toFixed(1):null
+  };
+}
+function pctLive(sales, live){
+  if(sales==null||live==null||!(sales>0)) return null;
+  return Math.round(live/sales*1000)/10;
+}
+function dash(v){ return v==null||v===''?'-':v; }
+function fmtPp(v){
+  if(v==null) return '-';
+  return (v>0?'+':'')+v+' pp';
+}
+function bgtMonthCellHeader(){
+  var h='<div class="bgt-monthly-cell bgt-monthly-month"></div>';
+  for(var i=0;i<12;i++) h+='<div class="bgt-monthly-cell bgt-monthly-month">'+MNS[i]+'</div>';
+  h+='<div class="bgt-monthly-cell bgt-monthly-month bgt-monthly-ytd">YTD</div>';
+  return h;
+}
+function bgtMoneyCell(actual, budget, variance, favorableWhen){
+  /* favorableWhen: 'under' (budget-actual>=0 good) | 'margin' (actual-budget<=0 good) */
+  var actualText=actual!=null?$k(actual):'-';
+  var budgetText=budget!=null?$k(budget):'-';
+  var varText='-';
+  var cls='';
+  if(variance!=null){
+    varText=$mv(variance);
+    var fav=favorableWhen==='margin'?variance<=0:variance>=0;
+    cls=fav?'pos':'neg';
+  }
+  return '<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+actualText+'</div>'
+    +'<div class="bgt-monthly-vs">vs '+budgetText+'</div>'
+    +'<div class="bgt-monthly-var '+cls+'">'+varText+'</div></div>';
+}
+function bgtPctCell(actual, budget, variancePp){
+  var actualText=actual!=null?actual+'%':'-';
+  var budgetText=budget!=null?budget+'%':'-';
+  var varText='-';
+  var cls='';
+  if(variancePp!=null){
+    varText=fmtPp(variancePp);
+    cls=variancePp<=0?'pos':'neg';
+  }
+  return '<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+actualText+'</div>'
+    +'<div class="bgt-monthly-vs">vs '+budgetText+'</div>'
+    +'<div class="bgt-monthly-var '+cls+'">'+varText+'</div></div>';
+}
+
+/* YTD Budget decision totals (financial cutoff = latest P&L month) */
 function computeBudgetYearTotals(venue, year){
   var ytDjBudget=0, ytDjSpend=0, hasDjBudget=false;
   var ytASales=0, ytALive=0, ytBSales=0, ytBLive=0;
-  var hasActual=false, lastActualMm=0;
+  var hasActual=false;
+  var lastActualMm=getBgtLastActualMonth(venue,year);
+  var djCut=getDjYtdCutoff(year);
   for(var mi=1;mi<=12;mi++){
-    var mm=mi<10?'0'+mi:''+mi;
+    var mm=padMm(mi);
     var budget=getMonthlyBudget(venue,year,mm);
     var spend=(monthAgg(mm).tFee)||0;
-    if(budget!=null){ hasDjBudget=true; ytDjBudget+=budget; }
-    ytDjSpend+=spend;
-    var aSales=getBgtActual(venue,year,mm,'sales');
-    var aLive=getBgtActual(venue,year,mm,'live');
-    if(aSales!=null||aLive!=null) lastActualMm=mi;
+    if(mi<=djCut){
+      if(budget!=null){ hasDjBudget=true; ytDjBudget+=budget; }
+      ytDjSpend+=spend;
+    }
   }
-  /* Live Ent / margin: YTD actual vs YTD budget through latest actual month */
   for(var mi2=1;mi2<=12;mi2++){
-    if(lastActualMm && mi2>lastActualMm) break;
-    if(!lastActualMm) break;
-    var mm2=mi2<10?'0'+mi2:''+mi2;
+    if(!lastActualMm||mi2>lastActualMm) break;
+    var mm2=padMm(mi2);
     var aS=getBgtActual(venue,year,mm2,'sales');
     var aL=getBgtActual(venue,year,mm2,'live');
     var bS=getBgtPlan(venue,year,mm2,'sales');
@@ -2855,97 +2953,240 @@ function computeBudgetYearTotals(venue, year){
     if(bS!=null) ytBSales+=bS;
     if(bL!=null) ytBLive+=bL;
   }
-  var aPct=ytASales>0?Math.round(ytALive/ytASales*1000)/10:null;
-  var bPct=ytBSales>0?Math.round(ytBLive/ytBSales*1000)/10:null;
+  var aPct=pctLive(ytASales,ytALive);
+  var bPct=pctLive(ytBSales,ytBLive);
   return {
     djSpend:ytDjSpend,
     djBudget:hasDjBudget?ytDjBudget:null,
     djVar:hasDjBudget?(ytDjBudget-ytDjSpend):null,
+    salesActual:hasActual?ytASales:null,
+    salesBudget:lastActualMm?ytBSales:null,
     liveActual:hasActual?ytALive:null,
     liveBudget:lastActualMm?ytBLive:null,
     liveVar:hasActual?(ytBLive-ytALive):null,
     marginActual:aPct,
     marginBudget:bPct,
     marginVarPp:(aPct!=null&&bPct!=null)?Math.round((aPct-bPct)*10)/10:null,
-    lastActualMm:lastActualMm||null
+    lastActualMm:lastActualMm||null,
+    djCutoffMm:djCut
   };
 }
 function renderBudgetKpiStrip(t){
   var el=document.getElementById('budgetKPIs');
   if(!el) return;
-  var djVarCls=t.djVar==null?'':(t.djVar>=0?'pos':'neg');
-  var liveVarCls=t.liveVar==null?'':(t.liveVar>=0?'pos':'neg');
-  /* Lower/equal Live E margin vs budget is favorable (green) */
-  var margVarCls=t.marginVarPp==null?'':(t.marginVarPp<=0?'pos':'neg');
-  var ytdNote=t.lastActualMm?'YTD through '+(['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][t.lastActualMm]):'';
-  var h='';
-  h+='<div class="bgt-kpi"><div class="bgt-kpi-l">Guest DJ Spent vs Budget</div>';
-  h+='<div class="bgt-kpi-main">'+$m(t.djSpend)+'</div>';
-  h+='<div class="bgt-kpi-cmp">Budget '+(t.djBudget!=null?$m(t.djBudget):'not set')+'</div>';
-  h+='<div class="bgt-kpi-var '+(djVarCls||'')+'">'+(t.djVar!=null?$mv(t.djVar):'-')+'</div></div>';
-  h+='<div class="bgt-kpi"><div class="bgt-kpi-l">Live Entertainment vs Budget</div>';
-  h+='<div class="bgt-kpi-main">'+(t.liveActual!=null?$m(t.liveActual):'-')+'</div>';
-  h+='<div class="bgt-kpi-cmp">Budget '+(t.liveBudget!=null?$m(t.liveBudget):'-')+(ytdNote?' - '+ytdNote:'')+'</div>';
-  h+='<div class="bgt-kpi-var '+(liveVarCls||'')+'">'+(t.liveVar!=null?$mv(t.liveVar):'-')+'</div></div>';
-  h+='<div class="bgt-kpi"><div class="bgt-kpi-l">Live Ent. Margin Actual vs Budget</div>';
-  h+='<div class="bgt-kpi-main">'+(t.marginActual!=null?t.marginActual+'%':'-')+'</div>';
-  h+='<div class="bgt-kpi-cmp">Budget '+(t.marginBudget!=null?t.marginBudget+'%':'-')+(ytdNote?' - '+ytdNote:'')+'</div>';
-  h+='<div class="bgt-kpi-var '+(margVarCls||'')+'">'+(t.marginVarPp!=null?((t.marginVarPp>0?'+':'')+t.marginVarPp+' pp'):'-')+'</div></div>';
-  el.innerHTML=h;
-  el.style.display='flex';
+  el.innerHTML='';
+  el.style.display='none';
 }
 
-function renderBudgetMonthlyComparison(){
+/* Table 1: Total Sales + Live Entertainment + margin (financial YTD) */
+function renderBudgetFinancialTable(){
   var host=document.getElementById('budgetTopLine');
   if(!host) return;
-  var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var rows=[
-    {id:'dj',label:'Guest DJ',sub:'Spend vs budget'},
-    {id:'live',label:'Live Entertainment',sub:'Actual vs budget'},
-    {id:'margin',label:'Live E Margin',sub:'Actual vs budget'}
-  ];
-  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd">January - December comparison</div>';
-  h+='<div class="bgt-monthly-grid"><div class="bgt-monthly-cell bgt-monthly-month"></div>';
-  months.forEach(function(m){ h+='<div class="bgt-monthly-cell bgt-monthly-month">'+m+'</div>'; });
-  rows.forEach(function(row){
-    h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>'+row.label+'</b><span>'+row.sub+'</span></div>';
+  var lastMm=getBgtLastActualMonth(bgtVenue,bgtYear);
+  var cutLabel=lastMm?('YTD through '+MNS[lastMm-1]):'No P&L actuals yet';
+  var ytASales=0, ytALive=0, ytBSales=0, ytBLive=0, hasA=false, hasB=false;
+
+  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd">Live Entertainment &amp; Sales <span>'+cutLabel+'</span></div>';
+  h+='<div class="bgt-monthly-grid">'+bgtMonthCellHeader();
+
+  /* Sales row */
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Total Sales</b><span>Actual vs budget</span></div>';
+  for(var mi=1;mi<=12;mi++){
+    var mm=padMm(mi);
+    var a=getBgtActual(bgtVenue,bgtYear,mm,'sales');
+    var b=getBgtPlan(bgtVenue,bgtYear,mm,'sales');
+    if(lastMm&&mi<=lastMm){
+      if(a!=null){ ytASales+=a; hasA=true; }
+      if(b!=null){ ytBSales+=b; hasB=true; }
+    }
+    var varS=(a!=null&&b!=null)?(a-b):null; /* informational; no red/green preference for sales */
+    h+='<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+(a!=null?$k(a):'-')+'</div>'
+      +'<div class="bgt-monthly-vs">vs '+(b!=null?$k(b):'-')+'</div>'
+      +'<div class="bgt-monthly-var">'+(varS!=null?$mv(varS):'-')+'</div></div>';
+  }
+  h+='<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+(hasA?$k(ytASales):'-')+'</div>'
+    +'<div class="bgt-monthly-vs">vs '+(hasB?$k(ytBSales):'-')+'</div>'
+    +'<div class="bgt-monthly-var">'+(hasA&&hasB?$mv(ytASales-ytBSales):'-')+'</div></div>';
+
+  /* Live Entertainment $ */
+  ytALive=0; ytBLive=0; hasA=false; hasB=false;
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live Entertainment</b><span>Actual vs budget</span></div>';
+  for(var mi2=1;mi2<=12;mi2++){
+    var mm2=padMm(mi2);
+    var aL=getBgtActual(bgtVenue,bgtYear,mm2,'live');
+    var bL=getBgtPlan(bgtVenue,bgtYear,mm2,'live');
+    if(lastMm&&mi2<=lastMm){
+      if(aL!=null){ ytALive+=aL; hasA=true; }
+      if(bL!=null){ ytBLive+=bL; hasB=true; }
+    }
+    var varL=(aL!=null&&bL!=null)?(bL-aL):null;
+    h+=bgtMoneyCell(aL,bL,varL,'under');
+  }
+  var ytLiveVar=(hasA&&hasB)?(ytBLive-ytALive):null;
+  h+=bgtMoneyCell(hasA?ytALive:null, hasB?ytBLive:null, ytLiveVar, 'under');
+
+  /* Margin % */
+  var ytASales2=0, ytBSales2=0, ytALive2=0, ytBLive2=0, hasMA=false, hasMB=false;
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live E Margin</b><span>Actual vs budget</span></div>';
+  for(var mi3=1;mi3<=12;mi3++){
+    var mm3=padMm(mi3);
+    var aS3=getBgtActual(bgtVenue,bgtYear,mm3,'sales');
+    var aL3=getBgtActual(bgtVenue,bgtYear,mm3,'live');
+    var bS3=getBgtPlan(bgtVenue,bgtYear,mm3,'sales');
+    var bL3=getBgtPlan(bgtVenue,bgtYear,mm3,'live');
+    var aP=pctLive(aS3,aL3);
+    var bP=pctLive(bS3,bL3);
+    var vP=(aP!=null&&bP!=null)?Math.round((aP-bP)*10)/10:null;
+    if(lastMm&&mi3<=lastMm){
+      if(aS3!=null){ ytASales2+=aS3; hasMA=true; }
+      if(aL3!=null) ytALive2+=aL3;
+      if(bS3!=null){ ytBSales2+=bS3; hasMB=true; }
+      if(bL3!=null) ytBLive2+=bL3;
+    }
+    h+=bgtPctCell(aP,bP,vP);
+  }
+  var ytAP=hasMA?pctLive(ytASales2,ytALive2):null;
+  var ytBP=hasMB?pctLive(ytBSales2,ytBLive2):null;
+  var ytVP=(ytAP!=null&&ytBP!=null)?Math.round((ytAP-ytBP)*10)/10:null;
+  h+=bgtPctCell(ytAP,ytBP,ytVP);
+
+  h+='</div></div>';
+  host.innerHTML=h;
+}
+
+/* Table 2: Guest DJ spend vs budget (calendar YTD) */
+function renderBudgetGuestDjTable(){
+  var host=document.getElementById('budgetGuestDjTable');
+  if(!host) return;
+  var cut=getDjYtdCutoff(bgtYear);
+  var cutLabel=(+bgtYear===parseInt(String(TODAY||'').slice(0,4),10))
+    ?('YTD through '+MNS[cut-1]+' (current month)')
+    :('Full year '+bgtYear);
+  var ytSpend=0, ytBudget=0, hasB=false;
+
+  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd">Guest DJ Budget <span>'+cutLabel+'</span></div>';
+  h+='<div class="bgt-monthly-grid">'+bgtMonthCellHeader();
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Guest DJ Fees</b><span>Scheduled vs budget</span></div>';
+  for(var mi=1;mi<=12;mi++){
+    var mm=padMm(mi);
+    var spend=(monthAgg(mm).tFee)||0;
+    var budget=getMonthlyBudget(bgtVenue,bgtYear,mm);
+    var variance=budget!=null?(budget-spend):null;
+    if(mi<=cut){
+      ytSpend+=spend;
+      if(budget!=null){ ytBudget+=budget; hasB=true; }
+    }
+    h+=bgtMoneyCell(spend||0, budget, variance, 'under');
+  }
+  var ytVar=hasB?(ytBudget-ytSpend):null;
+  h+=bgtMoneyCell(ytSpend, hasB?ytBudget:null, ytVar, 'under');
+  h+='</div></div>';
+  host.innerHTML=h;
+}
+
+/* Table 3: Fixed 2025 vs 2026 performance comparison */
+function renderBudgetYoYCompare(){
+  var host=document.getElementById('budgetYoYCompare');
+  if(!host) return;
+  var years=[2025,2026];
+  var finCut={};
+  years.forEach(function(y){ finCut[y]=getBgtLastActualMonth(bgtVenue,y); });
+  var djCut={};
+  years.forEach(function(y){ djCut[y]=getDjYtdCutoff(y); });
+
+  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd">2025 vs 2026 Performance <span>ROI = BS Actual ÷ DJ Fees · Margin = Live Ent ÷ Total Sales</span></div>';
+  h+='<div class="bgt-monthly-grid">'+bgtMonthCellHeader();
+
+  function addMetricRow(label, sub, getter, ytdAgg, fmt){
+    h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>'+label+'</b><span>'+sub+'</span></div>';
+    var ytd=ytdAgg();
     for(var mi=1;mi<=12;mi++){
-      var mm=mi<10?'0'+mi:''+mi;
-      var actual=null, budget=null, variance=null, actualText='-', budgetText='-';
-      if(row.id==='dj'){
-        actual=monthAgg(mm).tFee||0;
-        budget=getMonthlyBudget(bgtVenue,bgtYear,mm);
-        variance=budget!=null?budget-actual:null;
-        actualText=$k(actual);
-        budgetText=budget!=null?$k(budget):'-';
-      } else if(row.id==='live'){
-        actual=getBgtActual(bgtVenue,bgtYear,mm,'live');
-        budget=getBgtPlan(bgtVenue,bgtYear,mm,'live');
-        variance=(actual!=null&&budget!=null)?budget-actual:null;
-        actualText=actual!=null?$k(actual):'-';
-        budgetText=budget!=null?$k(budget):'-';
-      } else {
-        var aSales=getBgtActual(bgtVenue,bgtYear,mm,'sales');
-        var aLive=getBgtActual(bgtVenue,bgtYear,mm,'live');
-        var bSales=getBgtPlan(bgtVenue,bgtYear,mm,'sales');
-        var bLive=getBgtPlan(bgtVenue,bgtYear,mm,'live');
-        actual=(aSales>0&&aLive!=null)?Math.round(aLive/aSales*1000)/10:null;
-        budget=(bSales>0&&bLive!=null)?Math.round(bLive/bSales*1000)/10:null;
-        variance=(actual!=null&&budget!=null)?Math.round((actual-budget)*10)/10:null;
-        actualText=actual!=null?actual+'%':'-';
-        budgetText=budget!=null?budget+'%':'-';
-      }
-      var favorable=row.id==='margin'?(variance!=null&&variance<=0):(variance!=null&&variance>=0);
-      var varText='-';
-      if(variance!=null){
-        if(row.id==='margin') varText=(variance>0?'+':'')+variance+' pp';
-        else varText=$mv(variance);
-      }
-      h+='<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+actualText+'</div>'
-        +'<div class="bgt-monthly-vs">vs '+budgetText+'</div>'
-        +'<div class="bgt-monthly-var '+(variance==null?'':(favorable?'pos':'neg'))+'">'+varText+'</div></div>';
+      var v=getter(mi);
+      h+='<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+fmt(v)+'</div></div>';
+    }
+    h+='<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+fmt(ytd)+'</div></div>';
+  }
+  function moneyFmt(v){ return v!=null?$k(v):'-'; }
+  function roiFmt(v){ return v!=null?v+'x':'-'; }
+  function pctFmt(v){ return v!=null?v+'%':'-'; }
+
+  years.forEach(function(year){
+    /* BS Actual */
+    addMetricRow(year+' BS Actual','Bottle service',
+      function(mi){ return monthPerf(bgtVenue,year,padMm(mi)).tBS; },
+      function(){
+        var sum=0, has=false, cut=djCut[year];
+        for(var mi=1;mi<=cut;mi++){
+          var v=monthPerf(bgtVenue,year,padMm(mi)).tBS;
+          if(v!=null){ sum+=v; has=true; }
+        }
+        return has?sum:null;
+      }, moneyFmt);
+
+    /* DJ Fees */
+    addMetricRow(year+' DJ Fees','Paid / scheduled',
+      function(mi){ return monthPerf(bgtVenue,year,padMm(mi)).tFee; },
+      function(){
+        var sum=0, has=false, cut=djCut[year];
+        for(var mi=1;mi<=cut;mi++){
+          var v=monthPerf(bgtVenue,year,padMm(mi)).tFee;
+          if(v!=null){ sum+=v; has=true; }
+        }
+        return has?sum:null;
+      }, moneyFmt);
+
+    /* ROI aggregate */
+    addMetricRow(year+' ROI','BS ÷ Fees',
+      function(mi){ return monthPerf(bgtVenue,year,padMm(mi)).roi; },
+      function(){
+        var bs=0, fee=0, hasB=false, hasF=false, cut=djCut[year];
+        for(var mi=1;mi<=cut;mi++){
+          var p=monthPerf(bgtVenue,year,padMm(mi));
+          if(p.tBS!=null){ bs+=p.tBS; hasB=true; }
+          if(p.tFee!=null){ fee+=p.tFee; hasF=true; }
+        }
+        return (hasB&&hasF&&fee>0)?+(bs/fee).toFixed(1):null;
+      }, roiFmt);
+
+    /* Actual Live E margin */
+    addMetricRow(year+' Live E Margin','Actual',
+      function(mi){
+        var mm=padMm(mi);
+        return pctLive(getBgtActual(bgtVenue,year,mm,'sales'), getBgtActual(bgtVenue,year,mm,'live'));
+      },
+      function(){
+        var sales=0, live=0, has=false, cut=finCut[year];
+        if(!cut) return null;
+        for(var mi=1;mi<=cut;mi++){
+          var mm=padMm(mi);
+          var s=getBgtActual(bgtVenue,year,mm,'sales');
+          var l=getBgtActual(bgtVenue,year,mm,'live');
+          if(s!=null){ sales+=s; has=true; }
+          if(l!=null) live+=l;
+        }
+        return has?pctLive(sales,live):null;
+      }, pctFmt);
+
+    if(year===2026){
+      addMetricRow('2026 Budget Margin','Live E plan',
+        function(mi){
+          var mm=padMm(mi);
+          return pctLive(getBgtPlan(bgtVenue,year,mm,'sales'), getBgtPlan(bgtVenue,year,mm,'live'));
+        },
+        function(){
+          var sales=0, live=0, has=false, cut=finCut[year]||12;
+          for(var mi=1;mi<=cut;mi++){
+            var mm=padMm(mi);
+            var s=getBgtPlan(bgtVenue,year,mm,'sales');
+            var l=getBgtPlan(bgtVenue,year,mm,'live');
+            if(s!=null){ sales+=s; has=true; }
+            if(l!=null) live+=l;
+          }
+          return has?pctLive(sales,live):null;
+        }, pctFmt);
     }
   });
+
   h+='</div></div>';
   host.innerHTML=h;
 }
@@ -3115,92 +3356,105 @@ function renderBudgetPlanRecap(){
   });
 }
 
-/*    Narrative summary: reads like a quick human/AI briefing on the month/year    */
+/* Executive narrative: MTD Guest DJ + YTD Live Ent + ROI example */
 function generateBudgetNarrative(venue, year, mm){
-  var isMonthView = !!mm;
   var MNF=['January','February','March','April','May','June','July','August','September','October','November','December'];
-
-  if(isMonthView){
+  if(mm){
     var agg=monthAgg(mm);
     var budget=getMonthlyBudget(venue,year,mm);
     var spend=agg.tFee||0;
     var variance=budget!=null?budget-spend:null;
     var avgROI=agg.tFee&&agg.projBS?+(agg.projBS/agg.tFee).toFixed(1):null;
     var topShow=agg.shows&&agg.shows.length?agg.shows.reduce(function(a,b){return (b.cost||b.fee||0)>(a.cost||a.fee||0)?b:a;}):null;
-
     if(!agg.n) return venue+' has no DJ shows scheduled for '+MNF[parseInt(mm,10)-1]+' '+year+' yet.';
-
     var parts=[];
     parts.push(agg.n+' show'+(agg.n>1?'s':'')+' booked in '+MNF[parseInt(mm,10)-1]+' '+year+', projecting '+$m(agg.projBS)+' in bottle service against '+$m(agg.tFee)+' in DJ fees'+(avgROI?' ('+avgROI+'x average ROI)':'')+'.');
     if(budget!=null){
       if(variance>=0) parts.push('Spend is tracking '+$m(Math.abs(variance))+' under the '+$m(budget)+' budget ('+Math.round(spend/budget*100)+'% used).');
-      else parts.push('Spend is '+$m(Math.abs(variance))+' OVER the '+$m(budget)+' budget ('+Math.round(spend/budget*100)+'% used)   worth a second look.');
+      else parts.push('Spend is '+$m(Math.abs(variance))+' OVER the '+$m(budget)+' budget ('+Math.round(spend/budget*100)+'% used).');
     } else {
-      parts.push('No budget set for this month yet   add one above to track spend against it.');
+      parts.push('No budget set for this month yet.');
     }
     if(topShow) parts.push('Biggest booking: '+djLabel(topShow.dj)+' at '+$m(topShow.cost||topShow.fee)+'.');
     return parts.join(' ');
   }
 
-  /* Year-level narrative */
-  var ytN=0, ytFee=0, ytProj=0, ytBudget=0;
-  for(var mi=1;mi<=12;mi++){
-    var mmk=mi<10?'0'+mi:''+mi;
-    var a=monthAgg(mmk);
-    ytN+=a.n; ytFee+=a.tFee; ytProj+=a.projBS||0;
-    ytBudget+=getMonthlyBudget(venue,year,mmk)||0;
+  var curMm=getDjYtdCutoff(year);
+  var curLabel=MNF[curMm-1];
+  var mAgg=monthAgg(padMm(curMm));
+  var mSpend=mAgg.tFee||0;
+  var mBudget=getMonthlyBudget(venue,year,padMm(curMm));
+  var mPerf=monthPerf(venue,year,padMm(curMm));
+  var mRoi=mPerf.roi;
+
+  var t=computeBudgetYearTotals(venue,year);
+  var finLabel=t.lastActualMm?MNF[t.lastActualMm-1]:null;
+
+  /* YTD ROI through DJ cutoff */
+  var ytdBS=0, ytdFee=0, hasBS=false, hasFee=false;
+  for(var mi=1;mi<=curMm;mi++){
+    var p=monthPerf(venue,year,padMm(mi));
+    if(p.tBS!=null){ ytdBS+=p.tBS; hasBS=true; }
+    if(p.tFee!=null){ ytdFee+=p.tFee; hasFee=true; }
   }
-  if(!ytN) return 'No DJ shows scheduled yet for '+venue+' in '+year+'.';
-  var ytAvgROI = ytFee&&ytProj ? +(ytProj/ytFee).toFixed(1) : null;
-  var ytVariance = ytBudget - ytFee;
-  var parts2=[];
-  parts2.push(venue+' has '+ytN+' shows booked for '+year+', projecting '+$m(ytProj)+' in bottle service on '+$m(ytFee)+' of DJ fees'+(ytAvgROI?' ('+ytAvgROI+'x average ROI)':'')+'.');
-  if(ytBudget){
-    if(ytVariance>=0) parts2.push('Full-year spend is pacing '+$m(Math.abs(ytVariance))+' under the '+$m(ytBudget)+' annual budget so far.');
-    else parts2.push('Full-year spend is already '+$m(Math.abs(ytVariance))+' over the '+$m(ytBudget)+' annual budget.');
-  } else {
-    parts2.push('No annual budget set yet   fill in monthly targets below to track pacing.');
+  var ytdRoi=(hasBS&&hasFee&&ytdFee>0)?+(ytdBS/ytdFee).toFixed(1):null;
+
+  /* Top performing measured show YTD by ROI */
+  var topEx=null;
+  SCHED.filter(function(r){
+    if(r.v!==venue||r.yr!==year||r._s==='empty') return false;
+    var m=parseInt(r.d.slice(5,7),10);
+    if(m>curMm) return false;
+    var fee=r.cost||r.fee||0;
+    return fee>0 && r.bs_a!=null && r.bs_a>0;
+  }).forEach(function(r){
+    var fee=r.cost||r.fee||0;
+    var roi=fee?r.bs_a/fee:0;
+    if(!topEx||roi>topEx.roi) topEx={dj:r.dj, fee:fee, bs:r.bs_a, roi:+roi.toFixed(1), d:r.d};
+  });
+
+  var s1='In '+curLabel+', Guest DJ spend is '+$m(mSpend)
+    +(mBudget!=null?' vs '+$m(mBudget)+' budget':'')
+    +(mPerf.tBS!=null?' with '+$m(mPerf.tBS)+' BS Actual':'')
+    +(mRoi!=null?' ('+mRoi+'x ROI)':'')+'.';
+
+  var s2='YTD Live Entertainment is '
+    +(t.liveActual!=null?$m(t.liveActual):'n/a')
+    +(t.liveBudget!=null?' vs '+$m(t.liveBudget)+' budget':'')
+    +(t.marginActual!=null?' at '+t.marginActual+'% margin':'')
+    +(t.marginBudget!=null?' (budget '+t.marginBudget+'%)':'')
+    +(finLabel?' through '+finLabel:'')
+    +(ytdRoi!=null?', with '+ytdRoi+'x YTD ROI':'')+'.';
+
+  if(topEx){
+    s2+=' Top example: '+djLabel(topEx.dj)+' delivered '+$m(topEx.bs)+' BS on '+$m(topEx.fee)+' ('+topEx.roi+'x).';
   }
-  return parts2.join(' ');
+  return s1+' '+s2;
 }
 
 function renderYearGrid(){
-  var py1=bgtYear-1;
-  var H1=hs(bgtVenue,py1);
-  var MNS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-  var ytN=0,ytFee=0,ytProj=0,ytTgt=0,ytPY=0,ytBudget=0,ytBSA=0,ytMeasured=0,ytTotal=0;
-  for(var mi=1;mi<=12;mi++){
-    var mmt=mi<10?'0'+mi:''+mi;
-    var agg=monthAgg(mmt);
-    ytN+=agg.n; ytFee+=agg.tFee;
-    ytProj+=agg.projBS||0; ytTgt+=agg.bsTgt||0; ytPY+=agg.tPY||0;
-    ytBudget+=getMonthlyBudget(bgtVenue,bgtYear,mmt)||0;
-    var s=hs(bgtVenue,bgtYear,mmt);
-    if(s) ytBSA+=s.tBS||0;
-    agg.shows.forEach(function(r){
-      ytTotal++;
-      if(r._s==='beat'||r._s==='miss') ytMeasured++;
-    });
-  }
-  var ytPct = ytTotal ? Math.round(ytMeasured/ytTotal*100) : 0;
-
-  document.getElementById('budgetMeta').textContent=bgtVenue+' - '+bgtYear+' - YTD decision view';
+  setBudgetExecVisible(true);
+  document.getElementById('budgetMeta').textContent=bgtVenue+' · '+bgtYear+' · Executive tables';
   renderBudgetKpiStrip(computeBudgetYearTotals(bgtVenue,bgtYear));
 
-  renderBudgetMonthlyComparison();
-
+  var narr=generateBudgetNarrative(bgtVenue,bgtYear,null);
   var narrEl=document.getElementById('budgetNarrative');
-  if(narrEl) narrEl.innerHTML='';
+  if(narrEl) narrEl.innerHTML='<div class="bgt-narrative">'+narr+'</div>';
+
+  renderBudgetFinancialTable();
+  renderBudgetGuestDjTable();
+  renderBudgetYoYCompare();
 
   var spendHost=document.getElementById('budgetSpendTracker');
   if(spendHost){
-    spendHost.innerHTML='<details class="bgt-details"><summary>Monthly details - Guest DJ budget, Live Ent. inputs &amp; planner</summary><div class="bgt-details-body" id="bgtDetailsBody"><div id="bgtSpendBlock"></div><div id="bgtPlanBlock"></div><div id="bgtMonthsBlock"></div></div></details>';
+    spendHost.innerHTML='<details class="bgt-details"><summary>Edit budgets &amp; monthly details</summary><div class="bgt-details-body" id="bgtDetailsBody"><div id="bgtSpendBlock"></div><div id="bgtPlanBlock"></div><div id="bgtMonthsBlock"></div></div></details>';
   }
   renderBudgetSpendTracker();
 
-  /* Column groups: PY1 context | Spend vs Budget | BS Target vs Actual | Completion */
+  /* Keep detailed planner under collapsed details */
   var COLS='64px repeat(12, 1fr)';
+  var py1=bgtYear-1;
+  var H1=hs(bgtVenue,py1);
   var html='<div class="bgt-grid bgt-grid-v2" style="grid-template-columns:'+COLS+'">';
 
   html+='<div class="bgr bgr-hdr" style="grid-column:1"></div>';
@@ -3215,8 +3469,9 @@ function renderYearGrid(){
   ['BS Target','BS Actual','Avg ROI','vs PY'].forEach(function(l){html+='<div class="bgr bgr-sub bgr-lbl bgr-lbl-proj">'+l+'</div>';});
   ['Measured','%'].forEach(function(l){html+='<div class="bgr bgr-sub bgr-lbl" style="color:var(--beat)">'+l+'</div>';});
 
+  var ytN=0,ytFee=0,ytProj=0,ytTgt=0,ytPY=0,ytBudget=0,ytBSA=0,ytMeasured=0,ytTotal=0;
   for(var mi=1;mi<=12;mi++){
-    var mm=mi<10?'0'+mi:''+mi;
+    var mm=padMm(mi);
     var s26=hs(bgtVenue,py1,mm), agg=monthAgg(mm);
     var hasShows=agg.n>0;
     var rowCls='bgr-datarow'+(hasShows?' bgr-has-shows':'');
@@ -3231,25 +3486,29 @@ function renderYearGrid(){
     agg.shows.forEach(function(r){ if(r._s==='beat'||r._s==='miss') mMeasured++; });
     var mPct = mTotal ? Math.round(mMeasured/mTotal*100) : null;
 
+    ytN+=agg.n; ytFee+=agg.tFee;
+    ytProj+=agg.projBS||0; ytTgt+=agg.bsTgt||0; ytPY+=agg.tPY||0;
+    ytBudget+=budget||0;
+    if(actualBS!=null) ytBSA+=actualBS;
+    ytTotal+=mTotal; ytMeasured+=mMeasured;
+
     html+='<div class="bgr bgr-monthcol '+rowCls+'" data-mm="'+mm+'"><b>'+MNS[mi-1]+'</b></div>';
     html+='<div class="bgr bgr-dim '+rowCls+'" data-mm="'+mm+'">'+(s26?$m(s26.tBS):'-')+'</div>';
     html+='<div class="bgr bgr-dim '+rowCls+'" data-mm="'+mm+'" style="border-right:1px solid var(--rule)">'+(s26?$m(s26.tFee):'-')+'</div>';
-
     html+='<div class="bgr bgr-plan-n '+rowCls+'" data-mm="'+mm+'" style="text-align:center;font-weight:700">'+(agg.n||'-')+'</div>';
     html+='<div class="bgr '+(agg.tFee?'kc-amb':'bgr-dim')+' '+rowCls+'" data-mm="'+mm+'" style="font-weight:700">'+(agg.tFee?$m(agg.tFee):' ')+'</div>';
     html+='<div class="bgr bgr-dim '+rowCls+'" data-mm="'+mm+'">'+(budget!=null?$m(budget):'<span style="color:var(--ink4);font-size:9px">not set</span>')+'</div>';
     html+='<div class="bgr '+(variance!=null?(variance>=0?'pos':'neg'):'bgr-dim')+' '+rowCls+'" data-mm="'+mm+'" style="border-right:1px solid var(--rule)">'+(variance!=null?$mv(variance):' ')+'</div>';
-
     html+='<div class="bgr bgr-dim '+rowCls+'" data-mm="'+mm+'">'+(agg.bsTgt?$m(agg.bsTgt):' ')+'</div>';
     html+='<div class="bgr '+(actualBS!=null?(agg.bsTgt&&actualBS>=agg.bsTgt?'hit':'low'):'bgr-dim')+' '+rowCls+'" data-mm="'+mm+'">'+(actualBS!=null?$m(actualBS):(monthPast?'-':'<span style="color:var(--ink4);font-size:9px">future</span>'))+'</div>';
     html+='<div class="bgr '+(avgROI?'kc-b':'bgr-dim')+' '+rowCls+'" data-mm="'+mm+'">'+(avgROI?avgROI+'x':' ')+'</div>';
     html+='<div class="bgr '+(vsPY!=null?(vsPY>=0?'pos':'neg'):'bgr-dim')+' '+rowCls+'" data-mm="'+mm+'" style="border-right:1px solid var(--rule)">'+(vsPY!=null?$mv(vsPY):' ')+'</div>';
-
     html+='<div class="bgr bgr-dim '+rowCls+'" data-mm="'+mm+'" style="text-align:center">'+(mTotal?mMeasured+'/'+mTotal:'-')+'</div>';
     html+='<div class="bgr '+(mPct!=null?(mPct>=60?'hit':'low'):'bgr-dim')+' '+rowCls+'" data-mm="'+mm+'" style="text-align:center;font-weight:700">'+(mPct!=null?mPct+'%':' ')+'</div>';
   }
 
   var totVariance = ytBudget ? ytBudget-ytFee : null;
+  var ytPct = ytTotal ? Math.round(ytMeasured/ytTotal*100) : 0;
   html+='<div class="bgr bgr-total"><b>TOTAL</b></div>';
   html+='<div class="bgr bgr-total">'+(H1?$m(H1.tBS):'-')+'</div>';
   html+='<div class="bgr bgr-total bgr-dim" style="border-right:1px solid var(--rule)">'+(H1?$m(H1.tFee):'-')+'</div>';
@@ -3277,6 +3536,14 @@ function renderYearGrid(){
   });
 }
 
+function setBudgetExecVisible(on){
+  ['budgetTopLine','budgetGuestDjTable','budgetYoYCompare','budgetSpendTracker'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) el.style.display=on?'':'none';
+  });
+  var kpi=document.getElementById('budgetKPIs');
+  if(kpi) kpi.style.display='none';
+}
 
 function renderMonthDrill(mm){
   var mi=parseInt(mm,10);
@@ -3288,6 +3555,11 @@ function renderMonthDrill(mm){
   var projBS=tFee&&roi_t?Math.round(tFee*roi_t):null;
   var tPY=shows.reduce(function(s,r){return s+(r.py_bs_a||0);},0)||null;
   var vsPY=projBS&&tPY?projBS-tPY:null;
+
+  setBudgetExecVisible(false);
+  document.getElementById('budgetMeta').textContent=bgtVenue+' · '+MNF[mi-1]+' '+bgtYear;
+  var narrEl=document.getElementById('budgetNarrative');
+  if(narrEl) narrEl.innerHTML='<div class="bgt-narrative">'+generateBudgetNarrative(bgtVenue,bgtYear,mm)+'</div>';
 
   var html='';
 
