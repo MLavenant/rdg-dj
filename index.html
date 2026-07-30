@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RDG DJ Dashboard v3.45</title>
+<title>RDG DJ Dashboard v3.46</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -59,8 +59,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
   body.printing-forecast #view-forecast{display:block!important}
   body.printing-forecast .pg-section{display:none!important}
   body.printing-forecast .fcast-wrap{gap:8px!important;padding:0!important}
-  body.printing-forecast .fcast-print-page1{gap:8px!important;zoom:.80;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid}
-  body.printing-forecast .fcast-print-page2{gap:8px!important;zoom:.65;page-break-inside:avoid;break-inside:avoid}
+  body.printing-forecast .fcast-print-page1{gap:8px!important;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid}
+  body.printing-forecast .fcast-print-page2{gap:8px!important;page-break-inside:avoid;break-inside:avoid}
   body.printing-forecast .fcast-print-snap{page-break-after:auto;break-after:auto}
   body.printing-forecast .fcast-print-below{display:block!important}
   body.printing-forecast .fcast-print-kpis{display:flex!important}
@@ -6253,35 +6253,24 @@ function _fcastDayDelta(venue, date, fallbackRev, fallbackTables){
   })();
   if(days.length){
     latestDay = days[days.length - 1];
-    // Prefer the most recent snapshot strictly before Miami today as "Yesterday"
-    for(var i=days.length-1;i>=0;i--){
-      if(days[i] < miamiToday){
-        prevDay = days[i];
-        var prev = hist[prevDay] || {};
-        prevRev = prev.revenue != null ? prev.revenue : 0;
-        prevTbl = prev.tables != null ? prev.tables : 0;
-        break;
-      }
-    }
-    // If only same-day snapshots exist, use second-to-last day key as prior
-    if(prevRev == null && days.length >= 2){
-      prevDay = days[days.length - 2];
-      var prev2 = hist[prevDay] || {};
-      prevRev = prev2.revenue != null ? prev2.revenue : 0;
-      prevTbl = prev2.tables != null ? prev2.tables : 0;
+    // "Yesterday" must be the prior Miami calendar day. Never present a
+    // stale snapshot from several days ago as yesterday's position.
+    var yDate=new Date(miamiToday+'T12:00:00');
+    yDate.setDate(yDate.getDate()-1);
+    var yStr=yDate.getFullYear()+'-'+String(yDate.getMonth()+1).padStart(2,'0')+'-'+String(yDate.getDate()).padStart(2,'0');
+    if(hist[yStr]){
+      prevDay=yStr;
+      var prev=hist[yStr]||{};
+      prevRev=prev.revenue!=null?prev.revenue:null;
+      prevTbl=prev.tables!=null?prev.tables:null;
     }
   }
   var bodRev=null, bodTbl=null, bodDay=null;
-  if(days.length){
-    var todaySnaps=days.filter(function(d){ return d===miamiToday; });
-    if(todaySnaps.length){
-      bodDay=todaySnaps[0];
-      var bod=hist[bodDay]||{};
-      bodRev=bod.revenue!=null?bod.revenue:0;
-      bodTbl=bod.tables!=null?bod.tables:0;
-    } else if(prevRev!=null){
-      bodDay=prevDay; bodRev=prevRev; bodTbl=prevTbl;
-    }
+  if(hist && hist[miamiToday]){
+    bodDay=miamiToday;
+    var bod=hist[bodDay]||{};
+    bodRev=bod.revenue!=null?bod.revenue:null;
+    bodTbl=bod.tables!=null?bod.tables:null;
   }
   var weekStartRev=null, weekStartTbl=null, weekStartDay=null;
   try{
@@ -6289,14 +6278,11 @@ function _fcastDayDelta(venue, date, fallbackRev, fallbackTables){
     var dow=mt.getDay();
     var mon=new Date(mt); mon.setDate(mt.getDate()-(dow===0?6:dow-1));
     var monStr=mon.getFullYear()+'-'+String(mon.getMonth()+1).padStart(2,'0')+'-'+String(mon.getDate()).padStart(2,'0');
-    if(days.length){
-      var weekDays=days.filter(function(d){ return d>=monStr && d<=miamiToday; });
-      if(weekDays.length){
-        weekStartDay=weekDays[0];
-        var ws=hist[weekStartDay]||{};
-        weekStartRev=ws.revenue!=null?ws.revenue:0;
-        weekStartTbl=ws.tables!=null?ws.tables:0;
-      }
+    if(hist && hist[monStr]){
+      weekStartDay=monStr;
+      var ws=hist[weekStartDay]||{};
+      weekStartRev=ws.revenue!=null?ws.revenue:null;
+      weekStartTbl=ws.tables!=null?ws.tables:null;
     }
   }catch(e){}
   return {
