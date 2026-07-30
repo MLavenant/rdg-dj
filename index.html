@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RDG DJ Dashboard v3.41</title>
+<title>RDG DJ Dashboard v3.42</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -141,6 +141,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .sc-empty-day{color:var(--ink4)}
 .hit{color:var(--beat)!important;font-weight:700}.low{color:var(--miss)!important}
 .near{color:var(--amb)!important;font-weight:700}
+.fee-tier-low{color:#4da3ff!important;font-weight:800}
+.fee-tier-mid{color:#e07a5f!important;font-weight:800}
+.fee-tier-high{color:#d70015!important;font-weight:800}
+
 .kc-b{color:var(--blue)}.beat{color:var(--beat)}.miss{color:var(--miss)}
 /* PY columns */
 .sc-py{background:rgba(0,0,0,.01)}
@@ -982,7 +986,7 @@ textarea#fldNote:focus{border-color:var(--blue)}
   <div class="sb-logo">
     <img src="data:image/png;base64,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" alt="RDG" class="sb-logo-img">
     <div class="sb-logo-title">DJ Dashboard</div>
-    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v3.41 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
+    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v3.42 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
   </div>
   <div id="sidebar"></div>
   <div class="sb-tools-section">
@@ -1284,7 +1288,7 @@ function venueLogo(v){ return VENUE_LOGOS[v] || ''; }
 /*    Active state                                                     */
 var curV     = 'Casa Neos Beach Club';
 var curYr    = 2026;
-var curM     = 0;  /* 0-11 */
+var curM     = 0;  /* 0-11 fiscal month index */
 var curView  = 'calendar';
 var _editIdx = -1;
 
@@ -1308,6 +1312,93 @@ function _ymdLocal(d){
   var y=d.getFullYear(), m=d.getMonth()+1, day=d.getDate();
   return y+'-'+(m<10?'0':'')+m+'-'+(day<10?'0':'')+day;
 }
+/* 4-4-5 fiscal months: January of year Y starts Dec 28 of Y-1, then 4/4/5 weeks repeating through December. */
+var FISCAL_WEEKS_445=[4,4,5,4,4,5,4,4,5,4,4,5];
+function _parseYmd(s){ return new Date(String(s).slice(0,10)+'T12:00:00'); }
+function _pad2(n){ return n<10?'0'+n:''+n; }
+function fiscalYearStart(year){ return ((+year)-1)+'-12-28'; }
+function fiscalYearEnd(year){
+  var d=_parseYmd(fiscalYearStart((+year)+1));
+  d.setDate(d.getDate()-1);
+  return _ymdLocal(d);
+}
+function fiscalPeriodRange(year, monthIndex0){
+  var mi=Math.max(0,Math.min(11,+monthIndex0||0));
+  var start=_parseYmd(fiscalYearStart(year));
+  var off=0;
+  for(var i=0;i<mi;i++) off+=FISCAL_WEEKS_445[i]*7;
+  var from=new Date(start.getTime()); from.setDate(from.getDate()+off);
+  var to;
+  if(mi===11){
+    to=_parseYmd(fiscalYearEnd(year));
+  } else {
+    to=new Date(from.getTime());
+    to.setDate(to.getDate()+FISCAL_WEEKS_445[mi]*7-1);
+  }
+  return {from:_ymdLocal(from), to:_ymdLocal(to), weeks:FISCAL_WEEKS_445[mi], days:Math.round((to-from)/86400000)+1};
+}
+function fiscalMm(monthIndex0){ return _pad2((+monthIndex0)+1); }
+function fiscalMonthIndexFromMm(mm){ return Math.max(0,Math.min(11,(parseInt(mm,10)||1)-1)); }
+function dateInFiscalPeriod(dateStr, year, monthIndex0){
+  if(!dateStr) return false;
+  var r=fiscalPeriodRange(year, monthIndex0);
+  return dateStr>=r.from && dateStr<=r.to;
+}
+function dateInFiscalYear(dateStr, year){
+  if(!dateStr) return false;
+  return dateStr>=fiscalYearStart(year) && dateStr<=fiscalYearEnd(year);
+}
+function fiscalYearForDate(dateStr){
+  var y=parseInt(String(dateStr).slice(0,4),10);
+  if(dateStr>=fiscalYearStart(y+1)) return y+1;
+  if(dateStr<fiscalYearStart(y)) return y-1;
+  return y;
+}
+function fiscalInfoForDate(dateStr){
+  var fy=fiscalYearForDate(dateStr);
+  for(var mi=0;mi<12;mi++){
+    if(dateInFiscalPeriod(dateStr, fy, mi)) return {year:fy, monthIndex:mi, mm:fiscalMm(mi)};
+  }
+  return {year:fy, monthIndex:0, mm:'01'};
+}
+function datesInFiscalPeriod(year, monthIndex0){
+  var r=fiscalPeriodRange(year, monthIndex0);
+  var out=[], d=_parseYmd(r.from), end=_parseYmd(r.to);
+  while(d<=end){ out.push(_ymdLocal(d)); d.setDate(d.getDate()+1); }
+  return out;
+}
+function fiscalPeriodShortRange(year, monthIndex0){
+  var r=fiscalPeriodRange(year, monthIndex0);
+  var a=_parseYmd(r.from), b=_parseYmd(r.to);
+  var sh=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return sh[a.getMonth()]+' '+a.getDate()+'\u2013'+sh[b.getMonth()]+' '+b.getDate();
+}
+function inFiscalMonthFilter(r, year, mm){
+  if(!r||!r.d||r._s==='empty') return false;
+  if(!mm) return dateInFiscalYear(r.d, year);
+  return dateInFiscalPeriod(r.d, year, fiscalMonthIndexFromMm(mm));
+}
+function feeTierClass(fee){
+  if(fee==null||fee===''||isNaN(+fee)||!(+fee>0)) return '';
+  var f=+fee;
+  if(f<10000) return 'fee-tier-low';
+  if(f<=50000) return 'fee-tier-mid';
+  return 'fee-tier-high';
+}
+function updateTopbarLogo(venue){
+  var v=venue||((typeof curV!=='undefined')?curV:'');
+  var logo=(typeof venueLogo==='function')?venueLogo(v):'';
+  var tbLogo=document.getElementById('topbarLogo');
+  if(!tbLogo) return;
+  if(logo){ tbLogo.src=logo; tbLogo.classList.remove('hidden'); tbLogo.alt=v||''; }
+  else { tbLogo.classList.add('hidden'); tbLogo.removeAttribute('src'); }
+}
+try{
+  var _bootFiscal=fiscalInfoForDate(TODAY);
+  curYr=_bootFiscal.year;
+  curM=_bootFiscal.monthIndex;
+}catch(e){}
+
 function _schedShowOn(venue, dateStr){
   if(!venue||!dateStr) return null;
   var best=null;
@@ -1344,12 +1435,13 @@ function _sameWeekday(a, b){
 var _pyMapCache={key:'', map:null};
 function clearPyMapCache(){ _pyMapCache={key:'', map:null}; }
 function buildPyMapForMonth(venue, yr, mm){
-  var cacheKey=venue+'|'+yr+'|'+mm;
+  var cacheKey=venue+'|'+yr+'|'+mm+'|445';
   if(_pyMapCache.key===cacheKey && _pyMapCache.map) return _pyMapCache.map;
   var map={};
   var used={};
-  var days=new Date(yr, parseInt(mm,10), 0).getDate();
-  var pyYear=yr-1;
+  var mi=fiscalMonthIndexFromMm(mm);
+  var dates=datesInFiscalPeriod(yr, mi);
+  var pyDates=datesInFiscalPeriod(yr-1, mi);
   var empty={py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
 
   function claim(ds, show){
@@ -1361,64 +1453,62 @@ function buildPyMapForMonth(venue, yr, mm){
     return true;
   }
 
-  /* Pass 1 ? exact calendar anniversary only when weekday also matches */
-  for(var day=1; day<=days; day++){
-    var ds=yr+'-'+mm+'-'+(day<10?'0':'')+day;
-    var pyDate=pyYear+'-'+ds.slice(5);
-    if(!_sameWeekday(ds, pyDate)) continue;
+  /* Pass 1: same index day in prior fiscal period when weekday matches */
+  dates.forEach(function(ds, idx){
+    var pyDate=pyDates[Math.min(idx, pyDates.length-1)];
+    if(!pyDate || !_sameWeekday(ds, pyDate)) return;
     claim(ds, _schedShowOn(venue, pyDate));
-  }
+  });
 
-  /* Pass 2 ? same weekday within 3 days of anniversary, unused shows only */
-  for(var day2=1; day2<=days; day2++){
-    var ds2=yr+'-'+mm+'-'+(day2<10?'0':'')+day2;
-    if(map[ds2]) continue;
-    var d=new Date(ds2+'T12:00:00');
-    if(isNaN(d.getTime())) continue;
+  /* Pass 2: nearest same-weekday unused show in prior fiscal period */
+  dates.forEach(function(ds){
+    if(map[ds]) return;
+    var d=_parseYmd(ds);
+    if(isNaN(d.getTime())) return;
     var wantDow=d.getDay();
-    var anniversary=new Date(pyYear+'-'+ds2.slice(5)+'T12:00:00');
-    if(isNaN(anniversary.getTime())) continue;
     var best=null, bestDist=1e15;
+    var anchorIdx=dates.indexOf(ds);
+    var anniversary=pyDates[Math.min(Math.max(anchorIdx,0), pyDates.length-1)];
+    var annT=_parseYmd(anniversary).getTime();
     SCHED.forEach(function(r){
       if((r.v||r.venue)!==venue) return;
       if(r._s==='empty'||!r.d) return;
+      if(!dateInFiscalPeriod(r.d, yr-1, mi)) return;
       if(used[_pyShowKey(r)]) return;
-      var nm=(r.dj||'').trim();
-      if(!nm) return;
-      var rd=new Date(r.d+'T12:00:00');
-      if(isNaN(rd.getTime())||rd.getDay()!==wantDow||rd.getFullYear()!==pyYear) return;
-      var dist=Math.abs(rd.getTime()-anniversary.getTime());
+      if(!(r.dj||'').trim()) return;
+      var rd=_parseYmd(r.d);
+      if(isNaN(rd.getTime())||rd.getDay()!==wantDow) return;
+      var dist=Math.abs(rd.getTime()-annT);
       if(dist<bestDist){ bestDist=dist; best=r; }
     });
-    if(best && bestDist<=3*86400000) claim(ds2, best);
-  }
+    if(best && bestDist<=10*86400000) claim(ds, best);
+  });
 
-  for(var day3=1; day3<=days; day3++){
-    var ds3=yr+'-'+mm+'-'+(day3<10?'0':'')+day3;
-    if(!map[ds3]) map[ds3]=empty;
-  }
+  dates.forEach(function(ds){ if(!map[ds]) map[ds]=empty; });
   _pyMapCache={key:cacheKey, map:map};
   return map;
 }
 
 function findPriorYearMatch(venue, dateStr){
   if(!venue||!dateStr) return null;
-  var yr=parseInt(dateStr.slice(0,4),10);
-  var mm=dateStr.slice(5,7);
-  var map=buildPyMapForMonth(venue, yr, mm);
+  var info=fiscalInfoForDate(dateStr);
+  var map=buildPyMapForMonth(venue, info.year, info.mm);
   var f=map[dateStr];
   if(!f||!f.py_dj) return null;
-  return _schedShowOn(venue, (yr-1)+'-'+dateStr.slice(5)) ||
+  var pyDates=datesInFiscalPeriod(info.year-1, info.monthIndex);
+  var idx=datesInFiscalPeriod(info.year, info.monthIndex).indexOf(dateStr);
+  var approx=pyDates[Math.min(Math.max(idx,0), pyDates.length-1)];
+  return (approx && _schedShowOn(venue, approx)) ||
     SCHED.find(function(r){
       return (r.v||r.venue)===venue && r._s!=='empty' && r.d &&
         String(r.dj||'')===String(f.py_dj||'') &&
-        r.d.slice(0,4)===String(yr-1) &&
-        Math.abs(new Date(r.d+'T12:00:00')-new Date((yr-1)+'-'+dateStr.slice(5)+'T12:00:00'))<=3*86400000;
+        dateInFiscalPeriod(r.d, info.year-1, info.monthIndex);
     }) || null;
 }
 function resolvePyFields(venue, dateStr, baked){
-  if(venue&&dateStr&&dateStr.length>=7){
-    var map=buildPyMapForMonth(venue, parseInt(dateStr.slice(0,4),10), dateStr.slice(5,7));
+  if(venue&&dateStr&&dateStr.length>=10){
+    var info=fiscalInfoForDate(dateStr);
+    var map=buildPyMapForMonth(venue, info.year, info.mm);
     if(map[dateStr] && map[dateStr].py_dj) return map[dateStr];
   }
   /* Do not fall back to baked py_* ? it caused duplicate PY names across days. */
@@ -1428,12 +1518,13 @@ function _pyCellsHtml(py, rowspan){
   var pyNm=djLabel(py.py_dj, '');
   var pyBCls=perfTone(py.py_bs_a, py.py_bs_m, py.py_fee, py.py_roi_a, py.py_roi_t);
   var pyRCls=pyBCls;
+  var pyFeeCls=feeTierClass(py.py_fee);
   var rs=rowspan && rowspan>1 ? ' rowspan="'+rowspan+'"' : '';
   var h='<td class="sc-py"'+rs+'>';
-  if(pyNm) h+='<b class="'+pyBCls+'">'+pyNm+'</b>';
+  if(pyNm) h+='<b class="'+(pyFeeCls||pyBCls)+'">'+pyNm+'</b>';
   else h+='-';
   h+='</td>';
-  h+='<td class="sc-num py-dim"'+rs+'>'+$k(py.py_fee)+'</td>';
+  h+='<td class="sc-num '+(pyFeeCls||'py-dim')+'"'+rs+'>'+$k(py.py_fee)+'</td>';
   h+='<td class="sc-num py-dim"'+rs+'>'+$k(py.py_bs_m)+'</td>';
   h+='<td class="sc-num '+pyBCls+'"'+rs+'><b>'+$k(py.py_bs_a)+'</b></td>';
   h+='<td class="sc-num py-dim"'+rs+'>'+rx(py.py_roi_t)+'</td>';
@@ -1507,7 +1598,7 @@ function bsToneIcon(cls){ return roiToneIcon(cls); }
 /* Live month stats from SCHED (same beat/miss rules as calendar) */
 function monthPerfFromSched(yr, venue, mm){
   var shows = SCHED.filter(function(r){
-    return r.v===venue && r.yr===yr && r.d && r.d.slice(5,7)===mm && r._s!=='empty';
+    return (r.v||r.venue)===venue && r.d && r._s!=='empty' && inFiscalMonthFilter(r, yr, mm);
   });
   var rows = shows.map(function(r){
     var tgt = (typeof showTargets==='function') ? showTargets(r) : {bs_m:r.bs_m, roi_t:r.roi_t};
@@ -1538,17 +1629,16 @@ function monthPerfFromSched(yr, venue, mm){
 /*    Get venue-year shows                                            */
 function getShows(yr, venue, mm) {
   return SCHED.filter(function(r) {
-    if (r.v !== venue || r.yr !== yr) return false;
-    if (r._s === 'empty') return false;
-    if (mm && r.d.slice(5,7) !== mm) return false;
-    return true;
+    if ((r.v||r.venue) !== venue) return false;
+    if (r._s === 'empty' || !r.d) return false;
+    return inFiscalMonthFilter(r, yr, mm);
   });
 }
 function getBSRecs(yr, venue, mm) {
   return BS.filter(function(r) {
-    if (r.venue !== venue || r.yr !== yr) return false;
-    if (mm && r.d.slice(5,7) !== mm) return false;
-    return r.bs_a || r.bs_m;
+    if (r.venue !== venue || !r.d) return false;
+    if (!(r.bs_a || r.bs_m)) return false;
+    return inFiscalMonthFilter({d:r.d,_s:'ok'}, yr, mm);
   });
 }
 
@@ -1810,6 +1900,7 @@ function selVenue(v) {
   curV = v;
   if(curView==='accounting' && !isAccountingOnlyVenue(v)) curAcctV = v;
   /* month/year untouched on purpose   only venue-scoped data changes */
+  updateTopbarLogo(curV);
   buildVenTabs();
   buildSidebar();
   go();
@@ -2311,13 +2402,11 @@ function renderKPIs() {
   if(kpiEl) kpiEl.innerHTML = kpis.map(function(k){
     return '<div class="kpi '+(k.c?'kpi-'+k.c:'')+'"><div class="kpi-l">'+k.l+'</div><div class="kpi-v">'+k.v+'</div><div class="kpi-s">'+k.s+'</div></div>';
   }).join('');
-  var logo=venueLogo(curV);
-  document.getElementById('pgSub').innerHTML = '<span>'+curV+' &middot; '+mName+'</span>';
-  var tbLogo=document.getElementById('topbarLogo');
-  if(tbLogo){
-    if(logo){ tbLogo.src=logo; tbLogo.classList.remove('hidden'); }
-    else { tbLogo.classList.add('hidden'); }
+  if(mm){
+    mName = (typeof MN_FULL!=='undefined'?MN_FULL[curM]:mName)+' '+curYr+' <span style="font-weight:600;color:var(--ink3)">('+fiscalPeriodShortRange(curYr,curM)+')</span>';
   }
+  document.getElementById('pgSub').innerHTML = '<span>'+curV+' &middot; '+mName+'</span>';
+  updateTopbarLogo(curV);
   renderCalBudgetBanner(mm);
 }
 
@@ -2330,7 +2419,7 @@ function renderCalBudgetBanner(mm){
   if(!box) return;
   if(!mm){ box.innerHTML=''; if(narrBox) narrBox.innerHTML=''; return; } /* only show in single-month view, not full-year */
   var scheduledSpend = SCHED.filter(function(r){
-    return r.v===curV && r.yr===curYr && r.d.slice(5,7)===mm && r._s!=='empty';
+    return (r.v||r.venue)===curV && r.d && r._s!=='empty' && inFiscalMonthFilter(r, curYr, mm);
   }).reduce(function(s,r){ return s+(r.fee||r.cost||0); },0);
   var budget = getMonthlyBudget(curV, curYr, mm);
   var variance = budget!=null ? budget-scheduledSpend : null;
@@ -2401,7 +2490,7 @@ function $mv(n){
 /*    historical stats from BS                                     */
 function hs(venue, yr, mm) {
   var recs = BS.filter(function(r){
-    return r.venue===venue && r.yr===yr && r.bs_a && (!mm||r.d.slice(5,7)===mm);
+    return r.venue===venue && r.bs_a && r.d && inFiscalMonthFilter({d:r.d,_s:'ok'}, yr, mm);
   });
   if(!recs.length) return null;
   var paid  = recs.filter(function(r){return r.cost>0;});
@@ -2433,10 +2522,8 @@ function getRoiT(mm){
 /*    get 2027 shows from SCHED (live   uses IDX)                 */
 function get27Shows(mm){
   return SCHED.filter(function(r){
-    if(r.v!==bgtVenue||r.yr!==bgtYear) return false;
-    if(r._s==='empty') return false;
-    if(mm&&r.d.slice(5,7)!==mm) return false;
-    return true;
+    if((r.v||r.venue)!==bgtVenue || r._s==='empty' || !r.d) return false;
+    return inFiscalMonthFilter(r, bgtYear, mm);
   }).sort(function(a,b){return a.d<b.d?-1:1;});
 }
 
@@ -2916,9 +3003,8 @@ function setMonthlyBudget(venue, year, mm, val){
 function padMm(mi){ return mi<10?'0'+mi:''+mi; }
 function miamiMonthNum(){
   try{
-    var p=String(TODAY||'').split('-');
-    var m=parseInt(p[1],10);
-    if(m>=1&&m<=12) return m;
+    var info=fiscalInfoForDate(String(TODAY||''));
+    if(info && info.monthIndex!=null) return info.monthIndex+1;
   }catch(e){}
   return (new Date()).getMonth()+1;
 }
@@ -2931,6 +3017,10 @@ function getBgtLastActualMonth(venue, year){
   return last||null;
 }
 function getDjYtdCutoff(year){
+  try{
+    var info=fiscalInfoForDate(String(TODAY||''));
+    if(+year===info.year) return info.monthIndex+1;
+  }catch(e){}
   var cy=parseInt(String(TODAY||'').slice(0,4),10)||(new Date()).getFullYear();
   if(+year===cy) return miamiMonthNum();
   return 12;
@@ -2938,7 +3028,7 @@ function getDjYtdCutoff(year){
 function monthPerf(venue, year, mm){
   /* Prefer live SCHED for fees/BS; fall back to historical BS aggregate. */
   var shows=SCHED.filter(function(r){
-    return r.v===venue && r.yr===year && (!mm||r.d.slice(5,7)===mm) && r._s!=='empty';
+    return (r.v||r.venue)===venue && r.d && r._s!=='empty' && inFiscalMonthFilter(r, year, mm);
   });
   var tFee=0, tBS=0, hasFee=false, hasBS=false;
   shows.forEach(function(r){
@@ -3010,8 +3100,8 @@ function bgtPctCell(actual, budget, variancePp){
 }
 function bgtRoiCompletion(venue, year, mm){
   var shows=SCHED.filter(function(r){
-    if((r.v||r.venue)!==venue || +r.yr!==+year || r._s==='empty') return false;
-    return !mm || r.d.slice(5,7)===mm;
+    if((r.v||r.venue)!==venue || r._s==='empty' || !r.d) return false;
+    return inFiscalMonthFilter(r, year, mm);
   });
   var beats=0, misses=0, measured=0;
   shows.forEach(function(r){
@@ -3349,21 +3439,21 @@ function renderBudgetYoYCompare(){
   }
 
   var h='<div class="bgt-monthly"><div class="bgt-monthly-hd">2025 vs 2026 Performance'
-    +'<span>Green = favorable ¬∑ YTD BS/fees through '+MNS[calendarCut-1]+' ¬∑ margins through '+MNS[financialCut-1]+'</span></div>';
+    +'<span>Green = favorable ù YTD BS/fees through '+MNS[calendarCut-1]+' ù margins through '+MNS[financialCut-1]+'</span></div>';
   h+='<div class="bgt-perf-scroll"><table class="bgt-perf"><thead>'
     +'<tr><th rowspan="2">Period</th><th colspan="4" class="bgt-perf-group bgt-perf-2025">2025 Actual</th>'
     +'<th colspan="5" class="bgt-perf-group bgt-perf-2026">2026 Actual &amp; Budget</th>'
     +'<th colspan="4" class="bgt-perf-group bgt-perf-var">2026 vs 2025 / Budget</th></tr>'
     +'<tr><th>BS</th><th>Fees</th><th>ROI</th><th>Live E %</th>'
     +'<th>BS</th><th>Fees</th><th>ROI</th><th>Live E %</th><th>Budget %</th>'
-    +'<th>Œî BS</th><th>Œî Fees</th><th>Œî ROI</th><th>Margin vs Bgt</th></tr></thead><tbody>';
+    +'<th>? BS</th><th>? Fees</th><th>? ROI</th><th>Margin vs Bgt</th></tr></thead><tbody>';
   for(var mi=1;mi<=12;mi++) h+=row(MNS[mi-1],oneMonth(2025,mi),oneMonth(2026,mi),false);
   h+=row('YTD',aggregate(2025),aggregate(2026),true);
   h+='</tbody></table></div></div>';
   host.innerHTML=h;
 }
 
-/* Table 4: 2027 Guest DJ budget builder ‚Äî baselines + editable plan */
+/* Table 4: 2027 Guest DJ budget builder ù baselines + editable plan */
 function suggest2027Budget(venue, mi){
   var mm=padMm(mi);
   var fee25=(monthPerf(venue,2025,mm).tFee)||0;
@@ -3376,10 +3466,10 @@ function suggest2027Budget(venue, mi){
   if(bgt26!=null && fee26>0){
     var overPct=fee26/bgt26;
     if(overPct>1.25){
-      /* Heavy overspend month ‚Äî hold closer to budget, allow modest growth from 2025 */
+      /* Heavy overspend month ù hold closer to budget, allow modest growth from 2025 */
       suggested=Math.round(Math.max(bgt26, fee25*1.05)/500)*500;
     } else if(overPct<0.9){
-      /* Under budget ‚Äî keep room near actual + buffer */
+      /* Under budget ù keep room near actual + buffer */
       suggested=Math.round(Math.max(fee26*1.1, bgt26*0.95)/500)*500;
     } else {
       suggested=Math.round((fee26*0.7+bgt26*0.3)/500)*500;
@@ -3404,9 +3494,9 @@ function renderBudget2027Builder(){
     +'1) Use <b>2025 actual</b> as the floor for seasonality (same months, lower volume years).<br>'
     +'2) Use <b>2026 actual vs budget</b> to see where you over-programmed (red months) vs stayed disciplined (green).<br>'
     +'3) Suggested 2027 = a rule of thumb: when 2026 blew past budget (&gt;125%), hold near the budget envelope; when under, keep actual + ~10% buffer; otherwise blend 70% actual / 30% budget.<br>'
-    +'4) Edit the <b>2027 Plan</b> cells ‚Äî values save to Guest DJ monthly budget for 2027 and feed Calendar / Weekly Flash.<br>'
+    +'4) Edit the <b>2027 Plan</b> cells ù values save to Guest DJ monthly budget for 2027 and feed Calendar / Weekly Flash.<br>'
     +'5) Cross-check Live Ent % and ROI beat rates in the tables above so fee envelopes still support BS targets.</div>';
-  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd">2027 Budget Builder <span>'+venue+' ¬∑ Guest DJ fee envelope</span></div>';
+  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd">2027 Budget Builder <span>'+venue+' ù Guest DJ fee envelope</span></div>';
   h+=guide;
   h+='<div class="bgt-monthly-grid">'+bgtMonthCellHeader();
   /* Row: 2025 Actual */
@@ -3444,7 +3534,7 @@ function renderBudget2027Builder(){
   h+='<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+$k(ySug)+'</div>'
     +'<div class="bgt-monthly-vs"><button type="button" onclick="applyAllSuggested2027()" style="font-size:9px;border:0.5px solid var(--rule);background:#fff;border-radius:4px;padding:2px 5px;cursor:pointer;font-family:inherit;color:var(--blue);font-weight:700">Use all</button></div></div>';
   /* Row: Editable 2027 plan */
-  h+='<div class="bgt-monthly-cell bgt-monthly-label bgt-total-label"><b>2027 Plan</b><span>Editable ¬∑ saves</span></div>';
+  h+='<div class="bgt-monthly-cell bgt-monthly-label bgt-total-label"><b>2027 Plan</b><span>Editable ù saves</span></div>';
   for(var mi5=1;mi5<=12;mi5++){
     var s5=suggest2027Budget(venue,mi5);
     var val=s5.existing!=null?s5.existing:'';
@@ -3779,7 +3869,7 @@ function generateBudgetNarrative(venue, year, mm){
 
 function renderYearGrid(){
   setBudgetExecVisible(true);
-  document.getElementById('budgetMeta').textContent=bgtVenue+' ¬∑ '+bgtYear+' ¬∑ Executive tables';
+  document.getElementById('budgetMeta').textContent=bgtVenue+' ù '+bgtYear+' ù Executive tables';
   renderBudgetKpiStrip(computeBudgetYearTotals(bgtVenue,bgtYear));
 
   var narr=generateBudgetNarrative(bgtVenue,bgtYear,null);
@@ -3817,7 +3907,7 @@ function renderMonthDrill(mm){
   var vsPY=projBS&&tPY?projBS-tPY:null;
 
   setBudgetExecVisible(false);
-  document.getElementById('budgetMeta').textContent=bgtVenue+' ¬∑ '+MNF[mi-1]+' '+bgtYear;
+  document.getElementById('budgetMeta').textContent=bgtVenue+' ù '+MNF[mi-1]+' '+bgtYear;
   var narrEl=document.getElementById('budgetNarrative');
   if(narrEl) narrEl.innerHTML='<div class="bgt-narrative">'+generateBudgetNarrative(bgtVenue,bgtYear,mm)+'</div>';
 
@@ -4102,6 +4192,7 @@ function selAcctVenue(v){
     curV=v;
     buildVenTabs(); buildSidebar();
   }
+  updateTopbarLogo(curAcctV||curV);
   renderAccounting();
 }
 function setAcctSubTab(tab){
@@ -4513,10 +4604,11 @@ function openMonthSummary(mo){
 function renderCal(){
   applyVenueTint();
   var yr=curYr, mo=curM;
-  var days=new Date(yr,mo+1,0).getDate();
   var mm=(mo+1<10?'0':'')+(mo+1);
+  var fiscalDates=datesInFiscalPeriod(yr, mo);
+  var days=fiscalDates.length;
   var mName=MN_FULL[mo]+' '+yr;
-  document.getElementById('calHd').textContent=mName;
+  document.getElementById('calHd').textContent=mName+' ('+fiscalPeriodShortRange(yr, mo)+')';
   /* toggle button states */
   var lb=document.getElementById('calViewListBtn'), gb=document.getElementById('calViewGridBtn'), yb=document.getElementById('calViewYearBtn');
   if(lb&&gb&&yb){ lb.classList.toggle('on',calViewMode==='list'); gb.classList.toggle('on',calViewMode==='grid'); yb.classList.toggle('on',calViewMode==='year'); }
@@ -4535,11 +4627,11 @@ function renderCal(){
     if(btn) btn.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
   },50);
 
-  /* index shows by date (shared for both views) */
+  /* index shows by fiscal period dates (shared for both views) */
   var showMap={};
   SCHED.forEach(function(r){
-    if(r.v!==curV||r._s==='empty') return;
-    if(!r.d||r.d.slice(0,7)!==yr+'-'+mm) return;
+    if((r.v||r.venue)!==curV||r._s==='empty') return;
+    if(!r.d||!dateInFiscalPeriod(r.d, yr, mo)) return;
     if(!showMap[r.d]) showMap[r.d]=[];
     showMap[r.d].push(r);
   });
@@ -4576,9 +4668,10 @@ function renderCal(){
   h+='<th class="sc-act"></th>';
   h+='</tr></thead><tbody>';
 
-  for(var day=1;day<=days;day++){
-    var ds=yr+'-'+mm+'-'+(day<10?'0':'')+day;
-    var dow=new Date(ds+'T12:00:00').getDay();
+  for(var di=0;di<fiscalDates.length;di++){
+    var ds=fiscalDates[di];
+    var dObj=_parseYmd(ds);
+    var dow=dObj.getDay();
     var isToday=ds===TODAY;
     var shows=showMap[ds]||[];
     var evLabel=daySpecialLabel(ds)||'';
@@ -4592,7 +4685,7 @@ function renderCal(){
     if(shows.length)     dc+=' sc-has-show';
     if(!shows.length)    dc+=' sc-noshow';
 
-    var dateStr=DOW_FULL[dow]+', '+MN_FULL[mo]+' '+day+', '+yr;
+    var dateStr=DOW_FULL[dow]+', '+MN_FULL[dObj.getMonth()]+' '+dObj.getDate()+', '+dObj.getFullYear();
     var nrows=Math.max(1,shows.length);
 
     if(!shows.length){
@@ -4617,6 +4710,7 @@ function renderCal(){
         var bCls = perfTone(r.bs_a, bsM, fee, r.roi_a, roiT);
         var rCls = bCls;
         var tSty = toneStyle(bCls);
+        var feeCls = feeTierClass(fee);
 
         h+='<tr class="'+dc+' sc-'+st+(bCls?' sc-tone-'+bCls:'')+'" data-cal-ds="'+ds+'" ondragover="swDragOver(event)" ondragleave="swDragLeave(event)" ondrop="swDropOnDate(event,\''+ds+'\')">';
         if(ri===0){
@@ -4627,8 +4721,8 @@ function renderCal(){
         h+='<td class="sc-dj-cell" draggable="true" data-show-idx="'+idx+'" '
           +'ondragstart="showDragStart(event)" ondragend="swDragEnd(event)" '
           +'onclick="openEditModal('+idx+')" style="cursor:grab" title="Drag to move date / click to edit">'
-          +'<b class="dj-clickname '+bCls+'"'+(tSty?' style="'+tSty+'"':'')+'>'+nm+'</b>'
-          +'<span class="dj-fee-inline">'+$k(fee)+'</span>'
+          +'<b class="dj-clickname '+(feeCls||bCls)+'">'+nm+'</b>'
+          +'<span class="dj-fee-inline '+(feeCls||'')+'">'+$k(fee)+'</span>'
           +(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')
           +'</td>';
         if(ri===0){
@@ -4643,7 +4737,7 @@ function renderCal(){
         h+='<span class="vip-link'+(vipTxt?' has-note':'')+'" title="'+(vipTxt||'Add VIP note')+'" onclick="editVipNote('+idx+')">'+(vipTxt?vipEsc:'Add VIP note')+'</span>';
         h+='</td>';
         h+='<td class="sc-3d" onclick="event.stopPropagation()"><button type="button" class="sc-3d-btn" onclick="openShow3dModal('+idx+')" title="Open 3D floor plan and tier prices">3D</button></td>';
-        h+='<td class="sc-num">'+$k(fee)+'</td>';
+        h+='<td class="sc-num '+(feeCls||'')+'">'+$k(fee)+'</td>';
         h+='<td class="sc-num">'+$k(bsM)+'</td>';
         h+='<td class="sc-num '+bCls+'"'+(tSty?' style="'+tSty+'"':'')+'><b>'+$k(r.bs_a)+'</b>'
           +(bCls?'<div class="sc-beat-icon">'+bsToneIcon(bCls)+'</div>':'')+'</td>';
@@ -4786,7 +4880,7 @@ function renderCalPriorYearRecap(yr, mm){
     return;
   }
   var shows=SCHED.filter(function(r){
-    return (r.v||r.venue)===curV && +r.yr===py && r.d.slice(5,7)===mm && r._s!=='empty';
+    return (r.v||r.venue)===curV && r.d && r._s!=='empty' && inFiscalMonthFilter(r, py, mm);
   });
   var fees=0,bsT=0,bsA=0,beats=0,misses=0,measured=0;
   shows.forEach(function(r){
@@ -4934,14 +5028,16 @@ function openShow3dModal(idx){
 function dayGridClick(ds){ openAddModal(ds); }
 
 function renderCalGrid(yr,mo,mm,days,showMap){
-  var firstDow=new Date(yr,mo,1).getDay();
-  var h='<div class="cal-grid">';
+  var fiscalDates=datesInFiscalPeriod(yr, mo);
+  var h='<div class="cal-grid" style="grid-template-columns:repeat(7,1fr)">';
   ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(function(d){h+='<div class="cg-dow">'+d+'</div>';});
+  var firstDow=_parseYmd(fiscalDates[0]).getDay();
   for(var i=0;i<firstDow;i++) h+='<div class="cg-empty"></div>';
 
-  for(var day=1;day<=days;day++){
-    var ds=yr+'-'+mm+'-'+(day<10?'0':'')+day;
-    var dow=new Date(ds+'T12:00:00').getDay();
+  fiscalDates.forEach(function(ds){
+    var dObj=_parseYmd(ds);
+    var day=dObj.getDate();
+    var dow=dObj.getDay();
     var isToday=ds===TODAY;
     var shows=(showMap[ds]||[]).filter(function(r){return r._s!=='empty';});
     var evLabel=daySpecialLabel(ds)||'';
@@ -4952,7 +5048,7 @@ function renderCalGrid(yr,mo,mm,days,showMap){
     if(!shows.length) dc+=' cg-day-empty';
 
     h+='<div class="'+dc+'" data-ds="'+ds+'" onclick="dayGridClick(this.dataset.ds)">';
-    h+='<div class="cg-dn"><span>'+day+'</span>'+(isToday?'<span class="cg-today-dot"></span>':'')+'</div>';
+    h+='<div class="cg-dn"><span>'+MN_SH[dObj.getMonth()]+' '+day+'</span>'+(isToday?'<span class="cg-today-dot"></span>':'')+'</div>';
     if(evLabel) h+='<div class="cg-ev-banner">'+evLabel+'</div>';
 
     shows.forEach(function(r){
@@ -4961,8 +5057,9 @@ function renderCalGrid(yr,mo,mm,days,showMap){
       var idx=SCHED.indexOf(r);
       var tgt=showTargets(r);
       var bsM=tgt.bs_m;
+      var feeCls=feeTierClass(r.fee||r.cost);
       h+='<div class="cg-chip cg-chip-'+st+'" data-idx="'+idx+'" onclick="event.stopPropagation();openEditModal(+this.dataset.idx)">';
-      h+='<div class="cg-chip-dj">'+nm+'</div>';
+      h+='<div class="cg-chip-dj '+(feeCls||'')+'">'+nm+'</div>';
       if(bsM||r.bs_a){
         h+='<div class="cg-chip-nums">';
         h+='<span>'+$k(bsM)+'</span>';
@@ -4970,14 +5067,14 @@ function renderCalGrid(yr,mo,mm,days,showMap){
         h+='<span class="'+gTone+'"'+(gSty?' style="'+gSty+'"':'')+'>'+$k(r.bs_a)+'</span>';
         h+='</div>';
       } else if(r.fee||r.cost) {
-        h+='<div class="cg-chip-nums"><span>'+$k(r.fee||r.cost)+'</span></div>';
+        h+='<div class="cg-chip-nums"><span class="'+(feeCls||'')+'">'+$k(r.fee||r.cost)+'</span></div>';
       }
       h+='</div>';
     });
     h+='<button type="button" class="cg-add" title="Add show" onclick="event.stopPropagation();openAddModal(\''+ds+'\')">+</button>';
 
     h+='</div>';
-  }
+  });
   h+='</div>';
   document.getElementById('calBody').innerHTML=h;
 }
@@ -4986,32 +5083,32 @@ function renderCalGrid(yr,mo,mm,days,showMap){
 function renderCalYear(){
   applyVenueTint();
   var yr=curYr;
-  var h='<div class="cy-legend"><b>Legend:</b> <span class="cy-legend-fee">Fee</span> &middot; <span class="cy-legend-target">BS Target</span> &middot; <span class="cy-legend-actual">BS Actual</span> &middot; colors = beat / miss / scheduled / TBD</div>';
+  var h='<div class="cy-legend"><b>Legend:</b> <span class="cy-legend-fee">Fee</span> &middot; <span class="cy-legend-target">BS Target</span> &middot; <span class="cy-legend-actual">BS Actual</span> &middot; DJ colors by fee (&lt;$10K blue / $10\u201350K salmon / &gt;$50K red)</div>';
   h+='<div class="cal-year-grid">';
   for(var mo=0; mo<12; mo++){
-    var days=new Date(yr,mo+1,0).getDate();
-    var firstDow=new Date(yr,mo,1).getDay();
+    var fiscalDates=datesInFiscalPeriod(yr, mo);
     var mm=(mo+1<10?'0':'')+(mo+1);
 
     var showMap={};
     SCHED.forEach(function(r){
-      if(r.v!==curV||r._s==='empty') return;
-      if(!r.d||r.d.slice(0,7)!==yr+'-'+mm) return;
+      if((r.v||r.venue)!==curV||r._s==='empty') return;
+      if(!r.d||!dateInFiscalPeriod(r.d, yr, mo)) return;
       if(!showMap[r.d]) showMap[r.d]=[];
       showMap[r.d].push(r);
     });
 
     h+='<div class="cy-month">';
-    h+='<div class="cy-month-hd" onclick="jumpFromYear('+mo+')">'+MN_FULL[mo]+'</div>';
+    h+='<div class="cy-month-hd" onclick="jumpFromYear('+mo+')">'+MN_FULL[mo]+' <span style="font-weight:600;color:var(--ink3);font-size:9px">'+fiscalPeriodShortRange(yr,mo)+'</span></div>';
     h+='<div class="cy-col-labels"><span></span><span></span><span class="cy-col-lbl">Fee</span><span class="cy-col-lbl">Target</span><span class="cy-col-lbl">Actual</span></div>';
     h+='<div class="cy-days-list">';
-    for(var day=1; day<=days; day++){
-      var ds=yr+'-'+mm+'-'+(day<10?'0':'')+day;
+    fiscalDates.forEach(function(ds){
       var shows=showMap[ds]||[];
       var isToday=ds===TODAY;
+      var dObj=_parseYmd(ds);
+      var day=dObj.getDate();
       if(!shows.length){
         if(isToday) h+='<div class="cy-row cy-row-today"><span class="cy-daynum">'+day+'</span><span class="cy-empty-lbl">Today</span></div>';
-        continue; /* skip empty days to keep the zoomed-out view compact */
+        return;
       }
       shows.forEach(function(r,ri){
         var st=r._s||'nd';
@@ -5023,13 +5120,14 @@ function renderCalYear(){
         h+='<div class="cy-row cy-row-'+st+(isToday?' cy-row-today':'')+'" onclick="openEditModal('+idx+')">';
         h+='<span class="cy-daynum">'+(ri===0?day:'')+'</span>';
         var cyTgtObj=showTargets(r); var cyFee=r.fee||r.cost; var cyTone=perfTone(r.bs_a, cyTgtObj.bs_m, cyFee, r.roi_a, cyTgtObj.roi_t); var cySty=toneStyle(cyTone);
-        h+='<span class="cy-djname '+cyTone+'"'+(cySty?' style="'+cySty+'"':'')+'>'+nm+'</span>';
-        h+='<span class="cy-fee">'+$k(cyFee)+'</span>';
+        var cyFeeCls=feeTierClass(cyFee);
+        h+='<span class="cy-djname '+(cyFeeCls||cyTone)+'">'+nm+'</span>';
+        h+='<span class="cy-fee '+(cyFeeCls||'')+'">'+$k(cyFee)+'</span>';
         h+='<span class="cy-target">'+$k(cyTgtObj.bs_m)+'</span>';
         h+='<span class="cy-actual '+cyTone+'"'+(cySty?' style="'+cySty+'"':'')+'>'+$k(r.bs_a)+'</span>';
         h+='</div>';
       });
-    }
+    });
     h+='</div></div>';
   }
   h+='</div>';
@@ -5109,7 +5207,7 @@ function renderSummary(){
    ALL SHOWS
                                                                   */
 function renderAllShows(){
-  var recs=SCHED.filter(function(r){return r.v===curV&&r.yr===curYr&&r._s!=='empty'&&(r.bs_a||r.bs_m||r._s==='beat'||r._s==='miss'||r._s==='fut'||r._s==='nd');});
+  var recs=SCHED.filter(function(r){return (r.v||r.venue)===curV&&r.d&&r._s!=='empty'&&dateInFiscalYear(r.d,curYr)&&(r.bs_a||r.bs_m||r._s==='beat'||r._s==='miss'||r._s==='fut'||r._s==='nd');});
   recs.sort(function(a,b){return a.d<b.d?-1:1;});
   if(!recs.length){
     document.getElementById('allshowsBody').innerHTML='<div class="empty">No data for '+curV+' '+curYr+'</div>';
@@ -7324,12 +7422,13 @@ function _vipPlBucket(venue, year, months){
   };
 }
 function _vipStandingHtml(venue, asOfDate){
-  var yr=+asOfDate.slice(0,4);
-  var mm=asOfDate.slice(5,7);
-  var mi=parseInt(mm,10);
-  /* For current month, cut at today so remaining = rest of month; else use week end */
-  var cutDate=(String(TODAY||'').slice(0,7)===(yr+'-'+mm)) ? String(TODAY) : asOfDate;
-  var dayNum=+cutDate.slice(8,10);
+  var info=fiscalInfoForDate(asOfDate);
+  var yr=info.year;
+  var mm=info.mm;
+  var mi=info.monthIndex+1;
+  var period=fiscalPeriodRange(yr, info.monthIndex);
+  /* For current fiscal month, cut at today so remaining = rest of period */
+  var cutDate=(dateInFiscalPeriod(String(TODAY||''), yr, info.monthIndex)) ? String(TODAY) : (asOfDate>period.to?period.to:asOfDate);
   var mtdMonths=[mm];
   var ytdMonths=[];
   for(var i=1;i<=mi;i++) ytdMonths.push((i<10?'0':'')+i);
@@ -7341,12 +7440,11 @@ function _vipStandingHtml(venue, asOfDate){
   SCHED.forEach(function(r){
     if(!r||r._s==='empty') return;
     if((r.v||r.venue)!==venue) return;
-    if(+r.yr!==yr || String(r.d).slice(5,7)!==mm) return;
+    if(!r.d || !dateInFiscalPeriod(r.d, yr, info.monthIndex)) return;
     var fee=+(r.fee||r.cost||0)||0;
     var tgt=showTargets(r);
     var bsT=tgt&&tgt.bs_m!=null?+tgt.bs_m:null;
-    var dNum=+String(r.d).slice(8,10);
-    var isPast=dNum<=dayNum;
+    var isPast=r.d<=cutDate;
     if(isPast){
       feeDone+=fee;
       if(r.bs_a!=null){ bsDone+=+r.bs_a; nDone++; }
@@ -7393,7 +7491,7 @@ function _vipStandingHtml(venue, asOfDate){
       +'</div></div>';
   }
   var monthStrip='<div class="vip-stand-month"><div class="vip-stand-month-title">Month position \u2014 '+MN_SH[mi-1]+' '+yr
-    +' <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink3)"> ¬∑ through '+cutDate+' ¬∑ actual + remaining forecast</span></div>'
+    +' <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink3)"> ù through '+cutDate+' ù actual + remaining forecast</span></div>'
     +'<div class="vip-stand-row">'
     +item('DJ Fees Actual', feeDone?$k(feeDone):'-', 'MTD booked fees', '')
     +item('Remaining Fees', feeRemain?$k(feeRemain):'$0', nRemain+' show'+(nRemain===1?'':'s')+' left', '')
@@ -7413,7 +7511,7 @@ function _vipStandingHtml(venue, asOfDate){
     +col('MTD &mdash; '+MN_SH[mi-1]+' '+yr, mtd)
     +col('YTD &mdash; Jan&ndash;'+MN_SH[mi-1]+' '+yr, ytd)
     +'</div>'
-    +'<div class="vip-stand-note">Month position = Calendar fees &amp; BS (actual to date + remaining show targets). P&amp;L block below uses Live Entertainment / Total Sales. Green = favorable.</div>'
+    +'<div class="vip-stand-note">Month position = Fiscal 4-4-5 fees &amp; BS (actual to date + remaining show targets). P&amp;L block below uses Live Entertainment / Total Sales. Green = favorable.</div>'
     +'</div>';
 }
 
@@ -7943,9 +8041,11 @@ function renderAccounting(){
   if(addWrap) addWrap.style.display=(acctSubTab==='guest' && !isAccountingOnlyVenue(curAcctV))?'':'none';
 
   var yr=curYr, mo=acctM;
-  var days=new Date(yr,mo+1,0).getDate();
   var mm=(mo+1<10?'0':'')+(mo+1);
-  document.getElementById('acctHd').textContent=MN_FULL[mo]+' '+yr+' - '+curAcctV;
+  var fiscalDates=datesInFiscalPeriod(yr, mo);
+  var days=fiscalDates.length;
+  document.getElementById('acctHd').textContent=MN_FULL[mo]+' '+yr+' ('+fiscalPeriodShortRange(yr, mo)+') - '+curAcctV;
+  updateTopbarLogo(curAcctV||curV);
 
   var sl='<div class="month-slider" id="acctSliderInner">';
   for(var mi=0;mi<12;mi++) sl+='<button class="ms-btn'+(mi===mo?' ms-on':'')+'" id="asbtn'+mi+'" onclick="jumpAcctMonth('+mi+')">'+ MN_SH[mi]+'</button>';
@@ -7966,6 +8066,7 @@ function renderAccountingOthers(yr, mo, mm, days){
   var catTotals={};
   ACCT_OTHER_CATS.forEach(function(c){ catTotals[c.id]=0; });
   var monthTotal=0;
+  var fiscalDates=datesInFiscalPeriod(yr, mo);
 
   var h='<div class="acct-others-wrap"><table class="sched-tbl acct-tbl acct-others-tbl"><thead>';
   h+='<tr><th class="sc-date" rowspan="2">Date</th>';
@@ -7978,9 +8079,11 @@ function renderAccountingOthers(yr, mo, mm, days){
   });
   h+='</tr></thead><tbody>';
 
-  for(var day=1; day<=days; day++){
-    var ds=yr+'-'+mm+'-'+(day<10?'0':'')+day;
-    var dow=new Date(ds+'T12:00:00').getDay();
+  for(var adi=0; adi<fiscalDates.length; adi++){
+    var ds=fiscalDates[adi];
+    var dObj=_parseYmd(ds);
+    var day=dObj.getDate();
+    var dow=dObj.getDay();
     var isToday=ds===TODAY;
     var dc='sc-row';
     if(isToday) dc+=' sc-today';
@@ -7991,7 +8094,7 @@ function renderAccountingOthers(yr, mo, mm, days){
 
     var dayTot=0;
     h+='<tr class="'+dc+'">';
-    h+='<td class="sc-date-cell">'+DOW_FULL[dow]+', '+MN_FULL[mo]+' '+day+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
+    h+='<td class="sc-date-cell">'+DOW_FULL[dow]+', '+MN_FULL[dObj.getMonth()]+' '+day+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
     ACCT_OTHER_CATS.forEach(function(c){
       var cell=getOthersCell(ds, c.id);
       var cost=cell.cost;
@@ -8045,10 +8148,12 @@ function fitAccountingOthersRows(){
 }
 
 function renderAccountingGuest(yr, mo, mm, days){
+  var fiscalDates=datesInFiscalPeriod(yr, mo);
+  days=fiscalDates.length;
   var showMap={};
   SCHED.forEach(function(r){
-    if(r.v!==curAcctV||r._s==='empty') return;
-    if(!r.d||r.d.slice(0,7)!==yr+'-'+mm) return;
+    if((r.v||r.venue)!==curAcctV||r._s==='empty') return;
+    if(!r.d||!dateInFiscalPeriod(r.d, yr, mo)) return;
     if(!showMap[r.d]) showMap[r.d]=[];
     showMap[r.d].push(r);
   });
@@ -8057,8 +8162,7 @@ function renderAccountingGuest(yr, mo, mm, days){
   ACCT_STATUS_OPTIONS.forEach(function(s){ statusCounts[s]=0; });
   statusCounts['Not set']=0;
   var totalShowsThisMonth=0;
-  for(var td=1; td<=days; td++){
-    var tds=yr+'-'+mm+'-'+(td<10?'0':'')+td;
+  fiscalDates.forEach(function(tds){
     var tshows=showMap[tds]||[];
     tshows.forEach(function(){
       totalShowsThisMonth++;
@@ -8066,7 +8170,7 @@ function renderAccountingGuest(yr, mo, mm, days){
       var st=_acctEffectiveStatus(tacct)||'Not set';
       statusCounts[st]=(statusCounts[st]||0)+1;
     });
-  }
+  });
   var summaryHtml='<div class="acct-summary">';
   summaryHtml+='<div class="acct-sum-item'+(!_acctStatusFilter?' acct-sum-active':'')+'" data-filter="__all__"><b>'+totalShowsThisMonth+'</b><span>Shows this month</span></div>';
   ACCT_STATUS_OPTIONS.concat(['Not set']).forEach(function(s){
@@ -8102,9 +8206,10 @@ function renderAccountingGuest(yr, mo, mm, days){
   var totDJ=0, totBSM=0, totBSA=0;
   var anyFilterMatch=false;
 
-  for(var day=1;day<=days;day++){
-    var ds=yr+'-'+mm+'-'+(day<10?'0':'')+day;
-    var dow=new Date(ds+'T12:00:00').getDay();
+  for(var adi=0;adi<fiscalDates.length;adi++){
+    var ds=fiscalDates[adi];
+    var dObj=_parseYmd(ds);
+    var dow=dObj.getDay();
     var isToday=ds===TODAY;
     var shows=showMap[ds]||[];
     var evLabel=daySpecialLabel(ds)||'';
@@ -8124,7 +8229,7 @@ function renderAccountingGuest(yr, mo, mm, days){
     if(shows.length) dc+=' sc-has-show';
     if(!shows.length) dc+=' sc-noshow';
 
-    var dateStr=DOW_FULL[dow]+', '+MN_FULL[mo]+' '+day;
+    var dateStr=DOW_FULL[dow]+', '+MN_FULL[dObj.getMonth()]+' '+dObj.getDate()+', '+dObj.getFullYear();
 
     if(!shows.length){
       if(_acctStatusFilter) continue;
@@ -8159,8 +8264,9 @@ function renderAccountingGuest(yr, mo, mm, days){
           +'</td>';
         h+='<td class="sc-ev-cell" rowspan="'+nrows+'">'+_evLabelHtml(evLabel, ds)+'</td>';
       }
-      h+='<td class="sc-dj-cell"><b>'+nm+'</b>'+(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')+'</td>';
-      h+='<td class="sc-num acct-col-fee">'+$k(r.fee||r.cost||null)+'</td>';
+      var feeCls=feeTierClass(r.fee||r.cost);
+      h+='<td class="sc-dj-cell"><b class="'+(feeCls||'')+'">'+nm+'</b>'+(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')+'</td>';
+      h+='<td class="sc-num acct-col-fee '+(feeCls||'')+'">'+$k(r.fee||r.cost||null)+'</td>';
       h+='<td class="sc-num acct-col-target">'+$k(bsM)+'</td>';
       h+='<td class="sc-num '+bsCls+'"><b>'+$k(r.bs_a)+'</b></td>';
       if(ri===0){
@@ -8843,11 +8949,9 @@ function openEditSpecialWeek(label, ds){
     document.getElementById('swFormLabel').textContent  = 'New Period';
     document.getElementById('swSaveBtn').textContent    = 'Add Period';
     document.getElementById('swDeleteSelectedBtn').style.display='none';
-    var yr=curYr, mo=curM;
-    var daysInMo=new Date(yr,mo+1,0).getDate();
-    var mm=(mo+1<10?'0':'')+(mo+1);
-    document.getElementById('swStartDate').value=yr+'-'+mm+'-01';
-    document.getElementById('swEndDate').value=yr+'-'+mm+'-'+(daysInMo<10?'0':'')+daysInMo;
+    var period=fiscalPeriodRange(curYr, curM);
+    document.getElementById('swStartDate').value=period.from;
+    document.getElementById('swEndDate').value=period.to;
     _setSwCoverageNote('');
   }
   document.getElementById('swLabel').focus();
@@ -8994,11 +9098,9 @@ function openAddSpecialWeek(){
   document.getElementById('swFormLabel').textContent  = 'New Period';
   document.getElementById('swSaveBtn').textContent    = 'Add Period';
   document.getElementById('swDeleteSelectedBtn').style.display='none';
-  var yr=curYr, mo=curM;
-  var days=new Date(yr,mo+1,0).getDate();
-  var mm=(mo+1<10?'0':'')+(mo+1);
-  document.getElementById('swStartDate').value=yr+'-'+mm+'-01';
-  document.getElementById('swEndDate').value=yr+'-'+mm+'-'+(days<10?'0':'')+days;
+  var period=fiscalPeriodRange(curYr, curM);
+  document.getElementById('swStartDate').value=period.from;
+  document.getElementById('swEndDate').value=period.to;
   document.getElementById('swLabel').value='';
   _setSwCoverageNote('');
   _renderSwList();
