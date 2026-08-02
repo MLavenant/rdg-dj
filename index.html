@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RDG DJ Dashboard v3.60</title>
+<title>RDG DJ Dashboard v3.61</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -1518,6 +1518,11 @@ function datesInFiscalPeriod(year, monthIndex0){
 function ensureShowUid(rec){
   if(!rec) return '';
   if(rec._uid) return rec._uid;
+  /* New adds get a random uid so identical DJ/fee same night never collide. */
+  if(rec._added){
+    rec._uid='s_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
+    return rec._uid;
+  }
   var base=[(rec.venue||rec.v||''),(rec.d||''),(rec.dj||''),String(rec.fee!=null?rec.fee:(rec.cost!=null?rec.cost:''))].join('|');
   var h=2166136261;
   for(var i=0;i<base.length;i++){ h^=base.charCodeAt(i); h=(h*16777619)>>>0; }
@@ -1534,9 +1539,28 @@ function _schedKeysMatch(a,b){
   if(a._uid&&b._uid) return a._uid===b._uid;
   return _schedDateKey(a)===_schedDateKey(b) && (a.dj||'')===(b.dj||'') && String(a.fee!=null?a.fee:(a.cost||''))===String(b.fee!=null?b.fee:(b.cost||''));
 }
+function _countShowsOnDate(venue, dateStr){
+  if(!dateStr) return 0;
+  var n=0;
+  SCHED.forEach(function(r){
+    if(!r||r._s==='empty'||!r.d) return;
+    if(r.d!==dateStr) return;
+    if(venue && (r.v||r.venue)!==venue) return;
+    n++;
+  });
+  return n;
+}
 function getShowDjStatus(r, ds){
   if(r && Object.prototype.hasOwnProperty.call(r,'djStatus')) return r.djStatus||null;
-  try{ return (getAcct(ds||(r&&r.d)||'').djStatus)||null; }catch(e){ return null; }
+  var date=ds||(r&&r.d)||'';
+  var venue=r&&(r.v||r.venue);
+  /* Multi-show nights: do not share date-level Accounting status across performances. */
+  if(_countShowsOnDate(venue, date)>1) return null;
+  try{ return (getAcct(date).djStatus)||null; }catch(e){ return null; }
+}
+function _isCoarsePointer(){
+  try{ if(window.matchMedia && window.matchMedia('(pointer:coarse)').matches) return true; }catch(e){}
+  return ('ontouchstart' in window) && (navigator.maxTouchPoints>0);
 }
 function fiscalPeriodShortRange(year, monthIndex0){
   var r=fiscalPeriodRange(year, monthIndex0);
@@ -4484,19 +4508,40 @@ function renderMonthDrill(mm){
   document.querySelectorAll('#budgetMonths .bgt-del').forEach(function(btn){
     btn.addEventListener('click',function(){
       var si=+btn.dataset.si;
-      if(SCHED[si]) SCHED[si]._s='empty';
+      var show=SCHED[si];
+      if(!show) return;
+      if(!confirm('Remove '+(show.dj||'this performance')+' on '+(show.d||'')+'?\n\nThis syncs for everyone.')) return;
+      var before=_clone(show), beforeIndex=si;
+      pushUndo('Delete show: '+(show.dj||'TBD')+' '+show.d,function(){
+        _undoShowChange(before,null,beforeIndex);
+      });
+      if(typeof _fbRemoveSchedRecord==='function') _fbRemoveSchedRecord(show);
+      SCHED.splice(si,1);
       IDX=buildIdx(SCHED);
+      if(typeof clearPyMapCache==='function') clearPyMapCache();
       renderBudget();
+      if(curView==='calendar') go();
+      if(curView==='accounting') renderAccounting();
     });
   });
 
   var addBtn=document.getElementById('bgtAddRow');
   if(addBtn) addBtn.addEventListener('click',function(){
-    var d=bgtYear+'-'+mm+'-01';
-    SCHED.push({v:bgtVenue,yr:bgtYear,d:d,dj:'',cost:null,fee:null,
-      py_dj:null,py_bs_a:null,py_roi_a:null,py_beat:null,ev:'',_s:'fut'});
+    var mi=parseInt(mm,10)||1;
+    var d;
+    try{ d=fiscalPeriodRange(bgtYear, mi-1).from; }
+    catch(eBgt){ d=bgtYear+'-'+mm+'-01'; }
+    var rec={v:bgtVenue,yr:bgtYear,d:d,dj:'',cost:null,fee:null,
+      py_dj:null,py_bs_a:null,py_roi_a:null,py_beat:null,ev:'',_s:'fut',
+      _added:1,djStatus:null};
+    ensureShowUid(rec);
+    SCHED.push(rec);
+    var after=_clone(rec);
+    pushUndo('Add show: '+d,function(){ _undoShowChange(null,after,SCHED.length-1); });
     IDX=buildIdx(SCHED);
+    if(typeof persistSchedShow==='function') persistSchedShow(rec);
     renderBudget();
+    if(curView==='calendar') go();
   });
 }
 
@@ -4661,29 +4706,35 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     // Start from baked copy
     var s = SCHED_BAKED.map(function(r){ var c=Object.assign({},r); ensureShowUid(c); return c; });
     if(!ov) { SCHED = s; IDX = buildIdx(SCHED); return; }
-    // Edits: legacy key venue|date OR venue|date|_uid
     var edits = ov.edits || {};
-    Object.keys(edits).forEach(function(k){
+    var editKeys = Object.keys(edits);
+    /* Apply uid-keyed edits first (venue|date|_uid), then legacy venue|date only when safe. */
+    editKeys.forEach(function(k){
       var parts = k.split('|'), venue = parts[0], date = parts[1], uid = parts[2]||'';
-      var idx = -1;
-      if(uid){
-        idx = s.findIndex(function(r){ return r._uid===uid || (_schedDateKey(r)===(venue+'|'+date) && ensureShowUid(r)===uid); });
-      }
-      if(idx < 0) idx = s.findIndex(function(r){ return (r.venue||r.v)===venue && r.d===date; });
-      if(idx >= 0){
-        Object.assign(s[idx], edits[k]);
-        ensureShowUid(s[idx]);
-      }
+      if(!uid) return;
+      var idx = s.findIndex(function(r){ return r._uid===uid || (_schedDateKey(r)===(venue+'|'+date) && ensureShowUid(r)===uid); });
+      if(idx >= 0){ Object.assign(s[idx], edits[k]); ensureShowUid(s[idx]); }
     });
-    // Added shows — allow multiple per date (match by _uid)
+    editKeys.forEach(function(k){
+      var parts = k.split('|'), venue = parts[0], date = parts[1], uid = parts[2]||'';
+      if(uid) return;
+      var hasUidEdit = editKeys.some(function(k2){ return k2.indexOf(venue+'|'+date+'|')===0; });
+      if(hasUidEdit) return;
+      var matches = s.filter(function(r){ return (r.venue||r.v)===venue && r.d===date; });
+      if(matches.length===1){ Object.assign(matches[0], edits[k]); ensureShowUid(matches[0]); }
+    });
+    /* Added shows: legacy array + race-safe addsByUid map */
     var adds = ov.adds ? (Array.isArray(ov.adds)?ov.adds:Object.values(ov.adds)) : [];
+    var byUid = ov.addsByUid ? (typeof ov.addsByUid==='object'?ov.addsByUid:{}) : {};
+    Object.keys(byUid).forEach(function(uid){ if(byUid[uid]) adds.push(byUid[uid]); });
     adds.forEach(function(r){
       if(!r) return;
       ensureShowUid(r);
+      r._added=1;
       var exists = s.some(function(x){ return x._uid===r._uid; });
       if(!exists) s.push(r);
     });
-    // Deletes: legacy venue|date removes that day; venue|date|_uid removes one show
+    /* Deletes: exact uid key, or legacy venue|date (whole day) */
     var dels = ov.deletes ? (Array.isArray(ov.deletes)?ov.deletes:Object.values(ov.deletes)) : [];
     s = s.filter(function(r){
       var dateKey=_schedDateKey(r);
@@ -4692,7 +4743,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         var dk=dels[di];
         if(!dk) continue;
         var p=String(dk).split('|');
-        if(p.length>=3){ if(uidKey===dk || r._uid===p[2]) return false; }
+        if(p.length>=3){ if(uidKey===dk) return false; }
         else if(dateKey===dk) return false;
       }
       return true;
@@ -5170,9 +5221,10 @@ function renderCal(){
           h+='<td class="sc-date-cell" rowspan="'+nrows+'">'
             +dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
         }
-        h+='<td class="sc-dj-cell" draggable="true" data-show-idx="'+idx+'" '
-          +'ondragstart="showDragStart(event)" ondragend="swDragEnd(event)" '
-          +'onclick="openEditModal('+idx+')" style="cursor:grab" title="Drag to move date / click to edit">'
+        var canDrag=!_isCoarsePointer();
+        h+='<td class="sc-dj-cell" data-show-idx="'+idx+'" '
+          +(canDrag?'draggable="true" ondragstart="showDragStart(event)" ondragend="swDragEnd(event)" style="cursor:grab" title="Drag to move date / click to edit" ':'style="cursor:pointer" title="Tap to edit (drag-to-move is desktop-only)" ')
+          +'onclick="openEditModal('+idx+')">'
           +'<b class="dj-clickname '+bCls+'">'+nm+'</b>'
           +'<span class="dj-fee-inline">'+$k(fee)+'</span>'
           +(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')
@@ -8715,11 +8767,13 @@ function renderAccountingGuest(yr, mo, mm, days){
   var totalShowsThisMonth=0;
   fiscalDates.forEach(function(tds){
     var tshows=showMap[tds]||[];
-    tshows.forEach(function(){
+    var tacct=getAcct(tds);
+    var apSt=tacct.apStatus||null;
+    tshows.forEach(function(r){
       totalShowsThisMonth++;
-      var tacct=getAcct(tds);
-      var st=_acctEffectiveStatus(tacct)||'Not set';
-      statusCounts[st]=(statusCounts[st]||0)+1;
+      var djSt=getShowDjStatus(r,tds)||'Not set';
+      statusCounts[djSt]=(statusCounts[djSt]||0)+1;
+      if(apSt) statusCounts[apSt]=(statusCounts[apSt]||0)+1;
     });
   });
   var summaryHtml='<div class="acct-summary">';
@@ -8766,9 +8820,17 @@ function renderAccountingGuest(yr, mo, mm, days){
     var evLabel=daySpecialLabel(ds)||'';
     var acct=getAcct(ds);
 
+    /* DJ filters are per-show; AP filters remain date-level (docs/workflow). */
     if(_acctStatusFilter){
-      var dayStatus = _acctEffectiveStatus(acct) || 'Not set';
-      if(dayStatus!==_acctStatusFilter) continue;
+      var apFilter=ACCT_AP_STATUS.indexOf(_acctStatusFilter)>=0;
+      if(apFilter){
+        if((acct.apStatus||'')!==_acctStatusFilter) continue;
+      } else {
+        shows=shows.filter(function(r){
+          return (getShowDjStatus(r, ds)||'Not set')===_acctStatusFilter;
+        });
+        if(!shows.length) continue;
+      }
     }
 
     var dc='sc-row';
@@ -8869,8 +8931,13 @@ function openAddModal(ds){
   _editIdx=-1;
   var f=getFields();
   f.venue.value=curV;
-  f.date.value=ds||(curYr+'-'+(curM<9?'0':'')+(curM+1)+'-01');
-  f.dj.value=''; f.fee.value=''; f.ev.value=''; if(f.tbd) if(f.tbd) if(f.tbd) f.tbd.checked=false; f.note.value='';
+  var defaultDate=ds;
+  if(!defaultDate){
+    try{ defaultDate=fiscalPeriodRange(curYr, curM).from; }
+    catch(eDef){ defaultDate=TODAY; }
+  }
+  f.date.value=defaultDate;
+  f.dj.value=''; f.fee.value=''; f.ev.value=''; if(f.tbd) f.tbd.checked=false; f.note.value='';
   f.bsm.value=''; f.bsa.value=''; f.roit.value=''; f.roia.value='';
   document.getElementById('modalTitle').textContent='Add Show';
   document.getElementById('btnDelete').style.display='none';
@@ -9084,21 +9151,20 @@ function persistSchedShow(rec){
   if(!window._fbSave||!window._fbRef) return;
   var uid=ensureShowUid(rec);
   var isBaked = !rec._added && SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===uid; });
-  /* Prefer uid key; also write legacy venue|date for baked match so older clients keep working */
   var fbKey = _schedUidKey(rec);
   var legacyKey = _schedDateKey(rec);
   if(isBaked){
+    /* Always write uid key. Legacy venue|date only when this is the sole show that night. */
     window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_')).set(rec);
-    window._fbRef.child('schedOverrides/edits/'+legacyKey.replace(/\//g,'_')).set(rec);
+    if(_countShowsOnDate(rec.venue||rec.v, rec.d)<=1){
+      window._fbRef.child('schedOverrides/edits/'+legacyKey.replace(/\//g,'_')).set(rec);
+    } else {
+      window._fbRef.child('schedOverrides/edits/'+legacyKey.replace(/\//g,'_')).remove();
+    }
   } else {
     rec._added=1;
-    window._fbRef.child('schedOverrides/adds').once('value', function(snap){
-      var adds = snap.val();
-      var arr  = adds ? (Array.isArray(adds)?adds:Object.values(adds)) : [];
-      var ai   = arr.findIndex(function(r){ return r && (r._uid===uid || _schedKeysMatch(r,rec)); });
-      if(ai>=0) arr[ai]=rec; else arr.push(rec);
-      window._fbRef.child('schedOverrides/adds').set(arr);
-    });
+    /* Race-safe: one Firebase path per uid (no read-modify-write on a shared array). */
+    window._fbRef.child('schedOverrides/addsByUid/'+uid).set(rec);
   }
 }
 function _schedRecordKey(rec){ return _schedUidKey(rec); }
@@ -9108,26 +9174,35 @@ function _isBakedSchedRecord(rec){
   return SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===rec._uid; })
     || SCHED_BAKED.some(function(r){ return (r.venue||r.v)===(rec.venue||rec.v) && r.d===rec.d && (r.dj||'')===(rec.dj||''); });
 }
+function _fbClearEditKeys(rec){
+  if(!rec||!window._fbRef) return;
+  ensureShowUid(rec);
+  try{
+    window._fbRef.child('schedOverrides/edits/'+_schedUidKey(rec).replace(/\//g,'_')).remove();
+    window._fbRef.child('schedOverrides/edits/'+_schedDateKey(rec).replace(/\//g,'_')).remove();
+  }catch(e){}
+}
 function _fbRemoveSchedRecord(rec){
   if(!rec||!window._fbRef) return;
   ensureShowUid(rec);
   var uidKey=_schedUidKey(rec);
   var dateKey=_schedDateKey(rec);
+  var uid=rec._uid;
   if(_isBakedSchedRecord(rec)){
-    window._fbRef.child('schedOverrides/deletes').once('value',function(snap){
-      var vals=snap.val();
+    window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
       var arr=vals?(Array.isArray(vals)?vals:Object.values(vals)):[];
       if(arr.indexOf(uidKey)<0) arr.push(uidKey);
-      window._fbRef.child('schedOverrides/deletes').set(arr);
-      window._fbRef.child('schedOverrides/edits/'+uidKey.replace(/\//g,'_')).remove();
-      window._fbRef.child('schedOverrides/edits/'+dateKey.replace(/\//g,'_')).remove();
+      return arr;
     });
+    window._fbRef.child('schedOverrides/edits/'+uidKey.replace(/\//g,'_')).remove();
+    window._fbRef.child('schedOverrides/edits/'+dateKey.replace(/\//g,'_')).remove();
   }else{
-    window._fbRef.child('schedOverrides/adds').once('value',function(snap){
-      var vals=snap.val();
-      var arr=vals?(Array.isArray(vals)?vals:Object.values(vals)):[];
-      arr=arr.filter(function(r){ return !(r && (r._uid===rec._uid || _schedKeysMatch(r,rec))); });
-      window._fbRef.child('schedOverrides/adds').set(arr.length?arr:null);
+    window._fbRef.child('schedOverrides/addsByUid/'+uid).remove();
+    window._fbRef.child('schedOverrides/adds').transaction(function(vals){
+      if(!vals) return vals;
+      var arr=Array.isArray(vals)?vals:Object.values(vals);
+      var next=arr.filter(function(r){ return !(r && (r._uid===uid || _schedKeysMatch(r,rec))); });
+      return next.length?next:null;
     });
   }
 }
@@ -9136,13 +9211,13 @@ function _fbRestoreSchedRecord(rec){
   ensureShowUid(rec);
   var uidKey=_schedUidKey(rec);
   if(_isBakedSchedRecord(rec)){
-    window._fbRef.child('schedOverrides/deletes').once('value',function(snap){
-      var vals=snap.val();
-      var arr=vals?(Array.isArray(vals)?vals:Object.values(vals)):[];
-      arr=arr.filter(function(k){return k!==uidKey && k!==_schedDateKey(rec);});
-      window._fbRef.child('schedOverrides/deletes').set(arr.length?arr:null);
-      window._fbRef.child('schedOverrides/edits/'+uidKey.replace(/\//g,'_')).set(rec);
+    window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
+      if(!vals) return vals;
+      var arr=Array.isArray(vals)?vals:Object.values(vals);
+      var next=arr.filter(function(k){return k!==uidKey && k!==_schedDateKey(rec);});
+      return next.length?next:null;
     });
+    window._fbRef.child('schedOverrides/edits/'+uidKey.replace(/\//g,'_')).set(rec);
   }else{
     persistSchedShow(rec);
   }
@@ -9212,6 +9287,14 @@ function saveEvent(){
   });
   IDX=buildIdx(SCHED); closeModal();
   if(typeof syncLinkedTabsFromSched==='function') syncLinkedTabsFromSched(rec);
+  /* If date/venue changed, retire old Firebase keys so the show does not ghost on reload. */
+  if(before && _schedDateKey(before)!==_schedDateKey(rec)){
+    if(before._added || !_isBakedSchedRecord(before)){
+      _fbRemoveSchedRecord(before);
+    } else {
+      _fbClearEditKeys(before);
+    }
+  }
   go();
   if(curView==='accounting') renderAccounting();
   if(curView==='budget'&&_budgetInited) renderBudget();
@@ -9250,8 +9333,14 @@ function _swNorm(label){ return String(label==null?'':label).trim().toUpperCase(
    stored as '' - deleting the key lets the baked event name reappear on reload. */
 function _persistShowEv(rec){
   if(!window._fbRef || !rec || !rec.d) return;
-  var key=((rec.venue||rec.v)+'|'+rec.d).replace(/\//g,'_');
-  try{ window._fbRef.child('schedOverrides/edits/'+key+'/ev').set(rec.ev||''); }catch(e){}
+  ensureShowUid(rec);
+  var uidKey=_schedUidKey(rec).replace(/\//g,'_');
+  try{ window._fbRef.child('schedOverrides/edits/'+uidKey+'/ev').set(rec.ev||''); }catch(e){}
+  /* Legacy date key only when a single show owns that night. */
+  if(_countShowsOnDate(rec.venue||rec.v, rec.d)<=1){
+    var key=_schedDateKey(rec).replace(/\//g,'_');
+    try{ window._fbRef.child('schedOverrides/edits/'+key+'/ev').set(rec.ev||''); }catch(e2){}
+  }
 }
 
 function _dedupeSpecialWeeks(){
@@ -9588,6 +9677,7 @@ function swDragStart(e){
   try{ e.dataTransfer.setData('text/plain', 'period|'+_swDrag.label); e.dataTransfer.effectAllowed='move'; }catch(err){}
 }
 function showDragStart(e){
+  if(_isCoarsePointer()){ e.preventDefault(); return; }
   var el=e.target.closest('[data-show-idx]');
   if(!el) return;
   var idx=parseInt(el.getAttribute('data-show-idx'),10);
@@ -9642,7 +9732,11 @@ function swDropOnDate(e, toDate){
     pushUndo('Move show: '+(rec.dj||'TBD')+' to '+toDate,function(){
       _undoShowChange(beforeShow,afterShow,beforeIndex);
     });
-    if(window._fbRef) _fbRemoveSchedRecord(beforeShow);
+    /* Clear old date keys without marking a baked show as deleted forever. */
+    if(window._fbRef){
+      if(beforeShow._added || !_isBakedSchedRecord(beforeShow)) _fbRemoveSchedRecord(beforeShow);
+      else _fbClearEditKeys(beforeShow);
+    }
     if(typeof persistSchedShow==='function') persistSchedShow(rec);
     go();
   }
