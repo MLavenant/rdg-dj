@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RDG DJ Dashboard v3.59</title>
+<title>RDG DJ Dashboard v3.60</title>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -203,7 +203,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .pill{font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;display:inline-block}
 .p-beat{background:var(--beat-bg);color:var(--beat)}.p-miss{background:var(--miss-bg);color:var(--miss)}.p-nd{background:var(--card3);color:var(--ink3)}
 /* Modal */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:100}
 .modal-bg.hidden{display:none}
 .modal{background:var(--card);border-radius:var(--r-lg);width:440px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
 .modal-hd{padding:12px 16px;border-bottom:0.5px solid var(--rule);display:flex;align-items:center;justify-content:space-between}
@@ -213,7 +213,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .fld-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .fld{display:flex;flex-direction:column;gap:3px}
 .fld label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)}
-.fld input,.fld select{font-size:12px;padding:6px 8px;border:0.5px solid var(--rule);border-radius:var(--r);font-family:inherit;outline:none;background:var(--card);color:var(--ink)}
+.fld input,.fld select{font-size:16px;padding:6px 8px;border:0.5px solid var(--rule);border-radius:var(--r);font-family:inherit;outline:none;background:var(--card);color:var(--ink);-webkit-appearance:none;appearance:none}
+.fld input[type="date"]{-webkit-appearance:none;appearance:none;min-height:36px}
 .fld input:focus,.fld select:focus{border-color:var(--blue)}
 .fld-chk{display:flex;align-items:center;gap:6px;font-size:11px;cursor:pointer}
 .modal-foot{padding:10px 16px;border-top:0.5px solid var(--rule);display:flex;gap:8px;justify-content:flex-end}
@@ -343,13 +344,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 @keyframes eggFade{0%{opacity:0;transform:scale(.8)}15%{opacity:1;transform:scale(1)}80%{opacity:1}100%{opacity:0}}
 .sb-help-egg{opacity:0;height:0;overflow:hidden;margin:0;padding:0;border:0}
 .help-egg-hint{font-size:9px;color:var(--ink4);margin-top:8px;user-select:none}
-.egg-player{position:fixed;right:18px;bottom:18px;z-index:100000;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(20,16,14,.92);color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.35);backdrop-filter:blur(8px);max-width:min(360px,calc(100vw - 36px));font-family:inherit}
+.egg-player{position:fixed;right:18px;bottom:18px;z-index:100000;display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:rgba(20,16,14,.92);color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.35);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);max-width:min(360px,calc(100vw - 36px));font-family:inherit}
 .egg-player-meta{min-width:0;flex:1}
 .egg-player-title{font-size:11px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .egg-player-sub{font-size:9px;color:rgba(255,255,255,.65);margin-top:2px}
 .egg-player-stop{border:none;border-radius:999px;padding:7px 12px;font-size:11px;font-weight:800;cursor:pointer;background:#ef4444;color:#fff;font-family:inherit;flex-shrink:0}
 .egg-player-stop:hover{filter:brightness(1.08)}
-.egg-gallardo{position:fixed;inset:0;z-index:100001;display:flex;align-items:center;justify-content:center;background:rgba(8,10,14,.72);backdrop-filter:blur(6px);cursor:pointer;animation:eggGallardoIn .35s ease}
+.egg-gallardo{position:fixed;inset:0;z-index:100001;display:flex;align-items:center;justify-content:center;background:rgba(8,10,14,.72);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);cursor:pointer;animation:eggGallardoIn .35s ease}
 .egg-gallardo img{width:min(420px,82vw);height:auto;border-radius:18px;box-shadow:0 24px 80px rgba(0,0,0,.55),0 0 0 1px rgba(255,255,255,.12);animation:eggGallardoPop .45s cubic-bezier(.2,1.2,.3,1)}
 @keyframes eggGallardoIn{from{opacity:0}to{opacity:1}}
 @keyframes eggGallardoPop{from{opacity:0;transform:scale(.82)}to{opacity:1;transform:scale(1)}}
@@ -1077,6 +1078,22 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bgt-play-actions button.primary{background:var(--ink);color:#fff;border-color:var(--ink)}
 .bgt-play-ytd{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
 .bgt-play-ytd .bgt-play-metric{background:#fff;border:0.5px solid var(--hair)}
+.bgt-play-overview{background:var(--card);border:0.5px solid var(--rule);border-radius:14px;padding:12px;box-shadow:var(--shadow-sm);overflow:auto;-webkit-overflow-scrolling:touch}
+.bgt-play-overview-hd{font-size:12px;font-weight:900;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.bgt-play-overview-hd span{font-size:10px;font-weight:600;color:var(--ink3)}
+.bgt-play-ov-tbl{width:100%;border-collapse:collapse;font-size:11px;min-width:640px}
+.bgt-play-ov-tbl th{font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);text-align:right;padding:6px 8px;border-bottom:0.5px solid var(--rule);position:sticky;top:0;background:var(--card)}
+.bgt-play-ov-tbl th:first-child,.bgt-play-ov-tbl td:first-child{text-align:left}
+.bgt-play-ov-tbl td{padding:7px 8px;border-bottom:0.5px solid var(--hair);text-align:right;font-weight:700}
+.bgt-play-ov-tbl tr.bgt-ov-on td{background:var(--blue-bg)}
+.bgt-play-ov-tbl tr{cursor:pointer}
+.bgt-play-ov-tbl tr:hover td{background:#f0f6ff}
+.bgt-play-ov-tbl tfoot td{border-top:1px solid var(--rule);font-weight:900}
+.bgt-play-month-ov{margin-top:12px;background:var(--card2);border-radius:12px;padding:10px}
+.bgt-play-month-ov-hd{font-size:11px;font-weight:900;margin-bottom:8px;color:var(--ink)}
+.bgt-play-month-ov-hd span{font-weight:600;color:var(--ink3)}
+.bgt-play-show-row{display:grid;grid-template-columns:1.2fr 1.4fr .7fr .7fr .7fr;gap:6px;padding:6px 4px;border-bottom:0.5px solid var(--hair);font-size:11px;font-weight:700}
+.bgt-play-show-row.hd{font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);font-weight:800}
 @media(min-width:900px){.bgt-play-hist{grid-template-columns:repeat(4,1fr)}.bgt-play-metrics{grid-template-columns:repeat(4,1fr)}}
 </style>
 <!-- Firebase Realtime Database SDK -->
@@ -1388,6 +1405,16 @@ function miamiToday(){
 }
 var TODAY = miamiToday();
 var HIDE_V   = ['AVA Winter Park'];
+var CORE_VENUES = ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'];
+function listActiveVenues(){
+  var venues=CORE_VENUES.slice();
+  SCHED.forEach(function(r){
+    var v=r&& (r.v||r.venue);
+    if(!v) return;
+    if(venues.indexOf(v)<0 && HIDE_V.indexOf(v)<0) venues.push(v);
+  });
+  return venues;
+}
 var VENUE_COLORS = {
   'Casa Neos Beach Club': {a:'#a3402d', b:'#7a2f21'}, /* Casa Neos brand red */
   'MILA Lounge':          {a:'#2e2a2c', b:'#57504f'}, /* MILA brand charcoal */
@@ -1486,6 +1513,30 @@ function datesInFiscalPeriod(year, monthIndex0){
   var out=[], d=_parseYmd(r.from), end=_parseYmd(r.to);
   while(d<=end){ out.push(_ymdLocal(d)); d.setDate(d.getDate()+1); }
   return out;
+}
+/* Stable per-show id so multiple performances on the same date sync correctly. */
+function ensureShowUid(rec){
+  if(!rec) return '';
+  if(rec._uid) return rec._uid;
+  var base=[(rec.venue||rec.v||''),(rec.d||''),(rec.dj||''),String(rec.fee!=null?rec.fee:(rec.cost!=null?rec.cost:''))].join('|');
+  var h=2166136261;
+  for(var i=0;i<base.length;i++){ h^=base.charCodeAt(i); h=(h*16777619)>>>0; }
+  rec._uid='s_'+h.toString(36)+'_'+String(rec.d||'').replace(/-/g,'');
+  return rec._uid;
+}
+function _schedDateKey(rec){ return rec?((rec.venue||rec.v||'')+'|'+rec.d):''; }
+function _schedUidKey(rec){
+  if(!rec||!rec.d) return '';
+  return _schedDateKey(rec)+'|'+ensureShowUid(rec);
+}
+function _schedKeysMatch(a,b){
+  if(!a||!b) return false;
+  if(a._uid&&b._uid) return a._uid===b._uid;
+  return _schedDateKey(a)===_schedDateKey(b) && (a.dj||'')===(b.dj||'') && String(a.fee!=null?a.fee:(a.cost||''))===String(b.fee!=null?b.fee:(b.cost||''));
+}
+function getShowDjStatus(r, ds){
+  if(r && Object.prototype.hasOwnProperty.call(r,'djStatus')) return r.djStatus||null;
+  try{ return (getAcct(ds||(r&&r.d)||'').djStatus)||null; }catch(e){ return null; }
 }
 function fiscalPeriodShortRange(year, monthIndex0){
   var r=fiscalPeriodRange(year, monthIndex0);
@@ -2037,8 +2088,11 @@ function boot() {
 recalcAllSchedTargets(); /* boot */
   loadSavedMonthlyBudget();
   IDX = buildIdx(SCHED);
-  /* Start on current year, first month with data */
-  curYr = 2026; curM = 0;
+  /* Start on today's fiscal period so every venue/year lands on a real week strip */
+  try{
+    var _bootNow=fiscalInfoForDate(TODAY);
+    curYr=_bootNow.year; curM=_bootNow.monthIndex;
+  }catch(eBoot){ curYr=2026; curM=0; }
   buildSidebar();
   buildVenTabs();
   buildYrPills();
@@ -2052,11 +2106,7 @@ recalcAllSchedTargets(); /* boot */
 
 /*    Sidebar                                                      */
 function buildSidebar() {
-  var venues = [];
-  SCHED.forEach(function(r) {
-    if (venues.indexOf(r.v) < 0 && HIDE_V.indexOf(r.v) < 0) venues.push(r.v);
-  });
-  venues.sort();
+  var venues = listActiveVenues();
   var html = '<div class="sb-section-lbl">Views</div>';
   [
     {id:'calendar',   ic:'&#9783;',  lb:'Calendar'},
@@ -2111,9 +2161,7 @@ function selVenue(v) {
 
 /*    Venue tabs                                                  */
 function buildVenTabs() {
-  var venues = [];
-  SCHED.forEach(function(r){if(venues.indexOf(r.v)<0&&HIDE_V.indexOf(r.v)<0)venues.push(r.v);});
-  venues.sort();
+  var venues = listActiveVenues();
   document.getElementById('venTabs').innerHTML = venues.map(function(v){
     var c=venueColor(v);
     var style=v===curV?('background:'+c.a+';border-color:'+c.a+';color:#fff'):('border-left:3px solid '+c.a);
@@ -2123,9 +2171,13 @@ function buildVenTabs() {
 
 /*    Year pills                                                 */
 function buildYrPills() {
-  var yrs = [];
-  SCHED.forEach(function(r){if(yrs.indexOf(r.yr)<0)yrs.push(r.yr);});
-  yrs.sort();
+  var years={2024:1,2025:1,2026:1,2027:1};
+  SCHED.forEach(function(r){
+    if(r&&r.d) years[fiscalYearForDate(r.d)]=1;
+    if(r&&r.yr) years[+r.yr]=1;
+  });
+  var yrs=Object.keys(years).map(Number).filter(function(y){return y>=2020&&y<=2035;}).sort(function(a,b){return a-b;});
+  if(yrs.indexOf(curYr)<0) yrs.push(curYr), yrs.sort(function(a,b){return a-b;});
   document.getElementById('yrPills').innerHTML = yrs.map(function(y){
     return '<button class="yr-pill'+(y===curYr?' on':'')+'" onclick="selYr('+y+')">'+y+'</button>';
   }).join('');
@@ -3754,6 +3806,37 @@ function renderBudget2027Builder(){
   h+='<div class="bgt-play-metric"><div class="l">Plan Fee / Sales</div><div class="v">'+(ySales>0?((yFee/ySales*100).toFixed(1)+'%'):'-')+'</div><div class="s">Entertainment intensity</div></div>';
   h+='</div>';
 
+  /* Full-year plan overview (all 12 months at a glance) */
+  h+='<div class="bgt-play-overview">';
+  h+='<div class="bgt-play-overview-hd">2027 plan overview<span>Click a month to edit · current setup for '+venue+'</span></div>';
+  h+='<table class="bgt-play-ov-tbl"><thead><tr>';
+  h+='<th>Month</th><th>Sales plan</th><th>Fees plan</th><th>Fee/Sales</th><th>Fees vs 2026</th><th>Sched. fees</th><th>Shows</th>';
+  h+='</tr></thead><tbody>';
+  for(var om=1;om<=12;om++){
+    var omm=padMm(om);
+    var oFee=getMonthlyBudget(venue,2027,omm);
+    var oSales=getBgtPlan(venue,2027,omm,'sales');
+    if(oSales==null){
+      var s26o=getBgtActual(venue,2026,omm,'sales');
+      if(s26o!=null) oSales=Math.round(s26o*1.05/1000)*1000;
+    }
+    var oFee26=(monthPerf(venue,2026,omm).tFee)||0;
+    var oPct=(oSales>0&&oFee!=null)?(oFee/oSales*100).toFixed(1)+'%':'-';
+    var oSched=getShows(2027,venue,omm);
+    var oSchedFee=oSched.reduce(function(s,r){return s+(+r.fee||+r.cost||0);},0);
+    h+='<tr class="'+(om===mi?'bgt-ov-on':'')+'" onclick="_bgtPlayMonth='+om+';renderBudget2027Builder()">';
+    h+='<td>'+MNS[om-1]+'</td>';
+    h+='<td>'+(oSales!=null?$k(oSales):'-')+'</td>';
+    h+='<td>'+(oFee!=null?$k(oFee):'-')+'</td>';
+    h+='<td>'+oPct+'</td>';
+    h+='<td>'+(oFee!=null?$kv(oFee-oFee26):'-')+'</td>';
+    h+='<td>'+(oSchedFee?$k(oSchedFee):'-')+'</td>';
+    h+='<td>'+(oSched.length||'-')+'</td>';
+    h+='</tr>';
+  }
+  h+='</tbody><tfoot><tr><td>Year</td><td>'+(nSales?$k(ySales):'-')+'</td><td>'+(nFee?$k(yFee):'-')+'</td><td>'+(ySales>0?((yFee/ySales*100).toFixed(1)+'%'):'-')+'</td><td>'+(nFee?$kv(yFee-yFee26):'-')+'</td><td colspan="2"></td></tr></tfoot></table>';
+  h+='</div>';
+
   h+='<div class="bgt-play-months">';
   for(var m=1;m<=12;m++){
     h+='<button type="button" class="bgt-play-mbtn'+(m===mi?' on':'')+'" onclick="_bgtPlayMonth='+m+';renderBudget2027Builder()">'+MNS[m-1]+'</button>';
@@ -3786,6 +3869,31 @@ function renderBudget2027Builder(){
   h+='<button type="button" onclick="bgtPlayPreset(\'matchLive\')">Fees to match 2026 Live %</button>';
   h+='<button type="button" onclick="applyAllSuggested2027()">Use suggested for all months</button>';
   h+='</div>';
+
+  /* Selected month: full schedule overview with current lineup */
+  var monthShows=getShows(2027,venue,mm).slice().sort(function(a,b){return (a.d||'').localeCompare(b.d||'');});
+  var monthSchedFee=monthShows.reduce(function(s,r){return s+(+r.fee||+r.cost||0);},0);
+  var monthBsT=monthShows.reduce(function(s,r){var t=showTargets(r);return s+(t.bs_m||0);},0);
+  h+='<div class="bgt-play-month-ov">';
+  h+='<div class="bgt-play-month-ov-hd">'+MN_FULL[mi-1]+' 2027 schedule overview <span>'+fiscalPeriodShortRange(2027,mi-1)+' · '+monthShows.length+' shows · fees '+$k(monthSchedFee)+' · BS tgt '+$k(monthBsT)+(feeN!=null?(' · budget '+$k(feeN)+' · var '+$kv(monthSchedFee-feeN)):'')+'</span></div>';
+  if(!monthShows.length){
+    h+='<div style="font-size:11px;color:var(--ink3);padding:6px 2px">No performances scheduled in this fiscal month yet.</div>';
+  } else {
+    h+='<div class="bgt-play-show-row hd"><span>Date</span><span>DJ</span><span>Fee</span><span>BS tgt</span><span>Status</span></div>';
+    monthShows.forEach(function(r){
+      var tgt=showTargets(r);
+      var st=getShowDjStatus(r,r.d)||'Not set';
+      h+='<div class="bgt-play-show-row">';
+      h+='<span>'+(r.d||'')+'</span>';
+      h+='<span>'+djLabel(r.dj)+'</span>';
+      h+='<span>'+$k(r.fee||r.cost)+'</span>';
+      h+='<span>'+$k(tgt.bs_m)+'</span>';
+      h+='<span>'+st+'</span>';
+      h+='</div>';
+    });
+  }
+  h+='</div>';
+
   h+='</div></div>';
   host.innerHTML=h;
 }
@@ -4524,7 +4632,8 @@ function setAcctSubTab(tab){
    fee tiers, budget) are written to Firebase so every browser sees
    the same state instantly.
    ??????????????????????????????????????????????????????????????????? */
-var SCHED_BAKED = SCHED.map(function(r){ return Object.assign({},r); }); // immutable reference
+var SCHED_BAKED = SCHED.map(function(r){ var c=Object.assign({},r); ensureShowUid(c); return c; }); // immutable reference
+SCHED.forEach(function(r){ ensureShowUid(r); });
 
 (function(){
   var cfg = {
@@ -4550,25 +4659,45 @@ var SCHED_BAKED = SCHED.map(function(r){ return Object.assign({},r); }); // immu
   /* ?? Rebuild SCHED from baked + Firebase overrides ????????????? */
   window._fbApplySched = function(ov){
     // Start from baked copy
-    var s = SCHED_BAKED.map(function(r){ return Object.assign({},r); });
+    var s = SCHED_BAKED.map(function(r){ var c=Object.assign({},r); ensureShowUid(c); return c; });
     if(!ov) { SCHED = s; IDX = buildIdx(SCHED); return; }
-    // Edits to existing shows
+    // Edits: legacy key venue|date OR venue|date|_uid
     var edits = ov.edits || {};
     Object.keys(edits).forEach(function(k){
-      var parts = k.split('|'), venue = parts[0], date = parts[1];
-      var idx = s.findIndex(function(r){ return (r.venue||r.v)===venue && r.d===date; });
-      if(idx >= 0) Object.assign(s[idx], edits[k]);
+      var parts = k.split('|'), venue = parts[0], date = parts[1], uid = parts[2]||'';
+      var idx = -1;
+      if(uid){
+        idx = s.findIndex(function(r){ return r._uid===uid || (_schedDateKey(r)===(venue+'|'+date) && ensureShowUid(r)===uid); });
+      }
+      if(idx < 0) idx = s.findIndex(function(r){ return (r.venue||r.v)===venue && r.d===date; });
+      if(idx >= 0){
+        Object.assign(s[idx], edits[k]);
+        ensureShowUid(s[idx]);
+      }
     });
-    // Added shows
+    // Added shows — allow multiple per date (match by _uid)
     var adds = ov.adds ? (Array.isArray(ov.adds)?ov.adds:Object.values(ov.adds)) : [];
     adds.forEach(function(r){
-      var exists = s.some(function(x){ return (x.venue||x.v)===(r.venue||r.v) && x.d===r.d; });
+      if(!r) return;
+      ensureShowUid(r);
+      var exists = s.some(function(x){ return x._uid===r._uid; });
       if(!exists) s.push(r);
     });
-    // Deleted shows
+    // Deletes: legacy venue|date removes that day; venue|date|_uid removes one show
     var dels = ov.deletes ? (Array.isArray(ov.deletes)?ov.deletes:Object.values(ov.deletes)) : [];
-    s = s.filter(function(r){ return dels.indexOf((r.venue||r.v)+'|'+r.d) < 0; });
-    s.forEach(function(r){ if(r&&r.dj) r.dj=fixKnownAccents(r.dj); });
+    s = s.filter(function(r){
+      var dateKey=_schedDateKey(r);
+      var uidKey=_schedUidKey(r);
+      for(var di=0;di<dels.length;di++){
+        var dk=dels[di];
+        if(!dk) continue;
+        var p=String(dk).split('|');
+        if(p.length>=3){ if(uidKey===dk || r._uid===p[2]) return false; }
+        else if(dateKey===dk) return false;
+      }
+      return true;
+    });
+    s.forEach(function(r){ if(r&&r.dj) r.dj=fixKnownAccents(r.dj); ensureShowUid(r); });
     SCHED = s;
     IDX   = buildIdx(SCHED);
     if(typeof recalcAllSchedTargets==='function') recalcAllSchedTargets();
@@ -4942,7 +5071,9 @@ function renderCal(){
   /* scroll active into view */
   setTimeout(function(){
     var btn=document.getElementById('msbtn'+mo);
-    if(btn) btn.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+    if(!btn||typeof btn.scrollIntoView!=='function') return;
+    try{ btn.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}); }
+    catch(eScroll){ try{ btn.scrollIntoView(true); }catch(e2){} }
   },50);
 
   /* index shows by fiscal period dates (shared for both views) */
@@ -5046,12 +5177,10 @@ function renderCal(){
           +'<span class="dj-fee-inline">'+$k(fee)+'</span>'
           +(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')
           +'</td>';
-        if(ri===0){
-          var djSt=(getAcct(ds).djStatus||'');
-          h+='<td class="acct-status-cell" rowspan="'+nrows+'"><div class="acct-status-wrap">'
-            +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status (shared with Accounting)"')
-            +'</div></td>';
-        }
+        var djSt=getShowDjStatus(r, ds)||'';
+        h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
+          +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status for this performance"')
+          +'</div></td>';
         var vipTxt=(r.vipNote||'').trim();
         var vipEsc=vipTxt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
         h+='<td class="sc-vip" onclick="event.stopPropagation()">';
@@ -5077,7 +5206,10 @@ function renderCal(){
   h+='</tbody></table>';
   document.getElementById('calBody').innerHTML=h;
   document.querySelectorAll('#calBody [data-action="djStatus"]').forEach(function(sel){
-    sel.addEventListener('change',function(){ updateAcctDjStatus(sel.dataset.ds, sel.value, sel); });
+    sel.addEventListener('change',function(){
+      if(sel.dataset.idx!=null && sel.dataset.idx!=='') updateShowDjStatus(+sel.dataset.idx, sel.value, sel);
+      else updateAcctDjStatus(sel.dataset.ds, sel.value, sel);
+    });
   });
   initCalColResize();
   fitCalListRows(days);
@@ -5895,7 +6027,10 @@ function wireAccountingEvents(){
     btn.addEventListener('click',function(){ openEditModal(parseInt(btn.dataset.idx,10)); });
   });
   document.querySelectorAll('#acctBody [data-action="djStatus"]').forEach(function(sel){
-    sel.addEventListener('change',function(){ updateAcctDjStatus(sel.dataset.ds, sel.value, sel); });
+    sel.addEventListener('change',function(){
+      if(sel.dataset.idx!=null && sel.dataset.idx!=='') updateShowDjStatus(+sel.dataset.idx, sel.value, sel);
+      else updateAcctDjStatus(sel.dataset.ds, sel.value, sel);
+    });
   });
   document.querySelectorAll('#acctBody [data-action="apStatus"]').forEach(function(sel){
     sel.addEventListener('change',function(){ updateAcctApStatus(sel.dataset.ds, sel.value, sel); });
@@ -6007,6 +6142,40 @@ function updateAcctDjStatus(ds,val,sel){
   else if(sel){
     sel.className='acct-status-sel '+acctStatusClass(next||null);
   }
+}
+/* Per-performance DJ status (calendar). New/edited shows start at Not set. */
+function updateShowDjStatus(idx,val,sel){
+  var r=SCHED[idx];
+  if(!r||!r.d) return;
+  var next=val||'';
+  var prev=getShowDjStatus(r,r.d)||'';
+  if(prev===next) return;
+  r.djStatus=next||null;
+  ensureShowUid(r);
+  if(typeof persistSchedShow==='function') persistSchedShow(r);
+  var sameDay=SCHED.filter(function(x){
+    return x && x._s!=='empty' && (x.v||x.venue)===(r.v||r.venue) && x.d===r.d;
+  });
+  if(sameDay.length<=1){
+    var acct=_acctNormalize(getAcct(r.d));
+    var by=_acctSoftEditorName();
+    var prevAcct=acct.djStatus||'';
+    acct.djStatus=next||null;
+    if(!next){
+      if((typeof ACCT_DJ_STATUS!=='undefined'?ACCT_DJ_STATUS:[]).indexOf(acct.status||'')>=0){
+        acct.status=acct.apStatus||null;
+      } else if(!acct.apStatus){
+        acct.status=null;
+      }
+    } else {
+      acct.status=_acctEffectiveStatus(acct);
+    }
+    if(prevAcct!==next) _acctPushLog(acct,'DJ Status',prevAcct,next||'Not set',by);
+    _acctPersist();
+  }
+  if(curView==='calendar') renderCal();
+  else if(curView==='accounting') renderAccounting();
+  else if(sel) sel.className='acct-status-sel '+acctStatusClass(next||null);
 }
 function _djStatusSelectHtml(djSt, extraAttrs){
   var opts=(typeof ACCT_DJ_STATUS!=='undefined'?ACCT_DJ_STATUS:['Offer sent','Hold 1','Confirmed']);
@@ -8328,7 +8497,7 @@ function showVIPPopup(){
 
   var pop = document.createElement('div');
   pop.id = 'vipPopup';
-  pop.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:200;overflow-y:auto;padding:20px 0';
+  pop.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;z-index:200;overflow-y:auto;padding:20px 0';
 
   var venueBlocks = VIP_VENUES.map(function(v){
     var vTotal = v.shows.reduce(function(s,sh){return s+sh.bsActual;},0);
@@ -8652,13 +8821,13 @@ function renderAccountingGuest(yr, mo, mm, days){
       h+='<td class="sc-num acct-col-fee fee-cell '+(feeCls||'')+'">'+$k(r.fee||r.cost||null)+'</td>';
       h+='<td class="sc-num acct-col-target">'+$k(bsM)+'</td>';
       h+='<td class="sc-num '+bsCls+'"><b>'+$k(r.bs_a)+'</b></td>';
+      var djSt=getShowDjStatus(r, ds)||'';
+      h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
+        +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-action="djStatus"')
+        +'</div></td>';
       if(ri===0){
-        var djSt=acct.djStatus||'';
         var apSt=acct.apStatus||'';
         var lastHint=acct.updatedBy?('Last: '+acct.updatedBy+' \u00b7 '+_fmtAcctWhen(acct.updatedAt)):'History';
-        h+='<td class="acct-status-cell" rowspan="'+nrows+'"><div class="acct-status-wrap">'
-          +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-action="djStatus"')
-          +'</div></td>';
         h+='<td class="acct-status-cell" rowspan="'+nrows+'"><div class="acct-status-wrap">'
           +'<select class="acct-status-sel '+acctStatusClass(apSt||null)+'" data-ds="'+ds+'" data-action="apStatus" title="Password required">'
           +'<option value=""'+(!apSt?' selected':'')+'>Not set</option>'
@@ -8911,69 +9080,82 @@ function closeModal(){ document.getElementById('evModal').classList.add('hidden'
 function persistSchedShow(rec){
   applyShowTargets(rec);
   if(rec && rec.ev==null) rec.ev='';
+  ensureShowUid(rec);
   if(!window._fbSave||!window._fbRef) return;
-  var isBaked = SCHED_BAKED.some(function(r){ return (r.venue||r.v)===(rec.venue||rec.v) && r.d===rec.d; });
-  var fbKey   = (rec.venue||rec.v)+'|'+rec.d;
+  var uid=ensureShowUid(rec);
+  var isBaked = !rec._added && SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===uid; });
+  /* Prefer uid key; also write legacy venue|date for baked match so older clients keep working */
+  var fbKey = _schedUidKey(rec);
+  var legacyKey = _schedDateKey(rec);
   if(isBaked){
     window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_')).set(rec);
+    window._fbRef.child('schedOverrides/edits/'+legacyKey.replace(/\//g,'_')).set(rec);
   } else {
+    rec._added=1;
     window._fbRef.child('schedOverrides/adds').once('value', function(snap){
       var adds = snap.val();
       var arr  = adds ? (Array.isArray(adds)?adds:Object.values(adds)) : [];
-      var ai   = arr.findIndex(function(r){ return (r.venue||r.v)===(rec.venue||rec.v) && r.d===rec.d; });
+      var ai   = arr.findIndex(function(r){ return r && (r._uid===uid || _schedKeysMatch(r,rec)); });
       if(ai>=0) arr[ai]=rec; else arr.push(rec);
       window._fbRef.child('schedOverrides/adds').set(arr);
     });
   }
 }
-function _schedRecordKey(rec){ return rec?(rec.venue||rec.v)+'|'+rec.d:''; }
+function _schedRecordKey(rec){ return _schedUidKey(rec); }
 function _isBakedSchedRecord(rec){
-  var key=_schedRecordKey(rec);
-  return SCHED_BAKED.some(function(r){ return _schedRecordKey(r)===key; });
+  if(!rec) return false;
+  ensureShowUid(rec);
+  return SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===rec._uid; })
+    || SCHED_BAKED.some(function(r){ return (r.venue||r.v)===(rec.venue||rec.v) && r.d===rec.d && (r.dj||'')===(rec.dj||''); });
 }
 function _fbRemoveSchedRecord(rec){
   if(!rec||!window._fbRef) return;
-  var key=_schedRecordKey(rec);
+  ensureShowUid(rec);
+  var uidKey=_schedUidKey(rec);
+  var dateKey=_schedDateKey(rec);
   if(_isBakedSchedRecord(rec)){
     window._fbRef.child('schedOverrides/deletes').once('value',function(snap){
       var vals=snap.val();
       var arr=vals?(Array.isArray(vals)?vals:Object.values(vals)):[];
-      if(arr.indexOf(key)<0) arr.push(key);
+      if(arr.indexOf(uidKey)<0) arr.push(uidKey);
       window._fbRef.child('schedOverrides/deletes').set(arr);
-      window._fbRef.child('schedOverrides/edits/'+key.replace(/\//g,'_')).remove();
+      window._fbRef.child('schedOverrides/edits/'+uidKey.replace(/\//g,'_')).remove();
+      window._fbRef.child('schedOverrides/edits/'+dateKey.replace(/\//g,'_')).remove();
     });
   }else{
     window._fbRef.child('schedOverrides/adds').once('value',function(snap){
       var vals=snap.val();
       var arr=vals?(Array.isArray(vals)?vals:Object.values(vals)):[];
-      arr=arr.filter(function(r){ return _schedRecordKey(r)!==key; });
+      arr=arr.filter(function(r){ return !(r && (r._uid===rec._uid || _schedKeysMatch(r,rec))); });
       window._fbRef.child('schedOverrides/adds').set(arr.length?arr:null);
     });
   }
 }
 function _fbRestoreSchedRecord(rec){
   if(!rec||!window._fbRef) return;
-  var key=_schedRecordKey(rec);
+  ensureShowUid(rec);
+  var uidKey=_schedUidKey(rec);
   if(_isBakedSchedRecord(rec)){
     window._fbRef.child('schedOverrides/deletes').once('value',function(snap){
       var vals=snap.val();
       var arr=vals?(Array.isArray(vals)?vals:Object.values(vals)):[];
-      arr=arr.filter(function(k){return k!==key;});
+      arr=arr.filter(function(k){return k!==uidKey && k!==_schedDateKey(rec);});
       window._fbRef.child('schedOverrides/deletes').set(arr.length?arr:null);
-      window._fbRef.child('schedOverrides/edits/'+key.replace(/\//g,'_')).set(rec);
+      window._fbRef.child('schedOverrides/edits/'+uidKey.replace(/\//g,'_')).set(rec);
     });
   }else{
     persistSchedShow(rec);
   }
 }
 function _undoShowChange(before,after,beforeIndex){
-  var afterKey=_schedRecordKey(after);
+  if(after) ensureShowUid(after);
   for(var i=SCHED.length-1;i>=0;i--){
     var r=SCHED[i];
-    if(_schedRecordKey(r)===afterKey && (!after.dj || r.dj===after.dj)) SCHED.splice(i,1);
+    if(after && (r._uid===after._uid || _schedKeysMatch(r,after))) SCHED.splice(i,1);
   }
-  _fbRemoveSchedRecord(after);
+  if(after) _fbRemoveSchedRecord(after);
   if(before){
+    ensureShowUid(before);
     var idx=Math.max(0,Math.min(beforeIndex==null?SCHED.length:beforeIndex,SCHED.length));
     SCHED.splice(idx,0,_clone(before));
     _fbRestoreSchedRecord(before);
@@ -8989,7 +9171,7 @@ function saveEvent(){
   var ev=(f.ev.value||'').trim();
   var tbd=0; /* TBD/unconfirmed checkbox removed */
   if(!d){alert('Date required');return;}
-  var yr=parseInt(d.slice(0,4),10);
+  var yr=fiscalYearForDate(d);
   /* auto-populate BS target and ROI target   venue-specific rules first, generic tier fallback */
   var tmp={v:v,d:d,fee:fee,cost:fee};
   var tgt=showTargets(tmp);
@@ -9001,17 +9183,28 @@ function saveEvent(){
   var beforeIndex=_editIdx;
   var before=_editIdx>=0?_clone(SCHED[_editIdx]):null;
   var rec={v:v,yr:yr,d:d,dj:dj,fee:fee,cost:fee,bs_m:bsm,bs_a:null,
-           roi_t:roit,roi_a:null,beat:null,ev:ev,tbd:tbd,_s:_s,note:note};
+           roi_t:roit,roi_a:null,beat:null,ev:ev,tbd:tbd,_s:_s,note:note,
+           djStatus:null};
   var pyAtt=resolvePyFields(v,d,null);
   rec.py_dj=pyAtt.py_dj; rec.py_fee=pyAtt.py_fee; rec.py_bs_m=pyAtt.py_bs_m;
   rec.py_bs_a=pyAtt.py_bs_a; rec.py_roi_t=pyAtt.py_roi_t; rec.py_roi_a=pyAtt.py_roi_a; rec.py_beat=pyAtt.py_beat;
   /* preserve existing bs_a/roi_a/beat when editing an already-performed show */
   if(_editIdx>=0){
     var prev=SCHED[_editIdx];
-    if(prev){ rec.bs_a=prev.bs_a; rec.roi_a=prev.roi_a; rec.beat=prev.beat;
+    if(prev){
+      rec.bs_a=prev.bs_a; rec.roi_a=prev.roi_a; rec.beat=prev.beat;
       rec.vipNote=prev.vipNote||null;
-      if(prev.bs_a&&prev._s!=='fut'&&prev._s!=='tbd') rec._s=prev._s; }
+      if(prev._uid) rec._uid=prev._uid;
+      if(prev._added) rec._added=prev._added;
+      if(prev.bs_a&&prev._s!=='fut'&&prev._s!=='tbd') rec._s=prev._s;
+      /* Any edit from the modal is a fresh booking state → DJ Status Not set */
+      rec.djStatus=null;
+    }
+  } else {
+    rec._added=1;
+    rec.djStatus=null;
   }
+  ensureShowUid(rec);
   if(_editIdx>=0) SCHED[_editIdx]=rec; else SCHED.push(rec);
   var after=_clone(rec);
   pushUndo((before?'Edit show: ':'Add show: ')+(dj||'TBD')+' '+d,function(){
@@ -9036,27 +9229,7 @@ function deleteEvent(){
     _undoShowChange(before,null,beforeIndex);
   });
   /* Sync delete to Firebase before splicing */
-  if(window._fbSave && show){
-    var delKey = (show.venue||show.v)+'|'+show.d;
-    var isBaked = SCHED_BAKED.some(function(r){ return (r.venue||r.v)===(show.venue||show.v) && r.d===show.d; });
-    if(isBaked){
-      window._fbRef.child('schedOverrides/deletes').once('value', function(snap){
-        var dels = snap.val();
-        var arr  = dels ? (Array.isArray(dels)?dels:Object.values(dels)) : [];
-        if(arr.indexOf(delKey)<0) arr.push(delKey);
-        window._fbRef.child('schedOverrides/deletes').set(arr);
-        /* Also remove any edit entry */
-        window._fbRef.child('schedOverrides/edits/'+delKey.replace(/\//g,'_')).remove();
-      });
-    } else {
-      window._fbRef.child('schedOverrides/adds').once('value', function(snap){
-        var adds = snap.val();
-        var arr  = adds ? (Array.isArray(adds)?adds:Object.values(adds)) : [];
-        arr = arr.filter(function(r){ return !((r.venue||r.v)===(show.venue||show.v) && r.d===show.d); });
-        window._fbRef.child('schedOverrides/adds').set(arr.length?arr:null);
-      });
-    }
-  }
+  if(window._fbSave && show){ _fbRemoveSchedRecord(show); }
   SCHED.splice(_editIdx,1); IDX=buildIdx(SCHED); closeModal(); go();
   if(curView==='accounting') renderAccounting();
   if(curView==='budget'&&_budgetInited) renderBudget();
@@ -9459,17 +9632,18 @@ function swDropOnDate(e, toDate){
     var rec=SCHED[drag.idx];
     if(!rec || rec.d===toDate) return;
     var beforeShow=_clone(rec), beforeIndex=drag.idx;
-    var oldKey=(rec.venue||rec.v)+'|'+rec.d;
+    ensureShowUid(rec);
     rec.d=toDate;
-    rec.yr=parseInt(toDate.slice(0,4),10);
+    rec.yr=fiscalYearForDate(toDate);
+    rec.djStatus=null;
     applyShowTargets(rec);
     if(typeof clearPyMapCache==='function') clearPyMapCache();
     var afterShow=_clone(rec);
     pushUndo('Move show: '+(rec.dj||'TBD')+' to '+toDate,function(){
       _undoShowChange(beforeShow,afterShow,beforeIndex);
     });
+    if(window._fbRef) _fbRemoveSchedRecord(beforeShow);
     if(typeof persistSchedShow==='function') persistSchedShow(rec);
-    if(window._fbRef && oldKey!==((rec.venue||rec.v)+'|'+rec.d)) _fbRemoveSchedRecord(beforeShow);
     go();
   }
 }
