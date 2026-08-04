@@ -259,10 +259,8 @@ function closeBookingApprovalEngine(){
   var el=document.getElementById('bookingEngineModal');
   if(el) el.remove();
 }
-function _bookingEngineVip3dHtml(venue, dateStr, fee, expectedBs){
+function _bookingEngineVipPricesHtml(venue, dateStr, fee){
   var priced=(typeof calcTierPricesForShow==='function') ? calcTierPricesForShow(venue, dateStr, fee) : null;
-  var key=(typeof fv3dKeyForVenue==='function') ? fv3dKeyForVenue(venue) : null;
-  var model=key && typeof FV_3D_MODELS!=='undefined' ? FV_3D_MODELS.find(function(m){return m.key===key;}) : null;
   var tiersHtml=(priced&&priced.tiers?priced.tiers:[]).map(function(t){
     var price=t.suggested!=null?t.suggested:t.minimum;
     return '<div class="be-tier-chip" style="--tier-color:'+(t.color||'#ccc')+'">'
@@ -271,21 +269,14 @@ function _bookingEngineVip3dHtml(venue, dateStr, fee, expectedBs){
       +'<div class="be-tier-meta">'+(t.tables?t.tables.length:0)+' tables</div>'
       +'</div>';
   }).join('');
-  var h='<div class="be-3d-wrap">';
-  if(model){
-    h+='<div class="be-3d-host" id="be3dHost"><div class="be-3d-loading">Loading 3D plan&hellip;</div></div>';
-  } else {
-    h+='<div class="be-3d-host be-3d-empty">No 3D floor plan for this venue yet.</div>';
-  }
-  h+='<div class="be-3d-tiers">'+ (tiersHtml||'<div class="muted">No tier pricing available.</div>') +'</div>';
-  h+='</div>';
-  return {html:h, model:model, priced:priced, key:key};
+  if(!tiersHtml) return '<div class="muted">No tier pricing available for this venue.</div>';
+  return '<div class="be-3d-tiers be-price-only">'+tiersHtml+'</div>';
 }
 function openBookingApprovalEngine(){
   closeBookingApprovalEngine();
   var c=buildBookingApprovalCase();
   if(!(c.fee>100000)){ alert('Booking Approval Engine is for fees above $100K.'); return; }
-  var vip3d=_bookingEngineVip3dHtml(c.venue, c.date, c.fee, c.expectedBs);
+  var vipHtml=_bookingEngineVipPricesHtml(c.venue, c.date, c.fee);
   var under=c.monthVarAfter!=null && c.monthVarAfter>=0;
   var over=c.monthVarAfter!=null && c.monthVarAfter<0;
 
@@ -319,32 +310,13 @@ function openBookingApprovalEngine(){
     +line('Expected ROI', c.expectedRoi!=null?(Number(c.expectedRoi).toFixed(1)+'x'):'-')
     +line('This DJ BS target', c.expectedBs!=null?$k(c.expectedBs):'-')
     +'</div></div>'
-    +'<div class="be-card"><div class="be-card-hd">VIP table pricing · 3D plan</div>'
-    +vip3d.html+'</div>'
+    +'<div class="be-card"><div class="be-card-hd">VIP table pricing</div>'
+    +vipHtml+'</div>'
     +'</div>'
     +'<div class="modal-foot"><button type="button" class="btn-pdf" onclick="window.print()">Print / PDF</button>'
     +'<button type="button" class="btn-cancel" onclick="closeBookingApprovalEngine()">Close</button></div>'
     +'</div>';
   document.body.appendChild(modal);
-  if(vip3d.model && typeof _ensureModelViewerScript==='function'){
-    _ensureModelViewerScript(function(){
-      var host=document.getElementById('be3dHost');
-      if(!host||!vip3d.model) return;
-      host.innerHTML='';
-      var mv=document.createElement('model-viewer');
-      mv.setAttribute('src', vip3d.model.url);
-      mv.setAttribute('alt', c.venue+' 3D floor plan');
-      mv.setAttribute('camera-controls','');
-      mv.setAttribute('touch-action','pan-y');
-      mv.setAttribute('interaction-prompt','none');
-      mv.setAttribute('shadow-intensity','1');
-      mv.setAttribute('exposure','1.1');
-      mv.setAttribute('camera-orbit',vip3d.model.orbit||'45deg 60deg 110%');
-      mv.style.cssText='width:100%;height:100%;background:transparent;--poster-color:transparent';
-      host.appendChild(mv);
-      if(typeof renderFv3dHotspots==='function') renderFv3dHotspots(mv, vip3d.key, vip3d.priced?vip3d.priced.tiers:[]);
-    });
-  }
 }
 
 function closeDjShowHistory(){
