@@ -1484,6 +1484,33 @@ function _fmtROI(bs,fee){
   return (bs/fee).toFixed(1)+'x';
 }
 var _TARGET_BG = 'background:#FFF2CC;color:#7D5A00;font-weight:700';
+function _vipFillTone(v){
+  if(v==null || v===0) return '';
+  return v>0?'beat':'miss';
+}
+function _vipVarPlain(v){
+  if(v==null || v===0) return '\u2014';
+  return (v>0?'+':'')+$kv(v);
+}
+function _vipTdFill(inner, tone, extraCls){
+  var cls=(extraCls||'')+(tone?(' vip-fill-'+tone):'');
+  return '<td'+(cls?' class="'+cls.trim()+'"':'')+'>'+inner+'</td>';
+}
+function _vipRoiToneCls(roiCls){
+  if(roiCls==='hit') return 'beat';
+  if(roiCls==='near') return 'near';
+  if(roiCls==='low') return 'miss';
+  return '';
+}
+function _vipVenueBlockHd(sectionLabel, venue, sub){
+  return '<div class="vip-perf-hd vip-venue-hd">'
+    +'<div class="vip-venue-hd-main">'
+    +'<span class="vip-venue-name">'+venue+'</span>'
+    +(sectionLabel?'<span class="vip-venue-sec">'+sectionLabel+'</span>':'')
+    +'</div>'
+    +(sub?'<span class="vip-venue-sub">'+sub+'</span>':'')
+    +'</div>';
+}
 
 function _venueShortName(v){
   if(!v) return '';
@@ -2182,6 +2209,7 @@ function exportViewPdf(viewId){
     if(exportType==='forecast' || exportType==='vip'){
       var p1=el.querySelector('.fcast-print-page1, .vip-print-page1');
       var p2=el.querySelector('.fcast-print-page2, .vip-print-page2');
+      var p3=exportType==='vip' ? el.querySelector('.vip-print-page3') : null;
       if(!p1||!p2){
         cleanup();
         alert('PDF sections unavailable');
@@ -2190,7 +2218,10 @@ function exportViewPdf(viewId){
       var width=Math.max(1200,Math.ceil(el.getBoundingClientRect().width||0));
       exportJob=_captureDomToCanvas(p1,width).then(function(c1){
         return _captureDomToCanvas(p2,width).then(function(c2){
-          return _pdfFromCanvases([c1,c2], filename, false);
+          if(!p3) return _pdfFromCanvases([c1,c2], filename, false);
+          return _captureDomToCanvas(p3,width).then(function(c3){
+            return _pdfFromCanvases([c1,c2,c3], filename, false);
+          });
         });
       });
     } else {
@@ -2269,7 +2300,19 @@ function _downloadBlob(blob, filename){
   var a=document.createElement('a');
   a.href=url; a.download=filename;
   document.body.appendChild(a); a.click();
-  setTimeout(function(){ URL.revokeObjectURL(url); if(a.parentNode) a.parentNode.removeChild(a); }, 1500);
+  setTimeout(function(){ URL.revokeObjectURL(url); if(a.parentNode) a.parentNode.removeChild(a); }, 4000);
+  return url;
+}
+function _openBlobInApp(blob, filename){
+  var url=URL.createObjectURL(blob);
+  /* Always download .eml (reliable after async PDF work). Also try to open. */
+  var a=document.createElement('a');
+  a.href=url; a.download=filename||'message.eml';
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ if(a.parentNode) a.parentNode.removeChild(a); }, 1000);
+  try{ window.open(url, '_blank'); }catch(eOpen){}
+  setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(eRev){} }, 60000);
+  return url;
 }
 
 function _buildForecastFlashEml(opts){
@@ -2381,7 +2424,6 @@ function prepareForecastFlashEmail(){
     });
     return chain.then(function(){
       document.body.classList.remove('printing-forecast');
-      results.forEach(function(r){ _downloadBlob(r.pdfBlob, r.pdfName); });
 
       var html='<div style="font-family:Segoe UI,Arial,sans-serif;font-size:14px;color:#1c1c1e;line-height:1.5">';
       html+='<p>Hi team,</p>';
@@ -2406,15 +2448,8 @@ function prepareForecastFlashEmail(){
         })
       });
       var emlName='DJ-Booking-Performance-Flash-W'+weekNum+'.eml';
-      _downloadBlob(eml, emlName);
-
-      var mailto='mailto:'+encodeURIComponent(_FCAST_EMAIL_TO.join(';'))
-        +'?cc='+encodeURIComponent(_FCAST_EMAIL_CC.join(';'))
-        +'&subject='+encodeURIComponent(subject)
-        +'&body='+encodeURIComponent('Hi team,\n\nPlease find below our booking performance as of '+todayLabel+'.\n\n(Open the downloaded .eml file for the full HTML body with snapshots and the 3 PDF attachments.)\n');
-      try{ window.location.href=mailto; }catch(eMail){}
-
-      alert('Prepared Outlook draft:\n\n1) Downloaded 3 venue PDFs\n2) Downloaded '+emlName+' — open it in Outlook to review To/Cc, snapshots, and attachments before sending.\n\nSubject: '+subject);
+      /* EML only — open Outlook draft (snapshots + PDFs). No bare mailto. */
+      _openBlobInApp(eml, emlName);
       restore();
     });
   }).catch(function(err){
@@ -3200,6 +3235,29 @@ function _vipMonthStandingStats(venue, yr, monthIndex0, cutDate){
     feeUsedPct:monthBgt?Math.round(feeProj/monthBgt*100):null,
     bsVar:bsTargetMonth>0?(bsProj-bsTargetMonth):null,
     bsPct:bsTargetMonth>0?Math.round(bsProj/bsTargetMonth*100):null
+  };
+}
+/* Past performances only: ROI beat (hit/near) vs total measured past shows. */
+function _vipRoiCompletionStats(venue, yr, monthIndex0, cutDate){
+  var beats=0, measured=0, pastShows=0;
+  SCHED.forEach(function(r){
+    if(!r||r._s==='empty') return;
+    if((r.v||r.venue)!==venue) return;
+    if(!r.d || !dateInFiscalPeriod(r.d, yr, monthIndex0)) return;
+    if(r.d > cutDate) return;
+    pastShows++;
+    var fee=+(r.fee||r.cost||0)||0;
+    var tgt=showTargets(r);
+    if(r.bs_a==null || !tgt || tgt.bs_m==null) return;
+    measured++;
+    var tone=perfTone(r.bs_a, tgt.bs_m, fee, r.roi_a, tgt.roi_t);
+    if(tone==='hit'||tone==='near') beats++;
+  });
+  return {
+    beats:beats,
+    measured:measured,
+    pastShows:pastShows,
+    pct:measured?Math.round(beats/measured*100):null
   };
 }
 function _vipStandingStripHtml(title, st, extraClass){

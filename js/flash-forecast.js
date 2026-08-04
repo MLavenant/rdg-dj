@@ -142,6 +142,7 @@ function _vipAllBudgetStandingTable(venueList, asOfDate){
   var mi=info.monthIndex+1;
   var period=fiscalPeriodRange(yr, info.monthIndex);
   var cutDate=(dateInFiscalPeriod(String(TODAY||''), yr, info.monthIndex)) ? String(TODAY) : (asOfDate>period.to?period.to:asOfDate);
+  var venueStats=[];
   var h='<div class="vip-perf-block vip-bgt-table-wrap">';
   h+='<div class="vip-perf-hd"><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)">Budget Standing — All Locations</span>'
     +'<span style="font-size:10px;color:var(--ink3)">'+MN_SH[mi-1]+' '+yr+' + YTD · through '+cutDate+'</span></div>';
@@ -156,6 +157,7 @@ function _vipAllBudgetStandingTable(venueList, asOfDate){
     var monthSt=_vipMonthStandingStats(venue, yr, info.monthIndex, cutDate);
     var yFeeDone=0,yFeeRemain=0,yFeeProj=0,yFeeBgt=0,yHasBgt=false;
     var yBsDone=0,yBsRemain=0,yBsProj=0,yBsTgt=0;
+    var yRoiBeats=0,yRoiMeasured=0,yRoiPast=0;
     for(var m=0;m<=info.monthIndex;m++){
       var pEnd=fiscalPeriodRange(yr, m).to;
       var mCut=(m<info.monthIndex)?pEnd:(cutDate<pEnd?cutDate:pEnd);
@@ -163,33 +165,88 @@ function _vipAllBudgetStandingTable(venueList, asOfDate){
       yFeeDone+=st.feeDone; yFeeRemain+=st.feeRemain; yFeeProj+=st.feeProj;
       yBsDone+=st.bsDone; yBsRemain+=st.bsRemain; yBsProj+=st.bsProj; yBsTgt+=st.bsTargetMonth;
       if(st.monthBgt!=null){ yFeeBgt+=st.monthBgt; yHasBgt=true; }
+      var roiM=_vipRoiCompletionStats(venue, yr, m, mCut);
+      yRoiBeats+=roiM.beats; yRoiMeasured+=roiM.measured; yRoiPast+=roiM.pastShows;
     }
     var yFeeVar=yHasBgt?(yFeeBgt-yFeeProj):null;
     var yBsVar=yBsTgt>0?(yBsProj-yBsTgt):null;
+    var monthRoi=_vipRoiCompletionStats(venue, yr, info.monthIndex, cutDate);
+    venueStats.push({
+      venue:venue,
+      monthSt:monthSt,
+      yFeeProj:yFeeProj, yFeeBgt:yHasBgt?yFeeBgt:null, yFeeVar:yFeeVar,
+      yBsProj:yBsProj, yBsTgt:yBsTgt, yBsVar:yBsVar,
+      monthRoi:monthRoi,
+      yRoi:{beats:yRoiBeats, measured:yRoiMeasured, pastShows:yRoiPast, pct:yRoiMeasured?Math.round(yRoiBeats/yRoiMeasured*100):null}
+    });
     h+='<tr>'
-      +'<td class="l"><b>'+_venueShortName(venue)+'</b></td>'
-      +'<td>'+$k(monthSt.feeProj)+'</td>'
+      +'<td class="l"><b>'+venue+'</b></td>'
+      +'<td class="vip-cost">'+$k(monthSt.feeProj)+'</td>'
       +'<td style="'+_TARGET_BG+'">'+(monthSt.monthBgt!=null?$k(monthSt.monthBgt):'\u2014')+'</td>'
-      +'<td>'+(monthSt.feeVar!=null?_fmtVar(monthSt.feeVar):'\u2014')+'</td>'
+      +_vipTdFill(_vipVarPlain(monthSt.feeVar), _vipFillTone(monthSt.feeVar))
       +'<td>'+$k(monthSt.bsProj)+'</td>'
       +'<td style="'+_TARGET_BG+'">'+$k(monthSt.bsTargetMonth)+'</td>'
-      +'<td>'+(monthSt.bsVar!=null?_fmtVar(monthSt.bsVar):'\u2014')+'</td>'
-      +'<td>'+$k(yFeeProj)+'</td>'
+      +_vipTdFill(_vipVarPlain(monthSt.bsVar), _vipFillTone(monthSt.bsVar))
+      +'<td class="vip-cost">'+$k(yFeeProj)+'</td>'
       +'<td style="'+_TARGET_BG+'">'+(yHasBgt?$k(yFeeBgt):'\u2014')+'</td>'
-      +'<td>'+(yFeeVar!=null?_fmtVar(yFeeVar):'\u2014')+'</td>'
+      +_vipTdFill(_vipVarPlain(yFeeVar), _vipFillTone(yFeeVar))
       +'<td>'+$k(yBsProj)+'</td>'
       +'<td style="'+_TARGET_BG+'">'+$k(yBsTgt)+'</td>'
-      +'<td>'+(yBsVar!=null?_fmtVar(yBsVar):'\u2014')+'</td>'
+      +_vipTdFill(_vipVarPlain(yBsVar), _vipFillTone(yBsVar))
       +'</tr>';
   });
   h+='</tbody></table></div></div>';
+  h+=_vipStandingRecap(venueStats, MN_SH[mi-1]+' '+yr, yr);
+  return h;
+}
+
+function _vipStandingRecap(venueStats, monthLbl, yr){
+  function metricRow(lbl, actual, budget, varVal, isFee){
+    var tone=_vipFillTone(varVal);
+    var pct=(budget!=null && budget>0 && actual!=null)?Math.round(actual/budget*100):null;
+    return '<div class="vip-recap-metric'+(tone?(' vip-fill-'+tone):'')+'">'
+      +'<div class="vip-recap-ml">'+lbl+'</div>'
+      +'<div class="vip-recap-mv">'+(actual!=null?$k(actual):'\u2014')
+      +' <span class="vip-recap-vs">vs</span> '
+      +(budget!=null?$k(budget):'\u2014')+'</div>'
+      +'<div class="vip-recap-ms">'+(varVal!=null?_vipVarPlain(varVal):'\u2014')
+      +(pct!=null?' · '+pct+'% of '+(isFee?'budget':'target'):'')
+      +(isFee?(varVal!=null?(varVal>=0?' · under':' · over'):''):'')
+      +'</div></div>';
+  }
+  function roiRow(roi){
+    var tone=roi.measured?(roi.pct>=50?'beat':(roi.pct>=35?'near':'miss')):'';
+    return '<div class="vip-recap-metric'+(tone?(' vip-fill-'+tone):'')+'">'
+      +'<div class="vip-recap-ml">ROI completed (past)</div>'
+      +'<div class="vip-recap-mv">'+(roi.measured? (roi.beats+' / '+roi.measured) : '\u2014')+'</div>'
+      +'<div class="vip-recap-ms">'+(roi.pct!=null?(roi.pct+'% beat / near target'):'No past shows with BS')
+      +(roi.pastShows && roi.pastShows!==roi.measured?' · '+roi.pastShows+' past booked':'')
+      +'</div></div>';
+  }
+  var h='<div class="vip-stand-recap">';
+  h+='<div class="vip-stand-recap-hd">Location Recap — MTD &amp; YTD</div>';
+  h+='<div class="vip-stand-recap-grid">';
+  venueStats.forEach(function(vs){
+    var ms=vs.monthSt;
+    h+='<div class="vip-stand-recap-card">';
+    h+='<div class="vip-stand-recap-venue">'+vs.venue+'</div>';
+    h+='<div class="vip-stand-recap-period">'+monthLbl+' · MTD</div>';
+    h+=metricRow('DJ Fees A+F vs Budget', ms.feeProj, ms.monthBgt, ms.feeVar, true);
+    h+=metricRow('BS A+F vs Target', ms.bsProj, ms.bsTargetMonth, ms.bsVar, false);
+    h+=roiRow(vs.monthRoi);
+    h+='<div class="vip-stand-recap-period">YTD '+yr+'</div>';
+    h+=metricRow('DJ Fees A+F vs Budget', vs.yFeeProj, vs.yFeeBgt, vs.yFeeVar, true);
+    h+=metricRow('BS A+F vs Target', vs.yBsProj, vs.yBsTgt, vs.yBsVar, false);
+    h+=roiRow(vs.yRoi);
+    h+='</div>';
+  });
+  h+='</div></div>';
   return h;
 }
 
 function _vipRenderPerfSummary(d){
-  var h='<div class="vip-perf-block">';
-  h += '<div class="vip-perf-hd"><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)">Performance Summary</span>'
-     + '<span style="font-size:10px;color:var(--ink3)">'+_venueShortName(d.venue)+'</span></div>';
+  var h='<div class="vip-perf-block vip-venue-block">';
+  h += _vipVenueBlockHd('Performance Summary', d.venue, (d.shows&&d.shows.length)?(d.shows.length+' show'+(d.shows.length===1?'':'s')):'No shows');
   if(!(d.shows&&d.shows.length)){
     h += '<div style="padding:14px;font-size:11px;color:var(--ink3)">No shows this week.</div></div>';
     return h;
@@ -212,15 +269,15 @@ function _vipRenderPerfSummary(d){
     var roiANum=sh.fee>0?sh.bsActual/sh.fee:null;
     var roiTNum=sh.fee>0?sh.bsMin/sh.fee:null;
     var roiCls=roiTone(roiANum, roiTNum);
-    var vipRoiCls=roiCls==='hit'?'beat':(roiCls==='near'?'near':(roiCls==='low'?'miss':''));
+    var vipRoiCls=_vipRoiToneCls(roiCls);
     totBS+=sh.bsActual; totMin+=sh.bsMin; totTbl+=(sh.tablesActual||0); totBudget+=(sh.tablesBudget||0); totFee+=sh.fee;
     h += '<tr>'
        + '<td class="l"><b>'+sh.dj+'</b><br><span style="font-size:9px;color:var(--ink3)">'+sh.label.replace(/,.*$/,'')+'</span></td>'
-       + '<td>'+$kv(sh.fee)+'</td>'
-       + '<td><b class="'+(b?'beat':'miss')+'">'+$kv(sh.bsActual)+'</b></td>'
+       + '<td class="vip-cost">'+$kv(sh.fee)+'</td>'
+       + _vipTdFill($kv(sh.bsActual), b?'beat':'miss')
        + '<td style="'+_TARGET_BG+'">'+$kv(sh.bsMin)+'</td>'
-       + '<td>'+_fmtVar(vbs)+'</td>'
-       + '<td class="'+vipRoiCls+'" style="font-weight:700">'+roiA+'</td>'
+       + _vipTdFill(_vipVarPlain(vbs), _vipFillTone(vbs))
+       + _vipTdFill(roiA, vipRoiCls)
        + '<td style="'+_TARGET_BG+'">'+roiT+'</td>'
        + '<td>'+(sh.tablesActual!=null?sh.tablesActual:'\u2014')+'</td>'
        + '<td style="'+_TARGET_BG+'">'+(sh.tablesBudget!=null?sh.tablesBudget:'\u2014')+'</td>'
@@ -231,14 +288,14 @@ function _vipRenderPerfSummary(d){
   var totVbs=totBS-totMin;
   var totROIA=_fmtROI(totBS,totFee), totROIT=_fmtROI(totMin,totFee);
   var totRoiCls=roiTone(totFee>0?totBS/totFee:null, totFee>0?totMin/totFee:null);
-  var totVipRoi=totRoiCls==='hit'?'beat':(totRoiCls==='near'?'near':(totRoiCls==='low'?'miss':''));
+  var totVipRoi=_vipRoiToneCls(totRoiCls);
   h += '<tr>'
      + '<td class="l">Total</td>'
-     + '<td>'+$kv(totFee)+'</td>'
-     + '<td><b class="'+(totVbs>=0?'beat':'miss')+'">'+$kv(totBS)+'</b></td>'
+     + '<td class="vip-cost">'+$kv(totFee)+'</td>'
+     + _vipTdFill($kv(totBS), totVbs>=0?'beat':'miss')
      + '<td style="'+_TARGET_BG+'">'+$kv(totMin)+'</td>'
-     + '<td>'+_fmtVar(totVbs)+'</td>'
-     + '<td class="'+totVipRoi+'" style="font-weight:700">'+totROIA+'</td>'
+     + _vipTdFill(_vipVarPlain(totVbs), _vipFillTone(totVbs))
+     + _vipTdFill(totROIA, totVipRoi)
      + '<td style="'+_TARGET_BG+'">'+totROIT+'</td>'
      + '<td>'+(totTbl||'\u2014')+'</td>'
      + '<td style="'+_TARGET_BG+'">'+(totBudget||'\u2014')+'</td>'
@@ -257,9 +314,8 @@ function _vipTierCellHasActual(t, sh){
 function _vipRenderTierBreakdown(d, rangeWkKey){
   var weeklyTierActual=_vipResolveWeeklyTier(d.venue, rangeWkKey);
   var tiers=_vipCollectTiers(d, weeklyTierActual);
-  var h='<div class="vip-perf-block">';
-  h += '<div class="vip-perf-hd"><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)">Tier Breakdown</span>'
-    +'<span style="font-size:10px;color:var(--ink3)">'+_venueShortName(d.venue)+(weeklyTierActual?' \u00b7 Toast week totals':'')+'</span></div>';
+  var h='<div class="vip-perf-block vip-venue-block">';
+  h += _vipVenueBlockHd('Tier Breakdown', d.venue, weeklyTierActual?'Toast week totals':'');
   if(!(d.shows&&d.shows.length)){
     h += '<div style="padding:14px;font-size:11px;color:var(--ink3)">No shows this week.</div></div>';
     return h;
@@ -313,7 +369,7 @@ function _vipRenderTierBreakdown(d, rangeWkKey){
     var avg=tblN?Math.round((rowSales||sh.bsActual)/tblN):0;
     totTblSum+=tblN; totBSSum+=(rowSales||sh.bsActual||0); totFeeSum+=(+sh.fee||0);
     h += '<tr><td class="l"><b>'+sh.dj+'</b><br><span style="font-size:9px;color:var(--ink3)">'+String(sh.label||'').replace(/,.*$/,'')+'</span></td>'
-       + '<td>'+$kv(sh.fee)+'</td>'
+       + '<td class="vip-cost">'+$kv(sh.fee)+'</td>'
        + '<td>'+(sh.tablesActual!=null?sh.tablesActual:'\u2014')+' <span style="color:var(--ink3);font-size:9px">/ '+(sh.tablesBudget!=null?sh.tablesBudget:'\u2014')+'</span></td>'
        + '<td>'+(avg?$kv(avg):'\u2014')+'</td>';
     tiers.forEach(function(tname){
@@ -332,18 +388,19 @@ function _vipRenderTierBreakdown(d, rangeWkKey){
       var sales=+t.totalSales||0;
       var avgT=+t.avgPerTable||(sold?Math.round(sales/sold):0);
       var bT=sold>0&&avgT>=(+t.minPerTable||0);
+      var toneT=sales>0?(bT?'beat':'miss'):'';
       totTiers[tname].sold+=sold;
       totTiers[tname].sales+=sales;
       totTiers[tname].hasActual=true;
       h += '<td>'+sold+'/'+inv+'</td>'
-         + '<td><b class="'+(sales>0?(bT?'beat':'miss'):'')+'">'+$kv(sales)+'</b></td>'
-         + '<td class="'+(sold>0?(bT?'beat':'miss'):'')+'">'+$kv(avgT)+'</td>'
+         + _vipTdFill($kv(sales), toneT)
+         + _vipTdFill($kv(avgT), sold>0?(bT?'beat':'miss'):'')
          + '<td style="'+_TARGET_BG+'">'+$kv(t.minPerTable)+'</td>';
     });
     h += '</tr>';
   });
 
-  h += '<tr><td class="l">Total</td><td>'+$kv(totFeeSum)+'</td>'
+  h += '<tr><td class="l">Total</td><td class="vip-cost">'+$kv(totFeeSum)+'</td>'
      + '<td>'+totTblSum+'</td>'
      + '<td>'+$kv(totTblSum?Math.round(totBSSum/totTblSum):0)+'</td>';
   tiers.forEach(function(tname){
@@ -352,7 +409,13 @@ function _vipRenderTierBreakdown(d, rangeWkKey){
       h += '<td>\u2014<span style="color:var(--ink3);font-size:9px"> / '+t.inv+'</span></td><td>\u2014</td><td>\u2014</td><td></td>';
     } else {
       var avgT=t.sold?Math.round(t.sales/t.sold):0;
-      h += '<td>'+t.sold+'/'+t.inv+'</td><td><b>'+$kv(t.sales)+'</b></td><td>'+$kv(avgT)+'</td><td></td>';
+      var minT=(tierSet[tname]&&tierSet[tname].minPerTable)||0;
+      var bTot=t.sold>0&&avgT>=(+minT||0);
+      var toneTot=t.sales>0?(bTot?'beat':'miss'):'';
+      h += '<td>'+t.sold+'/'+t.inv+'</td>'
+         + _vipTdFill($kv(t.sales), toneTot)
+         + _vipTdFill($kv(avgT), t.sold>0?(bTot?'beat':'miss'):'')
+         + '<td></td>';
     }
   });
   h += '</tr></tbody></table></div>';

@@ -426,6 +426,35 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .vip-past-tbl .beat{color:var(--beat);font-weight:800}
 .vip-past-tbl .miss{color:var(--miss);font-weight:800}
 .vip-past-tbl .near{color:var(--amb);font-weight:800}
+.vip-past-tbl td.vip-fill-beat,.vip-past-tbl .vip-fill-beat{background:var(--beat-bg)!important;color:var(--beat);font-weight:800}
+.vip-past-tbl td.vip-fill-miss,.vip-past-tbl .vip-fill-miss{background:var(--miss-bg)!important;color:var(--miss);font-weight:800}
+.vip-past-tbl td.vip-fill-near,.vip-past-tbl .vip-fill-near{background:var(--amb-bg)!important;color:var(--amb);font-weight:800}
+.vip-past-tbl td.vip-cost,.vip-cost{font-weight:900!important;color:var(--ink)}
+.vip-venue-block{border-left:3px solid var(--ink)}
+.vip-venue-hd{align-items:flex-start}
+.vip-venue-hd-main{display:flex;flex-direction:column;gap:2px;min-width:0}
+.vip-venue-name{font-size:13px;font-weight:900;letter-spacing:-.2px;color:var(--ink);line-height:1.2}
+.vip-venue-sec{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}
+.vip-venue-sub{font-size:10px;color:var(--ink3);white-space:nowrap;padding-top:2px}
+.vip-stand-recap{margin-top:12px;background:var(--card);border-radius:14px;padding:12px 14px;box-shadow:var(--shadow-sm)}
+.vip-stand-recap-hd{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:10px}
+.vip-stand-recap-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+@media (max-width:1100px){.vip-stand-recap-grid{grid-template-columns:1fr}}
+.vip-stand-recap-card{background:var(--card2);border-radius:12px;padding:10px 12px;border-left:3px solid var(--ink);display:flex;flex-direction:column;gap:6px;min-width:0}
+.vip-stand-recap-venue{font-size:12px;font-weight:900;letter-spacing:-.2px;color:var(--ink);line-height:1.25}
+.vip-stand-recap-period{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin-top:4px;padding-top:6px;border-top:0.5px solid var(--hair)}
+.vip-stand-recap-card > .vip-stand-recap-period:first-of-type{border-top:none;padding-top:0;margin-top:0}
+.vip-recap-metric{border-radius:8px;padding:7px 9px;background:#fff;border:0.5px solid var(--hair)}
+.vip-recap-metric.vip-fill-beat{background:var(--beat-bg);border-color:#b0d8b0}
+.vip-recap-metric.vip-fill-miss{background:var(--miss-bg);border-color:#d8b0b0}
+.vip-recap-metric.vip-fill-near{background:var(--amb-bg);border-color:#d8c490}
+.vip-recap-ml{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)}
+.vip-recap-mv{font-size:12px;font-weight:900;letter-spacing:-.2px;margin-top:2px;color:var(--ink);line-height:1.25}
+.vip-recap-vs{font-weight:600;color:var(--ink3);font-size:10px}
+.vip-recap-ms{font-size:9px;color:var(--ink3);margin-top:2px;font-weight:600}
+.vip-recap-metric.vip-fill-beat .vip-recap-mv,.vip-recap-metric.vip-fill-beat .vip-recap-ms{color:var(--beat)}
+.vip-recap-metric.vip-fill-miss .vip-recap-mv,.vip-recap-metric.vip-fill-miss .vip-recap-ms{color:var(--miss)}
+.vip-recap-metric.vip-fill-near .vip-recap-mv,.vip-recap-metric.vip-fill-near .vip-recap-ms{color:var(--amb)}
 .vip-perf-block{background:var(--card);border-radius:14px;padding:0;overflow:hidden;box-shadow:var(--shadow-sm)}
 .vip-perf-hd{padding:10px 14px 8px;border-bottom:1px solid var(--hair);display:flex;align-items:center;justify-content:space-between}
 .vip-stand{background:var(--card);border-radius:14px;padding:0;overflow:hidden;box-shadow:var(--shadow-sm);border-left:3px solid var(--ink)}
