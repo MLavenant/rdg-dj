@@ -574,7 +574,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .vip-loc-grid-tier .vip-past-tbl th,.vip-loc-grid-tier .vip-past-tbl td{padding:5px 6px}
 .vip-stack-sec{display:flex;flex-direction:column;gap:12px;margin-bottom:18px}
 .vip-stack-sec-hd{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);padding:0 2px}
-.vip-stack-title{text-align:center;padding:22px 16px 14px;margin:2px 0 6px}
+.vip-venue-narrative{margin:0 0 14px;padding:12px 14px;background:var(--card);border-radius:12px;border-left:3px solid var(--ink);font-size:12px;line-height:1.6;color:var(--ink2);box-shadow:var(--shadow-sm)}
+.vip-venue-narrative-bullet{font-weight:900;color:var(--ink);margin-right:4px}
+.vip-email-snap{display:flex;flex-direction:column;gap:0}
 .vip-stack-title-main{font-size:26px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);line-height:1.15}
 .vip-stack-title-sub{font-size:11px;font-weight:600;color:var(--ink3);margin-top:6px;letter-spacing:.02em}
 .vip-stack-sec .vip-perf-block{margin:0}

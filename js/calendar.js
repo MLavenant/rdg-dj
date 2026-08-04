@@ -2327,7 +2327,7 @@ function _buildForecastFlashEml(opts){
   var lines=[];
   function push(s){ lines.push(s); }
   push('To: '+opts.to.join(', '));
-  push('Cc: '+opts.cc.join(', '));
+  if(opts.cc && opts.cc.length) push('Cc: '+opts.cc.join(', '));
   push('Subject: '+opts.subject);
   push('X-Unsent: 1');
   push('MIME-Version: 1.0');
@@ -2462,6 +2462,111 @@ function prepareForecastFlashEmail(){
     document.body.classList.remove('printing-forecast');
     restore();
     alert('Could not prepare the email. Check your network and try again.');
+  });
+}
+
+var _VIP_EMAIL_TO = [
+  'Salesteam@rivieradininggroup.com',
+  'takuma@rivieradininggroup.com',
+  'michael@rivieradininggroup.com',
+  'fabien@rivieradininggroup.com',
+  'greg@rivieradininggroup.com',
+  'marine@rivieradininggroup.com'
+];
+
+function prepareVipFlashEmail(){
+  var btn=document.getElementById('vipEmailBtn');
+  var prevView=curView;
+  var weekOffset=_vipWeekOffset;
+  var pack=_vipCollectFlashVenues(weekOffset);
+  var venues=pack.venues;
+  var weekKey=pack.rangeWkKey;
+  var weekNum=(String(weekKey).match(/W(\d+)/)||[])[1]||'';
+  var thisRoi=_vipRoiWeekStats(venues);
+  var priorPack=_vipCollectFlashVenues(weekOffset+1);
+  var priorRoi=_vipRoiWeekStats(priorPack.venues);
+  var subject='DJ ROI Performance Analysis : Week '+weekNum;
+  if(btn){ btn.disabled=true; btn.textContent='Preparing email…'; }
+
+  function restore(){
+    if(prevView!=='vip') setView(prevView);
+    else { curView='vip'; renderVIP(); }
+    if(btn){ btn.disabled=false; btn.textContent='Send all emails'; }
+  }
+
+  _ensurePdfLibs().then(function(){
+    if(curView!=='vip') setView('vip');
+    renderVIP();
+    document.body.classList.add('printing-vip');
+    var el=document.getElementById('view-vip');
+    if(!el) throw new Error('Weekly Flash view missing');
+    var pages=[].slice.call(el.querySelectorAll('.vip-print-page'));
+    var snaps=[].slice.call(el.querySelectorAll('.vip-email-snap'));
+    if(pages.length<2) throw new Error('Weekly Flash sections missing');
+    var width=Math.max(1200,Math.ceil(el.getBoundingClientRect().width||0));
+    var canvases=[];
+    var chain=Promise.resolve();
+    pages.forEach(function(page){
+      chain=chain.then(function(){
+        return _captureDomToCanvas(page,width).then(function(c){ canvases.push(c); });
+      });
+    });
+    return chain.then(function(){
+      var snapChain=Promise.resolve();
+      var snapResults=[];
+      snaps.forEach(function(snap, si){
+        snapChain=snapChain.then(function(){
+          return _captureDomToCanvas(snap, width).then(function(c){
+            var jpeg=c.toDataURL('image/jpeg',0.92);
+            var venue=(venues[si]&&venues[si].venue)||('Venue '+(si+1));
+            snapResults.push({
+              venue:venue,
+              short:_fcastVenueShortFile(venue),
+              snapB64:jpeg.split(',')[1]||'',
+              cid:'vip'+si+'@rdg',
+              para:_generateVenueFlashParagraph(venues[si]||{})
+            });
+          });
+        });
+      });
+      return snapChain.then(function(){
+        var pdfName='RDG-DJ-ROI-Performance-W'+weekNum+'.pdf';
+        return _pdfFromCanvases(canvases, pdfName, true).then(function(pdfBlob){
+          return _blobToBase64(pdfBlob).then(function(pdfB64){
+            document.body.classList.remove('printing-vip');
+            var html='<div style="font-family:Segoe UI,Arial,sans-serif;font-size:14px;color:#1c1c1e;line-height:1.55">';
+            html+='<p>Hello all,</p>';
+            html+='<p>Please find the recap of our DJ ROI for last week at Casa Neos BC / Lounge &amp; Mila Lounge.</p>';
+            html+='<p><b>ROI :</b> '+thisRoi.beats+'/'+thisRoi.total
+              +' vs. '+priorRoi.beats+'/'+priorRoi.total+' last week</p>';
+            snapResults.forEach(function(r){
+              html+='<div style="margin:20px 0 8px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#48484a">'+r.venue+'</div>';
+              html+='<img src="cid:'+r.cid+'" alt="'+r.venue+' performance summary" style="max-width:100%;border:1px solid #e5e5ea;border-radius:8px;display:block"/>';
+              if(r.para) html+='<p style="margin:10px 0 0;font-size:13px;line-height:1.55">\u2022 '+r.para+'</p>';
+            });
+            html+='<p style="margin-top:18px;font-size:12px;color:#8e8e93">Full Weekly Flash PDF attached (Budget, Performance, Tier Breakdown, Appendix).</p>';
+            html+='</div>';
+            var eml=_buildForecastFlashEml({
+              to:_VIP_EMAIL_TO,
+              cc:[],
+              subject:subject,
+              htmlBody:html,
+              inlines:snapResults.map(function(r){
+                return {cid:r.cid, filename:r.short+'-roi.jpg', contentType:'image/jpeg', base64:r.snapB64};
+              }),
+              attachments:[{filename:pdfName, contentType:'application/pdf', base64:pdfB64}]
+            });
+            _openBlobInApp(eml, 'DJ-ROI-Performance-Analysis-W'+weekNum+'.eml');
+            restore();
+          });
+        });
+      });
+    });
+  }).catch(function(err){
+    console.warn('VIP flash email prepare failed', err);
+    document.body.classList.remove('printing-vip');
+    restore();
+    alert('Could not prepare the Weekly Flash email. Check your network and try again.');
   });
 }
 
@@ -3482,13 +3587,15 @@ function buildVipFromSched(mon, sun) {
 
     var bsAct = e.bs_a || (liveRow && liveRow.totalRevenue) || (baked && baked.bsActual) || 0;
     var feeN = e.fee || e.cost || (baked && baked.fee) || 0;
+    var tgtRow = (typeof showTargets==='function') ? showTargets(e) : null;
+    var bsMinN = e.bs_m || (tgtRow && tgtRow.bs_m) || (baked && baked.bsMin) || 0;
     venueMap[vn].shows.push({
       date:         e.d,
       label:        new Date(e.d+'T12:00:00Z').toLocaleDateString('en-US', dateOpts),
       dj:           e.dj || (liveRow && liveRow.dj) || (baked && baked.dj) || '',
       fee:          feeN,
       bsActual:     bsAct,
-      bsMin:        e.bs_m || (baked && baked.bsMin) || 0,
+      bsMin:        bsMinN,
       tablesActual: tablesActual,
       tablesBudget: budget || (baked && baked.tablesBudget) || null,
       tiers:        tierRef,
