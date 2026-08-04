@@ -185,6 +185,13 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     if(window._fbReady && curView==='vip') renderVIP();
   });
 
+  /* Week-level Toast tier actuals (key = ISOWeek|Venue). Merges on top of baked VIP_WEEK_TIER_ACTUALS. */
+  window._vipTierActuals = {};
+  window._fbDb.ref('rdg/vipTierActuals').on('value', function(snap){
+    window._vipTierActuals = snap.val() || {};
+    if(window._fbReady && curView==='vip') renderVIP();
+  });
+
   /* Live Forecast Actuals from unattended FourVenues job (Sales-export math).
      Overrides baked FORECAST_DATA so every viewer sees morning updates without a Pages redeploy. */
   window._forecastLive = null;

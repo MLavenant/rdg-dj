@@ -3139,17 +3139,25 @@ function buildVipFromSched(mon, sun) {
   var weekLabel = new Date(mon+'T12:00:00Z').toLocaleDateString('en-US', opts)
                 + ' \u2013 ' + new Date(sun+'T12:00:00Z').toLocaleDateString('en-US', opts);
   var dateOpts = { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' };
+  var weekKey = getISOWeek(new Date(mon + 'T12:00:00Z'));
+
+  /* Index baked VIP show tiers by venue|date for reuse on non-rich weeks. */
+  var bakedTier = {};
+  (VIP_VENUES||[]).forEach(function(v){
+    (v.shows||[]).forEach(function(sh){
+      if(!sh||!sh.date||!sh.tiers) return;
+      bakedTier[(v.venue||'')+'|'+sh.date]=sh;
+    });
+  });
 
   SCHED.forEach(function(e) {
     if (e.d < mon || e.d > sun) return;
     var vn = e.venue || e.v || '';
     if (!vn) return;
-    if (!venueMap[vn]) venueMap[vn] = { venue: vn, weekOf: weekLabel, weekKey: '', shows: [] };
+    if (!venueMap[vn]) venueMap[vn] = { venue: vn, weekOf: weekLabel, weekKey: weekKey, shows: [] };
 
-    // Pull floor plan reference for this venue
     var fp      = _vipFloorPlan[vn] || {};
     var budget  = fp.budget || null;
-    // Build empty tier structure from floor plan so the tier columns appear
     var tierRef = {};
     Object.keys(fp.tiers||{}).forEach(function(t){
       tierRef[t] = {
@@ -3187,18 +3195,40 @@ function buildVipFromSched(mon, sun) {
         if(sumSold>0) tablesActual=sumSold;
       }
     }
-    var bsAct = e.bs_a || (liveRow && liveRow.totalRevenue) || 0;
-    var feeN = e.fee || e.cost || 0;
+
+    /* Prefer exact baked VIP show for this date when live tier summary is missing. */
+    var baked=bakedTier[vn+'|'+e.d];
+    if(!hasTierActual && baked && baked.tiers){
+      Object.keys(baked.tiers).forEach(function(tname){
+        var src=baked.tiers[tname]||{};
+        if(!tierRef[tname]){
+          tierRef[tname]={ soldTables:0, totalTables:0, totalSales:0, avgPerTable:0, minPerTable:0, color:TIER_COLORS[tname]||'#eee', textColor:TIER_TEXT[tname]||'#333' };
+        }
+        if(src.soldTables!=null) tierRef[tname].soldTables=+src.soldTables;
+        if(src.totalTables!=null) tierRef[tname].totalTables=+src.totalTables;
+        if(src.totalSales!=null) tierRef[tname].totalSales=+src.totalSales;
+        if(src.avgPerTable!=null) tierRef[tname].avgPerTable=+src.avgPerTable;
+        if(src.minPerTable!=null) tierRef[tname].minPerTable=+src.minPerTable;
+        if(src.color) tierRef[tname].color=src.color;
+        if(src.textColor) tierRef[tname].textColor=src.textColor;
+      });
+      hasTierActual=Object.keys(baked.tiers).some(function(t){ var x=baked.tiers[t]; return x&&((x.soldTables>0)||(x.totalSales>0)); });
+      if((tablesActual==null||tablesActual===0) && baked.tablesActual!=null) tablesActual=+baked.tablesActual;
+    }
+
+    var bsAct = e.bs_a || (liveRow && liveRow.totalRevenue) || (baked && baked.bsActual) || 0;
+    var feeN = e.fee || e.cost || (baked && baked.fee) || 0;
     venueMap[vn].shows.push({
       date:         e.d,
       label:        new Date(e.d+'T12:00:00Z').toLocaleDateString('en-US', dateOpts),
-      dj:           e.dj || (liveRow && liveRow.dj) || '',
+      dj:           e.dj || (liveRow && liveRow.dj) || (baked && baked.dj) || '',
       fee:          feeN,
       bsActual:     bsAct,
-      bsMin:        e.bs_m || 0,
+      bsMin:        e.bs_m || (baked && baked.bsMin) || 0,
       tablesActual: tablesActual,
-      tablesBudget: budget,
+      tablesBudget: budget || (baked && baked.tablesBudget) || null,
       tiers:        tierRef,
+      tableDetail:  (baked && baked.tableDetail) || null,
       _tierDataAvailable: hasTierActual,
       roiActual:    e.roi_a || (feeN > 0 ? Math.round(bsAct/feeN*100)/100 : 0),
       roiTarget:    e.roi_t || 0

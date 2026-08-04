@@ -645,15 +645,19 @@ function renderBudget2027Builder(){
 
   h+='<div class="bgt-play-card">';
   h+='<div class="bgt-play-title">'+MN_FULL[mi-1]+' 2027</div>';
-  h+='<div class="bgt-play-hist bgt-play-hist-wide">';
-  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">2025 BS Sales</div><div class="bgt-play-hist-v">'+(bs25!=null?$k(bs25):'-')+'</div><div class="bgt-play-hist-s">Bottle service actual</div></div>';
-  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">2025 Fees</div><div class="bgt-play-hist-v">'+(fee25!=null?$k(fee25):'-')+'</div><div class="bgt-play-hist-s">Fees / BS '+(margin25!=null?margin25+'%':'-')+'</div></div>';
-  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">2026 BS Sales</div><div class="bgt-play-hist-v">'+(bs26!=null?$k(bs26):'-')+'</div><div class="bgt-play-hist-s">Bottle service actual</div></div>';
-  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">2026 Fees</div><div class="bgt-play-hist-v">'+(fee26!=null?$k(fee26):'-')+'</div><div class="bgt-play-hist-s">Fees / BS '+(margin26!=null?margin26+'%':'-')+'</div></div>';
+  h+='<div class="bgt-play-hist-years">';
+  h+='<div class="bgt-play-year-col">';
+  h+='<div class="bgt-play-year-hd">2025</div>';
+  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">BS Sales</div><div class="bgt-play-hist-v">'+(bs25!=null?$k(bs25):'-')+'</div><div class="bgt-play-hist-s">Bottle service actual</div></div>';
+  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">DJ Fees</div><div class="bgt-play-hist-v">'+(fee25!=null?$k(fee25):'-')+'</div><div class="bgt-play-hist-s">Fees / BS '+(margin25!=null?margin25+'%':'-')+'</div></div>';
   h+='</div>';
-  h+='<div class="bgt-play-hist" style="margin-top:8px">';
-  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">2026 Fee Budget</div><div class="bgt-play-hist-v">'+(sug.bgt26!=null?$k(sug.bgt26):'-')+'</div><div class="bgt-play-hist-s">Guest DJ envelope</div></div>';
+  h+='<div class="bgt-play-year-col">';
+  h+='<div class="bgt-play-year-hd">2026</div>';
+  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">BS Sales</div><div class="bgt-play-hist-v">'+(bs26!=null?$k(bs26):'-')+'</div><div class="bgt-play-hist-s">Bottle service actual</div></div>';
+  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">DJ Fees</div><div class="bgt-play-hist-v">'+(fee26!=null?$k(fee26):'-')+'</div><div class="bgt-play-hist-s">Fees / BS '+(margin26!=null?margin26+'%':'-')+'</div></div>';
+  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">Fee Budget</div><div class="bgt-play-hist-v">'+(sug.bgt26!=null?$k(sug.bgt26):'-')+'</div><div class="bgt-play-hist-s">Guest DJ envelope</div></div>';
   h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">Suggested 2027 Fee</div><div class="bgt-play-hist-v">'+(sug.suggested!=null?$k(sug.suggested):'-')+'</div><div class="bgt-play-hist-s">From 2025/2026 rule of thumb</div></div>';
+  h+='</div>';
   h+='</div>';
   h+='<div class="bgt-play-build-hd">Target BS · Fees · Margin</div>';
 
@@ -698,6 +702,14 @@ function renderBudget2027Builder(){
       h+='<span>'+st+'</span>';
       h+='</div>';
     });
+    var pyAvgFee=pyShows.length?Math.round(pyFee/pyShows.length):0;
+    var pyFeeOnBs=pyBs>0?Math.round(pyFee/pyBs*1000)/10:null;
+    h+='<div class="bgt-play-py-recap">';
+    h+='<div class="bgt-play-py-metric"><div class="l">Total Fees</div><div class="v">'+$k(pyFee)+'</div></div>';
+    h+='<div class="bgt-play-py-metric"><div class="l">Total BS Actual</div><div class="v">'+$k(pyBs)+'</div></div>';
+    h+='<div class="bgt-play-py-metric"><div class="l">Avg Fee / Show</div><div class="v">'+$k(pyAvgFee)+'</div></div>';
+    h+='<div class="bgt-play-py-metric"><div class="l">Fees / BS</div><div class="v">'+(pyFeeOnBs!=null?pyFeeOnBs+'%':'-')+'</div></div>';
+    h+='</div>';
   }
   h+='</div>';
 
