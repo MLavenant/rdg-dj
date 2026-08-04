@@ -40,13 +40,19 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     }
     var baked=_bakedByUid(target._uid) || _bakedByUid(edit._uid);
     var prevDj=target.dj;
+    var prevFee=target.fee!=null?target.fee:target.cost;
     Object.assign(target, edit);
-    /* Non-modal writes (incl. legacy full-record status saves) must not
-       clobber the baked DJ guest name — that was the calendar name bug. */
-    if(baked && baked.dj && edit._writeKind!=='modal'){
-      target.dj=baked.dj;
+    /* Modal saves intentionally rename / reprice. Everything else must not
+       invent a guest name or fee over the baked schedule (TBD stays TBD). */
+    if(edit._writeKind==='modal') return;
+    if(baked){
+      if(Object.prototype.hasOwnProperty.call(baked,'dj')) target.dj=baked.dj;
+      if(baked.fee!=null) target.fee=baked.fee;
+      else if(baked.cost!=null){ target.cost=baked.cost; if(target.fee==null) target.fee=baked.cost; }
     } else if(!target.dj && prevDj){
       target.dj=prevDj;
+    } else if((target.fee==null&&target.cost==null) && prevFee!=null){
+      target.fee=prevFee;
     }
   }
   window._fbApplySched = function(ov){
@@ -166,14 +172,18 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     }
   };
 
-  /* ?? Live listener ? fires immediately on load and on any change ? */
+  /* Live listener — fires immediately on load and on any change */
   window._fbRef.on('value', function(snap){
+    var firstLoad=!window._fbReady;
+    if(firstLoad) window._fbReady = true;
     window._fbApply(snap.val());
-    if(!window._fbReady){
-      window._fbReady = true;
-      // Show a subtle "synced" indicator
+    if(firstLoad){
       var el = document.getElementById('fbSyncDot');
       if(el){ el.style.background='#22c55e'; el.title='Live sync active'; }
+      /* First snapshot previously skipped go() because _fbReady was still false
+         inside _fbApply — calendar could show baked TBD while SCHED already had
+         a Firebase override (e.g. wrong DJ in the edit modal). */
+      if(typeof go==='function') go();
     }
   });
 

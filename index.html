@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RDG DJ Dashboard v3.70</title>
+<title>RDG DJ Dashboard v3.71</title>
 <!-- Firebase Realtime Database SDK -->
-  <link rel="stylesheet" href="css/app.css?v=3.70">
+  <link rel="stylesheet" href="css/app.css?v=3.71">
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
@@ -14,9 +14,9 @@
 <div class="shell">
 <aside class="sidebar">
   <div class="sb-logo">
-    <img src="assets/rdg-logo.png?v=3.70" alt="RDG" class="sb-logo-img">
+    <img src="assets/rdg-logo.png?v=3.71" alt="RDG" class="sb-logo-img">
     <div class="sb-logo-title">DJ Dashboard</div>
-    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v3.70 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
+    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v3.71 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
   </div>
   <div id="sidebar"></div>
   <div class="sb-tools-section">
@@ -253,8 +253,8 @@
         <div class="fld"><label>Date</label><input id="fldDate" type="date" onchange="checkDjSuggestion();updateFeeTargetsPreview()"></div>
       </div>
       <div class="fld-row">
-        <div class="fld"><label>DJ / Artist</label><input id="fldDJ" type="text" placeholder="DJ name" oninput="checkDjSuggestion()"></div>
-        <div class="fld"><label>DJ Fee ($)</label><input id="fldFee" type="number" placeholder="0" oninput="checkDjSuggestion();updateFeeTargetsPreview()"></div>
+        <div class="fld"><label>DJ / Artist</label><input id="fldDJ" type="text" placeholder="DJ name" autocomplete="off" oninput="checkDjSuggestion()"></div>
+        <div class="fld"><label>DJ Fee ($)</label><input id="fldFee" type="number" placeholder="0" autocomplete="off" oninput="checkDjSuggestion();updateFeeTargetsPreview()"></div>
       </div>
       <div id="fldFeeTargets" style="display:none;margin:0 0 10px;padding:10px 12px;background:var(--card2);border-radius:10px;border:0.5px solid var(--hair)">
         <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin-bottom:6px">From DJ fee (venue ROI rules)</div>
@@ -412,19 +412,19 @@
     </div>
   </div>
 </div>
-<script src="js/vendor/xlsx.js?v=3.70"></script>
-<script src="data/sched-baked.js?v=3.70"></script>
-<script src="js/state-prelude.js?v=3.70"></script>
-<script src="js/logos.js?v=3.70"></script>
-<script src="js/state.js?v=3.70"></script>
-<script src="js/fiscal.js?v=3.70"></script>
-<script src="js/core.js?v=3.70"></script>
-<script src="js/budget.js?v=3.70"></script>
-<script src="js/firebase-sync.js?v=3.70"></script>
-<script src="js/calendar.js?v=3.70"></script>
-<script src="js/flash-forecast.js?v=3.70"></script>
-<script src="js/accounting.js?v=3.70"></script>
-<script src="js/modals.js?v=3.70"></script>
+<script src="js/vendor/xlsx.js?v=3.71"></script>
+<script src="data/sched-baked.js?v=3.71"></script>
+<script src="js/state-prelude.js?v=3.71"></script>
+<script src="js/logos.js?v=3.71"></script>
+<script src="js/state.js?v=3.71"></script>
+<script src="js/fiscal.js?v=3.71"></script>
+<script src="js/core.js?v=3.71"></script>
+<script src="js/budget.js?v=3.71"></script>
+<script src="js/firebase-sync.js?v=3.71"></script>
+<script src="js/calendar.js?v=3.71"></script>
+<script src="js/flash-forecast.js?v=3.71"></script>
+<script src="js/accounting.js?v=3.71"></script>
+<script src="js/modals.js?v=3.71"></script>
 </body>
 </html>
 
