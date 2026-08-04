@@ -139,9 +139,15 @@ function _modalSalesBlock(venue, dateStr, feeToAdd, name){
   h+='<div class="dj-sugg-panel-hd">This booking</div>';
   h+=row('Forecast ROI', expectedRoi!=null?(Number(expectedRoi).toFixed(1)+'x'):'-');
   h+=row('Forecast BS target', expectedBs!=null?$k(expectedBs):'-');
-  h+=row('Forecast Live E margin now', marginNow!=null?(marginNow+'%'):'-');
+  h+=row('Forecast Live E margin now (fees/sales)', marginNow!=null?(marginNow+'%'):'-');
   h+=row('Forecast Live E margin after', marginAfter!=null?(marginAfter+'%'):'-');
-  h+=row('Forecast BS (bookings)', fcBs!=null?$k(fcBs):(fcTables!=null?(fcTables+' tables'):'<span class="muted">No forecast yet</span>'));
+  var fcLabel='FourVenues paced BS';
+  var fcVal;
+  if(fcBs!=null && fcBs>0) fcVal=$k(fcBs);
+  else if(fcTables!=null && fcTables>0) fcVal=fcTables+' tables booked';
+  else fcVal='<span class="muted">No FourVenues pace yet</span>';
+  h+=row(fcLabel, fcVal);
+  h+='<div class="dj-sugg-row"><span class="muted" style="font-size:10px;line-height:1.35">Paced bottle service already on the books for this date (FourVenues). Separate from the fee-based BS target above.</span><b></b></div>';
   h+='</div>';
   h+='<div class="dj-sugg-panel">';
   h+='<div class="dj-sugg-panel-hd">Same weekend last year</div>';
@@ -220,51 +226,68 @@ function buildBookingApprovalCase(){
   var monthAfter=monthSpend+fee;
   var monthVarAfter=monthBudget!=null ? monthBudget-monthAfter : null;
   var salesPlan=getBgtPlan(venue, yr, mm, 'sales');
-  var livePlan=getBgtPlan(venue, yr, mm, 'live');
-  var liveNow=livePlan!=null ? livePlan : monthSpend;
-  var liveAfter=liveNow+fee;
-  var marginNow=pctLive(salesPlan, liveNow);
-  var marginAfter=pctLive(salesPlan, liveAfter);
   var tgt=showTargets({v:venue, venue:venue, d:dateStr, fee:fee, cost:fee});
   var proj=djProj(name, fee);
   var expectedRoi=tgt.roi_t!=null ? tgt.roi_t : (proj.p&&proj.p.avg_roi_a);
-  var expectedBs=tgt.bs_m;
-  var py=typeof resolvePyFields==='function' ? resolvePyFields(venue, dateStr) : null;
-  var overBudget=monthVarAfter!=null && monthVarAfter<0;
-  var strongRoi=expectedRoi!=null && +expectedRoi>=2.5;
-  var rec=overBudget
-    ? (strongRoi ? 'Conditional approve — over monthly budget, but ROI target supports the investment if VIP pacing holds.'
-      : 'Hold / escalate — over monthly budget without a strong forecast ROI. Revisit fee, date, or supporting programming.')
-    : (strongRoi ? 'Approve — within monthly budget with healthy forecast ROI.'
-      : 'Approve with pacing watch — within budget; monitor VIP fill against BS target.');
-  var rationale=[];
-  rationale.push(name+' on '+dateStr+' at '+venue+' for '+$k(fee)+'.');
-  if(monthBudget!=null) rationale.push('Monthly commitment moves from '+$k(monthSpend)+' to '+$k(monthAfter)+' against a '+$k(monthBudget)+' budget ('+(monthVarAfter>=0?'under':'over')+' by '+$k(Math.abs(monthVarAfter))+').');
-  if(expectedBs!=null) rationale.push('BS target for this fee is '+$k(expectedBs)+' ('+(expectedRoi!=null?Number(expectedRoi).toFixed(1)+'x ROI':'ROI n/a')+').');
-  if(py&&py.py_dj) rationale.push('Same weekend last year: '+djLabel(py.py_dj)+' did '+$k(py.py_bs_a)+' BS at '+$k(py.py_fee)+'.');
-  if(salesPlan!=null) rationale.push('Month sales plan '+$k(salesPlan)+'; Live E margin '+(marginNow!=null?marginNow+'%':'-')+' → '+(marginAfter!=null?marginAfter+'%':'-')+' after booking.');
-
+  var expectedBs=tgt.bs_m!=null ? +tgt.bs_m : 0;
+  /* Sales case: current month BS targets from scheduled shows, then + this DJ */
+  var currentBsForecast=SCHED.filter(function(r){
+    if(!r||r._s==='empty'||!r.d) return false;
+    if((r.v||r.venue)!==venue) return false;
+    if(_editIdx!=null && SCHED.indexOf(r)===_editIdx) return false;
+    return inFiscalMonthFilter(r, yr, mm);
+  }).reduce(function(s,r){
+    var t=showTargets(r);
+    return s+(t.bs_m||0);
+  },0);
+  var revisedBsForecast=currentBsForecast+expectedBs;
+  var currentSales=salesPlan!=null ? +salesPlan : null;
+  var revisedSales=currentSales!=null ? currentSales+expectedBs : (expectedBs||null);
+  var marginNow=pctLive(currentSales, monthSpend);
+  var marginAfter=pctLive(revisedSales, monthAfter);
   return {
     artist:name, date:dateStr, venue:venue, fee:fee,
     monthLabel:MN_FULL[mi]+' '+yr,
     monthSpend:monthSpend, monthAfter:monthAfter, monthBudget:monthBudget, monthVarAfter:monthVarAfter,
-    salesPlan:salesPlan, liveNow:liveNow, liveAfter:liveAfter, marginNow:marginNow, marginAfter:marginAfter,
-    expectedBs:expectedBs, expectedRoi:expectedRoi, py:py, recommendation:rec, rationale:rationale.join(' ')
+    currentBsForecast:currentBsForecast, revisedBsForecast:revisedBsForecast,
+    currentSales:currentSales, revisedSales:revisedSales,
+    marginNow:marginNow, marginAfter:marginAfter,
+    expectedBs:expectedBs||null, expectedRoi:expectedRoi
   };
 }
 function closeBookingApprovalEngine(){
   var el=document.getElementById('bookingEngineModal');
   if(el) el.remove();
 }
+function _bookingEngineVip3dHtml(venue, dateStr, fee, expectedBs){
+  var priced=(typeof calcTierPricesForShow==='function') ? calcTierPricesForShow(venue, dateStr, fee) : null;
+  var key=(typeof fv3dKeyForVenue==='function') ? fv3dKeyForVenue(venue) : null;
+  var model=key && typeof FV_3D_MODELS!=='undefined' ? FV_3D_MODELS.find(function(m){return m.key===key;}) : null;
+  var tiersHtml=(priced&&priced.tiers?priced.tiers:[]).map(function(t){
+    var price=t.suggested!=null?t.suggested:t.minimum;
+    return '<div class="be-tier-chip" style="--tier-color:'+(t.color||'#ccc')+'">'
+      +'<div class="be-tier-name">'+t.name+'</div>'
+      +'<div class="be-tier-price">'+(typeof formatFv3dMoney==='function'?formatFv3dMoney(price):$k(price))+'</div>'
+      +'<div class="be-tier-meta">'+(t.tables?t.tables.length:0)+' tables</div>'
+      +'</div>';
+  }).join('');
+  var h='<div class="be-3d-wrap">';
+  if(model){
+    h+='<div class="be-3d-host" id="be3dHost"><div class="be-3d-loading">Loading 3D plan&hellip;</div></div>';
+  } else {
+    h+='<div class="be-3d-host be-3d-empty">No 3D floor plan for this venue yet.</div>';
+  }
+  h+='<div class="be-3d-tiers">'+ (tiersHtml||'<div class="muted">No tier pricing available.</div>') +'</div>';
+  h+='</div>';
+  return {html:h, model:model, priced:priced, key:key};
+}
 function openBookingApprovalEngine(){
   closeBookingApprovalEngine();
   var c=buildBookingApprovalCase();
   if(!(c.fee>100000)){ alert('Booking Approval Engine is for fees above $100K.'); return; }
-  var vipBox=document.createElement('div');
-  if(typeof renderVipMinimumGuidance==='function'){
-    renderVipMinimumGuidance(c.venue, c.expectedBs, vipBox);
-  }
-  var vipHtml=vipBox.style.display==='none' ? '<div class="muted">VIP floor plan not available for this venue.</div>' : vipBox.innerHTML;
+  var vip3d=_bookingEngineVip3dHtml(c.venue, c.date, c.fee, c.expectedBs);
+  var under=c.monthVarAfter!=null && c.monthVarAfter>=0;
+  var over=c.monthVarAfter!=null && c.monthVarAfter<0;
 
   function line(l,v,cls){
     return '<div class="be-row"><span>'+l+'</span><b'+(cls?' class="'+cls+'"':'')+'>'+v+'</b></div>';
@@ -280,28 +303,48 @@ function openBookingApprovalEngine(){
     +'<div class="be-hero"><div class="be-artist">'+_escHtml(c.artist)+'</div>'
     +'<div class="be-meta">'+_escHtml(c.venue)+' · '+c.date+' · <b>'+$k(c.fee)+'</b></div></div>'
     +'<div class="be-grid">'
-    +'<div class="be-card"><div class="be-card-hd">Commitment</div>'
+    +'<div class="be-card'+(over?' be-card-over':(under?' be-card-under':''))+'"><div class="be-card-hd">Commitment</div>'
     +line('Current monthly commitment', $k(c.monthSpend))
-    +line('Revised commitment', $k(c.monthAfter))
+    +line('Revised commitment', $k(c.monthAfter), over?'neg':(under?'pos':''))
     +line('Monthly budget ('+c.monthLabel+')', c.monthBudget!=null?$k(c.monthBudget):'-')
-    +line('Variance after booking', c.monthVarAfter!=null?$kv(c.monthVarAfter):'-', c.monthVarAfter!=null?(c.monthVarAfter>=0?'pos':'neg'):'')
+    +line('Variance after booking', c.monthVarAfter!=null?$kv(c.monthVarAfter):'-', over?'neg':(under?'pos':''))
     +'</div>'
     +'<div class="be-card"><div class="be-card-hd">Sales case</div>'
-    +line('Current sales forecast', c.salesPlan!=null?$k(c.salesPlan):'-')
-    +line('Revised sales forecast', c.salesPlan!=null?$k(c.salesPlan):'-')
-    +line('Planned Live E Margin', c.marginNow!=null?(c.marginNow+'%'):'-')
-    +line('Revised Live E Margin', c.marginAfter!=null?(c.marginAfter+'%'):'-')
+    +line('Current BS forecast (month)', $k(c.currentBsForecast))
+    +line('Revised BS forecast (+ this DJ)', $k(c.revisedBsForecast), 'pos')
+    +line('Current sales plan', c.currentSales!=null?$k(c.currentSales):'-')
+    +line('Revised sales plan (+ DJ BS tgt)', c.revisedSales!=null?$k(c.revisedSales):'-', 'pos')
+    +line('Live E margin now (fees/sales)', c.marginNow!=null?(c.marginNow+'%'):'-')
+    +line('Live E margin after', c.marginAfter!=null?(c.marginAfter+'%'):'-')
     +line('Expected ROI', c.expectedRoi!=null?(Number(c.expectedRoi).toFixed(1)+'x'):'-')
-    +line('BS target', c.expectedBs!=null?$k(c.expectedBs):'-')
+    +line('This DJ BS target', c.expectedBs!=null?$k(c.expectedBs):'-')
     +'</div></div>'
-    +'<div class="be-card"><div class="be-card-hd">VIP table pricing</div>'+vipHtml+'</div>'
-    +'<div class="be-card"><div class="be-card-hd">Strategic rationale</div><p class="be-copy">'+_escHtml(c.rationale)+'</p></div>'
-    +'<div class="be-card be-rec"><div class="be-card-hd">Recommendation</div><p class="be-copy"><b>'+_escHtml(c.recommendation)+'</b></p></div>'
+    +'<div class="be-card"><div class="be-card-hd">VIP table pricing · 3D plan</div>'
+    +vip3d.html+'</div>'
     +'</div>'
     +'<div class="modal-foot"><button type="button" class="btn-pdf" onclick="window.print()">Print / PDF</button>'
     +'<button type="button" class="btn-cancel" onclick="closeBookingApprovalEngine()">Close</button></div>'
     +'</div>';
   document.body.appendChild(modal);
+  if(vip3d.model && typeof _ensureModelViewerScript==='function'){
+    _ensureModelViewerScript(function(){
+      var host=document.getElementById('be3dHost');
+      if(!host||!vip3d.model) return;
+      host.innerHTML='';
+      var mv=document.createElement('model-viewer');
+      mv.setAttribute('src', vip3d.model.url);
+      mv.setAttribute('alt', c.venue+' 3D floor plan');
+      mv.setAttribute('camera-controls','');
+      mv.setAttribute('touch-action','pan-y');
+      mv.setAttribute('interaction-prompt','none');
+      mv.setAttribute('shadow-intensity','1');
+      mv.setAttribute('exposure','1.1');
+      mv.setAttribute('camera-orbit',vip3d.model.orbit||'45deg 60deg 110%');
+      mv.style.cssText='width:100%;height:100%;background:transparent;--poster-color:transparent';
+      host.appendChild(mv);
+      if(typeof renderFv3dHotspots==='function') renderFv3dHotspots(mv, vip3d.key, vip3d.priced?vip3d.priced.tiers:[]);
+    });
+  }
 }
 
 function closeDjShowHistory(){

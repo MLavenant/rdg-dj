@@ -1414,6 +1414,16 @@ var VIP_WEEK_TIER_ACTUALS = {
       Gold:{soldTables:4,totalTables:5,totalSales:4604,avgPerTable:1151,minPerTable:1500},
       Riverwalk:{soldTables:0,totalTables:5,totalSales:0,avgPerTable:0,minPerTable:1000}
     }
+  },
+  '2026-W31|Casa Neos Beach Club': {
+    source:'Toast actual \u00b7 Jul 27\u2013Aug 2',
+    tiers:{
+      Diamond:{soldTables:3,totalTables:3,totalSales:26269,avgPerTable:8756,minPerTable:4000},
+      Prestige:{soldTables:2,totalTables:2,totalSales:14415,avgPerTable:7208,minPerTable:3500},
+      Platinum:{soldTables:15,totalTables:15,totalSales:57734,avgPerTable:3849,minPerTable:2000},
+      Gold:{soldTables:5,totalTables:5,totalSales:13628,avgPerTable:2726,minPerTable:1500},
+      Riverwalk:{soldTables:4,totalTables:5,totalSales:7020,avgPerTable:1755,minPerTable:1000}
+    }
   }
 };
 function _vipAllocateWeeklyTiers(shows, weekly){

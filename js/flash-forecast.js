@@ -175,7 +175,10 @@ function renderVIP(venueIdx){
     tiers.forEach(function(tname){
       var t=sh.tiers[tname];
       if(!t){ h+='<td>\u2014</td><td>\u2014</td><td>\u2014</td><td>\u2014</td>'; return; }
-      if(sh._tierDataAvailable===false){ h+='<td>\u2014</td><td>\u2014</td><td>\u2014</td><td style="'+_TARGET_BG+'">'+$kv(t.minPerTable)+'</td>'; return; }
+      if(sh._tierDataAvailable===false){
+        h+='<td>\u2014</td><td>'+(t.totalTables!=null?t.totalTables:'\u2014')+'</td><td>\u2014</td><td style="'+_TARGET_BG+'">'+$kv(t.minPerTable)+'</td>';
+        return;
+      }
       var bT=t.soldTables>0&&t.avgPerTable>=t.minPerTable;
       totTiers[tname].sold+=t.soldTables; totTiers[tname].total+=t.totalSales;
       if(t.soldTables>0){totTiers[tname].avgSum+=t.avgPerTable;totTiers[tname].cnt++;}

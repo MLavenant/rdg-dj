@@ -857,6 +857,21 @@ model-viewer{--min-hotspot-opacity:0}
 .be-row b{color:var(--ink);text-align:right}
 .be-copy{font-size:12.5px;line-height:1.45;color:var(--ink2);margin:0}
 .be-rec{background:#f3faf3;border-color:#b7dfb7}
+.be-card-under{border-color:#b7dfb7;background:#f3faf3}
+.be-card-over{border-color:#e2b6b6;background:#fdf0f0}
+.be-3d-wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:10px;min-height:220px}
+@media (max-width:720px){.be-3d-wrap{grid-template-columns:1fr}}
+.be-3d-host{position:relative;min-height:220px;border-radius:10px;overflow:hidden;background:#16121f;border:0.5px solid #2a2438}
+.be-3d-host model-viewer,.be-3d-host>*{width:100%;height:100%;min-height:220px}
+.be-3d-loading,.be-3d-empty{display:flex;align-items:center;justify-content:center;color:#cbb8e8;font-size:12px;padding:16px;text-align:center}
+.be-3d-tiers{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow:auto}
+.be-tier-chip{border-left:4px solid var(--tier-color,#ccc);background:var(--card2);border-radius:8px;padding:8px 10px}
+.be-tier-name{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3)}
+.be-tier-price{font-size:16px;font-weight:900;color:var(--ink);margin-top:2px}
+.be-tier-meta{font-size:10px;color:var(--ink3)}
+.bgt-play-hist-wide{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+@media (max-width:720px){.bgt-play-hist-wide{grid-template-columns:1fr 1fr!important}}
+.bgt-play-build-hd{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:var(--ink);margin:14px 0 8px}
 
 .lb-venue-badges{display:flex;gap:4px;flex-wrap:wrap}
 .lb-venue-badge{font-size:8px;font-weight:800;padding:2px 6px;border-radius:5px;white-space:nowrap;letter-spacing:.02em}
