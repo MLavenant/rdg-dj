@@ -2107,97 +2107,7 @@ function renderLive(animate){
   _livePrevBs = nextPrev;
 }
 
-function exportViewPdf(viewId){
-  if(viewId && curView !== viewId) setView(viewId);
-  var targetId = 'view-'+(viewId||curView||'page');
-  var el = document.getElementById(targetId);
-  if(!el){ alert('Nothing to export'); return; }
-  var filename = 'RDG-'+(viewId||curView||'page')+'-'+new Date().toISOString().slice(0,10)+'.pdf';
-  function run(html2pdf){
-    document.body.classList.add('printing-'+(viewId||curView||'page'));
-    function cleanup(){ document.body.classList.remove('printing-forecast','printing-vip','printing-page'); }
-    function twoPagePdf(parts){
-      if(!parts[0]||!parts[1]) return Promise.reject(new Error('Two-page PDF sections unavailable'));
-      if(!window.html2canvas) return Promise.reject(new Error('html2canvas unavailable'));
-      if(!window.jspdf||!window.jspdf.jsPDF) return Promise.reject(new Error('jsPDF unavailable'));
-      var stages=[];
-      function stagePart(part){
-        var exportWidth=Math.max(1200,Math.ceil(part.scrollWidth||0),Math.ceil(el.getBoundingClientRect().width||0));
-        var stage=document.createElement('div');
-        stage.className='fcast-pdf-stage';
-        stage.style.cssText='position:fixed;left:0;top:0;width:'+exportWidth+'px;max-width:none;background:#fff;padding:0;margin:0;overflow:visible;z-index:2147483646;pointer-events:none;box-sizing:border-box';
-        var clone=part.cloneNode(true);
-        clone.style.cssText+=';display:flex!important;position:relative!important;left:0!important;top:0!important;transform:none!important;width:'+exportWidth+'px!important;max-width:none!important;margin:0!important;padding:24px!important;overflow:visible!important;box-sizing:border-box!important';
-        clone.querySelectorAll('.fcast-chart-wrap,.fcast-tbl-wrap,.tbl-wrap').forEach(function(node){
-          node.style.setProperty('overflow','visible','important');
-        });
-        stage.appendChild(clone);
-        document.body.appendChild(stage);
-        stages.push(stage);
-        return clone;
-      }
-      function removeStages(){
-        stages.forEach(function(stage){ if(stage&&stage.parentNode) stage.parentNode.removeChild(stage); });
-        stages=[];
-      }
-      var firstClone=stagePart(parts[0]);
-      var secondClone=stagePart(parts[1]);
-      var firstCanvas,secondCanvas,pdf;
-      function capture(clone){
-        return window.html2canvas(clone,{
-          scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff',
-          windowWidth:Math.ceil(clone.getBoundingClientRect().width||1200)
-        });
-      }
-      function addCanvas(canvas){
-        var pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight(),margin=0.25;
-        var scale=Math.min((pw-margin*2)/canvas.width,(ph-margin*2)/canvas.height);
-        var w=canvas.width*scale,h=canvas.height*scale;
-        pdf.addImage(canvas.toDataURL('image/jpeg',0.98),'JPEG',(pw-w)/2,margin,w,h,undefined,'FAST');
-      }
-      var fontsReady=document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve();
-      return fontsReady.then(function(){
-        return capture(firstClone);
-      }).then(function(canvas){
-        firstCanvas=canvas;
-        return capture(secondClone);
-      }).then(function(canvas){
-        secondCanvas=canvas;
-        pdf=new window.jspdf.jsPDF({unit:'in',format:'letter',orientation:'landscape',compress:true});
-        addCanvas(firstCanvas);
-        pdf.addPage('letter','landscape');
-        addCanvas(secondCanvas);
-        pdf.save(filename);
-      }).then(function(value){
-        removeStages();
-        return value;
-      },function(err){
-        removeStages();
-        throw err;
-      });
-    }
-    var opt = {
-      margin: [0.35,0.35,0.35,0.35],
-      filename: filename,
-      image: { type:'jpeg', quality:0.96 },
-      html2canvas: { scale:2, useCORS:true, logging:false, windowWidth: Math.max(1200, el.scrollWidth) },
-      jsPDF: { unit:'in', format:'letter', orientation:'landscape' },
-      pagebreak: { mode:['css','legacy'] }
-    };
-    var exportType=viewId||curView;
-    var exportJob=exportType==='forecast'
-      ? twoPagePdf([el.querySelector('.fcast-print-page1'),el.querySelector('.fcast-print-page2')])
-      : exportType==='vip'
-        ? twoPagePdf([el.querySelector('.vip-print-page1'),el.querySelector('.vip-print-page2')])
-        : html2pdf().set(opt).from(el).save();
-    Promise.resolve(exportJob).then(function(){
-      cleanup();
-    }).catch(function(err){
-      console.warn('PDF export failed', err);
-      cleanup();
-      alert('PDF download failed. Please try again.');
-    });
-  }
+function _ensurePdfLibs(){
   function loadPdfScript(src,ready){
     if(ready()) return Promise.resolve();
     return new Promise(function(resolve,reject){
@@ -2208,20 +2118,311 @@ function exportViewPdf(viewId){
       document.head.appendChild(s);
     });
   }
-  if((viewId||curView)==='forecast'||(viewId||curView)==='vip'){
-    Promise.all([
-      loadPdfScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',function(){return !!window.html2canvas;}),
-      loadPdfScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',function(){return !!(window.jspdf&&window.jspdf.jsPDF);})
-    ]).then(function(){run(window.html2pdf||null);}).catch(function(){
-      document.body.classList.remove('printing-forecast');
-      alert('Could not load PDF libraries. Check your network connection.');
+  return Promise.all([
+    loadPdfScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',function(){return !!window.html2canvas;}),
+    loadPdfScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',function(){return !!(window.jspdf&&window.jspdf.jsPDF);})
+  ]);
+}
+
+function _captureDomToCanvas(part, exportWidth){
+  exportWidth=Math.max(1200,Math.ceil(part.scrollWidth||0),exportWidth||1200);
+  var stage=document.createElement('div');
+  stage.className='fcast-pdf-stage';
+  stage.style.cssText='position:fixed;left:0;top:0;width:'+exportWidth+'px;max-width:none;background:#fff;padding:0;margin:0;overflow:visible;z-index:2147483646;pointer-events:none;box-sizing:border-box';
+  var clone=part.cloneNode(true);
+  clone.style.cssText+=';display:flex!important;position:relative!important;left:0!important;top:0!important;transform:none!important;width:'+exportWidth+'px!important;max-width:none!important;margin:0!important;padding:24px!important;overflow:visible!important;box-sizing:border-box!important';
+  clone.querySelectorAll('.fcast-chart-wrap,.fcast-tbl-wrap,.tbl-wrap').forEach(function(node){
+    node.style.setProperty('overflow','visible','important');
+  });
+  stage.appendChild(clone);
+  document.body.appendChild(stage);
+  var fontsReady=document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve();
+  return fontsReady.then(function(){
+    return window.html2canvas(clone,{
+      scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff',
+      windowWidth:Math.ceil(clone.getBoundingClientRect().width||exportWidth)
     });
-    return;
+  }).then(function(canvas){
+    if(stage.parentNode) stage.parentNode.removeChild(stage);
+    return canvas;
+  },function(err){
+    if(stage.parentNode) stage.parentNode.removeChild(stage);
+    throw err;
+  });
+}
+
+function _pdfFromCanvases(canvases, filename, asBlob){
+  var pdf=new window.jspdf.jsPDF({unit:'in',format:'letter',orientation:'landscape',compress:true});
+  function addCanvas(canvas, first){
+    if(!first) pdf.addPage('letter','landscape');
+    var pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight(),margin=0.25;
+    var scale=Math.min((pw-margin*2)/canvas.width,(ph-margin*2)/canvas.height);
+    var w=canvas.width*scale,h=canvas.height*scale;
+    pdf.addImage(canvas.toDataURL('image/jpeg',0.98),'JPEG',(pw-w)/2,margin,w,h,undefined,'FAST');
   }
-  if(window.html2pdf){ run(window.html2pdf); return; }
-  loadPdfScript('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js',function(){return !!window.html2pdf;})
-    .then(function(){run(window.html2pdf);})
-    .catch(function(){alert('Could not load PDF library. Check your network connection.');});
+  canvases.forEach(function(c,i){ addCanvas(c, i===0); });
+  if(asBlob){
+    return Promise.resolve(pdf.output('blob'));
+  }
+  pdf.save(filename);
+  return Promise.resolve(null);
+}
+
+function exportViewPdf(viewId){
+  if(viewId && curView !== viewId) setView(viewId);
+  var targetId = 'view-'+(viewId||curView||'page');
+  var el = document.getElementById(targetId);
+  if(!el){ alert('Nothing to export'); return; }
+  var filename = 'RDG-'+(viewId||curView||'page')+'-'+new Date().toISOString().slice(0,10)+'.pdf';
+  function run(){
+    document.body.classList.add('printing-'+(viewId||curView||'page'));
+    function cleanup(){ document.body.classList.remove('printing-forecast','printing-vip','printing-page'); }
+    var exportType=viewId||curView;
+    var exportJob;
+    if(exportType==='forecast' || exportType==='vip'){
+      var p1=el.querySelector('.fcast-print-page1, .vip-print-page1');
+      var p2=el.querySelector('.fcast-print-page2, .vip-print-page2');
+      if(!p1||!p2){
+        cleanup();
+        alert('PDF sections unavailable');
+        return;
+      }
+      var width=Math.max(1200,Math.ceil(el.getBoundingClientRect().width||0));
+      exportJob=_captureDomToCanvas(p1,width).then(function(c1){
+        return _captureDomToCanvas(p2,width).then(function(c2){
+          return _pdfFromCanvases([c1,c2], filename, false);
+        });
+      });
+    } else {
+      if(!window.html2pdf){
+        cleanup();
+        alert('PDF library unavailable');
+        return;
+      }
+      exportJob=window.html2pdf().set({
+        margin:[0.35,0.35,0.35,0.35], filename:filename,
+        image:{type:'jpeg',quality:0.96},
+        html2canvas:{scale:2,useCORS:true,logging:false,windowWidth:Math.max(1200,el.scrollWidth)},
+        jsPDF:{unit:'in',format:'letter',orientation:'landscape'},
+        pagebreak:{mode:['css','legacy']}
+      }).from(el).save();
+    }
+    Promise.resolve(exportJob).then(function(){ cleanup(); }).catch(function(err){
+      console.warn('PDF export failed', err);
+      cleanup();
+      alert('PDF download failed. Please try again.');
+    });
+  }
+  _ensurePdfLibs().then(function(){
+    if((viewId||curView)==='forecast'||(viewId||curView)==='vip') run();
+    else if(window.html2pdf) run();
+    else {
+      var s=document.createElement('script');
+      s.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+      s.onload=function(){ run(); };
+      s.onerror=function(){ alert('Could not load PDF library. Check your network connection.'); };
+      document.head.appendChild(s);
+    }
+  }).catch(function(){
+    alert('Could not load PDF libraries. Check your network connection.');
+  });
+}
+
+var _FCAST_EMAIL_TO = [
+  'michael@rivieradininggroup.com',
+  'fabien@rivieradininggroup.com',
+  'greg@rivieradininggroup.com',
+  'marine@rivieradininggroup.com',
+  'sheena@rivieradininggroup.com'
+];
+var _FCAST_EMAIL_CC = [
+  'Salesteam@rivieradininggroup.com',
+  'matthias@rivieradininggroup.com',
+  'takuma@rivieradininggroup.com',
+  'VIP@rivieradininggroup.com',
+  'yulyana@rivieradininggroup.com',
+  'g.moorefield@rivieradininggroup.com'
+];
+
+function _fcastVenueShortFile(v){
+  if(/Beach Club/i.test(v)) return 'Casa-Neos-BC';
+  if(/Casa Neos Lounge/i.test(v)) return 'Casa-Neos-Lounge';
+  if(/MILA/i.test(v)) return 'MILA-Lounge';
+  return String(v||'Venue').replace(/\s+/g,'-');
+}
+
+function _blobToBase64(blob){
+  return new Promise(function(resolve,reject){
+    var fr=new FileReader();
+    fr.onload=function(){
+      var s=String(fr.result||'');
+      var i=s.indexOf(',');
+      resolve(i>=0?s.slice(i+1):s);
+    };
+    fr.onerror=reject;
+    fr.readAsDataURL(blob);
+  });
+}
+
+function _downloadBlob(blob, filename){
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(url); if(a.parentNode) a.parentNode.removeChild(a); }, 1500);
+}
+
+function _buildForecastFlashEml(opts){
+  /* opts: {to,cc,subject,htmlBody,attachments:[{filename,contentType,base64}], inlines:[{cid,contentType,base64}]} */
+  var boundary='RDG_MIXED_'+Date.now().toString(36);
+  var related='RDG_REL_'+Date.now().toString(36);
+  var lines=[];
+  function push(s){ lines.push(s); }
+  push('To: '+opts.to.join(', '));
+  push('Cc: '+opts.cc.join(', '));
+  push('Subject: '+opts.subject);
+  push('X-Unsent: 1');
+  push('MIME-Version: 1.0');
+  push('Content-Type: multipart/mixed; boundary="'+boundary+'"');
+  push('');
+  push('--'+boundary);
+  push('Content-Type: multipart/related; boundary="'+related+'"');
+  push('');
+  push('--'+related);
+  push('Content-Type: text/html; charset="UTF-8"');
+  push('Content-Transfer-Encoding: 7bit');
+  push('');
+  push(opts.htmlBody);
+  push('');
+  (opts.inlines||[]).forEach(function(img){
+    push('--'+related);
+    push('Content-Type: '+(img.contentType||'image/jpeg'));
+    push('Content-Transfer-Encoding: base64');
+    push('Content-ID: <'+img.cid+'>');
+    push('Content-Disposition: inline; filename="'+img.filename+'"');
+    push('');
+    var b64=img.base64||'';
+    for(var i=0;i<b64.length;i+=76) push(b64.slice(i,i+76));
+    push('');
+  });
+  push('--'+related+'--');
+  push('');
+  (opts.attachments||[]).forEach(function(att){
+    push('--'+boundary);
+    push('Content-Type: '+(att.contentType||'application/pdf')+'; name="'+att.filename+'"');
+    push('Content-Transfer-Encoding: base64');
+    push('Content-Disposition: attachment; filename="'+att.filename+'"');
+    push('');
+    var b64=att.base64||'';
+    for(var j=0;j<b64.length;j+=76) push(b64.slice(j,j+76));
+    push('');
+  });
+  push('--'+boundary+'--');
+  push('');
+  return new Blob([lines.join('\r\n')],{type:'message/rfc822'});
+}
+
+function prepareForecastFlashEmail(){
+  var btn=document.getElementById('fcastEmailBtn');
+  var venues=['Casa Neos Beach Club','MILA Lounge','Casa Neos Lounge'];
+  var prevView=curView, prevV=curV;
+  var weekKey=getISOWeek(new Date());
+  var weekNum=(String(weekKey).match(/W(\d+)/)||[])[1]||'';
+  var todayLabel=(function(){
+    var d=new Date();
+    return (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
+  })();
+  var subject='DJ Booking Performance Flash : Week '+weekNum;
+  if(btn){ btn.disabled=true; btn.textContent='Preparing email…'; }
+
+  function restore(){
+    curV=prevV;
+    if(typeof buildVenTabs==='function') buildVenTabs();
+    if(typeof buildSidebar==='function') buildSidebar();
+    if(typeof updateTopbarLogo==='function') updateTopbarLogo(curV);
+    if(prevView!=='forecast') setView(prevView);
+    else { curView='forecast'; renderForecast(); }
+    if(btn){ btn.disabled=false; btn.textContent='Send all emails'; }
+  }
+
+  _ensurePdfLibs().then(function(){
+    if(curView!=='forecast') setView('forecast');
+    var results=[];
+    var chain=Promise.resolve();
+    venues.forEach(function(venue, vi){
+      chain=chain.then(function(){
+        curV=venue;
+        if(typeof buildVenTabs==='function') buildVenTabs();
+        if(typeof updateTopbarLogo==='function') updateTopbarLogo(curV);
+        renderForecast();
+        document.body.classList.add('printing-forecast');
+        var el=document.getElementById('view-forecast');
+        var p1=el&&el.querySelector('.fcast-print-page1');
+        var p2=el&&el.querySelector('.fcast-print-page2');
+        if(!p1||!p2) throw new Error('Forecast sections missing for '+venue);
+        var width=Math.max(1200,Math.ceil(el.getBoundingClientRect().width||0));
+        return _captureDomToCanvas(p1,width).then(function(c1){
+          return _captureDomToCanvas(p2,width).then(function(c2){
+            document.body.classList.remove('printing-forecast');
+            var snapJpeg=c1.toDataURL('image/jpeg',0.92);
+            var short=_fcastVenueShortFile(venue);
+            var pdfName='RDG-Booking-Performance-'+short+'-W'+weekNum+'.pdf';
+            return _pdfFromCanvases([c1,c2], pdfName, true).then(function(pdfBlob){
+              return _blobToBase64(pdfBlob).then(function(pdfB64){
+                results.push({
+                  venue:venue, short:short, pdfName:pdfName, pdfBlob:pdfBlob, pdfB64:pdfB64,
+                  snapJpeg:snapJpeg, snapB64:snapJpeg.split(',')[1]||'', cid:'snap'+vi+'@rdg'
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+    return chain.then(function(){
+      document.body.classList.remove('printing-forecast');
+      results.forEach(function(r){ _downloadBlob(r.pdfBlob, r.pdfName); });
+
+      var html='<div style="font-family:Segoe UI,Arial,sans-serif;font-size:14px;color:#1c1c1e;line-height:1.5">';
+      html+='<p>Hi team,</p>';
+      html+='<p>Please find below our booking performance as of <b>'+todayLabel+'</b>.</p>';
+      results.forEach(function(r){
+        html+='<div style="margin:18px 0 8px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#48484a">'+r.venue+'</div>';
+        html+='<img src="cid:'+r.cid+'" alt="'+r.venue+' booking performance" style="max-width:100%;border:1px solid #e5e5ea;border-radius:8px;display:block"/>';
+      });
+      html+='<p style="margin-top:18px;font-size:12px;color:#8e8e93">PDFs attached for each location (page 1 = Actual vs Target + Details; page 2 = Pick up pace).</p>';
+      html+='</div>';
+
+      var eml=_buildForecastFlashEml({
+        to:_FCAST_EMAIL_TO,
+        cc:_FCAST_EMAIL_CC,
+        subject:subject,
+        htmlBody:html,
+        inlines:results.map(function(r){
+          return {cid:r.cid, filename:r.short+'-snap.jpg', contentType:'image/jpeg', base64:r.snapB64};
+        }),
+        attachments:results.map(function(r){
+          return {filename:r.pdfName, contentType:'application/pdf', base64:r.pdfB64};
+        })
+      });
+      var emlName='DJ-Booking-Performance-Flash-W'+weekNum+'.eml';
+      _downloadBlob(eml, emlName);
+
+      var mailto='mailto:'+encodeURIComponent(_FCAST_EMAIL_TO.join(';'))
+        +'?cc='+encodeURIComponent(_FCAST_EMAIL_CC.join(';'))
+        +'&subject='+encodeURIComponent(subject)
+        +'&body='+encodeURIComponent('Hi team,\n\nPlease find below our booking performance as of '+todayLabel+'.\n\n(Open the downloaded .eml file for the full HTML body with snapshots and the 3 PDF attachments.)\n');
+      try{ window.location.href=mailto; }catch(eMail){}
+
+      alert('Prepared Outlook draft:\n\n1) Downloaded 3 venue PDFs\n2) Downloaded '+emlName+' — open it in Outlook to review To/Cc, snapshots, and attachments before sending.\n\nSubject: '+subject);
+      restore();
+    });
+  }).catch(function(err){
+    console.warn('Forecast email prepare failed', err);
+    document.body.classList.remove('printing-forecast');
+    restore();
+    alert('Could not prepare the email. Check your network and try again.');
+  });
 }
 
 function renderSystem(){

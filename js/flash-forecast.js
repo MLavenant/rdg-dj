@@ -47,24 +47,23 @@ function renderVIP(venueIdx){
   var insight = _generateInsight(venues[0]);
   if(insight) h += '<div style="font-size:11px;color:var(--ink2);line-height:1.55;padding:12px 14px;background:var(--card);border-radius:12px;border-left:3px solid var(--ink3)">'+insight+'</div>';
 
-  h += '<div class="vip-print-page1">';
+  /* Stacked full-width sections (swipe/scroll): Budget → Performance → Tiers */
+  h += '<div class="vip-print-page1 vip-stack-sec">';
   h += _vipAllBudgetStandingTable(venues.map(function(v){return v.venue;}), range.sun);
-  h += '<div class="vip-loc-grid">';
-  venues.forEach(function(d){
-    h += '<div class="vip-loc-col">';
-    h += _vipRenderPerfSummary(d);
-    h += '</div>';
-  });
-  h += '</div></div>';
+  h += '</div>';
 
-  h += '<div class="vip-print-page2">';
-  h += '<div class="vip-loc-grid vip-loc-grid-tier">';
+  h += '<div class="vip-print-page2 vip-stack-sec">';
+  h += '<div class="vip-stack-sec-hd">Performance Summary — All Locations</div>';
   venues.forEach(function(d){
-    h += '<div class="vip-loc-col">';
-    h += _vipRenderTierBreakdown(d, rangeWkKey);
-    h += '</div>';
+    h += _vipRenderPerfSummary(d);
   });
   h += '</div>';
+
+  h += '<div class="vip-print-page3 vip-stack-sec">';
+  h += '<div class="vip-stack-sec-hd">Tier Breakdown — All Locations</div>';
+  venues.forEach(function(d){
+    h += _vipRenderTierBreakdown(d, rangeWkKey);
+  });
   h += _generateWeekFlashNarrative(venues);
   h += '</div>';
 

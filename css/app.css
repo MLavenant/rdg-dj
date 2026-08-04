@@ -543,6 +543,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .vip-bgt-table-wrap{margin-bottom:4px}
 .vip-loc-grid-tier .vip-past-tbl{font-size:10px}
 .vip-loc-grid-tier .vip-past-tbl th,.vip-loc-grid-tier .vip-past-tbl td{padding:5px 6px}
+.vip-stack-sec{display:flex;flex-direction:column;gap:12px;margin-bottom:18px}
+.vip-stack-sec-hd{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);padding:0 2px}
+.vip-stack-sec .vip-perf-block{margin:0}
+.vip-print-page1,.vip-print-page2,.vip-print-page3{display:flex;flex-direction:column;gap:12px}
+@media print{
+  .vip-print-page1,.vip-print-page2{page-break-after:always;break-after:page}
+  .vip-print-page3{page-break-inside:avoid}
+}
 .bgt-play-hist-years{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 @media (max-width:720px){.bgt-play-hist-years{grid-template-columns:1fr}}
 .bgt-play-year-col{background:var(--card2);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px;border:0.5px solid var(--hair)}
