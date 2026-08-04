@@ -130,6 +130,16 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       });
     }
     if(data.bgtPlan) deepMergeBgtPlan(data.bgtPlan);
+    if(data.bgtCatSpend){
+      Object.keys(data.bgtCatSpend||{}).forEach(function(k){
+        if(data.bgtCatSpend[k]!=null) BGT_CAT_SPEND[k]=data.bgtCatSpend[k];
+      });
+      try{ localStorage.setItem('rdg_bgt_cat_spend_v1', JSON.stringify(BGT_CAT_SPEND)); }catch(e){}
+    }
+    if(data.bgtCustomCats && Array.isArray(data.bgtCustomCats)){
+      BGT_CUSTOM_CATS=data.bgtCustomCats;
+      try{ localStorage.setItem('rdg_bgt_custom_cats_v1', JSON.stringify(BGT_CUSTOM_CATS)); }catch(e){}
+    }
     applyOfficialH2Budgets();
     // Accounting status + history
     if(data.acctData) acctData = data.acctData;

@@ -528,6 +528,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .bgt-monthly{margin:10px 0;background:var(--card);border:0.5px solid var(--rule);border-radius:10px;overflow:auto}
 .bgt-monthly-hd{padding:9px 12px;font-size:11px;font-weight:800;border-bottom:0.5px solid var(--hair);display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
 .bgt-monthly-hd span{font-size:9px;font-weight:600;color:var(--ink3)}
+.bgt-cat-add{margin-left:auto;font-size:10px;font-weight:800;padding:4px 10px;border-radius:8px;border:0.5px solid var(--rule);background:var(--card2);color:var(--ink2);cursor:pointer;font-family:inherit}
+.bgt-cat-add:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+.bgt-cat-rm{border:none;background:transparent;color:var(--ink3);cursor:pointer;font-size:12px;font-weight:800;padding:0 2px;line-height:1;margin-left:4px}
+.bgt-cat-rm:hover{color:var(--miss)}
+.bgt-cat-edit-cell{padding:4px 3px!important;background:#fbfbfd}
+.bgt-cat-inp{width:100%;max-width:72px;font-size:10px;font-weight:800;padding:5px 4px;border:0.5px solid var(--rule);border-radius:6px;text-align:center;font-family:inherit;background:#fff;color:var(--ink);box-sizing:border-box}
+.bgt-cat-inp:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-bg)}
+.bgt-play-py{border:0.5px solid #d7e0ec;background:linear-gradient(180deg,#f5f8fc,#eef3f9)!important}
+.bgt-play-py .bgt-play-month-ov-hd{color:#2c4a6e}
+.vip-stand-ytd{background:linear-gradient(180deg,#f3f7fb,#fff)!important;border-top:0.5px solid var(--hair)}
+.bgt-monthly{border-left:3px solid var(--ink)}
+.bgt-play-card{border-left:3px solid var(--ink)}
+.bgt-play-overview{border-left:3px solid var(--ink)}
 .bgt-monthly-grid{display:grid;grid-template-columns:128px repeat(12,minmax(54px,1fr)) 68px;min-width:980px}
 .bgt-monthly-cell{padding:6px 4px;text-align:center;border-right:0.5px solid var(--hair);border-bottom:0.5px solid var(--hair);min-width:0}
 .bgt-monthly-cell:nth-child(14n){border-right:none}

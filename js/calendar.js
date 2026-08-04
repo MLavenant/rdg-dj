@@ -2964,19 +2964,12 @@ function _vipPlBucket(venue, year, months){
     marginB:pctLive(nB?salesB:null, nB?liveB:null)
   };
 }
-function _vipStandingHtml(venue, asOfDate){
-  var info=fiscalInfoForDate(asOfDate);
-  var yr=info.year;
-  var mm=info.mm;
-  var mi=info.monthIndex+1;
-  var period=fiscalPeriodRange(yr, info.monthIndex);
-  var cutDate=(dateInFiscalPeriod(String(TODAY||''), yr, info.monthIndex)) ? String(TODAY) : (asOfDate>period.to?period.to:asOfDate);
-
+function _vipMonthStandingStats(venue, yr, monthIndex0, cutDate){
   var feeDone=0, feeRemain=0, bsDone=0, bsRemain=0, bsTargetMonth=0, nRemain=0;
   SCHED.forEach(function(r){
     if(!r||r._s==='empty') return;
     if((r.v||r.venue)!==venue) return;
-    if(!r.d || !dateInFiscalPeriod(r.d, yr, info.monthIndex)) return;
+    if(!r.d || !dateInFiscalPeriod(r.d, yr, monthIndex0)) return;
     var fee=+(r.fee||r.cost||0)||0;
     var tgt=showTargets(r);
     var bsT=tgt&&tgt.bs_m!=null?+tgt.bs_m:null;
@@ -2993,35 +2986,71 @@ function _vipStandingHtml(venue, asOfDate){
       else if(fee>0 && tgt && tgt.roi_t) bsRemain+=Math.round(fee*tgt.roi_t);
     }
   });
+  var mm=fiscalMm(monthIndex0);
+  var monthBgt=getMonthlyBudget(venue,yr,mm);
   var feeProj=feeDone+feeRemain;
   var bsProj=bsDone+bsRemain;
-  var monthBgt=getMonthlyBudget(venue,yr,mm);
-  var feeVar=monthBgt!=null?(monthBgt-feeProj):null;
-  var feeUsedPct=monthBgt?Math.round(feeProj/monthBgt*100):null;
-  var bsVar=bsTargetMonth>0?(bsProj-bsTargetMonth):null;
-  var bsPct=bsTargetMonth>0?Math.round(bsProj/bsTargetMonth*100):null;
-
+  return {
+    mi:monthIndex0+1, mm:mm,
+    feeDone:feeDone, feeRemain:feeRemain, feeProj:feeProj, nRemain:nRemain,
+    bsDone:bsDone, bsRemain:bsRemain, bsProj:bsProj, bsTargetMonth:bsTargetMonth,
+    monthBgt:monthBgt,
+    feeVar:monthBgt!=null?(monthBgt-feeProj):null,
+    feeUsedPct:monthBgt?Math.round(feeProj/monthBgt*100):null,
+    bsVar:bsTargetMonth>0?(bsProj-bsTargetMonth):null,
+    bsPct:bsTargetMonth>0?Math.round(bsProj/bsTargetMonth*100):null
+  };
+}
+function _vipStandingStripHtml(title, st, extraClass){
   function item(lbl, val, sub, cls){
     return '<div class="vip-stand-item"><div class="vip-stand-l">'+lbl+'</div>'
       +'<div class="vip-stand-v'+(cls?' '+cls:'')+'">'+val+'</div>'
       +(sub?'<div class="vip-stand-s">'+sub+'</div>':'')+'</div>';
   }
-
-  var monthStrip='<div class="vip-stand-month"><div class="vip-stand-month-title">'+MN_SH[mi-1]+' '+yr
-    +' <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink3)"> - Actual + Forecast (future BS @ ROI target)</span></div>'
+  return '<div class="vip-stand-month'+(extraClass?' '+extraClass:'')+'"><div class="vip-stand-month-title">'+title+'</div>'
     +'<div class="vip-stand-row">'
-    +item('DJ Fees Actual + Forecast', feeProj?$k(feeProj):'-', $k(feeDone)+' actual + '+$k(feeRemain)+' remaining ('+nRemain+' shows)', '')
-    +item('Budget', monthBgt!=null?$k(monthBgt):'-', 'Guest DJ monthly budget', '')
-    +item('Variance vs Budget', feeVar!=null?$kv(feeVar):'-', feeUsedPct!=null?(feeUsedPct+'% of budget used'):(feeVar!=null?(feeVar>=0?'Under budget':'Over budget'):'-'), feeVar!=null?(feeVar>=0?'beat':'miss'):'')
-    +item('BS Actual + Forecast', bsProj?$k(bsProj):'-', $k(bsDone)+' actual + '+$k(bsRemain)+' @ ROI target', '')
-    +item('BS Target', bsTargetMonth?$k(bsTargetMonth):'-', 'Month ROI-target envelope', '')
-    +item('BS vs Target', bsVar!=null?$kv(bsVar):'-', bsPct!=null?(bsPct+'% of target'):'-', bsVar!=null?(bsVar>=0?'beat':'miss'):'')
+    +item('DJ Fees Actual + Forecast', st.feeProj?$k(st.feeProj):'-', $k(st.feeDone)+' actual + '+$k(st.feeRemain)+' remaining ('+st.nRemain+' shows)', '')
+    +item('Budget', st.monthBgt!=null?$k(st.monthBgt):'-', 'Guest DJ monthly budget', '')
+    +item('Variance vs Budget', st.feeVar!=null?$kv(st.feeVar):'-', st.feeUsedPct!=null?(st.feeUsedPct+'% of budget used'):(st.feeVar!=null?(st.feeVar>=0?'Under budget':'Over budget'):'-'), st.feeVar!=null?(st.feeVar>=0?'beat':'miss'):'')
+    +item('BS Actual + Forecast', st.bsProj?$k(st.bsProj):'-', $k(st.bsDone)+' actual + '+$k(st.bsRemain)+' @ ROI target', '')
+    +item('BS Target', st.bsTargetMonth?$k(st.bsTargetMonth):'-', 'ROI-target envelope', '')
+    +item('BS vs Target', st.bsVar!=null?$kv(st.bsVar):'-', st.bsPct!=null?(st.bsPct+'% of target'):'-', st.bsVar!=null?(st.bsVar>=0?'beat':'miss'):'')
     +'</div></div>';
+}
+function _vipStandingHtml(venue, asOfDate){
+  var info=fiscalInfoForDate(asOfDate);
+  var yr=info.year;
+  var mi=info.monthIndex+1;
+  var period=fiscalPeriodRange(yr, info.monthIndex);
+  var cutDate=(dateInFiscalPeriod(String(TODAY||''), yr, info.monthIndex)) ? String(TODAY) : (asOfDate>period.to?period.to:asOfDate);
+
+  var monthSt=_vipMonthStandingStats(venue, yr, info.monthIndex, cutDate);
+  var yFeeDone=0,yFeeRemain=0,yFeeProj=0,yFeeBgt=0,yHasBgt=false,yNRemain=0;
+  var yBsDone=0,yBsRemain=0,yBsProj=0,yBsTgt=0;
+  for(var m=0;m<=info.monthIndex;m++){
+    var pEnd=fiscalPeriodRange(yr, m).to;
+    var mCut=cutDate<pEnd?cutDate:pEnd;
+    if(m<info.monthIndex) mCut=pEnd;
+    var st=_vipMonthStandingStats(venue, yr, m, mCut);
+    yFeeDone+=st.feeDone; yFeeRemain+=st.feeRemain; yFeeProj+=st.feeProj; yNRemain+=st.nRemain;
+    yBsDone+=st.bsDone; yBsRemain+=st.bsRemain; yBsProj+=st.bsProj; yBsTgt+=st.bsTargetMonth;
+    if(st.monthBgt!=null){ yFeeBgt+=st.monthBgt; yHasBgt=true; }
+  }
+  var yFeeVar=yHasBgt?(yFeeBgt-yFeeProj):null;
+  var yFeeUsed=yHasBgt&&yFeeBgt?Math.round(yFeeProj/yFeeBgt*100):null;
+  var yBsVar=yBsTgt>0?(yBsProj-yBsTgt):null;
+  var yBsPct=yBsTgt>0?Math.round(yBsProj/yBsTgt*100):null;
+  var ytdSt={
+    feeDone:yFeeDone, feeRemain:yFeeRemain, feeProj:yFeeProj, nRemain:yNRemain,
+    bsDone:yBsDone, bsRemain:yBsRemain, bsProj:yBsProj, bsTargetMonth:yBsTgt,
+    monthBgt:yHasBgt?yFeeBgt:null, feeVar:yFeeVar, feeUsedPct:yFeeUsed, bsVar:yBsVar, bsPct:yBsPct
+  };
 
   return '<div class="vip-stand">'
     +'<div class="vip-stand-hd"><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)">Budget Standing</span>'
     +'<span style="font-size:10px;color:var(--ink3)">'+venue+' &middot; through '+cutDate+'</span></div>'
-    +monthStrip
+    +_vipStandingStripHtml(MN_SH[mi-1]+' '+yr+' <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink3)"> — Month · Actual + Forecast</span>', monthSt)
+    +_vipStandingStripHtml('YTD '+yr+' <span style="font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink3)"> — Jan–'+MN_SH[mi-1]+' · same metrics</span>', ytdSt, 'vip-stand-ytd')
     +'<div class="vip-stand-note">DJ Fees = booked actual to date + remaining scheduled fees. Future BS assumes ROI target from venue rules. Green = favorable.</div>'
     +'</div>';
 }
