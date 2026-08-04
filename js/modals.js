@@ -41,54 +41,267 @@ function getFields(){
   };
 }
 
-/* Live DJ-history lookup for the Add/Edit Show modal */
+/* Fiscal spend helpers for Add/Edit Show panels */
+function _modalFiscalSpend(venue, year, mm, excludeIdx){
+  return SCHED.filter(function(r){
+    if(!r || r._s==='empty' || !r.d) return false;
+    if((r.v||r.venue)!==venue) return false;
+    if(excludeIdx!=null && SCHED.indexOf(r)===excludeIdx) return false;
+    return mm ? inFiscalMonthFilter(r, year, mm) : dateInFiscalYear(r.d, year);
+  }).reduce(function(s,r){ return s+(+r.fee||+r.cost||0); }, 0);
+}
+function _modalYearDjBudget(venue, year){
+  var tot=0, n=0;
+  for(var mi=1;mi<=12;mi++){
+    var b=getMonthlyBudget(venue, year, padMm(mi));
+    if(b!=null){ tot+=b; n++; }
+  }
+  return n ? tot : null;
+}
+function _modalForecastRow(venue, dateStr){
+  if(typeof _vipForecastRow==='function') return _vipForecastRow(venue, dateStr);
+  if(typeof _vipLiveRow==='function') return _vipLiveRow(venue, dateStr);
+  return null;
+}
+function _modalBudgetBlock(venue, dateStr, feeToAdd){
+  if(!venue || !dateStr) return '';
+  var info=fiscalInfoForDate(dateStr);
+  var yr=info.year, mm=info.mm, mi=info.monthIndex;
+  var monthBudget=getMonthlyBudget(venue, yr, mm);
+  var monthSpend=_modalFiscalSpend(venue, yr, mm, _editIdx);
+  var monthAfter=monthSpend + (feeToAdd||0);
+  var monthVar=monthBudget!=null ? monthBudget-monthSpend : null;
+  var monthVarAfter=monthBudget!=null ? monthBudget-monthAfter : null;
+  var yearBudget=_modalYearDjBudget(venue, yr);
+  var yearSpend=_modalFiscalSpend(venue, yr, null, _editIdx);
+  var yearAfter=yearSpend + (feeToAdd||0);
+  var yearVar=yearBudget!=null ? yearBudget-yearSpend : null;
+  var yearVarAfter=yearBudget!=null ? yearBudget-yearAfter : null;
+  var periodLabel=MN_FULL[mi]+' '+yr+' <span class="dj-sugg-sub">('+fiscalPeriodShortRange(yr, mi)+')</span>';
+
+  function row(label, val, cls){
+    return '<div class="dj-sugg-row"><span>'+label+'</span><b'+(cls?' class="'+cls+'"':'')+'>'+val+'</b></div>';
+  }
+  function varCls(v){ return v==null?'':(v>=0?'pos':'neg'); }
+
+  var h='<div class="dj-sugg-sec dj-sugg-budget">';
+  h+='<div class="dj-sugg-sec-hd">Budget</div>';
+  h+='<div class="dj-sugg-grid">';
+  h+='<div class="dj-sugg-panel">';
+  h+='<div class="dj-sugg-panel-hd">Month · '+periodLabel+'</div>';
+  h+=row('Spent so far', $k(monthSpend));
+  h+=row('Month budget', monthBudget!=null?$k(monthBudget):'<span class="muted">Not set</span>');
+  h+=row('Variance now', monthVar!=null?$kv(monthVar):'-', varCls(monthVar));
+  h+=row('If you add this show ('+$k(feeToAdd||0)+')', $k(monthAfter));
+  h+=row('Variance after booking', monthVarAfter!=null?$kv(monthVarAfter):'-', varCls(monthVarAfter));
+  h+='</div>';
+  h+='<div class="dj-sugg-panel">';
+  h+='<div class="dj-sugg-panel-hd">Year · FY '+yr+'</div>';
+  h+=row('Spent so far', $k(yearSpend));
+  h+=row('Year budget', yearBudget!=null?$k(yearBudget):'<span class="muted">Not set</span>');
+  h+=row('Variance now', yearVar!=null?$kv(yearVar):'-', varCls(yearVar));
+  h+=row('If you add this show ('+$k(feeToAdd||0)+')', $k(yearAfter));
+  h+=row('Variance after booking', yearVarAfter!=null?$kv(yearVarAfter):'-', varCls(yearVarAfter));
+  h+='</div></div></div>';
+  return h;
+}
+function _modalSalesBlock(venue, dateStr, feeToAdd, name){
+  if(!venue || !dateStr) return '';
+  var fee=+feeToAdd||0;
+  var tgt=fee ? showTargets({v:venue, venue:venue, d:dateStr, fee:fee, cost:fee}) : {bs_m:null, roi_t:null};
+  var info=fiscalInfoForDate(dateStr);
+  var salesPlan=getBgtPlan(venue, info.year, info.mm, 'sales');
+  var livePlan=getBgtPlan(venue, info.year, info.mm, 'live');
+  var monthSpend=_modalFiscalSpend(venue, info.year, info.mm, _editIdx);
+  var liveNow=livePlan!=null ? livePlan : monthSpend;
+  var liveAfter=liveNow + fee;
+  var marginNow=pctLive(salesPlan, liveNow);
+  var marginAfter=pctLive(salesPlan, liveAfter);
+  var fc=_modalForecastRow(venue, dateStr);
+  var fcBs=fc && (fc.bsActual!=null || fc.totalRevenue!=null) ? (+fc.bsActual||+fc.totalRevenue||0) : null;
+  var fcTables=fc && fc.bookedTables!=null ? +fc.bookedTables : null;
+  var py=typeof resolvePyFields==='function' ? resolvePyFields(venue, dateStr) : null;
+  var histRoi=null;
+  if(name){
+    var proj=djProj(name, fee||null);
+    if(proj && proj.p && proj.p.avg_roi_a!=null) histRoi=proj.p.avg_roi_a;
+  }
+  var expectedRoi=tgt.roi_t!=null ? tgt.roi_t : (histRoi!=null?histRoi:null);
+  var expectedBs=tgt.bs_m!=null ? tgt.bs_m : (histRoi!=null&&fee?Math.round(fee*histRoi):null);
+
+  function row(label, val, cls){
+    return '<div class="dj-sugg-row"><span>'+label+'</span><b'+(cls?' class="'+cls+'"':'')+'>'+val+'</b></div>';
+  }
+  var h='<div class="dj-sugg-sec dj-sugg-sales">';
+  h+='<div class="dj-sugg-sec-hd">Sales &amp; Forecast</div>';
+  h+='<div class="dj-sugg-grid">';
+  h+='<div class="dj-sugg-panel">';
+  h+='<div class="dj-sugg-panel-hd">This booking</div>';
+  h+=row('Forecast ROI', expectedRoi!=null?(Number(expectedRoi).toFixed(1)+'x'):'-');
+  h+=row('Forecast BS target', expectedBs!=null?$k(expectedBs):'-');
+  h+=row('Forecast Live E margin now', marginNow!=null?(marginNow+'%'):'-');
+  h+=row('Forecast Live E margin after', marginAfter!=null?(marginAfter+'%'):'-');
+  h+=row('Forecast BS (bookings)', fcBs!=null?$k(fcBs):(fcTables!=null?(fcTables+' tables'):'<span class="muted">No forecast yet</span>'));
+  h+='</div>';
+  h+='<div class="dj-sugg-panel">';
+  h+='<div class="dj-sugg-panel-hd">Same weekend last year</div>';
+  if(py && py.py_dj){
+    h+=row('Artist', djLabel(py.py_dj));
+    h+=row('Fee', $k(py.py_fee));
+    h+=row('BS Actual', $k(py.py_bs_a));
+    h+=row('ROI Actual', py.py_roi_a!=null?(Number(py.py_roi_a).toFixed(1)+'x'):'-');
+    h+=row('Beat?', py.py_beat==1?'Yes':(py.py_beat==0?'No':'-'), py.py_beat==1?'pos':(py.py_beat==0?'neg':''));
+  } else {
+    h+='<div class="dj-sugg-row"><span class="muted">No prior-year match for this weekend</span><b></b></div>';
+  }
+  h+='</div></div></div>';
+  return h;
+}
+function _modalArtistBlock(proj, venue, dateStr){
+  if(!proj || !proj.p) return '';
+  var p=proj.p;
+  var fair=realisticSuggestedFee(p, venue, dateStr) || cappedSuggestedFee(p.avg_bs, p.avg_fee);
+  return '<div class="dj-sugg-sec dj-sugg-artist">'
+    +'<div class="dj-sugg-sec-hd">Artist history</div>'
+    +'<button type="button" class="dj-sugg-hd" style="cursor:pointer;text-decoration:underline;background:none;border:0;padding:0;font-family:inherit" onclick="openDjShowHistory(decodeURIComponent(\''+encodeURIComponent(p.name)+'\'))" title="Click to see every booking">'+p.display+' &mdash; '+p.n+' shows on record</button>'
+    +'<div class="dj-sugg-row"><span>Avg fee historically paid</span><b>'+$k(p.avg_fee)+'</b></div>'
+    +'<div class="dj-sugg-row"><span>Avg BS delivered</span><b>'+$k(p.avg_bs)+'</b></div>'
+    +'<div class="dj-sugg-row"><span>Avg ROI achieved</span><b class="kc-b">'+(p.avg_roi_a||'-')+'x</b></div>'
+    +'<div class="dj-sugg-row"><span>Beat rate</span><b class="'+(p.beat_rate>=60?'hit':'low')+'">'+p.beat_rate+'%</b></div>'
+    +'<div class="dj-sugg-row"><span class="muted">Suggested fee aims for ~50% historical beat vs target</span><b></b></div>'
+    +'<button type="button" class="dj-sugg-use" onclick="useSuggestedFee('+fair+')">Use realistic suggested fee: '+$k(fair)+'</button>'
+    +'</div>';
+}
+function _modalBookingEngineBlock(venue, dateStr, fee, name){
+  if(!(+fee>100000) || !venue || !dateStr) return '';
+  return '<div class="dj-sugg-sec dj-sugg-engine">'
+    +'<div class="dj-sugg-sec-hd">Booking Approval Engine</div>'
+    +'<div class="dj-sugg-engine-note">Fee is over $100K — generate an ownership-ready investment case with budget, sales, VIP mins, and recommendation.</div>'
+    +'<button type="button" class="dj-sugg-use dj-sugg-engine-btn" onclick="openBookingApprovalEngine()">Open Booking Approval Engine</button>'
+    +'</div>';
+}
+
+/* Live DJ-history lookup for the Add/Edit Show modal — 3 sections: artist, budget, sales */
 function checkDjSuggestion(){
   var f=getFields();
   var name=(f.dj.value||'').trim();
   var box=document.getElementById('fldDjSuggest');
   if(!box) return;
-  if(!name){ box.innerHTML=''; box.style.display='none'; return; }
-  var proj=djProj(name,null);
-
   var venue=f.venue.value, dateStr=f.date.value;
   var proposedFee=parseFloat(f.fee.value)||null;
-  var budgetHtml='';
-  if(venue && dateStr){
-    var mm=dateStr.slice(5,7), yr=dateStr.slice(0,4);
-    var budget=getMonthlyBudget(venue,yr,mm);
-    var currentSpend=SCHED.filter(function(r){
-      return r.v===venue && r.yr===parseInt(yr,10) && r.d.slice(5,7)===mm && r._s!=='empty' && SCHED.indexOf(r)!==_editIdx;
-    }).reduce(function(s,r){return s+(r.fee||r.cost||0);},0);
-    var feeToAdd = proposedFee || (proj.p?(realisticSuggestedFee(proj.p, venue, dateStr)||cappedSuggestedFee(proj.p.avg_bs,proj.p.avg_fee)):0) || 0;
-    var afterBooking = currentSpend + feeToAdd;
-    var remaining = budget!=null ? budget-afterBooking : null;
-    budgetHtml='<div class="dj-sugg-budget">'
-      +'<div class="dj-sugg-budget-hd">'+MN_FULL[parseInt(mm,10)-1]+' '+yr+' budget position</div>'
-      +'<div class="dj-sugg-row"><span>Scheduled spend so far</span><b>'+$k(currentSpend)+'</b></div>'
-      +'<div class="dj-sugg-row"><span>If you book this DJ ('+$k(feeToAdd)+')</span><b>'+$k(afterBooking)+'</b></div>'
-      +(budget!=null
-        ? '<div class="dj-sugg-row"><span>Remaining budget after</span><b class="'+(remaining>=0?'pos':'neg')+'">'+$kv(remaining)+'</b></div>'
-        : '<div class="dj-sugg-row"><span style="color:var(--ink3)">No budget set for this month</span></div>')
-      +'</div>';
+  var proj=name ? djProj(name,null) : {p:null};
+  var feeToAdd = proposedFee || (proj.p?(realisticSuggestedFee(proj.p, venue, dateStr)||cappedSuggestedFee(proj.p.avg_bs,proj.p.avg_fee)):0) || 0;
+
+  if(!name && !(venue && dateStr)){
+    box.innerHTML=''; box.style.display='none'; return;
   }
 
-  if(!proj.p){
-    box.style.display = budgetHtml ? 'block' : 'none';
-    box.innerHTML = budgetHtml;
-    return;
-  }
-  var p=proj.p;
-  var fair=realisticSuggestedFee(p, venue, dateStr) || cappedSuggestedFee(p.avg_bs, p.avg_fee);
+  var artistHtml=_modalArtistBlock(proj, venue, dateStr);
+  var budgetHtml=_modalBudgetBlock(venue, dateStr, feeToAdd);
+  var salesHtml=_modalSalesBlock(venue, dateStr, feeToAdd, name);
+  var engineHtml=_modalBookingEngineBlock(venue, dateStr, feeToAdd, name);
+
+  var html=artistHtml+budgetHtml+salesHtml+engineHtml;
+  if(!html){ box.innerHTML=''; box.style.display='none'; return; }
   box.style.display='block';
-  box.innerHTML=
-    '<button type="button" class="dj-sugg-hd" style="cursor:pointer;text-decoration:underline;background:none;border:0;padding:0;font-family:inherit" onclick="openDjShowHistory(decodeURIComponent(\''+encodeURIComponent(p.name)+'\'))" title="Click to see every booking">'+p.display+' &mdash; '+p.n+' shows on record</button>'
-    +'<div class="dj-sugg-row"><span>Avg fee historically paid</span><b>'+$k(p.avg_fee)+'</b></div>'
-    +'<div class="dj-sugg-row"><span>Avg BS delivered</span><b>'+$k(p.avg_bs)+'</b></div>'
-    +'<div class="dj-sugg-row"><span>Avg ROI achieved</span><b class="kc-b">'+(p.avg_roi_a||'-')+'x</b></div>'
-    +'<div class="dj-sugg-row"><span>Beat rate</span><b class="'+(p.beat_rate>=60?'hit':'low')+'">'+p.beat_rate+'%</b></div>'
-    +'<div class="dj-sugg-row"><span style="color:var(--ink3)">Suggested fee aims for ?50% historical beat vs target</span><b></b></div>'
-    +'<button type="button" class="dj-sugg-use" onclick="useSuggestedFee('+fair+')">Use realistic suggested fee: '+$k(fair)+'</button>'
-    +budgetHtml;
+  box.innerHTML=html;
+  box.classList.toggle('dj-sugg-wide', !!(budgetHtml||salesHtml||engineHtml));
+}
+
+function buildBookingApprovalCase(){
+  var f=getFields();
+  var venue=f.venue.value, dateStr=f.date.value;
+  var name=(f.dj.value||'').trim()||'TBD';
+  var fee=parseFloat(f.fee.value)||0;
+  var info=fiscalInfoForDate(dateStr);
+  var mm=info.mm, yr=info.year, mi=info.monthIndex;
+  var monthBudget=getMonthlyBudget(venue, yr, mm);
+  var monthSpend=_modalFiscalSpend(venue, yr, mm, _editIdx);
+  var monthAfter=monthSpend+fee;
+  var monthVarAfter=monthBudget!=null ? monthBudget-monthAfter : null;
+  var salesPlan=getBgtPlan(venue, yr, mm, 'sales');
+  var livePlan=getBgtPlan(venue, yr, mm, 'live');
+  var liveNow=livePlan!=null ? livePlan : monthSpend;
+  var liveAfter=liveNow+fee;
+  var marginNow=pctLive(salesPlan, liveNow);
+  var marginAfter=pctLive(salesPlan, liveAfter);
+  var tgt=showTargets({v:venue, venue:venue, d:dateStr, fee:fee, cost:fee});
+  var proj=djProj(name, fee);
+  var expectedRoi=tgt.roi_t!=null ? tgt.roi_t : (proj.p&&proj.p.avg_roi_a);
+  var expectedBs=tgt.bs_m;
+  var py=typeof resolvePyFields==='function' ? resolvePyFields(venue, dateStr) : null;
+  var overBudget=monthVarAfter!=null && monthVarAfter<0;
+  var strongRoi=expectedRoi!=null && +expectedRoi>=2.5;
+  var rec=overBudget
+    ? (strongRoi ? 'Conditional approve — over monthly budget, but ROI target supports the investment if VIP pacing holds.'
+      : 'Hold / escalate — over monthly budget without a strong forecast ROI. Revisit fee, date, or supporting programming.')
+    : (strongRoi ? 'Approve — within monthly budget with healthy forecast ROI.'
+      : 'Approve with pacing watch — within budget; monitor VIP fill against BS target.');
+  var rationale=[];
+  rationale.push(name+' on '+dateStr+' at '+venue+' for '+$k(fee)+'.');
+  if(monthBudget!=null) rationale.push('Monthly commitment moves from '+$k(monthSpend)+' to '+$k(monthAfter)+' against a '+$k(monthBudget)+' budget ('+(monthVarAfter>=0?'under':'over')+' by '+$k(Math.abs(monthVarAfter))+').');
+  if(expectedBs!=null) rationale.push('BS target for this fee is '+$k(expectedBs)+' ('+(expectedRoi!=null?Number(expectedRoi).toFixed(1)+'x ROI':'ROI n/a')+').');
+  if(py&&py.py_dj) rationale.push('Same weekend last year: '+djLabel(py.py_dj)+' did '+$k(py.py_bs_a)+' BS at '+$k(py.py_fee)+'.');
+  if(salesPlan!=null) rationale.push('Month sales plan '+$k(salesPlan)+'; Live E margin '+(marginNow!=null?marginNow+'%':'-')+' → '+(marginAfter!=null?marginAfter+'%':'-')+' after booking.');
+
+  return {
+    artist:name, date:dateStr, venue:venue, fee:fee,
+    monthLabel:MN_FULL[mi]+' '+yr,
+    monthSpend:monthSpend, monthAfter:monthAfter, monthBudget:monthBudget, monthVarAfter:monthVarAfter,
+    salesPlan:salesPlan, liveNow:liveNow, liveAfter:liveAfter, marginNow:marginNow, marginAfter:marginAfter,
+    expectedBs:expectedBs, expectedRoi:expectedRoi, py:py, recommendation:rec, rationale:rationale.join(' ')
+  };
+}
+function closeBookingApprovalEngine(){
+  var el=document.getElementById('bookingEngineModal');
+  if(el) el.remove();
+}
+function openBookingApprovalEngine(){
+  closeBookingApprovalEngine();
+  var c=buildBookingApprovalCase();
+  if(!(c.fee>100000)){ alert('Booking Approval Engine is for fees above $100K.'); return; }
+  var vipBox=document.createElement('div');
+  if(typeof renderVipMinimumGuidance==='function'){
+    renderVipMinimumGuidance(c.venue, c.expectedBs, vipBox);
+  }
+  var vipHtml=vipBox.style.display==='none' ? '<div class="muted">VIP floor plan not available for this venue.</div>' : vipBox.innerHTML;
+
+  function line(l,v,cls){
+    return '<div class="be-row"><span>'+l+'</span><b'+(cls?' class="'+cls+'"':'')+'>'+v+'</b></div>';
+  }
+  var modal=document.createElement('div');
+  modal.id='bookingEngineModal';
+  modal.className='modal-bg';
+  modal.onclick=function(ev){ if(ev.target===modal) closeBookingApprovalEngine(); };
+  modal.innerHTML='<div class="modal be-modal" onclick="event.stopPropagation()">'
+    +'<div class="modal-hd"><h3>Booking Approval Engine</h3>'
+    +'<button class="modal-close" onclick="closeBookingApprovalEngine()">&#10005;</button></div>'
+    +'<div class="modal-body be-body">'
+    +'<div class="be-hero"><div class="be-artist">'+_escHtml(c.artist)+'</div>'
+    +'<div class="be-meta">'+_escHtml(c.venue)+' · '+c.date+' · <b>'+$k(c.fee)+'</b></div></div>'
+    +'<div class="be-grid">'
+    +'<div class="be-card"><div class="be-card-hd">Commitment</div>'
+    +line('Current monthly commitment', $k(c.monthSpend))
+    +line('Revised commitment', $k(c.monthAfter))
+    +line('Monthly budget ('+c.monthLabel+')', c.monthBudget!=null?$k(c.monthBudget):'-')
+    +line('Variance after booking', c.monthVarAfter!=null?$kv(c.monthVarAfter):'-', c.monthVarAfter!=null?(c.monthVarAfter>=0?'pos':'neg'):'')
+    +'</div>'
+    +'<div class="be-card"><div class="be-card-hd">Sales case</div>'
+    +line('Current sales forecast', c.salesPlan!=null?$k(c.salesPlan):'-')
+    +line('Revised sales forecast', c.salesPlan!=null?$k(c.salesPlan):'-')
+    +line('Planned Live E Margin', c.marginNow!=null?(c.marginNow+'%'):'-')
+    +line('Revised Live E Margin', c.marginAfter!=null?(c.marginAfter+'%'):'-')
+    +line('Expected ROI', c.expectedRoi!=null?(Number(c.expectedRoi).toFixed(1)+'x'):'-')
+    +line('BS target', c.expectedBs!=null?$k(c.expectedBs):'-')
+    +'</div></div>'
+    +'<div class="be-card"><div class="be-card-hd">VIP table pricing</div>'+vipHtml+'</div>'
+    +'<div class="be-card"><div class="be-card-hd">Strategic rationale</div><p class="be-copy">'+_escHtml(c.rationale)+'</p></div>'
+    +'<div class="be-card be-rec"><div class="be-card-hd">Recommendation</div><p class="be-copy"><b>'+_escHtml(c.recommendation)+'</b></p></div>'
+    +'</div>'
+    +'<div class="modal-foot"><button type="button" class="btn-pdf" onclick="window.print()">Print / PDF</button>'
+    +'<button type="button" class="btn-cancel" onclick="closeBookingApprovalEngine()">Close</button></div>'
+    +'</div>';
+  document.body.appendChild(modal);
 }
 
 function closeDjShowHistory(){
