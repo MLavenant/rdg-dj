@@ -937,9 +937,13 @@ var BGT_PLAN_SEED = {
     "11":{"sales":883206.8,"live":77450},"12":{"sales":1509705.66,"live":229200}
   }},
   "MILA Lounge":{"2026":{
-    "07":{"sales":1456405.22,"live":98810},"08":{"sales":1068948.48,"live":67841},
-    "09":{"sales":1214732.65,"live":68750},"10":{"sales":1236359.79,"live":81290},
-    "11":{"sales":1358667.98,"live":88182},"12":{"sales":2363577.47,"live":339132}
+    /* Live Ent $ + margin targets (Mila 2F). Sales = live ÷ margin so Live E Margin vs matches. */
+    "01":{"sales":1756097.56,"live":144000},"02":{"sales":1584285.71,"live":110900},
+    "03":{"sales":2043975.9,"live":169650},"04":{"sales":1327205.88,"live":90250},
+    "05":{"sales":1731788.08,"live":261500},"06":{"sales":1870000,"live":112200},
+    "07":{"sales":1650000,"live":112200},"08":{"sales":1094444.44,"live":68950},
+    "09":{"sales":1209649.12,"live":68950},"10":{"sales":1287878.79,"live":85000},
+    "11":{"sales":1388461.54,"live":90250},"12":{"sales":1835664.34,"live":262500}
   }}
 };
 var BGT_PLAN = JSON.parse(JSON.stringify(BGT_PLAN_SEED));
@@ -969,14 +973,16 @@ function applyOfficialH2Budgets(){
   ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'].forEach(function(venue){
     if(!BGT_PLAN[venue]) BGT_PLAN[venue]={};
     if(!BGT_PLAN[venue]['2026']) BGT_PLAN[venue]['2026']={};
-    for(var mi=7;mi<=12;mi++){
+    /* MILA: full-year official Live Ent budgets. CN venues: keep H2 lock (P7–P12). */
+    var from = venue==='MILA Lounge' ? 1 : 7;
+    for(var mi=from;mi<=12;mi++){
       var mm=padMm(mi);
       var official=(((BGT_PLAN_SEED[venue]||{})['2026']||{})[mm]);
       if(official) BGT_PLAN[venue]['2026'][mm]={sales:official.sales,live:official.live};
     }
   });
 }
-/* These are the approved P7-P12 operating budgets; old browser cache must not replace them. */
+/* Approved operating budgets; old browser / Firebase cache must not replace them. */
 applyOfficialH2Budgets();
 function saveBgtPlan(){
   try{ localStorage.setItem('rdg_bgt_plan_v2', JSON.stringify(BGT_PLAN)); }catch(e){}
