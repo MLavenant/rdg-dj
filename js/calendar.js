@@ -2207,22 +2207,27 @@ function exportViewPdf(viewId){
     var exportType=viewId||curView;
     var exportJob;
     if(exportType==='forecast' || exportType==='vip'){
-      var p1=el.querySelector('.fcast-print-page1, .vip-print-page1');
-      var p2=el.querySelector('.fcast-print-page2, .vip-print-page2');
-      var p3=exportType==='vip' ? el.querySelector('.vip-print-page3') : null;
-      if(!p1||!p2){
+      var pages;
+      if(exportType==='vip'){
+        pages=[].slice.call(el.querySelectorAll('.vip-print-page'));
+      } else {
+        pages=[el.querySelector('.fcast-print-page1'), el.querySelector('.fcast-print-page2')].filter(Boolean);
+      }
+      if(pages.length<2){
         cleanup();
         alert('PDF sections unavailable');
         return;
       }
       var width=Math.max(1200,Math.ceil(el.getBoundingClientRect().width||0));
-      exportJob=_captureDomToCanvas(p1,width).then(function(c1){
-        return _captureDomToCanvas(p2,width).then(function(c2){
-          if(!p3) return _pdfFromCanvases([c1,c2], filename, false);
-          return _captureDomToCanvas(p3,width).then(function(c3){
-            return _pdfFromCanvases([c1,c2,c3], filename, false);
-          });
+      var canvases=[];
+      var chain=Promise.resolve();
+      pages.forEach(function(page){
+        chain=chain.then(function(){
+          return _captureDomToCanvas(page,width).then(function(c){ canvases.push(c); });
         });
+      });
+      exportJob=chain.then(function(){
+        return _pdfFromCanvases(canvases, filename, false);
       });
     } else {
       if(!window.html2pdf){

@@ -574,11 +574,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .vip-loc-grid-tier .vip-past-tbl th,.vip-loc-grid-tier .vip-past-tbl td{padding:5px 6px}
 .vip-stack-sec{display:flex;flex-direction:column;gap:12px;margin-bottom:18px}
 .vip-stack-sec-hd{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);padding:0 2px}
+.vip-stack-title{text-align:center;padding:22px 16px 14px;margin:2px 0 6px}
+.vip-stack-title-main{font-size:26px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);line-height:1.15}
+.vip-stack-title-sub{font-size:11px;font-weight:600;color:var(--ink3);margin-top:6px;letter-spacing:.02em}
 .vip-stack-sec .vip-perf-block{margin:0}
-.vip-print-page1,.vip-print-page2,.vip-print-page3{display:flex;flex-direction:column;gap:12px}
+.vip-print-page,.vip-print-page1,.vip-print-page2,.vip-print-page3,.vip-print-app{display:flex;flex-direction:column;gap:12px}
 @media print{
-  .vip-print-page1,.vip-print-page2{page-break-after:always;break-after:page}
-  .vip-print-page3{page-break-inside:avoid}
+  .vip-print-page,.vip-print-page1,.vip-print-page2,.vip-print-page3,.vip-print-app{page-break-after:always;break-after:page}
+  .vip-print-page:last-child,.vip-print-app:last-of-type{page-break-after:auto;break-after:auto}
 }
 .bgt-play-hist-years{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
 @media (max-width:720px){.bgt-play-hist-years{grid-template-columns:1fr}}
