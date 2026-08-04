@@ -253,8 +253,9 @@ function renderAccountingGuest(yr, mo, mm, days){
       h+='<td class="sc-num acct-col-target">'+$k(bsM)+'</td>';
       h+='<td class="sc-num '+bsCls+'"><b>'+$k(r.bs_a)+'</b></td>';
       var djSt=getShowDjStatus(r, ds)||'';
+      var showUid=ensureShowUid(r);
       h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
-        +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-action="djStatus"')
+        +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="djStatus"')
         +'</div></td>';
       if(ri===0){
         var apSt=acct.apStatus||'';

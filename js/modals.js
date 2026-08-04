@@ -437,6 +437,8 @@ function persistSchedShow(rec){
   var isBaked = !rec._added && SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===uid; });
   var fbKey = _schedUidKey(rec);
   var legacyKey = _schedDateKey(rec);
+  /* Default write kind: full record. Modal/rename sets _writeKind='modal'. */
+  if(!rec._writeKind) rec._writeKind='full';
   if(isBaked){
     /* Always write uid key. Legacy venue|date only when this is the sole show that night. */
     window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_')).set(rec);
@@ -450,6 +452,38 @@ function persistSchedShow(rec){
     /* Race-safe: one Firebase path per uid (no read-modify-write on a shared array). */
     window._fbRef.child('schedOverrides/addsByUid/'+uid).set(rec);
   }
+}
+/* DJ Status only — never rewrite artist name / fee / date via a full-record set. */
+function persistShowDjStatusOnly(rec){
+  if(!rec||!rec.d) return;
+  ensureShowUid(rec);
+  if(!window._fbRef) return;
+  var uid=ensureShowUid(rec);
+  var patch={
+    djStatus: rec.djStatus==null ? null : rec.djStatus,
+    _writeKind: 'djStatus'
+  };
+  var isBaked = !rec._added && SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===uid; });
+  if(isBaked){
+    var fbKey=_schedUidKey(rec).replace(/\//g,'_');
+    var legacyKey=_schedDateKey(rec).replace(/\//g,'_');
+    window._fbRef.child('schedOverrides/edits/'+fbKey).update(patch);
+    if(_countShowsOnDate(rec.venue||rec.v, rec.d)<=1){
+      window._fbRef.child('schedOverrides/edits/'+legacyKey).update(patch);
+    }
+  } else {
+    rec._added=1;
+    window._fbRef.child('schedOverrides/addsByUid/'+uid).update(patch);
+  }
+}
+function _findSchedByUidOrIdx(uid, idx){
+  if(uid){
+    for(var i=0;i<SCHED.length;i++){
+      if(SCHED[i] && ensureShowUid(SCHED[i])===uid) return SCHED[i];
+    }
+  }
+  if(idx!=null && idx>=0 && idx<SCHED.length) return SCHED[idx];
+  return null;
 }
 function _schedRecordKey(rec){ return _schedUidKey(rec); }
 function _isBakedSchedRecord(rec){
@@ -564,6 +598,7 @@ function saveEvent(){
     rec.djStatus=null;
   }
   ensureShowUid(rec);
+  rec._writeKind='modal';
   if(_editIdx>=0) SCHED[_editIdx]=rec; else SCHED.push(rec);
   var after=_clone(rec);
   pushUndo((before?'Edit show: ':'Add show: ')+(dj||'TBD')+' '+d,function(){

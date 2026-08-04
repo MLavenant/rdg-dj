@@ -129,8 +129,9 @@ function renderCal(){
           +(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')
           +'</td>';
         var djSt=getShowDjStatus(r, ds)||'';
+        var showUid=ensureShowUid(r);
         h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
-          +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status for this performance"')
+          +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status for this performance"')
           +'</div></td>';
         var vipTxt=(r.vipNote||'').trim();
         var vipEsc=vipTxt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -158,7 +159,7 @@ function renderCal(){
   document.getElementById('calBody').innerHTML=h;
   document.querySelectorAll('#calBody [data-action="djStatus"]').forEach(function(sel){
     sel.addEventListener('change',function(){
-      if(sel.dataset.idx!=null && sel.dataset.idx!=='') updateShowDjStatus(+sel.dataset.idx, sel.value, sel);
+      if(sel.dataset.idx!=null && sel.dataset.idx!=='') updateShowDjStatus(+sel.dataset.idx, sel.value, sel, sel.dataset.uid);
       else updateAcctDjStatus(sel.dataset.ds, sel.value, sel);
     });
   });
@@ -979,7 +980,7 @@ function wireAccountingEvents(){
   });
   document.querySelectorAll('#acctBody [data-action="djStatus"]').forEach(function(sel){
     sel.addEventListener('change',function(){
-      if(sel.dataset.idx!=null && sel.dataset.idx!=='') updateShowDjStatus(+sel.dataset.idx, sel.value, sel);
+      if(sel.dataset.idx!=null && sel.dataset.idx!=='') updateShowDjStatus(+sel.dataset.idx, sel.value, sel, sel.dataset.uid);
       else updateAcctDjStatus(sel.dataset.ds, sel.value, sel);
     });
   });
@@ -1094,16 +1095,20 @@ function updateAcctDjStatus(ds,val,sel){
     sel.className='acct-status-sel '+acctStatusClass(next||null);
   }
 }
-/* Per-performance DJ status (calendar). New/edited shows start at Not set. */
-function updateShowDjStatus(idx,val,sel){
-  var r=SCHED[idx];
+/* Per-performance DJ status (calendar). New/edited shows start at Not set.
+   Status writes must NEVER rewrite DJ guest name / fee / date. */
+function updateShowDjStatus(idx,val,sel,uid){
+  var r=_findSchedByUidOrIdx
+    ? _findSchedByUidOrIdx(uid||(sel&&sel.dataset&&sel.dataset.uid), idx)
+    : SCHED[idx];
   if(!r||!r.d) return;
   var next=val||'';
   var prev=getShowDjStatus(r,r.d)||'';
   if(prev===next) return;
   r.djStatus=next||null;
   ensureShowUid(r);
-  if(typeof persistSchedShow==='function') persistSchedShow(r);
+  if(typeof persistShowDjStatusOnly==='function') persistShowDjStatusOnly(r);
+  else if(typeof persistSchedShow==='function') persistSchedShow(r);
   var sameDay=SCHED.filter(function(x){
     return x && x._s!=='empty' && (x.v||x.venue)===(r.v||r.venue) && x.d===r.d;
   });

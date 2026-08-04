@@ -1406,6 +1406,7 @@ function renderDjList(q){
         var p=djProj(name,SCHED[si].cost||SCHED[si].fee||null);
         if(!SCHED[si].cost&&p.p){ SCHED[si].cost=p.p.avg_fee; SCHED[si].fee=p.p.avg_fee; }
         SCHED[si]._s=SCHED[si].d>TODAY?'fut':'nd';
+        SCHED[si]._writeKind='modal';
         applyShowTargets(SCHED[si]);
         persistSchedShow(SCHED[si]);
       }

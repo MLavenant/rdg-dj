@@ -23,6 +23,32 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
   };
 
   /* ?? Rebuild SCHED from baked + Firebase overrides ????????????? */
+  function _bakedByUid(uid){
+    if(!uid || typeof SCHED_BAKED==='undefined') return null;
+    for(var i=0;i<SCHED_BAKED.length;i++){
+      ensureShowUid(SCHED_BAKED[i]);
+      if(SCHED_BAKED[i]._uid===uid) return SCHED_BAKED[i];
+    }
+    return null;
+  }
+  function _mergeSchedEdit(target, edit){
+    if(!target || !edit) return;
+    /* Status-only patches must never touch artist identity fields. */
+    if(edit._writeKind==='djStatus'){
+      target.djStatus = edit.djStatus==null ? null : edit.djStatus;
+      return;
+    }
+    var baked=_bakedByUid(target._uid) || _bakedByUid(edit._uid);
+    var prevDj=target.dj;
+    Object.assign(target, edit);
+    /* Non-modal writes (incl. legacy full-record status saves) must not
+       clobber the baked DJ guest name — that was the calendar name bug. */
+    if(baked && baked.dj && edit._writeKind!=='modal'){
+      target.dj=baked.dj;
+    } else if(!target.dj && prevDj){
+      target.dj=prevDj;
+    }
+  }
   window._fbApplySched = function(ov){
     // Start from baked copy
     var s = SCHED_BAKED.map(function(r){ var c=Object.assign({},r); ensureShowUid(c); return c; });
@@ -34,7 +60,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       var parts = k.split('|'), venue = parts[0], date = parts[1], uid = parts[2]||'';
       if(!uid) return;
       var idx = s.findIndex(function(r){ return r._uid===uid || (_schedDateKey(r)===(venue+'|'+date) && ensureShowUid(r)===uid); });
-      if(idx >= 0){ Object.assign(s[idx], edits[k]); ensureShowUid(s[idx]); }
+      if(idx >= 0){ _mergeSchedEdit(s[idx], edits[k]); ensureShowUid(s[idx]); }
     });
     editKeys.forEach(function(k){
       var parts = k.split('|'), venue = parts[0], date = parts[1], uid = parts[2]||'';
@@ -42,7 +68,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       var hasUidEdit = editKeys.some(function(k2){ return k2.indexOf(venue+'|'+date+'|')===0; });
       if(hasUidEdit) return;
       var matches = s.filter(function(r){ return (r.venue||r.v)===venue && r.d===date; });
-      if(matches.length===1){ Object.assign(matches[0], edits[k]); ensureShowUid(matches[0]); }
+      if(matches.length===1){ _mergeSchedEdit(matches[0], edits[k]); ensureShowUid(matches[0]); }
     });
     /* Added shows: legacy array + race-safe addsByUid map */
     var adds = ov.adds ? (Array.isArray(ov.adds)?ov.adds:Object.values(ov.adds)) : [];
