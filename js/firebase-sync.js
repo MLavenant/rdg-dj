@@ -114,6 +114,12 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       });
     }
 
+    /* Toast BS Actuals must re-apply after every sched rebuild — edits/baked
+       can otherwise wipe a later toastActuals overlay until that node changes. */
+    if(window._toastActuals && typeof window._applyToastActuals==='function'){
+      window._applyToastActuals(window._toastActuals);
+    }
+
     if(window._fbReady){
       if(curView==='vip')           renderVIP();
       else if(curView==='forecast') renderForecast();
@@ -195,16 +201,21 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       if(r.bs_a === next) return;
       r.bs_a = next;
       var fee = r.fee || r.cost || 0;
-      if(r.bs_m != null){
-        r.beat = next >= r.bs_m ? 1 : 0;
-        r._s = next >= r.bs_m ? 'beat' : 'miss';
+      var tgt = (typeof showTargets==='function') ? showTargets(r) : {bs_m:r.bs_m};
+      var bsM = (tgt && tgt.bs_m!=null) ? tgt.bs_m : r.bs_m;
+      if(bsM != null){
+        r.bs_m = bsM;
+        r.beat = next >= bsM ? 1 : 0;
+        r._s = next >= bsM ? 'beat' : 'miss';
       }
+      if(tgt && tgt.roi_t!=null) r.roi_t = tgt.roi_t;
       r.roi_a = fee > 0 ? Math.round(next / fee * 10000) / 10000 : r.roi_a;
       n++;
     });
     if(n && typeof IDX !== 'undefined') IDX = buildIdx(SCHED);
     return n;
   }
+  window._applyToastActuals = _applyToastActuals;
   window._fbDb.ref('rdg/toastActuals').on('value', function(snap){
     var live = snap.val() || null;
     var n = _applyToastActuals(live) || 0;
