@@ -2158,8 +2158,9 @@ function _captureDomToCanvas(part, exportWidth){
   stage.style.cssText='position:fixed;left:0;top:0;width:'+exportWidth+'px;max-width:none;background:#fff;padding:0;margin:0;overflow:visible;z-index:2147483646;pointer-events:none;box-sizing:border-box';
   var clone=part.cloneNode(true);
   clone.style.cssText+=';display:flex!important;position:relative!important;left:0!important;top:0!important;transform:none!important;width:'+exportWidth+'px!important;max-width:none!important;margin:0!important;padding:24px!important;overflow:visible!important;box-sizing:border-box!important';
-  clone.querySelectorAll('.fcast-chart-wrap,.fcast-tbl-wrap,.tbl-wrap').forEach(function(node){
+  clone.querySelectorAll('.fcast-chart-wrap,.fcast-tbl-wrap,.tbl-wrap,.vip-perf-block').forEach(function(node){
     node.style.setProperty('overflow','visible','important');
+    node.style.setProperty('max-height','none','important');
   });
   stage.appendChild(clone);
   document.body.appendChild(stage);
@@ -2180,14 +2181,38 @@ function _captureDomToCanvas(part, exportWidth){
 
 function _pdfFromCanvases(canvases, filename, asBlob){
   var pdf=new window.jspdf.jsPDF({unit:'in',format:'letter',orientation:'landscape',compress:true});
-  function addCanvas(canvas, first){
-    if(!first) pdf.addPage('letter','landscape');
-    var pw=pdf.internal.pageSize.getWidth(),ph=pdf.internal.pageSize.getHeight(),margin=0.25;
-    var scale=Math.min((pw-margin*2)/canvas.width,(ph-margin*2)/canvas.height);
-    var w=canvas.width*scale,h=canvas.height*scale;
-    pdf.addImage(canvas.toDataURL('image/jpeg',0.98),'JPEG',(pw-w)/2,margin,w,h,undefined,'FAST');
+  var first=true;
+  function addCanvasPaged(canvas){
+    var pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight(), margin=0.25;
+    var usableW=pw-margin*2, usableH=ph-margin*2;
+    /* Fit width; split vertically so tall appendix pages are never shrunk/clipped. */
+    var scale=usableW/canvas.width;
+    var pagePxH=usableH/scale;
+    if(canvas.height*scale <= usableH+0.01){
+      if(!first) pdf.addPage('letter','landscape');
+      first=false;
+      var w=canvas.width*scale, h=canvas.height*scale;
+      pdf.addImage(canvas.toDataURL('image/jpeg',0.98),'JPEG',margin,margin,w,h,undefined,'FAST');
+      return;
+    }
+    var y=0;
+    while(y < canvas.height-0.5){
+      if(!first) pdf.addPage('letter','landscape');
+      first=false;
+      var sliceH=Math.min(pagePxH, canvas.height-y);
+      var slice=document.createElement('canvas');
+      slice.width=canvas.width;
+      slice.height=Math.max(1, Math.ceil(sliceH));
+      var ctx=slice.getContext('2d');
+      ctx.fillStyle='#ffffff';
+      ctx.fillRect(0,0,slice.width,slice.height);
+      ctx.drawImage(canvas, 0, y, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+      var sw=slice.width*scale, sh=slice.height*scale;
+      pdf.addImage(slice.toDataURL('image/jpeg',0.98),'JPEG',margin,margin,sw,sh,undefined,'FAST');
+      y+=sliceH;
+    }
   }
-  canvases.forEach(function(c,i){ addCanvas(c, i===0); });
+  canvases.forEach(function(c){ addCanvasPaged(c); });
   if(asBlob){
     return Promise.resolve(pdf.output('blob'));
   }
@@ -2542,7 +2567,6 @@ function prepareVipFlashEmail(){
             snapResults.forEach(function(r){
               html+='<div style="margin:20px 0 8px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#48484a">'+r.venue+'</div>';
               html+='<img src="cid:'+r.cid+'" alt="'+r.venue+' performance summary" style="max-width:100%;border:1px solid #e5e5ea;border-radius:8px;display:block"/>';
-              if(r.para) html+='<p style="margin:10px 0 0;font-size:13px;line-height:1.55">\u2022 '+r.para+'</p>';
             });
             html+='<p style="margin-top:18px;font-size:12px;color:#8e8e93">Full Weekly Flash PDF attached (Budget, Performance, Tier Breakdown, Appendix).</p>';
             html+='</div>';

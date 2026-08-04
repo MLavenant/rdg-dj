@@ -40,11 +40,23 @@ function renderVIP(venueIdx){
   });
   h += '</div>';
 
-  venues.forEach(function(d, i){
-    h += '<div class="vip-print-page vip-print-app vip-stack-sec" data-app-venue="'+i+'">';
-    h += _vipSectionTitle('APPENDIX', d.venue);
-    h += _vipRenderAppendixVenue(d.venue, range.sun);
-    h += '</div>';
+  venues.forEach(function(d){
+    var blocks=_vipAppendixMonthBlocks(d.venue, range.sun);
+    if(!blocks.length){
+      h += '<div class="vip-print-page vip-print-app vip-stack-sec">';
+      h += _vipSectionTitle('APPENDIX', d.venue);
+      h += '<div class="vip-perf-block vip-venue-block">'
+        +_vipVenueBlockHd('YTD performances', d.venue, '')
+        +'<div style="padding:14px;font-size:11px;color:var(--ink3)">No performances booked this fiscal year.</div></div>';
+      h += '</div>';
+      return;
+    }
+    blocks.forEach(function(block, bi){
+      h += '<div class="vip-print-page vip-print-app vip-stack-sec">';
+      h += _vipSectionTitle('APPENDIX', bi===0 ? d.venue : (d.venue+' · continued'));
+      h += block;
+      h += '</div>';
+    });
   });
 
   /* Full table detail — Beach Club only when present */
@@ -157,7 +169,7 @@ function _vipCollectFlashVenues(weekOffset){
   return {venues:venues, range:range, rangeWkKey:rangeWkKey};
 }
 
-function _vipRenderAppendixVenue(venue, asOfDate){
+function _vipAppendixMonthBlocks(venue, asOfDate){
   var info=fiscalInfoForDate(asOfDate);
   var yr=info.year;
   var period=fiscalPeriodRange(yr, info.monthIndex);
@@ -174,18 +186,12 @@ function _vipRenderAppendixVenue(venue, asOfDate){
     byMonth[fi.monthIndex].push(r);
   });
   var months=Object.keys(byMonth).map(Number).sort(function(a,b){return a-b;});
-  if(!months.length){
-    return '<div class="vip-perf-block vip-venue-block">'
-      +_vipVenueBlockHd('YTD performances', venue, yr+' · through '+cutDate)
-      +'<div style="padding:14px;font-size:11px;color:var(--ink3)">No performances booked this fiscal year.</div></div>';
-  }
-  var h='';
-  months.forEach(function(mi){
+  return months.map(function(mi){
     var rows=byMonth[mi].slice().sort(function(a,b){ return String(a.d).localeCompare(String(b.d)); });
     var monthLbl=(typeof MN_SH!=='undefined'?MN_SH[mi]:('M'+(mi+1)))+' '+yr;
-    h+='<div class="vip-perf-block vip-venue-block">';
+    var h='<div class="vip-perf-block vip-venue-block vip-app-month">';
     h+=_vipVenueBlockHd(monthLbl, venue, rows.length+' performance'+(rows.length===1?'':'s'));
-    h+='<div class="tbl-wrap" style="margin:0"><table class="vip-past-tbl"><thead><tr>'
+    h+='<div class="tbl-wrap vip-app-tbl" style="margin:0"><table class="vip-past-tbl"><thead><tr>'
       +'<th class="l" style="min-width:120px">Artist / Date</th>'
       +'<th>DJ Fees</th>'
       +'<th>BS Actual</th><th style="'+_TARGET_BG+'">BS Target</th><th>BS Var</th>'
@@ -239,8 +245,17 @@ function _vipRenderAppendixVenue(venue, asOfDate){
       +'<td style="'+_TARGET_BG+'">'+(totRoiT!=null?(totRoiT.toFixed(1)+'x'):'\u2014')+'</td>'
       +'</tr>';
     h+='</tbody></table></div></div>';
+    return h;
   });
-  return h;
+}
+function _vipRenderAppendixVenue(venue, asOfDate){
+  var blocks=_vipAppendixMonthBlocks(venue, asOfDate);
+  if(!blocks.length){
+    return '<div class="vip-perf-block vip-venue-block">'
+      +_vipVenueBlockHd('YTD performances', venue, '')
+      +'<div style="padding:14px;font-size:11px;color:var(--ink3)">No performances booked this fiscal year.</div></div>';
+  }
+  return blocks.join('');
 }
 
 function _vipResolveWeeklyTier(venue, weekKey){

@@ -404,6 +404,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .fcast-wx-err{font-size:11px;color:var(--ink3);padding:8px 0}
 /* VIP section */
 .vip-wrap{padding:14px 16px;display:flex;flex-direction:column;gap:18px}
+.vip-wrap .tbl-wrap,.vip-print-page .tbl-wrap,.vip-app-tbl{max-height:none!important;overflow:visible!important}
+.vip-wrap .vip-perf-block{overflow:visible}
 .vip-print-page1,.vip-print-page2{display:flex;flex-direction:column;gap:18px}
 .vip-section-hd{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);padding:4px 0 2px;border-bottom:0.5px solid var(--hair)}
 /* Legacy tier cards ? kept for reference but no longer rendered */
