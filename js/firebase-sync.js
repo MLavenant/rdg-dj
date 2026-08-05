@@ -100,6 +100,86 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     if(window._schedDeletedUids[rec._uid]) delete window._schedDeletedUids[rec._uid];
     _saveSchedEditStore();
   };
+  function _nightKey(r){
+    if(!r||!r.d) return '';
+    return (r.v||r.venue||'')+'|'+r.d;
+  }
+  function _showScore(r){
+    if(!r) return -1;
+    var score=0;
+    if(r.djStatus) score+=40;
+    if(r.dj && String(r.dj).trim() && String(r.dj).toUpperCase()!=='TBD') score+=20;
+    if(r.fee!=null || r.cost!=null) score+=10;
+    if(r.note) score+=3;
+    if(r.vipNote) score+=2;
+    if(r.ev) score+=2;
+    /* Prefer baked canonical row over a shadow add on the same night. */
+    if(!r._added) score+=15;
+    return score;
+  }
+  function _mergeDupFields(keep, lose){
+    if(!keep||!lose) return;
+    if((!keep.dj || String(keep.dj).toUpperCase()==='TBD') && lose.dj) keep.dj=lose.dj;
+    if((keep.fee==null && keep.cost==null) && (lose.fee!=null || lose.cost!=null)){
+      keep.fee=lose.fee!=null?lose.fee:lose.cost;
+      keep.cost=lose.cost!=null?lose.cost:lose.fee;
+    }
+    if(!keep.djStatus && lose.djStatus) keep.djStatus=lose.djStatus;
+    if(!keep.note && lose.note) keep.note=lose.note;
+    if(!keep.vipNote && lose.vipNote) keep.vipNote=lose.vipNote;
+    if(!keep.ev && lose.ev) keep.ev=lose.ev;
+    if(keep.bs_a==null && lose.bs_a!=null) keep.bs_a=lose.bs_a;
+    if(keep.roi_a==null && lose.roi_a!=null) keep.roi_a=lose.roi_a;
+  }
+  /* Hard rule: at most one show per venue|date. Heavily edited nights used to
+     accumulate bake + addsByUid (or guard re-push) as two calendar rows. */
+  function _dedupeSchedOnePerNight(s, cleanup){
+    if(!s||!s.length) return s;
+    var bestIdx={};
+    var dropUid={};
+    for(var i=0;i<s.length;i++){
+      var r=s[i];
+      if(!r||!r.d||r._s==='empty') continue;
+      var k=_nightKey(r);
+      if(!k) continue;
+      if(bestIdx[k]==null){ bestIdx[k]=i; continue; }
+      var a=s[bestIdx[k]], b=r;
+      var keep=(_showScore(b)>_showScore(a))?b:a;
+      var lose=(keep===a)?b:a;
+      _mergeDupFields(keep, lose);
+      if(keep===b) bestIdx[k]=i;
+      if(lose._uid) dropUid[lose._uid]=lose;
+    }
+    var out=s.filter(function(r){ return !(r && r._uid && dropUid[r._uid]); });
+    if(cleanup && typeof cleanup==='function'){
+      Object.keys(dropUid).forEach(function(uid){
+        try{ cleanup(dropUid[uid], s[bestIdx[_nightKey(dropUid[uid])]]); }catch(e){}
+      });
+    }
+    return out;
+  }
+  function _cleanupFoldedDuplicate(lose, keep){
+    if(!lose||!window._fbRef) return;
+    ensureShowUid(lose);
+    try{ window._fbRef.child('schedOverrides/addsByUid/'+lose._uid).remove(); }catch(e1){}
+    try{
+      window._fbRef.child('schedOverrides/adds').transaction(function(vals){
+        if(!vals) return vals;
+        var arr=Array.isArray(vals)?vals:Object.values(vals);
+        var next=arr.filter(function(r){ return !(r && r._uid===lose._uid); });
+        return next.length?next:null;
+      });
+    }catch(e2){}
+    if(window._schedWriteGuard && window._schedWriteGuard[lose._uid]){
+      delete window._schedWriteGuard[lose._uid];
+      _saveSchedEditStore();
+    }
+    /* Persist merged identity onto the kept (usually baked) show. */
+    if(keep && typeof persistSchedShow==='function'){
+      try{ persistSchedShow(keep); }catch(e3){}
+    }
+  }
+
   function _reapplySchedGuards(s){
     _loadSchedEditStore();
     var gmap = window._schedWriteGuard || {};
@@ -135,10 +215,24 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         }
       }
       if(idx < 0){
-        /* Never re-push deleted adds. Only re-push live adds that are still wanted. */
+        /* Never re-push deleted adds. Never create a second show on an occupied night. */
         if(g._added && !deleted[uid]){
-          s.push(Object.assign({}, g, {_added:1, _uid:uid}));
-          needRepush.push(s[s.length-1]);
+          var nightHits = s.filter(function(r){
+            return r && r.d===g.d && (r.v||r.venue||'')===(g.v||g.venue||'');
+          });
+          if(nightHits.length){
+            _mergeDupFields(nightHits[0], g);
+            var keepUid=ensureShowUid(nightHits[0]);
+            g._uid=keepUid;
+            g._added=nightHits[0]._added||0;
+            window._schedWriteGuard[keepUid]=g;
+            if(keepUid!==uid) delete window._schedWriteGuard[uid];
+            _saveSchedEditStore();
+            needRepush.push(nightHits[0]);
+          } else {
+            s.push(Object.assign({}, g, {_added:1, _uid:uid}));
+            needRepush.push(s[s.length-1]);
+          }
         }
         return;
       }
@@ -228,22 +322,34 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       var matches = s.filter(function(r){ return (r.venue||r.v)===venue && r.d===date; });
       if(matches.length===1){ _mergeSchedEdit(matches[0], edits[k]); ensureShowUid(matches[0]); }
     });
-    /* Added shows: legacy array + race-safe addsByUid map */
+    /* Added shows: legacy array + race-safe addsByUid map.
+       If that night already has a show (usually bake), fold the add into it —
+       never create a second calendar row for the same venue|date. */
     var adds = ov.adds ? (Array.isArray(ov.adds)?ov.adds:Object.values(ov.adds)) : [];
     var byUid = ov.addsByUid ? (typeof ov.addsByUid==='object'?ov.addsByUid:{}) : {};
     Object.keys(byUid).forEach(function(uid){ if(byUid[uid]) adds.push(byUid[uid]); });
+    var foldedAdds=[];
     adds.forEach(function(r){
       if(!r) return;
       ensureShowUid(r);
       if(window._schedDeletedUids && window._schedDeletedUids[r._uid]) return;
       r._added=1;
       var exists = s.some(function(x){ return x._uid===r._uid; });
-      if(!exists) s.push(r);
+      if(exists) return;
+      var night = _nightKey(r);
+      var occupied = night ? s.filter(function(x){ return x && _nightKey(x)===night; }) : [];
+      if(occupied.length){
+        _mergeDupFields(occupied[0], r);
+        foldedAdds.push({lose:r, keep:occupied[0]});
+        return;
+      }
+      s.push(r);
     });
     /* Deletes: exact uid key, or legacy venue|date (baked shows only).
        Day-level deletes must NOT remove freshly added shows — that made
        "+ Add show" look broken on dates where a prior show was deleted. */
     var dels = ov.deletes ? (Array.isArray(ov.deletes)?ov.deletes:Object.values(ov.deletes)) : [];
+    window._lastSchedDeletes = dels;
     s = s.filter(function(r){
       if(!r) return false;
       if(window._schedDeletedUids && r._uid && window._schedDeletedUids[r._uid]) return false;
@@ -263,6 +369,10 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     });
     s.forEach(function(r){ if(r&&r.dj) r.dj=fixKnownAccents(r.dj); ensureShowUid(r); });
     var rep = _reapplySchedGuards(s);
+    s = _dedupeSchedOnePerNight(s, _cleanupFoldedDuplicate);
+    foldedAdds.forEach(function(pair){
+      try{ _cleanupFoldedDuplicate(pair.lose, pair.keep); }catch(eFold){}
+    });
     SCHED = s;
     IDX   = buildIdx(SCHED);
     if(typeof recalcAllSchedTargets==='function') recalcAllSchedTargets();

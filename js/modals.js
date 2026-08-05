@@ -487,17 +487,27 @@ function _alignRecToBakedShow(rec){
     rec._added=0;
     return true;
   }
-  /* Never retarget a brand-new add onto a baked uid — day-deletes would wipe it. */
-  if(rec._added) return false;
   var hits=SCHED_BAKED.filter(function(r){
     return r && (r.v||r.venue)===venue && r.d===rec.d;
   });
-  if(hits.length===1){
-    rec._uid=ensureShowUid(hits[0]);
-    rec._added=0;
-    return true;
-  }
-  return false;
+  if(hits.length!==1) return false;
+  /* One-show-per-night: fold shadow adds onto the baked uid for that date,
+     unless this night/bake was deleted (then the add must stay an add). */
+  var bakeUid=ensureShowUid(hits[0]);
+  var dateKey=venue+'|'+rec.d;
+  var bakeGone=!!(window._schedDeletedUids && window._schedDeletedUids[bakeUid]);
+  try{
+    (window._lastSchedDeletes||[]).forEach(function(dk){
+      if(!dk) return;
+      if(dk===dateKey) bakeGone=true;
+      var p=String(dk).split('|');
+      if(p.length>=3 && p[2]===bakeUid) bakeGone=true;
+    });
+  }catch(e){}
+  if(rec._added && bakeGone) return false;
+  rec._uid=bakeUid;
+  rec._added=0;
+  return true;
 }
 function persistSchedShow(rec){
   applyShowTargets(rec);
@@ -680,6 +690,20 @@ function saveEvent(){
       /* Refuse stale index writes — better to abort than corrupt the previous night. */
       alert('This show refreshed while the editor was open. Please close and edit it again.');
       return;
+    }
+  }
+  /* Hard rule: never create a second show on an occupied venue|date.
+     Heavily edited nights previously got bake + addsByUid as two rows. */
+  if(_editIdx<0){
+    var occupiedIdx=-1;
+    for(var oi=0;oi<SCHED.length;oi++){
+      var ox=SCHED[oi];
+      if(!ox||ox._s==='empty'||!ox.d) continue;
+      if(ox.d===d && (ox.v||ox.venue)===v){ occupiedIdx=oi; break; }
+    }
+    if(occupiedIdx>=0){
+      _editIdx=occupiedIdx;
+      _editUid=ensureShowUid(SCHED[occupiedIdx]);
     }
   }
   /* auto-populate BS target and ROI target   venue-specific rules first, generic tier fallback */

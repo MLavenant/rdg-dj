@@ -154,4 +154,40 @@ var afterRename=upsertLabels(
 assert(afterRename.length===2 && afterRename.some(function(b){return b.label==='SPOOKY';}) && afterRename.some(function(b){return b.label==='OTHER';}), 'rename replaces old label, keeps other periods');
 assert(!afterRename.some(function(b){return b.label==='HALLOWEEN';}), 'rename does not leave ghost old label');
 
+/* 11) One show per venue|date — fold bake + shadow add into a single row */
+function nightKey(r){ return (r.v||r.venue||'')+'|'+r.d; }
+function showScore(r){
+  var score=0;
+  if(r.djStatus) score+=40;
+  if(r.dj && String(r.dj).toUpperCase()!=='TBD') score+=20;
+  if(!r._added) score+=15;
+  return score;
+}
+function mergeDup(keep, lose){
+  if(!keep.djStatus && lose.djStatus) keep.djStatus=lose.djStatus;
+  if((!keep.dj||keep.dj==='TBD') && lose.dj) keep.dj=lose.dj;
+}
+function dedupeOnePerNight(shows){
+  var best={};
+  var drop={};
+  shows.forEach(function(r,i){
+    var k=nightKey(r);
+    if(best[k]==null){ best[k]=i; return; }
+    var a=shows[best[k]], b=r;
+    var keep=showScore(b)>showScore(a)?b:a;
+    var lose=keep===a?b:a;
+    mergeDup(keep, lose);
+    if(keep===b) best[k]=i;
+    drop[lose._uid]=1;
+  });
+  return shows.filter(function(r){ return !drop[r._uid]; });
+}
+var dupNight=dedupeOnePerNight([
+  {_uid:'bake',v:'Casa Neos Lounge',d:'2026-11-14',dj:'MOBLACK',fee:10000,_added:0,djStatus:'Confirmed'},
+  {_uid:'add',v:'Casa Neos Lounge',d:'2026-11-14',dj:'MOBLACK',fee:10000,_added:1,djStatus:null}
+]);
+assert(dupNight.length===1, 'duplicate same-night shows collapse to one');
+assert(dupNight[0]._uid==='bake', 'baked row wins over shadow add');
+assert(dupNight[0].djStatus==='Confirmed', 'Confirmed status kept when folding');
+
 console.log('\nAll sched guard tests passed.');
