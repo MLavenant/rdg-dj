@@ -579,6 +579,11 @@ function saveEvent(){
   var ev=(f.ev.value||'').trim();
   var tbd=0; /* TBD/unconfirmed checkbox removed */
   if(!d){alert('Date required');return;}
+  /* Placeholder-only names (???) must never overwrite the baked roster in Firebase. */
+  if(/^\?+$/.test(dj)){
+    alert('Artist name cannot be only question marks (???).\n\nUse the real artist name, leave the baked name, or type TBD.');
+    return;
+  }
   var yr=fiscalYearForDate(d);
   /* auto-populate BS target and ROI target   venue-specific rules first, generic tier fallback */
   var tmp={v:v,d:d,fee:fee,cost:fee};

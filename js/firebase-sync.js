@@ -31,6 +31,10 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     }
     return null;
   }
+  function _isJunkDjName(dj){
+    var s=String(dj==null?'':dj).trim();
+    return /^\?+$/.test(s);
+  }
   function _mergeSchedEdit(target, edit){
     if(!target || !edit) return;
     /* Status-only patches must never touch artist identity fields. */
@@ -42,9 +46,16 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     var prevDj=target.dj;
     var prevFee=target.fee!=null?target.fee:target.cost;
     Object.assign(target, edit);
-    /* Modal saves intentionally rename / reprice. Everything else must not
-       invent a guest name or fee over the baked schedule (TBD stays TBD). */
-    if(edit._writeKind==='modal') return;
+    /* Modal saves intentionally rename / reprice — but never keep placeholder ??? names. */
+    if(edit._writeKind==='modal'){
+      if(_isJunkDjName(target.dj) && baked){
+        if(Object.prototype.hasOwnProperty.call(baked,'dj')) target.dj=baked.dj;
+        if(baked.fee!=null) target.fee=baked.fee;
+        else if(baked.cost!=null){ target.cost=baked.cost; if(target.fee==null) target.fee=baked.cost; }
+      }
+      return;
+    }
+    /* Everything else must not invent a guest name or fee over the baked schedule. */
     if(baked){
       if(Object.prototype.hasOwnProperty.call(baked,'dj')) target.dj=baked.dj;
       if(baked.fee!=null) target.fee=baked.fee;
