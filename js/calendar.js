@@ -1052,6 +1052,18 @@ function _acctEffectiveStatus(acct){
 function _acctPersist(){
   try{ if(window._fbSave) window._fbSave('acctData', acctData); }catch(e){}
 }
+/* Prefer day-scoped writes so status changes do not rewrite the whole acct tree. */
+function _acctPersistDay(ds){
+  if(!ds){ _acctPersist(); return; }
+  try{
+    var k=(typeof acctKey==='function')?acctKey(ds):String(ds);
+    if(window._fbRef && acctData && acctData[k]!=null){
+      window._fbRef.child('acctData/'+k).set(acctData[k]);
+    } else {
+      _acctPersist();
+    }
+  }catch(e){ _acctPersist(); }
+}
 function _acctEditorName(){
   var by=sessionStorage.getItem('rdg_acct_editor')||'';
   if(!by){
@@ -1113,7 +1125,7 @@ function updateAcctDjStatus(ds,val,sel){
     acct.status=_acctEffectiveStatus(acct);
   }
   _acctPushLog(acct,'DJ Status',prev,next||'Not set',by);
-  _acctPersist();
+  _acctPersistDay(ds);
   if(curView==='accounting') renderAccounting();
   else if(curView==='calendar') renderCal();
   else if(sel){
@@ -1153,7 +1165,7 @@ function updateShowDjStatus(idx,val,sel,uid){
       acct.status=_acctEffectiveStatus(acct);
     }
     if(prevAcct!==next) _acctPushLog(acct,'DJ Status',prevAcct,next||'Not set',by);
-    _acctPersist();
+    _acctPersistDay(r.d);
   }
   if(curView==='calendar') renderCal();
   else if(curView==='accounting') renderAccounting();

@@ -464,13 +464,13 @@ function persistSchedShow(rec){
   applyShowTargets(rec);
   if(rec && rec.ev==null) rec.ev='';
   ensureShowUid(rec);
+  if(!rec._writeKind) rec._writeKind='full';
+  if(typeof window._guardSchedWrite==='function') window._guardSchedWrite(rec);
   if(!window._fbSave||!window._fbRef) return;
   var uid=ensureShowUid(rec);
   var isBaked = !rec._added && SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===uid; });
   var fbKey = _schedUidKey(rec);
   var legacyKey = _schedDateKey(rec);
-  /* Default write kind: full record. Modal/rename sets _writeKind='modal'. */
-  if(!rec._writeKind) rec._writeKind='full';
   if(isBaked){
     /* Always write uid key. Legacy venue|date only when this is the sole show that night. */
     window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_')).set(rec);
@@ -485,46 +485,40 @@ function persistSchedShow(rec){
     window._fbRef.child('schedOverrides/addsByUid/'+uid).set(rec);
   }
 }
-/* DJ Status only — merge djStatus into the existing Firebase edit.
-   Never rewrite DJ name / fee. Never create a status-only node that can
-   race ahead of a rename and snap the show back to bake (TBD). */
+/* DJ Status only — merge djStatus without replacing the whole node.
+   Always stamp current local DJ/fee so a stale Firebase transaction cannot
+   overwrite a just-saved rename with bake TBD. */
 function persistShowDjStatusOnly(rec){
   if(!rec||!rec.d) return;
   ensureShowUid(rec);
   if(!window._fbRef) return;
   var uid=ensureShowUid(rec);
   var nextStatus=rec.djStatus==null ? null : rec.djStatus;
-  var isBaked = !rec._added && SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===uid; });
-  function mergeStatus(cur){
-    if(cur && typeof cur==='object'){
-      cur.djStatus=nextStatus;
-      /* Strip poisonous writeKind so future applies never treat this as status-only wipe. */
-      if(cur._writeKind==='djStatus') cur._writeKind='modal';
-      return cur;
-    }
-    /* No existing override yet — seed identity from the live local record. */
-    return {
-      dj: rec.dj||'',
-      fee: rec.fee!=null?rec.fee:null,
-      cost: rec.cost!=null?rec.cost:(rec.fee!=null?rec.fee:null),
-      d: rec.d,
-      v: rec.v||rec.venue||'',
-      venue: rec.venue||rec.v||'',
-      _uid: uid,
-      djStatus: nextStatus,
-      _writeKind: 'statusMerge'
-    };
+  var patch={
+    dj: rec.dj||'',
+    fee: rec.fee!=null?rec.fee:null,
+    cost: rec.cost!=null?rec.cost:(rec.fee!=null?rec.fee:null),
+    d: rec.d,
+    v: rec.v||rec.venue||'',
+    venue: rec.venue||rec.v||'',
+    _uid: uid,
+    djStatus: nextStatus,
+    _writeKind: 'statusMerge'
+  };
+  if(typeof window._guardSchedWrite==='function'){
+    window._guardSchedWrite(Object.assign({}, rec, patch));
   }
+  var isBaked = !rec._added && SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===uid; });
   if(isBaked){
     var fbKey=_schedUidKey(rec).replace(/\//g,'_');
     var legacyKey=_schedDateKey(rec).replace(/\//g,'_');
-    window._fbRef.child('schedOverrides/edits/'+fbKey).transaction(mergeStatus);
+    window._fbRef.child('schedOverrides/edits/'+fbKey).update(patch);
     if(_countShowsOnDate(rec.venue||rec.v, rec.d)<=1){
-      window._fbRef.child('schedOverrides/edits/'+legacyKey).transaction(mergeStatus);
+      window._fbRef.child('schedOverrides/edits/'+legacyKey).update(patch);
     }
   } else {
     rec._added=1;
-    window._fbRef.child('schedOverrides/addsByUid/'+uid).transaction(mergeStatus);
+    window._fbRef.child('schedOverrides/addsByUid/'+uid).update(patch);
   }
 }
 function _findSchedByUidOrIdx(uid, idx){
@@ -668,12 +662,13 @@ function saveEvent(){
       _fbClearEditKeys(before);
     }
   }
+  /* Persist before paint so Firebase/guards hold the rename before any status click. */
+  persistSchedShow(rec);
   go();
   if(curView==='accounting') renderAccounting();
   if(curView==='budget'&&_budgetInited) renderBudget();
   if(curView==='vip') renderVIP();
   if(curView==='forecast') renderForecast();
-  persistSchedShow(rec);
 }
 function deleteEvent(){
   if(_editIdx<0) return;

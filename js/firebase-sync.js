@@ -22,6 +22,73 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     window._fbRef.child(path).set(value === undefined ? null : value);
   };
 
+  /* Recent local schedule writes — survive Firebase echoes that rebuild from
+     bake before the rename/status write has landed (classic TBD snap-back). */
+  window._schedWriteGuard = window._schedWriteGuard || {};
+  window._guardSchedWrite = function(rec){
+    if(!rec || !rec.d) return;
+    ensureShowUid(rec);
+    window._schedWriteGuard[rec._uid] = {
+      at: Date.now(),
+      dj: rec.dj||'',
+      fee: rec.fee!=null?rec.fee:null,
+      cost: rec.cost!=null?rec.cost:(rec.fee!=null?rec.fee:null),
+      d: rec.d,
+      v: rec.v||rec.venue||'',
+      venue: rec.venue||rec.v||'',
+      _uid: rec._uid,
+      _added: rec._added||0,
+      _writeKind: rec._writeKind||'modal',
+      djStatus: Object.prototype.hasOwnProperty.call(rec,'djStatus') ? (rec.djStatus==null?null:rec.djStatus) : undefined,
+      note: rec.note||null,
+      vipNote: rec.vipNote||null,
+      ev: rec.ev||'',
+      bs_a: rec.bs_a,
+      roi_a: rec.roi_a,
+      beat: rec.beat,
+      _s: rec._s
+    };
+  };
+  function _reapplySchedGuards(s){
+    var gmap = window._schedWriteGuard || {};
+    var now = Date.now();
+    var needRepush = [];
+    Object.keys(gmap).forEach(function(uid){
+      var g = gmap[uid];
+      if(!g || (now - g.at) > 45000){ delete gmap[uid]; return; }
+      var idx = -1;
+      for(var i=0;i<s.length;i++){ if(s[i] && s[i]._uid===uid){ idx=i; break; } }
+      if(idx < 0){
+        if(g._added){
+          s.push(Object.assign({}, g, {_added:1}));
+          needRepush.push(s[s.length-1]);
+        }
+        return;
+      }
+      var cur = s[idx];
+      var sameDj = (cur.dj||'') === (g.dj||'');
+      var sameFee = String(cur.fee!=null?cur.fee:(cur.cost!=null?cur.cost:'')) === String(g.fee!=null?g.fee:(g.cost!=null?g.cost:''));
+      if(!sameDj || !sameFee){
+        cur.dj = g.dj;
+        cur.fee = g.fee;
+        cur.cost = g.cost!=null?g.cost:g.fee;
+        if(g.d) cur.d = g.d;
+        if(g.v){ cur.v = g.v; cur.venue = g.venue||g.v; }
+        if(g._writeKind) cur._writeKind = g._writeKind;
+        if(g.note!=null) cur.note = g.note;
+        if(g.vipNote!=null) cur.vipNote = g.vipNote;
+        if(g.ev!=null) cur.ev = g.ev;
+        needRepush.push(cur);
+      }
+      if(g.djStatus !== undefined) cur.djStatus = g.djStatus;
+      sameDj = (cur.dj||'') === (g.dj||'');
+      sameFee = String(cur.fee!=null?cur.fee:(cur.cost!=null?cur.cost:'')) === String(g.fee!=null?g.fee:(g.cost!=null?g.cost:''));
+      var stOk = (g.djStatus === undefined) || ((cur.djStatus||null) === (g.djStatus||null));
+      if(sameDj && sameFee && stOk) delete gmap[uid];
+    });
+    return needRepush;
+  }
+
   /* ?? Rebuild SCHED from baked + Firebase overrides ????????????? */
   function _mergeSchedEdit(target, edit){
     if(!target || !edit) return;
@@ -44,10 +111,21 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     if(target.v && !target.venue) target.venue=target.v;
     if(target.venue && !target.v) target.v=target.venue;
   }
+  var _lastSchedOvSig = undefined;
+  function _schedOvSig(ov){
+    try{ return JSON.stringify(ov==null?null:ov); }catch(e){ return 'err:'+Date.now(); }
+  }
   window._fbApplySched = function(ov){
     // Start from baked copy
     var s = SCHED_BAKED.map(function(r){ var c=Object.assign({},r); ensureShowUid(c); return c; });
-    if(!ov) { SCHED = s; IDX = buildIdx(SCHED); return; }
+    if(!ov) {
+      var rep0 = _reapplySchedGuards(s);
+      SCHED = s; IDX = buildIdx(SCHED);
+      if(rep0 && rep0.length && typeof persistSchedShow==='function'){
+        rep0.forEach(function(r){ try{ persistSchedShow(r); }catch(e){} });
+      }
+      return;
+    }
     var edits = ov.edits || {};
     var editKeys = Object.keys(edits);
     /* Apply uid-keyed edits first (venue|date|_uid), then legacy venue|date only when safe. */
@@ -91,9 +169,13 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       return true;
     });
     s.forEach(function(r){ if(r&&r.dj) r.dj=fixKnownAccents(r.dj); ensureShowUid(r); });
+    var rep = _reapplySchedGuards(s);
     SCHED = s;
     IDX   = buildIdx(SCHED);
     if(typeof recalcAllSchedTargets==='function') recalcAllSchedTargets();
+    if(rep && rep.length && typeof persistSchedShow==='function'){
+      rep.forEach(function(r){ try{ persistSchedShow(r); }catch(e){} });
+    }
   };
 
   /* ?? Apply full Firebase snapshot ?????????????????????????????? */
@@ -103,8 +185,15 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     if(data.specialWeeks) specialWeeks = data.specialWeeks;
     // VENUE_ROI_RULES first so target recalc uses latest rules
     if(data.venueRoiRules) VENUE_ROI_RULES = data.venueRoiRules;
-    // SCHED overrides
-    window._fbApplySched(data.schedOverrides);
+    /* CRITICAL: the live listener is on the whole `rdg` tree. Writing acctData /
+       budget / toast must NOT rebuild SCHED from bake — that wiped in-flight
+       DJ renames when status changed (name snapped back to TBD). */
+    var schedSig = _schedOvSig(data.schedOverrides);
+    var schedChanged = (schedSig !== _lastSchedOvSig);
+    if(schedChanged){
+      _lastSchedOvSig = schedSig;
+      window._fbApplySched(data.schedOverrides);
+    }
     // FEE_TIERS
     if(data.feeTiers){
       FEE_TIERS = Array.isArray(data.feeTiers) ? data.feeTiers : Object.values(data.feeTiers);
@@ -147,7 +236,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
 
     /* Toast BS Actuals must re-apply after every sched rebuild — edits/baked
        can otherwise wipe a later toastActuals overlay until that node changes. */
-    if(window._toastActuals && typeof window._applyToastActuals==='function'){
+    if(schedChanged && window._toastActuals && typeof window._applyToastActuals==='function'){
       window._applyToastActuals(window._toastActuals);
     }
 
@@ -165,7 +254,13 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         if(ae && ae.closest && ae.closest('#budget2027Builder')) typing=true;
         if(!typing && typeof _budgetInited!=='undefined' && _budgetInited && typeof renderBudget==='function') renderBudget();
       }
-      else                            go();
+      else {
+        /* Calendar / summary / leaderboard / etc.
+           If schedOverrides did not change, do not full-rebuild views from a
+           wiped SCHED — only soft-refresh the calendar when visible. */
+        if(schedChanged) go();
+        else if(curView==='calendar') renderCal();
+      }
     }
   };
 
