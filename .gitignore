@@ -4,3 +4,5 @@ index.html.pre-split.bak
 _split_dashboard.js
 _smoke_check.js
 today-dashboard-with-network.html
+
+node_modules/
