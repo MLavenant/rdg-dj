@@ -429,23 +429,16 @@ function openShow3dModal(idx){
   document.body.appendChild(modal);
   var host=document.getElementById('show3dHost');
   if(!host||!model) return;
-  if(summer && typeof FV_CNBC_SUMMER_IFRAME!=='undefined'){
-    host.innerHTML='';
-    var iframe=document.createElement('iframe');
-    iframe.src=FV_CNBC_SUMMER_IFRAME;
-    iframe.title=venue+' summer beach floor plan';
-    iframe.setAttribute('allow','clipboard-write');
-    iframe.style.cssText='width:100%;height:100%;border:0;background:#000';
-    host.appendChild(iframe);
-    return;
-  }
+  var modelUrl=(typeof fv3dEffectiveModelUrl==='function')
+    ? (fv3dEffectiveModelUrl(key, r.d) || model.url)
+    : model.url;
   _ensureModelViewerScript(function(){
     var h=document.getElementById('show3dHost');
     if(!h||!model) return;
     h.innerHTML='';
     var mv=document.createElement('model-viewer');
-    mv.setAttribute('src', model.url);
-    mv.setAttribute('alt', venue+' 3D floor plan');
+    mv.setAttribute('src', modelUrl);
+    mv.setAttribute('alt', venue+(summer?' summer beach':'')+' 3D floor plan');
     mv.setAttribute('camera-controls','');
     mv.setAttribute('touch-action','pan-y');
     mv.setAttribute('interaction-prompt','none');

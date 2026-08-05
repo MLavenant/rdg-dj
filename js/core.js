@@ -169,11 +169,10 @@ function setView(v) {
   go();
 }
 
-/* Standalone 3D floor plan ? renders the raw venue model directly (no events,
-   no booking widget). Uses Google <model-viewer> loading the GLB assets.
-   Casa Neos Beach Club: Aug–Sep uses FourVenues beach experience iframe;
-   otherwise uses the regular nightclub GLB. */
-var FV_CNBC_SUMMER_IFRAME = 'https://custom-iframe.fourvenues.com/iframe/casa-neos1?type=experience&fullHeight=1&href=/beach-checkout';
+/* Standalone 3D floor plan — raw venue GLB via Google <model-viewer>
+   (no FourVenues booking website / event carousel).
+   Casa Neos Beach Club: Aug–Sep uses the beach GLB; otherwise model2 nightclub. */
+var FV_CNBC_SUMMER_GLB = 'https://fvwebs-storage.fourvenues.com/casa-neos/model.glb?v=1';
 var FV_3D_MODELS = [
   {key:'mila-lounge', venue:'MILA Lounge', label:'MILA Lounge', orbit:'45deg 60deg 72%', url:'https://fvwebs-storage.fourvenues.com/mila-lounge/model.glb?v=1'},
   {key:'casa-neos-lounge', venue:'Casa Neos Lounge', label:'Casa Neos Lounge', orbit:'45deg 60deg 86%', url:'https://fvwebs-storage.fourvenues.com/casa-neos/lounge/model.glb?v=3'},
@@ -199,8 +198,7 @@ var FV_3D_TABLES = {
     {name:'PRESTIGE',color:'rgb(139,195,74)',minimum:2500,capacity:10,tables:['31','41']},
     {name:'DIAMOND',color:'rgb(3,169,244)',minimum:3000,capacity:10,tables:['34','51','52']}
   ],
-  /* Summer beach experience (Aug–Sep): FourVenues beach iframe + VIP sellable
-     inventory used in Weekly Flash (includes Gold #24 and Platinum #45/#47). */
+  /* Summer beach (Aug–Sep): VIP sellable inventory (Gold #24, Platinum #45/#47). */
   'casa-neos-beach-club-summer':[
     {name:'RIVERWALK',color:'rgb(245,127,23)',minimum:1000,capacity:10,tables:['19','20','21','22','23']},
     {name:'GOLD',color:'rgb(251,192,45)',minimum:1500,capacity:10,tables:['24','25','26','27','28']},
@@ -230,12 +228,13 @@ var FV_3D_HOTSPOTS = {
   },
   'casa-neos-beach-club':{
     '19':[20.747,1.02,5.469],'20':[18.422,1.02,5.513],'21':[16.302,1.02,5.522],
-    '22':[14.090,1.02,5.533],'23':[11.923,1.02,5.530],'25':[6.390,1.02,3.809],
-    '26':[-2.006,1.02,3.547],'27':[-4.357,1.02,3.542],'28':[-6.783,1.02,3.542],
+    '22':[14.090,1.02,5.533],'23':[11.923,1.02,5.530],'24':[8.560,1.02,3.700],
+    '25':[6.390,1.02,3.809],'26':[-2.006,1.02,3.547],'27':[-4.357,1.02,3.542],'28':[-6.783,1.02,3.542],
     '31':[3.014,1.02,3.385],'32':[1.649,1.02,1.543],'33':[1.649,1.02,-0.211],
     '34':[3.027,1.02,-2.058],'35':[4.403,1.02,-0.220],'36':[4.403,1.02,1.533],
     '41':[6.741,1.02,1.161],'42':[5.954,1.02,-1.738],'43':[5.954,1.02,-3.529],
-    '46':[0.157,1.02,-2.391],'48':[-2.569,1.02,-0.706],'49':[-1.008,1.02,1.400],
+    '45':[2.900,1.02,-2.900],'46':[0.157,1.02,-2.391],'47':[-1.200,1.02,-1.500],
+    '48':[-2.569,1.02,-0.706],'49':[-1.008,1.02,1.400],
     '51':[5.744,1.02,-5.890],'52':[0.461,1.02,-5.890],'53':[-3.755,1.02,-2.964],
     '54':[-4.631,1.02,-1.438],'55':[-5.511,1.02,0.084],'56':[-3.730,1.02,1.698]
   }
@@ -258,8 +257,12 @@ function fv3dEffectiveTableKey(modelKey, dateStr){
   if(modelKey==='casa-neos-beach-club' && isCnbcSummerFloor(dateStr)) return 'casa-neos-beach-club-summer';
   return modelKey;
 }
-function fv3dUsesIframe(modelKey, dateStr){
-  return modelKey==='casa-neos-beach-club' && isCnbcSummerFloor(dateStr);
+function fv3dEffectiveModelUrl(modelKey, dateStr){
+  var m=FV_3D_MODELS.find(function(x){return x.key===modelKey;});
+  if(modelKey==='casa-neos-beach-club' && isCnbcSummerFloor(dateStr) && typeof FV_CNBC_SUMMER_GLB!=='undefined'){
+    return FV_CNBC_SUMMER_GLB;
+  }
+  return m ? m.url : null;
 }
 function getFv3dDate(){
   if(_fv3dDate) return _fv3dDate;
@@ -440,37 +443,16 @@ function renderFv3dFloorVisual(){
   if(!host) return;
   var m=FV_3D_MODELS.find(function(x){return x.key===_fv3dModelKey;})||FV_3D_MODELS[0];
   var dateStr=getFv3dDate();
-  var useIframe=fv3dUsesIframe(m.key, dateStr);
-  var loading=document.getElementById('fv3dLoading');
+  var modelUrl=fv3dEffectiveModelUrl(m.key, dateStr) || m.url;
 
-  if(useIframe){
-    host.innerHTML='';
-    if(loading){ /* recreated below */ }
-    var wrap=document.createElement('div');
-    wrap.style.cssText='position:absolute;inset:0;display:flex;flex-direction:column;background:#0b0b0f';
-    var note=document.createElement('div');
-    note.style.cssText='flex:0 0 auto;padding:8px 12px;font-size:11px;color:#cbb8e8;background:#14121a;border-bottom:1px solid #2a2433';
-    note.textContent='Casa Neos Beach Club — summer beach floor plan (Aug–Sep). Pick a date outside Aug–Sep to switch to the regular nightclub 3D plan.';
-    var iframe=document.createElement('iframe');
-    iframe.id='fv3dViewer';
-    iframe.src=FV_CNBC_SUMMER_IFRAME;
-    iframe.title='Casa Neos Beach Club summer floor plan';
-    iframe.setAttribute('allow','clipboard-write');
-    iframe.style.cssText='flex:1 1 auto;width:100%;height:100%;border:0;background:#000';
-    wrap.appendChild(note);
-    wrap.appendChild(iframe);
-    host.appendChild(wrap);
-    _fv3dLoaded=true;
-    return;
-  }
-
-  /* Regular GLB path */
+  /* Drop leftover booking iframe if present from older builds. */
   var existing=document.getElementById('fv3dViewer');
   if(existing && existing.tagName==='IFRAME'){
     host.innerHTML='<div id="fv3dLoading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cbb8e8;font-size:12px;pointer-events:none">Loading 3D floor plan\u2026</div>';
     existing=null;
     _fv3dLoaded=false;
   }
+
   _ensureModelViewerScript(function(){
     var h=document.getElementById('fv3dHost');
     if(!h) return;
@@ -498,16 +480,21 @@ function renderFv3dFloorVisual(){
       _fv3dLoaded=true;
     }
     var l=document.getElementById('fv3dLoading');
-    if(l){ l.style.display='flex'; l.style.color='#cbb8e8'; l.textContent='Loading '+m.venue+' floor plan\u2026'; }
-    mv.setAttribute('alt', m.venue+' 3D floor plan');
+    var summer=m.key==='casa-neos-beach-club' && isCnbcSummerFloor(dateStr);
+    if(l){
+      l.style.display='flex';
+      l.style.color='#cbb8e8';
+      l.textContent='Loading '+m.venue+(summer?' summer beach':'')+' floor plan\u2026';
+    }
+    mv.setAttribute('alt', m.venue+(summer?' summer beach':'')+' 3D floor plan');
     mv.setAttribute('camera-orbit',m.orbit||'45deg 60deg 110%');
-    if(mv.getAttribute('src')!==m.url) mv.setAttribute('src', m.url);
+    if(mv.getAttribute('src')!==modelUrl) mv.setAttribute('src', modelUrl);
     else if(l) l.style.display='none';
-    var tableKey=fv3dEffectiveTableKey(m.key, getFv3dDate());
+    var tableKey=fv3dEffectiveTableKey(m.key, dateStr);
     var tiers=_fv3dPriceOverride&&_fv3dPriceOverride.modelKey===m.key
       ? _fv3dPriceOverride.tiers
-      : scaleTiersToBsTarget(m.key,null,getFv3dDate());
-    renderFv3dHotspots(mv, tableKey==='casa-neos-beach-club-summer'?'casa-neos-beach-club':tableKey, tiers);
+      : scaleTiersToBsTarget(m.key,null,dateStr);
+    renderFv3dHotspots(mv, 'casa-neos-beach-club-summer'===tableKey?'casa-neos-beach-club':tableKey, tiers);
   });
 }
 
@@ -515,7 +502,7 @@ function renderFv3dReference(){
   var m=FV_3D_MODELS.find(function(x){return x.key===_fv3dModelKey;})||FV_3D_MODELS[0];
   var dateStr=getFv3dDate();
   var tableKey=fv3dEffectiveTableKey(m.key, dateStr);
-  var summer=fv3dUsesIframe(m.key, dateStr);
+  var summer=m.key==='casa-neos-beach-club' && isCnbcSummerFloor(dateStr);
   var baseTiers=FV_3D_TABLES[tableKey]||FV_3D_TABLES[m.key]||[];
   var tiers=_fv3dPriceOverride && _fv3dPriceOverride.modelKey===m.key ? _fv3dPriceOverride.tiers : baseTiers.map(function(t){
     return {name:t.name,color:t.color,capacity:t.capacity,tables:t.tables||[],minimum:t.minimum,suggested:null};
