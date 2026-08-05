@@ -99,4 +99,23 @@ function shouldClearGuard(sameDj, sameFee){
 }
 assert(shouldClearGuard(true,true)===false, 'guard stays after match so later sync cannot wipe rename');
 
+/* 8) Deletes must not be resurrected by add guards */
+function applyDeletesAndGuards(shows, deletedUids, guards){
+  var s=shows.filter(function(r){ return !(r._uid && deletedUids[r._uid]); });
+  Object.keys(guards).forEach(function(uid){
+    if(deletedUids[uid]) return;
+    var g=guards[uid];
+    if(!g || !g._added) return;
+    if(s.some(function(r){ return r._uid===uid; })) return;
+    s.push({_uid:uid, dj:g.dj, _added:1});
+  });
+  return s;
+}
+var afterDel=applyDeletesAndGuards(
+  [{_uid:'a',dj:'Matthias',_added:1}],
+  {a:{at:1}},
+  {a:{dj:'Matthias',_added:1}}
+);
+assert(afterDel.length===0, 'deleted add is not resurrected by guard');
+
 console.log('\nAll sched guard tests passed.');

@@ -26,7 +26,9 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
      is edited. Memory + sessionStorage; never expire within the browser tab.
      Cleared only when Firebase already matches the saved identity. */
   var _SCHED_EDIT_STORE = 'rdg_sched_edits_v2';
+  var _SCHED_DEL_STORE = 'rdg_sched_deleted_v1';
   window._schedWriteGuard = window._schedWriteGuard || {};
+  window._schedDeletedUids = window._schedDeletedUids || {};
   function _loadSchedEditStore(){
     try{
       var raw=sessionStorage.getItem(_SCHED_EDIT_STORE);
@@ -37,14 +39,26 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         });
       }
     }catch(e){}
+    try{
+      var draw=sessionStorage.getItem(_SCHED_DEL_STORE);
+      var dobj=draw?JSON.parse(draw):{};
+      if(dobj && typeof dobj==='object'){
+        Object.keys(dobj).forEach(function(uid){
+          if(dobj[uid]) window._schedDeletedUids[uid]=dobj[uid];
+        });
+      }
+    }catch(e2){}
   }
   function _saveSchedEditStore(){
     try{ sessionStorage.setItem(_SCHED_EDIT_STORE, JSON.stringify(window._schedWriteGuard||{})); }catch(e){}
+    try{ sessionStorage.setItem(_SCHED_DEL_STORE, JSON.stringify(window._schedDeletedUids||{})); }catch(e2){}
   }
   _loadSchedEditStore();
   window._guardSchedWrite = function(rec){
     if(!rec || !rec.d) return;
     ensureShowUid(rec);
+    /* Saving/editing a show clears any delete tombstone for it. */
+    if(window._schedDeletedUids[rec._uid]) delete window._schedDeletedUids[rec._uid];
     window._schedWriteGuard[rec._uid] = {
       at: Date.now(),
       dj: rec.dj||'',
@@ -67,24 +81,48 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     };
     _saveSchedEditStore();
   };
+  window._guardClearDeleted = function(rec){
+    if(!rec) return;
+    ensureShowUid(rec);
+    var uid=rec._uid;
+    if(window._schedWriteGuard[uid]) delete window._schedWriteGuard[uid];
+    window._schedDeletedUids[uid] = {
+      at: Date.now(),
+      d: rec.d||'',
+      v: rec.v||rec.venue||'',
+      _uid: uid
+    };
+    _saveSchedEditStore();
+  };
+  window._guardUndelete = function(rec){
+    if(!rec) return;
+    ensureShowUid(rec);
+    if(window._schedDeletedUids[rec._uid]) delete window._schedDeletedUids[rec._uid];
+    _saveSchedEditStore();
+  };
   function _reapplySchedGuards(s){
     _loadSchedEditStore();
     var gmap = window._schedWriteGuard || {};
+    var deleted = window._schedDeletedUids || {};
     var needRepush = [];
+    /* Drop any shows that were locally deleted (tombstones) before guards run. */
+    for(var si=s.length-1;si>=0;si--){
+      if(s[si] && s[si]._uid && deleted[s[si]._uid]) s.splice(si,1);
+    }
     Object.keys(gmap).forEach(function(uid){
       var g = gmap[uid];
       if(!g) return;
+      if(deleted[uid]){ delete gmap[uid]; _saveSchedEditStore(); return; }
       var idx = -1;
       for(var i=0;i<s.length;i++){ if(s[i] && String(s[i]._uid||'')===String(uid)){ idx=i; break; } }
       if(idx < 0){
-        /* Also match baked row by venue|date when this guard is a rename of that night. */
-        if(g.d && (g.v||g.venue)){
+        /* Rename of an existing baked night — retarget by venue|date (never resurrect deletes). */
+        if(g.d && (g.v||g.venue) && !g._added){
           var hits = s.filter(function(r){
-            return r && !r._added && r.d===g.d && (r.v||r.venue||'')===(g.v||g.venue||'');
+            return r && !r._added && r.d===g.d && (r.v||r.venue||'')===(g.v||g.venue||'') && !deleted[r._uid];
           });
           if(hits.length===1){
             idx = s.indexOf(hits[0]);
-            /* Keep bake uid stable — retarget guard key if needed. */
             var bakeUid = ensureShowUid(hits[0]);
             if(bakeUid && bakeUid!==uid){
               g._uid = bakeUid;
@@ -97,7 +135,8 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         }
       }
       if(idx < 0){
-        if(g._added){
+        /* Never re-push deleted adds. Only re-push live adds that are still wanted. */
+        if(g._added && !deleted[uid]){
           s.push(Object.assign({}, g, {_added:1, _uid:uid}));
           needRepush.push(s[s.length-1]);
         }
@@ -117,8 +156,6 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         needRepush.push(cur);
       }
       if(g.djStatus !== undefined) cur.djStatus = g.djStatus;
-      /* Do NOT delete the guard when it matches — a later sync can still lose the
-         Firebase edit; keep session truth until the tab closes. */
     });
     return needRepush;
   }
@@ -191,6 +228,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     adds.forEach(function(r){
       if(!r) return;
       ensureShowUid(r);
+      if(window._schedDeletedUids && window._schedDeletedUids[r._uid]) return;
       r._added=1;
       var exists = s.some(function(x){ return x._uid===r._uid; });
       if(!exists) s.push(r);
@@ -200,13 +238,15 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
        "+ Add show" look broken on dates where a prior show was deleted. */
     var dels = ov.deletes ? (Array.isArray(ov.deletes)?ov.deletes:Object.values(ov.deletes)) : [];
     s = s.filter(function(r){
+      if(!r) return false;
+      if(window._schedDeletedUids && r._uid && window._schedDeletedUids[r._uid]) return false;
       var dateKey=_schedDateKey(r);
       var uidKey=_schedUidKey(r);
       for(var di=0;di<dels.length;di++){
         var dk=dels[di];
         if(!dk) continue;
         var p=String(dk).split('|');
-        if(p.length>=3){ if(uidKey===dk) return false; }
+        if(p.length>=3){ if(uidKey===dk || (r._uid && p[2]===r._uid)) return false; }
         else if(dateKey===dk){
           if(r._added) return true;
           return false;

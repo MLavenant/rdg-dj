@@ -585,8 +585,11 @@ function _schedRecordKey(rec){ return _schedUidKey(rec); }
 function _isBakedSchedRecord(rec){
   if(!rec) return false;
   ensureShowUid(rec);
-  return SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===rec._uid; })
-    || SCHED_BAKED.some(function(r){ return (r.venue||r.v)===(rec.venue||rec.v) && r.d===rec.d && (r.dj||'')===(rec.dj||''); });
+  if(SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===rec._uid; })) return true;
+  if(rec._added) return false;
+  var venue=rec.v||rec.venue||'';
+  var hits=SCHED_BAKED.filter(function(r){ return r && (r.v||r.venue)===venue && r.d===rec.d; });
+  return hits.length===1;
 }
 function _fbClearEditKeys(rec){
   if(!rec||!window._fbRef) return;
@@ -602,28 +605,31 @@ function _fbRemoveSchedRecord(rec){
   var uidKey=_schedUidKey(rec);
   var dateKey=_schedDateKey(rec);
   var uid=rec._uid;
-  if(_isBakedSchedRecord(rec)){
-    window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
-      var arr=vals?(Array.isArray(vals)?vals:Object.values(vals)):[];
-      if(arr.indexOf(uidKey)<0) arr.push(uidKey);
-      return arr;
-    });
-    window._fbRef.child('schedOverrides/edits/'+uidKey.replace(/\//g,'_')).remove();
-    window._fbRef.child('schedOverrides/edits/'+dateKey.replace(/\//g,'_')).remove();
-  }else{
-    window._fbRef.child('schedOverrides/addsByUid/'+uid).remove();
-    window._fbRef.child('schedOverrides/adds').transaction(function(vals){
-      if(!vals) return vals;
-      var arr=Array.isArray(vals)?vals:Object.values(vals);
-      var next=arr.filter(function(r){ return !(r && (r._uid===uid || _schedKeysMatch(r,rec))); });
-      return next.length?next:null;
-    });
-  }
+  if(typeof window._guardClearDeleted==='function') window._guardClearDeleted(rec);
+  /* Always strip any add/edit payload for this uid so it cannot come back. */
+  try{ window._fbRef.child('schedOverrides/addsByUid/'+uid).remove(); }catch(eA){}
+  try{ window._fbRef.child('schedOverrides/edits/'+uidKey.replace(/\//g,'_')).remove(); }catch(eE){}
+  try{ window._fbRef.child('schedOverrides/edits/'+dateKey.replace(/\//g,'_')).remove(); }catch(eL){}
+  window._fbRef.child('schedOverrides/adds').transaction(function(vals){
+    if(!vals) return vals;
+    var arr=Array.isArray(vals)?vals:Object.values(vals);
+    var next=arr.filter(function(r){ return !(r && (r._uid===uid || _schedKeysMatch(r,rec))); });
+    return next.length?next:null;
+  });
+  /* Tombstone baked rows (and any uid) so apply cannot resurrect from bake. */
+  window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
+    var arr=vals?(Array.isArray(vals)?vals:Object.values(vals)):[];
+    if(arr.indexOf(uidKey)<0) arr.push(uidKey);
+    /* Also day-key when this is the only show that night — empty day stays empty. */
+    if(_countShowsOnDate(rec.venue||rec.v, rec.d)<=1 && arr.indexOf(dateKey)<0) arr.push(dateKey);
+    return arr;
+  });
 }
 function _fbRestoreSchedRecord(rec){
   if(!rec||!window._fbRef) return;
   ensureShowUid(rec);
   var uidKey=_schedUidKey(rec);
+  if(typeof window._guardUndelete==='function') window._guardUndelete(rec);
   if(_isBakedSchedRecord(rec)){
     window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
       if(!vals) return vals;
@@ -631,7 +637,7 @@ function _fbRestoreSchedRecord(rec){
       var next=arr.filter(function(k){return k!==uidKey && k!==_schedDateKey(rec);});
       return next.length?next:null;
     });
-    window._fbRef.child('schedOverrides/edits/'+uidKey.replace(/\//g,'_')).set(rec);
+    window._fbRef.child('schedOverrides/edits/'+uidKey.replace(/\//g,'_')).set(_fbSanitize(rec));
   }else{
     persistSchedShow(rec);
   }
@@ -759,17 +765,31 @@ function saveEvent(){
   if(curView==='forecast') renderForecast();
 }
 function deleteEvent(){
-  if(_editIdx<0) return;
+  /* Resolve by uid first — same stale-index protection as save. */
+  if(_editUid){
+    var resolved=-1;
+    for(var ri=0;ri<SCHED.length;ri++){
+      if(SCHED[ri] && ensureShowUid(SCHED[ri])===String(_editUid)){ resolved=ri; break; }
+    }
+    if(resolved>=0) _editIdx=resolved;
+  }
+  if(_editIdx<0 || _editIdx>=SCHED.length) return;
   var show = SCHED[_editIdx];
-  var label = (show ? (show.dj||'this performance') + ' on ' + (show.d||'') : 'this performance');
+  if(!show) return;
+  var label = (show.dj||'this performance') + ' on ' + (show.d||'');
   if(!confirm('Delete ' + label + '?\n\nYou can undo this from Tools if needed.')) return;
   var before=_clone(show), beforeIndex=_editIdx;
   pushUndo('Delete show: '+(show.dj||'TBD')+' '+show.d,function(){
     _undoShowChange(before,null,beforeIndex);
   });
-  /* Sync delete to Firebase before splicing */
-  if(window._fbSave && show){ _fbRemoveSchedRecord(show); }
-  SCHED.splice(_editIdx,1); IDX=buildIdx(SCHED); closeModal(); go();
+  if(typeof window._guardClearDeleted==='function') window._guardClearDeleted(show);
+  if(window._fbRef) _fbRemoveSchedRecord(show);
+  SCHED.splice(_editIdx,1);
+  _editIdx=-1; _editUid='';
+  IDX=buildIdx(SCHED);
+  closeModal();
+  go();
+  if(curView==='calendar') renderCal();
   if(curView==='accounting') renderAccounting();
   if(curView==='budget'&&_budgetInited) renderBudget();
 }
