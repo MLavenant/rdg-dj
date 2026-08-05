@@ -171,8 +171,7 @@ function renderAccountingGuest(yr, mo, mm, days){
   h+='<th class="sc-num" style="background:#eef7ee">BS Actual</th>';
   h+='<th class="acct-status-hd">DJ Status</th>';
   h+='<th class="acct-status-hd">AP Status</th>';
-  h+='<th class="acct-doc-hd">Contract</th>';
-  h+='<th class="acct-doc-hd">Invoice</th>';
+  h+='<th class="acct-note-hd">Notes</th>';
   h+='<th class="sc-act-r" title="R365">R365</th>';
   h+='<th class="sc-act"></th>';
   h+='</tr></thead><tbody>';
@@ -219,7 +218,7 @@ function renderAccountingGuest(yr, mo, mm, days){
       h+='<td class="sc-date-cell">'+dateStr+'</td>';
       h+='<td class="sc-ev-cell">'+_evLabelHtml(evLabel, ds)+'</td>';
       h+='<td colspan="4" class="sc-empty-day"></td>';
-      h+='<td></td><td></td><td></td><td></td><td></td>';
+      h+='<td></td><td></td><td></td><td></td>';
       h+='<td class="sc-act">'+(isAccountingOnlyVenue(curAcctV)?'':'<button class="sc-add-btn" data-ds="'+ds+'" data-action="add">+</button>')+'</td>';
       h+='</tr>';
       continue;
@@ -267,8 +266,10 @@ function renderAccountingGuest(yr, mo, mm, days){
           +'</select>'
           +'<div class="acct-last-edit" data-ds="'+ds+'" data-action="acctHist" title="View edit history">'+lastHint+'</div>'
           +'</div></td>';
-        h+='<td class="acct-doc-cell" rowspan="'+nrows+'">'+_acctDocDropHtml(ds,'contract',acct.contracts)+'</td>';
-        h+='<td class="acct-doc-cell" rowspan="'+nrows+'">'+_acctDocDropHtml(ds,'invoice',acct.invoices)+'</td>';
+        h+='<td class="acct-note-cell" rowspan="'+nrows+'">'
+          +'<textarea class="acct-note-inp" data-ds="'+ds+'" data-action="acctNote" rows="2" placeholder="AP / accounting notes…">'
+          +String(acct.note||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          +'</textarea></td>';
         h+='<td class="sc-act-r" rowspan="'+nrows+'"><label class="r365-wrap"><input type="checkbox" class="r365-chk" data-ds="'+ds+'" data-action="r365" '+(acct.r365?'checked':'')+'><span class="r365-box">R</span></label></td>';
       }
       h+='<td class="sc-act"><button class="sc-edit-btn" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="edit">&#9998;</button></td>';
@@ -277,7 +278,7 @@ function renderAccountingGuest(yr, mo, mm, days){
   }
 
   if(_acctStatusFilter && !anyFilterMatch){
-    h+='<tr><td colspan="12" class="sc-empty-day" style="text-align:center;padding:16px">No shows with status "'+_acctStatusFilter+'" this month.</td></tr>';
+    h+='<tr><td colspan="11" class="sc-empty-day" style="text-align:center;padding:16px">No shows with status "'+_acctStatusFilter+'" this month.</td></tr>';
   }
 
   h+='<tr class="acct-total-row">';
@@ -285,7 +286,7 @@ function renderAccountingGuest(yr, mo, mm, days){
   h+='<td class="sc-num acct-col-fee"><b>'+$k(totDJ)+'</b></td>';
   h+='<td class="sc-num acct-col-target">'+$k(totBSM)+'</td>';
   h+='<td class="sc-num '+(totBSA&&totBSM?(totBSA>=totBSM?'hit':'low'):'')+'"><b>'+$k(totBSA)+'</b></td>';
-  h+='<td></td><td></td><td></td><td></td><td></td><td></td>';
+  h+='<td></td><td></td><td></td><td></td><td></td>';
   h+='</tr></tbody></table>';
 
   document.getElementById('acctBody').innerHTML=h;

@@ -123,50 +123,14 @@ function _modalBudgetBlock(venue, dateStr, feeToAdd){
 }
 function _modalSalesBlock(venue, dateStr, feeToAdd, name){
   if(!venue || !dateStr) return '';
-  var fee=+feeToAdd||0;
-  var tgt=fee ? showTargets({v:venue, venue:venue, d:dateStr, fee:fee, cost:fee}) : {bs_m:null, roi_t:null};
-  var info=fiscalInfoForDate(dateStr);
-  var salesPlan=getBgtPlan(venue, info.year, info.mm, 'sales');
-  var livePlan=getBgtPlan(venue, info.year, info.mm, 'live');
-  var monthSpend=_modalFiscalSpend(venue, info.year, info.mm, _editIdx);
-  var liveNow=livePlan!=null ? livePlan : monthSpend;
-  var liveAfter=liveNow + fee;
-  var marginNow=pctLive(salesPlan, liveNow);
-  var marginAfter=pctLive(salesPlan, liveAfter);
-  var fc=_modalForecastRow(venue, dateStr);
-  var fcBs=fc && (fc.bsActual!=null || fc.totalRevenue!=null) ? (+fc.bsActual||+fc.totalRevenue||0) : null;
-  var fcTables=fc && fc.bookedTables!=null ? +fc.bookedTables : null;
   var py=typeof resolvePyFields==='function' ? resolvePyFields(venue, dateStr) : null;
-  var histRoi=null;
-  if(name){
-    var proj=djProj(name, fee||null);
-    if(proj && proj.p && proj.p.avg_roi_a!=null) histRoi=proj.p.avg_roi_a;
-  }
-  var expectedRoi=tgt.roi_t!=null ? tgt.roi_t : (histRoi!=null?histRoi:null);
-  var expectedBs=tgt.bs_m!=null ? tgt.bs_m : (histRoi!=null&&fee?Math.round(fee*histRoi):null);
-
   function row(label, val, cls){
     return '<div class="dj-sugg-row"><span>'+label+'</span><b'+(cls?' class="'+cls+'"':'')+'>'+val+'</b></div>';
   }
   var h='<div class="dj-sugg-sec dj-sugg-sales">';
-  h+='<div class="dj-sugg-sec-hd">Sales &amp; Forecast</div>';
+  h+='<div class="dj-sugg-sec-hd">Same weekend last year</div>';
   h+='<div class="dj-sugg-grid">';
   h+='<div class="dj-sugg-panel">';
-  h+='<div class="dj-sugg-panel-hd">This booking</div>';
-  h+=row('Forecast ROI', expectedRoi!=null?(Number(expectedRoi).toFixed(1)+'x'):'-');
-  h+=row('Forecast BS target', expectedBs!=null?$k(expectedBs):'-');
-  h+=row('Forecast Live E margin now (fees/sales)', marginNow!=null?(marginNow+'%'):'-');
-  h+=row('Forecast Live E margin after', marginAfter!=null?(marginAfter+'%'):'-');
-  var fcLabel='FourVenues paced BS';
-  var fcVal;
-  if(fcBs!=null && fcBs>0) fcVal=$k(fcBs);
-  else if(fcTables!=null && fcTables>0) fcVal=fcTables+' tables booked';
-  else fcVal='<span class="muted">No FourVenues pace yet</span>';
-  h+=row(fcLabel, fcVal);
-  h+='<div class="dj-sugg-row"><span class="muted" style="font-size:10px;line-height:1.35">Paced bottle service already on the books for this date (FourVenues). Separate from the fee-based BS target above.</span><b></b></div>';
-  h+='</div>';
-  h+='<div class="dj-sugg-panel">';
-  h+='<div class="dj-sugg-panel-hd">Same weekend last year</div>';
   if(py && py.py_dj){
     h+=row('Artist', djLabel(py.py_dj));
     h+=row('Fee', $k(py.py_fee));

@@ -1099,13 +1099,20 @@ function wireAccountingEvents(){
   document.querySelectorAll('#acctBody [data-action="apStatus"]').forEach(function(sel){
     sel.addEventListener('change',function(){ updateAcctApStatus(sel.dataset.ds, sel.value, sel); });
   });
+  document.querySelectorAll('#acctBody [data-action="acctNote"]').forEach(function(ta){
+    ta.addEventListener('focus', function(){ window._calStatusMenuOpen=true; });
+    ta.addEventListener('blur', function(){
+      window._calStatusMenuOpen=false;
+      updateAcctNote(ta.dataset.ds, ta.value);
+      if(typeof _calFlushPendingRefresh==='function') setTimeout(_calFlushPendingRefresh, 0);
+    });
+  });
   document.querySelectorAll('#acctBody [data-action="acctHist"]').forEach(function(btn){
     btn.addEventListener('click',function(){ showAcctHistory(btn.dataset.ds); });
   });
   document.querySelectorAll('#acctBody [data-action="r365"]').forEach(function(chk){
     chk.addEventListener('change',function(){ updateR365(chk, chk.dataset.ds); });
   });
-  wireAccountingDocDrops();
 }
 
 var _acctStatusFilter=null; /* when set, only show rows matching this status */
@@ -1237,6 +1244,7 @@ function _calUiBusy(){
   if(!ae) return false;
   if(ae.tagName==='SELECT' && ae.getAttribute('data-action')==='djStatus') return true;
   if(ae.tagName==='SELECT' && ae.classList && ae.classList.contains('acct-status-sel')) return true;
+  if(ae.tagName==='TEXTAREA' && ae.getAttribute('data-action')==='acctNote') return true;
   return false;
 }
 function _calRequestRefresh(forceGo){
@@ -1359,6 +1367,17 @@ function updateAcctApStatus(ds,val,sel){
   _acctPushLog(acct,'AP Status',prev,next,by);
   _acctPersist();
   renderAccounting();
+}
+function updateAcctNote(ds,val){
+  if(!ds) return;
+  var acct=_acctNormalize(getAcct(ds));
+  var next=String(val==null?'':val).trim()||null;
+  var prev=acct.note||null;
+  if((prev||'')===(next||'')) return;
+  _pushAcctUndo('Edit accounting note');
+  acct.note=next;
+  _acctPushLog(acct,'Notes',prev||'',next||'(cleared)',_acctSoftEditorName());
+  _acctPersistDay(ds);
 }
 function updateAcctStatus(ds,val){ /* legacy */ updateAcctDjStatus(ds,val); }
 function _fmtAcctWhen(iso){
