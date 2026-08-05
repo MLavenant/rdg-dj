@@ -682,6 +682,24 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 #view-accounting.acct-others-mode .acct-others-name{width:100%}
 #view-accounting.acct-others-mode .acct-others-cost{width:100%}
 #view-accounting.acct-others-mode .sc-date-cell{white-space:nowrap;text-overflow:ellipsis}
+/* Accounting column separators + group tints */
+.acct-tbl th,.acct-tbl td{border-left:1px solid rgba(15,23,42,.08)}
+.acct-tbl th:first-child,.acct-tbl td:first-child{border-left:none}
+.acct-tbl thead th.sc-date,.acct-tbl thead th.sc-ev{background:#eef2f7!important}
+.acct-tbl thead th.sc-dj,.acct-tbl thead th.acct-agency-hd{background:#e8f1ff!important}
+.acct-tbl thead th.acct-col-fee,.acct-tbl thead th.acct-col-target,.acct-tbl thead th.acct-col-bsa{background:#eef7ee!important}
+.acct-tbl thead th.acct-status-hd{background:#f3eef8!important}
+.acct-tbl thead th.acct-ap-hd{background:#fff4e8!important}
+.acct-tbl thead th.acct-note-hd{background:#f4f6f8!important}
+.acct-tbl thead th.sc-act-r,.acct-tbl thead th.sc-act{background:#eef2f7!important}
+.acct-tbl .sc-dj-cell{border-left:1px solid rgba(45,103,178,.22)!important}
+.acct-tbl .acct-agency-cell{background:rgba(232,241,255,.45)}
+.acct-tbl .acct-col-fee{border-left:1px solid rgba(34,120,70,.18)!important}
+.acct-tbl .acct-col-bsa{background:rgba(238,247,238,.55)}
+.acct-tbl .acct-status-cell{border-left:1px solid rgba(120,80,160,.16)!important}
+.acct-tbl .acct-ap-cell,.acct-tbl th.acct-ap-hd{border-left:1px solid rgba(180,110,40,.22)!important}
+.acct-tbl .acct-ap-cell{background:rgba(255,244,232,.4)}
+.acct-tbl .acct-note-cell{border-left:1px solid rgba(15,23,42,.1)!important;background:rgba(244,246,248,.55)}
 .acct-agency-hd{min-width:88px;max-width:110px;width:96px;text-align:center!important}
 .acct-agency-cell{min-width:88px;max-width:120px;vertical-align:middle!important;padding:3px 4px!important}
 .acct-agency-inp{width:100%;box-sizing:border-box;font-size:10px;font-weight:600;font-family:inherit;padding:4px 5px;border:0.5px solid var(--rule);border-radius:6px;background:#fff;color:var(--ink);outline:none}

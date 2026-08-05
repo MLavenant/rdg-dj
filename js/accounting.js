@@ -166,12 +166,12 @@ function renderAccountingGuest(yr, mo, mm, days){
   h+='<th class="sc-date">Date</th>';
   h+='<th class="sc-ev">Event</th>';
   h+='<th class="sc-dj">Guest DJ</th>';
+  h+='<th class="acct-agency-hd" title="Booking agency">Agency</th>';
   h+='<th class="sc-num acct-col-fee">DJ Fee</th>';
   h+='<th class="sc-num acct-col-target">BS Target</th>';
-  h+='<th class="sc-num" style="background:#eef7ee">BS Actual</th>';
+  h+='<th class="sc-num acct-col-bsa">BS Actual</th>';
   h+='<th class="acct-status-hd">DJ Status</th>';
-  h+='<th class="acct-agency-hd" title="Booking agency">Agency</th>';
-  h+='<th class="acct-status-hd">AP Status</th>';
+  h+='<th class="acct-status-hd acct-ap-hd">AP Status</th>';
   h+='<th class="acct-note-hd">Notes</th>';
   h+='<th class="sc-act-r" title="R365">R365</th>';
   h+='<th class="sc-act"></th>';
@@ -218,8 +218,8 @@ function renderAccountingGuest(yr, mo, mm, days){
       h+='<tr class="'+dc+'">';
       h+='<td class="sc-date-cell">'+dateStr+'</td>';
       h+='<td class="sc-ev-cell">'+_evLabelHtml(evLabel, ds)+'</td>';
-      h+='<td colspan="4" class="sc-empty-day"></td>';
-      h+='<td></td><td></td><td></td><td></td><td></td>';
+      h+='<td colspan="5" class="sc-empty-day"></td>';
+      h+='<td></td><td></td><td></td><td></td>';
       h+='<td class="sc-act">'+(isAccountingOnlyVenue(curAcctV)?'':'<button class="sc-add-btn" data-ds="'+ds+'" data-action="add">+</button>')+'</td>';
       h+='</tr>';
       continue;
@@ -249,22 +249,22 @@ function renderAccountingGuest(yr, mo, mm, days){
         h+='<td class="sc-ev-cell" rowspan="'+nrows+'">'+_evLabelHtml(evLabel, ds)+'</td>';
       }
       h+='<td class="sc-dj-cell"><b class="'+bsCls+'">'+nm+'</b>'+(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')+'</td>';
-      h+='<td class="sc-num acct-col-fee fee-cell '+(feeCls||'')+'">'+$k(r.fee||r.cost||null)+'</td>';
-      h+='<td class="sc-num acct-col-target">'+$k(bsM)+'</td>';
-      h+='<td class="sc-num '+bsCls+'"><b>'+$k(r.bs_a)+'</b></td>';
-      var djSt=getShowDjStatus(r, ds)||'';
       var showUid=ensureShowUid(r);
-      h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
-        +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="djStatus"')
-        +'</div></td>';
       var agencyEsc=String(r.agency||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
       h+='<td class="acct-agency-cell">'
         +'<input type="text" class="acct-agency-inp" data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="acctAgency" value="'+agencyEsc+'" placeholder="Agency" title="Agency name">'
         +'</td>';
+      h+='<td class="sc-num acct-col-fee fee-cell '+(feeCls||'')+'">'+$k(r.fee||r.cost||null)+'</td>';
+      h+='<td class="sc-num acct-col-target">'+$k(bsM)+'</td>';
+      h+='<td class="sc-num acct-col-bsa '+bsCls+'"><b>'+$k(r.bs_a)+'</b></td>';
+      var djSt=getShowDjStatus(r, ds)||'';
+      h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
+        +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="djStatus"')
+        +'</div></td>';
       if(ri===0){
         var apSt=acct.apStatus||'';
         var lastHint=acct.updatedBy?('Last: '+acct.updatedBy+' \u00b7 '+_fmtAcctWhen(acct.updatedAt)):'History';
-        h+='<td class="acct-status-cell" rowspan="'+nrows+'"><div class="acct-status-wrap">'
+        h+='<td class="acct-status-cell acct-ap-cell" rowspan="'+nrows+'"><div class="acct-status-wrap">'
           +'<select class="acct-status-sel '+acctStatusClass(apSt||null)+'" data-ds="'+ds+'" data-action="apStatus" title="AP Status">'
           +'<option value=""'+(!apSt?' selected':'')+'>Not set</option>'
           +ACCT_AP_STATUS.map(function(opt){return '<option value="'+opt+'"'+(apSt===opt?' selected':'')+'>'+opt+'</option>';}).join('')
@@ -287,11 +287,11 @@ function renderAccountingGuest(yr, mo, mm, days){
   }
 
   h+='<tr class="acct-total-row">';
-  h+='<td><b>'+(_acctStatusFilter?'FILTERED':'MONTH')+' TOTAL</b></td><td></td><td></td>';
+  h+='<td><b>'+(_acctStatusFilter?'FILTERED':'MONTH')+' TOTAL</b></td><td></td><td></td><td></td>';
   h+='<td class="sc-num acct-col-fee"><b>'+$k(totDJ)+'</b></td>';
   h+='<td class="sc-num acct-col-target">'+$k(totBSM)+'</td>';
-  h+='<td class="sc-num '+(totBSA&&totBSM?(totBSA>=totBSM?'hit':'low'):'')+'"><b>'+$k(totBSA)+'</b></td>';
-  h+='<td></td><td></td><td></td><td></td><td></td><td></td>';
+  h+='<td class="sc-num acct-col-bsa '+(totBSA&&totBSM?(totBSA>=totBSM?'hit':'low'):'')+'"><b>'+$k(totBSA)+'</b></td>';
+  h+='<td></td><td></td><td></td><td></td><td></td>';
   h+='</tr></tbody></table>';
 
   document.getElementById('acctBody').innerHTML=h;
