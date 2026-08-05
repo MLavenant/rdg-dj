@@ -668,7 +668,7 @@ function renderKPIs() {
   if(curView==='leaderboard'||curView==='budget'){
     clearGlobalCalChrome();
     if(curView==='leaderboard'){
-      document.getElementById('pgSub').innerHTML = '<span>ROI Ranking ? all venues</span>';
+      document.getElementById('pgSub').innerHTML = '<span>ROI Ranking · '+(typeof _lbFilterLabel==='function'?_lbFilterLabel():'all venues')+'</span>';
     } else {
       document.getElementById('pgSub').innerHTML = '<span>'+(budgetSubTab==='planner'?'Budget Planner':'Overview')+'</span>';
     }

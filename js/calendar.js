@@ -653,6 +653,93 @@ function renderAllShows(){
                                                                   */
 var _lbDJ = null; /* selected DJ for detail view */
 var _lbSort = { key: 'score', dir: 'desc' };
+var _lbVenue = ''; /* '' = all locations */
+var _lbFeeBracket = 'all';
+/* Fee brackets: 0–5K, 5–15K, 15–25K, then +10K steps to 85K, then 85K+.
+   Upper bound inclusive; next bracket starts just above. */
+var LB_FEE_BRACKETS = [
+  {id:'all',   label:'All fees', min:null, max:null},
+  {id:'0-5',   label:'$0–5K',   min:0,     max:5000},
+  {id:'5-15',  label:'$5–15K',  min:5000,  max:15000},
+  {id:'15-25', label:'$15–25K', min:15000, max:25000},
+  {id:'25-35', label:'$25–35K', min:25000, max:35000},
+  {id:'35-45', label:'$35–45K', min:35000, max:45000},
+  {id:'45-55', label:'$45–55K', min:45000, max:55000},
+  {id:'55-65', label:'$55–65K', min:55000, max:65000},
+  {id:'65-75', label:'$65–75K', min:65000, max:75000},
+  {id:'75-85', label:'$75–85K', min:75000, max:85000},
+  {id:'85+',   label:'$85K+',   min:85000, max:null}
+];
+
+function setLbVenue(v){
+  _lbVenue=v||'';
+  _lbDJ=null;
+  renderLeaderboard();
+}
+function setLbFeeBracket(id){
+  _lbFeeBracket=id||'all';
+  _lbDJ=null;
+  renderLeaderboard();
+}
+function _lbFeeBracketDef(){
+  for(var i=0;i<LB_FEE_BRACKETS.length;i++){
+    if(LB_FEE_BRACKETS[i].id===_lbFeeBracket) return LB_FEE_BRACKETS[i];
+  }
+  return LB_FEE_BRACKETS[0];
+}
+function _lbFeeInBracket(fee, br){
+  if(!br || br.id==='all' || (br.min==null && br.max==null)) return true;
+  var f=+(fee||0);
+  if(br.id==='0-5') return f>=0 && f<=5000;
+  if(br.max==null) return f>br.min; /* 85K+ */
+  return f>br.min && f<=br.max;
+}
+function _lbPopulateFilters(){
+  var vs=document.getElementById('lbVenue');
+  if(vs){
+    var venues=[];
+    try{
+      SCHED.forEach(function(r){
+        var v=r.v||r.venue;
+        if(!v) return;
+        if(typeof HIDE_V!=='undefined' && HIDE_V.indexOf(v)>=0) return;
+        if(venues.indexOf(v)<0) venues.push(v);
+      });
+    }catch(e){}
+    venues.sort();
+    var html='<option value="">All locations</option>'
+      +venues.map(function(v){ return '<option value="'+String(v).replace(/"/g,'&quot;')+'">'+v+'</option>'; }).join('');
+    if(vs._lbHtml!==html){
+      vs._lbHtml=html;
+      vs.innerHTML=html;
+    }
+    vs.value=_lbVenue||'';
+  }
+  var fs=document.getElementById('lbFeeBracket');
+  if(fs && !fs._lbWired){
+    fs._lbWired=1;
+    fs.innerHTML=LB_FEE_BRACKETS.map(function(b){
+      return '<option value="'+b.id+'">'+b.label+'</option>';
+    }).join('');
+  }
+  if(fs) fs.value=_lbFeeBracket||'all';
+}
+function _lbFilterShows(shows){
+  var br=_lbFeeBracketDef();
+  return (shows||[]).filter(function(r){
+    var venue=r.venue||r.v||'';
+    if(_lbVenue && venue!==_lbVenue) return false;
+    var fee=r.fee!=null?r.fee:(r.cost!=null?r.cost:0);
+    if(!_lbFeeInBracket(fee, br)) return false;
+    return true;
+  });
+}
+function _lbFilterLabel(){
+  var bits=[];
+  bits.push(_lbVenue||'All locations');
+  bits.push(_lbFeeBracketDef().label);
+  return bits.join(' · ');
+}
 
 function lbSortBy(key){
   if(_lbSort.key === key) _lbSort.dir = _lbSort.dir === 'desc' ? 'asc' : 'desc';
@@ -669,10 +756,15 @@ function _lbTh(label, key){
 
 function renderLeaderboard(){
   if(_lbDJ) { renderDJDetail(_lbDJ); return; }
+  _lbPopulateFilters();
   var q=(document.getElementById('lbSearch')||{value:''}).value||'';
   var qs=q.trim().toUpperCase();
-  /* All venues combined, all-time */
-  var raw=SCHED.filter(function(r){return r._s!=='empty'&&r.roi_a!=null&&r.bs_a;}).map(function(r){return {venue:r.venue||r.v,dj:r.dj,cost:r.fee||r.cost,bs_a:r.bs_a,bs_m:r.bs_m,roi_a:r.roi_a,roi_t:r.roi_t,beat:r.beat,d:r.d};});
+  /* Filter shows first, then rank DJs only inside that slice. */
+  var raw=_lbFilterShows(SCHED.filter(function(r){
+    return r._s!=='empty'&&r.roi_a!=null&&r.bs_a;
+  })).map(function(r){
+    return {venue:r.venue||r.v,dj:r.dj,cost:r.fee||r.cost,bs_a:r.bs_a,bs_m:r.bs_m,roi_a:r.roi_a,roi_t:r.roi_t,beat:r.beat,d:r.d};
+  });
   var djMap={};
   raw.forEach(function(r){
     var key=(r.dj||'').trim().toUpperCase(); if(!key) return;
@@ -719,6 +811,15 @@ function renderLeaderboard(){
   });
   if(qs) list=list.filter(function(r){return r.dj.toUpperCase().indexOf(qs)>=0;});
 
+  var note=document.getElementById('lbFilterNote');
+  if(note){
+    note.textContent=list.length
+      ? ('Ranking '+list.length+' DJ'+(list.length===1?'':'s')+' · '+raw.length+' show'+(raw.length===1?'':'s')+' · '+_lbFilterLabel())
+      : ('No shows match '+_lbFilterLabel());
+  }
+  var sub=document.getElementById('pgSub');
+  if(sub && curView==='leaderboard') sub.innerHTML='<span>ROI Ranking · '+_lbFilterLabel()+'</span>';
+
   var h='<table class="shows-tbl"><thead><tr>'
     +'<th>#</th>'
     +_lbTh('DJ','dj')
@@ -732,6 +833,9 @@ function renderLeaderboard(){
     +_lbTh('Suggested Fee','fairFee')
     +_lbTh('Total BS Act','tBS')
     +'</tr></thead><tbody>';
+  if(!list.length){
+    h+='<tr><td colspan="11" style="text-align:center;padding:28px;color:var(--ink3)">No ranked shows for this location / fee range.</td></tr>';
+  }
   list.forEach(function(r,i){
     var fairCls = r.fairFee && r.avgFeePaid && r.fairFee<r.avgFeePaid ? 'low' : '';
     var VENUE_SHORT={'Casa Neos Beach Club':'CNBC','Casa Neos Lounge':'CNL','MILA Lounge':'MILA'};
@@ -770,13 +874,16 @@ function showDJDetail(djEnc){
 function renderDJDetail(djEnc){
   var djName=decodeURIComponent(djEnc);
   var djKey=djName.trim().toUpperCase();
-  /* All shows ACROSS ALL VENUES for this DJ */
-  var shows=SCHED.filter(function(r){
+  _lbPopulateFilters();
+  /* Detail respects the same location / fee filters as the ranking. */
+  var shows=_lbFilterShows(SCHED.filter(function(r){
     return r._s!=='empty'&&r.dj&&r.dj.trim().toUpperCase()===djKey&&r.bs_a;
-  }).map(function(r){return {venue:r.venue||r.v,dj:r.dj,cost:r.fee||r.cost,bs_a:r.bs_a,bs_m:r.bs_m,roi_a:r.roi_a,roi_t:r.roi_t,beat:r.beat,d:r.d};})
+  })).map(function(r){return {venue:r.venue||r.v,dj:r.dj,cost:r.fee||r.cost,bs_a:r.bs_a,bs_m:r.bs_m,roi_a:r.roi_a,roi_t:r.roi_t,beat:r.beat,d:r.d};})
    .sort(function(a,b){return a.d<b.d?-1:1;});
 
-  document.getElementById('lbMeta') && (document.getElementById('lbMeta').textContent=djName+'   '+shows.length+' shows across all venues');
+  var note=document.getElementById('lbFilterNote');
+  if(note) note.textContent=djName+' · '+shows.length+' show'+(shows.length===1?'':'s')+' · '+_lbFilterLabel();
+  document.getElementById('lbMeta') && (document.getElementById('lbMeta').textContent=djName+'   '+shows.length+' shows · '+_lbFilterLabel());
 
   var roiVals=shows.filter(function(r){return r.roi_a;});
   var avgROI=roiVals.length?roiVals.reduce(function(s,r){return s+r.roi_a;},0)/roiVals.length:0;
@@ -794,7 +901,7 @@ function renderDJDetail(djEnc){
   var bCls=meas&&beats/meas>=0.6?'hit':'low';
   [
     {l:'Shows',v:shows.length,c:''},
-    {l:'Avg ROI',v:avgROI.toFixed(2)+'x',c:bCls},
+    {l:'Avg ROI',v:avgROI?avgROI.toFixed(2)+'x':'-',c:bCls},
     {l:'Beat rate',v:meas?Math.round(beats/meas*100)+'%':'-',c:bCls},
     {l:'Avg BS/show',v:$k(avgBS),c:''},
     {l:'Avg fee paid',v:$k(avgFeePaid),c:''},
@@ -812,6 +919,9 @@ function renderDJDetail(djEnc){
     +'<th>Date</th><th>Venue</th><th>Fee</th><th>BS Target</th><th>BS Actual</th>'
     +'<th>ROI Tgt</th><th>ROI Act</th><th>Status</th>'
     +'</tr></thead><tbody>';
+  if(!shows.length){
+    h+='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--ink3)">No shows for this DJ in '+_lbFilterLabel()+'.</td></tr>';
+  }
   shows.forEach(function(r){
     var bsCls=perfTone(r.bs_a, r.bs_m, (r.fee||r.cost), r.roi_a, r.roi_t);
     var rCls=bsCls;
