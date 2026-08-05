@@ -2670,7 +2670,8 @@ function renderSystem(){
     + (overallBad ? 'NEEDS ATTENTION' : (overallWarn ? 'CHECK STALE DATA' : 'HEALTHY'))
     + '</span></div>'
     + '<div style="margin-top:8px;font-size:11px;color:var(--ink3);line-height:1.55">'
-    + 'GitHub Pages hosts the site. Toast + FourVenues refresh via punctual workflow_dispatch ~8:25 AM ET (cron-job.org / Windows task). '
+    + 'GitHub Pages hosts the site. Toast + FourVenues refresh via punctual workflow_dispatch ~8:25 AM ET, with automatic retries at <b>9:00</b> and <b>9:30</b> ET if needed (cron-job.org / Windows task). '
+    + 'If still failing after 9:30, Sanity stays <b style="color:#ef4444">RED</b>. '
     + 'GitHub schedule crons are late backup only (often hours delayed). '
     + 'LIVE only updates when someone presses Refresh (Toast API to Firebase).'
     + '</div></div>';
@@ -2706,9 +2707,9 @@ function renderSystem(){
     ? '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">forecastLive: <b style="color:var(--ink2)">'+forecastLive.updatedAt+'</b>'
       + (forecastLive.source ? ' ? '+forecastLive.source : '') + '</div>'
     : '';
-  h += card('FourVenues (Forecast BS Actual)', 'Punctual dispatch ~8:25 ET &middot; GitHub schedule = late backup &middot; Integrations API &middot; laptop off', fv, 36, fvExtra);
+  h += card('FourVenues (Forecast BS Actual)', 'Dispatch ~8:25 ET · retries 9:00 & 9:30 if needed · Integrations API · laptop off', fv, 36, fvExtra);
 
-  h += card('Toast BS Actual (calendar / history)', 'Punctual dispatch ~8:25 ET &middot; GitHub schedule = late backup &middot; Firebase toastActuals', toast, 84,
+  h += card('Toast BS Actual (calendar / history)', 'Dispatch ~8:25 ET · retries 9:00 & 9:30 if needed · Firebase toastActuals', toast, 84,
     (window._toastActuals && window._toastActuals.updatedAt
       ? '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">toastActuals: <b style="color:var(--ink2)">'+window._toastActuals.updatedAt+'</b></div>'
       : ''));
@@ -2732,7 +2733,7 @@ function renderSystem(){
     + '<div style="font-size:13px;font-weight:800;margin-bottom:6px">How the pieces fit</div>'
     + '<div style="font-size:11px;color:var(--ink3);line-height:1.6">'
     + '<b style="color:var(--ink2)">GitHub Pages (rdg-dj):</b> the published website everyone opens.<br>'
-    + '<b style="color:var(--ink2)">GitHub Actions (boh-dashboard):</b> cloud robot started by punctual dispatch ~8:25 ET (schedule = late backup) &middot; laptop can be off.<br>'
+    + '<b style="color:var(--ink2)">GitHub Actions (boh-dashboard):</b> cloud robot ~8:25 ET, retries 9:00 &amp; 9:30 if needed (schedule = late backup) &middot; laptop can be off.<br>'
     + '<b style="color:var(--ink2)">FourVenues:</b> Integrations API bookings (accepted + not-completed price) ? Forecast Actuals.<br>'
     + '<b style="color:var(--ink2)">Firebase:</b> instant overlays (Forecast Actuals, LIVE night, Sanity status).'
     + '</div></div>';

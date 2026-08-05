@@ -528,105 +528,73 @@ function renderBudgetYoYCompare(){
   h+='</tbody></table></div></div>';
   host.innerHTML=h;
 }
-/* Table 4: 2027 Guest DJ budget builder ? baselines + editable plan */
+/* Table 4: 2027 Guest DJ budget builder — Total Sales + DJ Fees (no suggested-fee engine) */
 function suggest2027Budget(venue, mi){
+  /* Kept for undo compatibility; planner no longer surfaces suggested fees. */
   var mm=padMm(mi);
   var fee25=(monthPerf(venue,2025,mm).tFee)||0;
   var fee26=(monthPerf(venue,2026,mm).tFee)||0;
   var bgt26=getMonthlyBudget(venue,2026,mm);
   var bgt27Existing=getMonthlyBudget(venue,2027,mm);
-  /* Prefer a disciplined envelope: max(2026 budget, 2025 actual) when 2026 overspent hard;
-     otherwise blend 70% of 2026 actual with 30% of 2026 budget for seasonality. */
-  var suggested=null;
-  if(bgt26!=null && fee26>0){
-    var overPct=fee26/bgt26;
-    if(overPct>1.25){
-      /* Heavy overspend month ? hold closer to budget, allow modest growth from 2025 */
-      suggested=Math.round(Math.max(bgt26, fee25*1.05)/500)*500;
-    } else if(overPct<0.9){
-      /* Under budget ? keep room near actual + buffer */
-      suggested=Math.round(Math.max(fee26*1.1, bgt26*0.95)/500)*500;
-    } else {
-      suggested=Math.round((fee26*0.7+bgt26*0.3)/500)*500;
-    }
-  } else if(bgt26!=null){
-    suggested=bgt26;
-  } else if(fee26>0){
-    suggested=Math.round(fee26/500)*500;
-  } else if(fee25>0){
-    suggested=Math.round(fee25*1.1/500)*500;
-  }
-  return {fee25:fee25||null, fee26:fee26||null, bgt26:bgt26, suggested:suggested, existing:bgt27Existing};
+  return {fee25:fee25||null, fee26:fee26||null, bgt26:bgt26, suggested:null, existing:bgt27Existing};
+}
+function _bgtTotalSales(venue, year, mm){
+  return getBgtActual(venue, year, mm, 'sales');
+}
+function _bgtLiveEnt(venue, year, mm){
+  return getBgtActual(venue, year, mm, 'live');
+}
+function _bgtPlanSales2027(venue, mm){
+  var planned=getBgtPlan(venue,2027,mm,'sales');
+  if(planned!=null) return planned;
+  /* Assume next-year Total Sales = this-year actual until edited. */
+  var sales26=_bgtTotalSales(venue,2026,mm);
+  return sales26!=null?Math.round(sales26):null;
 }
 
 var _bgtPlayMonth = null;
 var _bgtPlayTargetMargin = null;
-function renderBudget2027Builder(){
-  var host=document.getElementById('budget2027Builder');
-  if(!host) return;
-  var venue=bgtVenue;
-  if(_bgtPlayMonth==null) _bgtPlayMonth=Math.max(1, Math.min(12, miamiMonthNum()||1));
-  var mi=_bgtPlayMonth;
-  var mm=padMm(mi);
-  var sug=suggest2027Budget(venue,mi);
-  var fee25=sug.fee25, fee26=sug.fee26;
-  var bs25=(monthPerf(venue,2025,mm).tBS)||null;
-  var bs26=(monthPerf(venue,2026,mm).tBS)||null;
-  /* Margin in the builder = DJ Fees ÷ BS Sales (bottle-service segment only). */
-  var margin25=pctLive(bs25, fee25);
-  var margin26=pctLive(bs26, fee26);
-  var planFee=sug.existing!=null?sug.existing:(sug.suggested!=null?sug.suggested:'');
-  var planBs=getBgtPlan(venue,2027,mm,'bs');
-  if(planBs==null && bs26!=null) planBs=Math.round(bs26*1.05/1000)*1000;
-  var feeN=planFee===''||planFee==null?null:+planFee;
-  var bsN=planBs==null?null:+planBs;
-  var feePct=(bsN>0&&feeN!=null)?Math.round(feeN/bsN*1000)/10:null;
-  var vsFee26=(feeN!=null&&fee26!=null)?(feeN-fee26):null;
-  var vsBs26=(bsN!=null&&bs26!=null)?(bsN-bs26):null;
-  var vsMargin=(feePct!=null&&margin26!=null)?Math.round((feePct-margin26)*10)/10:null;
-
-  var yFee=0,yBs=0,yFee26=0,nFee=0,nBs=0;
+function _bgtPlayYearTotals(venue){
+  var yFee=0,ySales=0,yFee26=0,nFee=0,nSales=0;
   for(var yi=1;yi<=12;yi++){
     var ymm=padMm(yi);
     var yf=getMonthlyBudget(venue,2027,ymm);
-    var yb=getBgtPlan(venue,2027,ymm,'bs');
+    var ys=_bgtPlanSales2027(venue,ymm);
     var f26=(monthPerf(venue,2026,ymm).tFee)||0;
     if(yf!=null){ yFee+=yf; nFee++; }
-    if(yb!=null){ yBs+=yb; nBs++; }
+    if(ys!=null){ ySales+=ys; nSales++; }
     yFee26+=f26||0;
   }
-
-  var h='<div class="bgt-play">';
-  h+='<div class="bgt-play-hd">2027 Budget Planner<span>'+venue+' — target BS Sales, DJ Fees &amp; Fees/BS % · not total venue sales</span></div>';
-  h+='<div class="bgt-play-guide"><b>How to use:</b> Set <b>BS Sales</b> and <b>DJ Fees</b> for the month. Margin is <b>Fees \u00f7 BS</b>. Compare against prior-year lineup below. Values save automatically.</div>';
-
-  h+='<div class="bgt-play-ytd">';
-  h+='<div class="bgt-play-metric"><div class="l">2027 Fees Plan</div><div class="v">'+(nFee?$k(yFee):'-')+'</div><div class="s">'+nFee+'/12 months set</div></div>';
-  h+='<div class="bgt-play-metric"><div class="l">2027 BS Plan</div><div class="v">'+(nBs?$k(yBs):'-')+'</div><div class="s">'+nBs+'/12 months set</div></div>';
-  h+='<div class="bgt-play-metric'+(nFee?(yFee<=yFee26?' good':' bad'):'')+'"><div class="l">Fees vs 2026</div><div class="v">'+(nFee?$kv(yFee-yFee26):'-')+'</div><div class="s">Full-year plan delta</div></div>';
-  h+='<div class="bgt-play-metric"><div class="l">Plan Fees / BS</div><div class="v">'+(yBs>0?((yFee/yBs*100).toFixed(1)+'%'):'-')+'</div><div class="s">BS entertainment intensity</div></div>';
+  return {yFee:yFee,ySales:ySales,yFee26:yFee26,nFee:nFee,nSales:nSales};
+}
+function _bgtPlayYtdHtml(venue){
+  var t=_bgtPlayYearTotals(venue);
+  var h='<div class="bgt-play-ytd" id="bgtPlayYtd">';
+  h+='<div class="bgt-play-metric"><div class="l">2027 Fees Plan</div><div class="v">'+(t.nFee?$k(t.yFee):'-')+'</div><div class="s">'+t.nFee+'/12 months set</div></div>';
+  h+='<div class="bgt-play-metric"><div class="l">2027 Total Sales Plan</div><div class="v">'+(t.nSales?$k(t.ySales):'-')+'</div><div class="s">'+t.nSales+'/12 months · defaults to 2026 actual</div></div>';
+  h+='<div class="bgt-play-metric'+(t.nFee?(t.yFee<=t.yFee26?' good':' bad'):'')+'"><div class="l">Fees vs 2026</div><div class="v">'+(t.nFee?$kv(t.yFee-t.yFee26):'-')+'</div><div class="s">Full-year plan delta</div></div>';
+  h+='<div class="bgt-play-metric"><div class="l">Plan Fees / Sales</div><div class="v">'+(t.ySales>0?((t.yFee/t.ySales*100).toFixed(1)+'%'):'-')+'</div><div class="s">DJ cost \u00f7 Total Sales</div></div>';
   h+='</div>';
-
-  h+='<div class="bgt-play-overview">';
-  h+='<div class="bgt-play-overview-hd">2027 plan overview<span>Click a month to edit · BS segment only</span></div>';
+  return h;
+}
+function _bgtPlayOverviewHtml(venue, mi){
+  var t=_bgtPlayYearTotals(venue);
+  var h='<div class="bgt-play-overview" id="bgtPlayOverview">';
+  h+='<div class="bgt-play-overview-hd">2027 plan overview<span>Click a month to edit · Fees / Total Sales</span></div>';
   h+='<table class="bgt-play-ov-tbl"><thead><tr>';
-  h+='<th>Month</th><th>BS plan</th><th>Fees plan</th><th>Fees/BS</th><th>Fees vs 2026</th><th>Sched. fees</th><th>Shows</th>';
+  h+='<th>Month</th><th>Total Sales plan</th><th>Fees plan</th><th>Fees/Sales</th><th>Fees vs 2026</th><th>Sched. fees</th><th>Shows</th>';
   h+='</tr></thead><tbody>';
   for(var om=1;om<=12;om++){
     var omm=padMm(om);
     var oFee=getMonthlyBudget(venue,2027,omm);
-    var oBs=getBgtPlan(venue,2027,omm,'bs');
-    if(oBs==null){
-      var bs26o=(monthPerf(venue,2026,omm).tBS)||null;
-      if(bs26o!=null) oBs=Math.round(bs26o*1.05/1000)*1000;
-    }
+    var oSales=_bgtPlanSales2027(venue,omm);
     var oFee26=(monthPerf(venue,2026,omm).tFee)||0;
-    var oPct=(oBs>0&&oFee!=null)?(oFee/oBs*100).toFixed(1)+'%':'-';
+    var oPct=(oSales>0&&oFee!=null)?(oFee/oSales*100).toFixed(1)+'%':'-';
     var oSched=getShows(2027,venue,omm);
     var oSchedFee=oSched.reduce(function(s,r){return s+(+r.fee||+r.cost||0);},0);
     h+='<tr class="'+(om===mi?'bgt-ov-on':'')+'" onclick="_bgtPlayMonth='+om+';renderBudget2027Builder()">';
     h+='<td>'+MNS[om-1]+'</td>';
-    h+='<td>'+(oBs!=null?$k(oBs):'-')+'</td>';
+    h+='<td>'+(oSales!=null?$k(oSales):'-')+'</td>';
     h+='<td>'+(oFee!=null?$k(oFee):'-')+'</td>';
     h+='<td>'+oPct+'</td>';
     h+='<td>'+(oFee!=null?$kv(oFee-oFee26):'-')+'</td>';
@@ -634,8 +602,42 @@ function renderBudget2027Builder(){
     h+='<td>'+(oSched.length||'-')+'</td>';
     h+='</tr>';
   }
-  h+='</tbody><tfoot><tr><td>Year</td><td>'+(nBs?$k(yBs):'-')+'</td><td>'+(nFee?$k(yFee):'-')+'</td><td>'+(yBs>0?((yFee/yBs*100).toFixed(1)+'%'):'-')+'</td><td>'+(nFee?$kv(yFee-yFee26):'-')+'</td><td colspan="2"></td></tr></tfoot></table>';
+  h+='</tbody><tfoot><tr><td>Year</td><td>'+(t.nSales?$k(t.ySales):'-')+'</td><td>'+(t.nFee?$k(t.yFee):'-')+'</td><td>'+(t.ySales>0?((t.yFee/t.ySales*100).toFixed(1)+'%'):'-')+'</td><td>'+(t.nFee?$kv(t.yFee-t.yFee26):'-')+'</td><td colspan="2"></td></tr></tfoot></table>';
   h+='</div>';
+  return h;
+}
+function renderBudget2027Builder(){
+  var host=document.getElementById('budget2027Builder');
+  if(!host) return;
+  var venue=bgtVenue;
+  if(_bgtPlayMonth==null) _bgtPlayMonth=Math.max(1, Math.min(12, miamiMonthNum()||1));
+  var mi=_bgtPlayMonth;
+  var mm=padMm(mi);
+  var fee25=(monthPerf(venue,2025,mm).tFee)||null;
+  var fee26=(monthPerf(venue,2026,mm).tFee)||null;
+  var sales25=_bgtTotalSales(venue,2025,mm);
+  var sales26=_bgtTotalSales(venue,2026,mm);
+  var live25=_bgtLiveEnt(venue,2025,mm);
+  var live26=_bgtLiveEnt(venue,2026,mm);
+  var bgt26=getMonthlyBudget(venue,2026,mm);
+  /* Intensity = DJ Fees ÷ Total Sales (not bottle service). */
+  var margin25=pctLive(sales25, fee25);
+  var margin26=pctLive(sales26, fee26);
+  var planFee=getMonthlyBudget(venue,2027,mm);
+  var planSales=_bgtPlanSales2027(venue,mm);
+  var feeN=planFee==null?null:+planFee;
+  var salesN=planSales==null?null:+planSales;
+  var feePct=(salesN>0&&feeN!=null)?Math.round(feeN/salesN*1000)/10:null;
+  var vsFee26=(feeN!=null&&fee26!=null)?(feeN-fee26):null;
+  var vsSales26=(salesN!=null&&sales26!=null)?(salesN-sales26):null;
+  var vsMargin=(feePct!=null&&margin26!=null)?Math.round((feePct-margin26)*10)/10:null;
+
+  var h='<div class="bgt-play">';
+  h+='<div class="bgt-play-hd">2027 Budget Planner<span>'+venue+' — Total Sales, DJ Fees &amp; Fees/Sales % · Overview updates as you type</span></div>';
+  h+='<div class="bgt-play-guide"><b>How to use:</b> Set <b>Total Sales</b> (defaults to 2026 actual) and <b>DJ Fees</b>. % = <b>Fees \u00f7 Total Sales</b>. Values save automatically and feed Budget Overview.</div>';
+
+  h+=_bgtPlayYtdHtml(venue);
+  h+=_bgtPlayOverviewHtml(venue, mi);
 
   h+='<div class="bgt-play-months">';
   for(var m=1;m<=12;m++){
@@ -648,52 +650,50 @@ function renderBudget2027Builder(){
   h+='<div class="bgt-play-hist-years">';
   h+='<div class="bgt-play-year-col">';
   h+='<div class="bgt-play-year-hd">2025</div>';
-  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">BS Sales</div><div class="bgt-play-hist-v">'+(bs25!=null?$k(bs25):'-')+'</div><div class="bgt-play-hist-s">Bottle service actual</div></div>';
-  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">DJ Fees</div><div class="bgt-play-hist-v">'+(fee25!=null?$k(fee25):'-')+'</div><div class="bgt-play-hist-s">Fees / BS '+(margin25!=null?margin25+'%':'-')+'</div></div>';
+  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">Total Sales</div><div class="bgt-play-hist-v">'+(sales25!=null?$k(sales25):'-')+'</div><div class="bgt-play-hist-s">P&amp;L actual (baked)</div></div>';
+  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">Live Entertainment</div><div class="bgt-play-hist-v">'+(live25!=null?$k(live25):'-')+'</div><div class="bgt-play-hist-s">GL 6750 actual</div></div>';
+  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">DJ Fees</div><div class="bgt-play-hist-v">'+(fee25!=null?$k(fee25):'-')+'</div><div class="bgt-play-hist-s">Fees / Sales '+(margin25!=null?margin25+'%':'-')+'</div></div>';
   h+='</div>';
   h+='<div class="bgt-play-year-col">';
   h+='<div class="bgt-play-year-hd">2026</div>';
-  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">BS Sales</div><div class="bgt-play-hist-v">'+(bs26!=null?$k(bs26):'-')+'</div><div class="bgt-play-hist-s">Bottle service actual</div></div>';
-  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">DJ Fees</div><div class="bgt-play-hist-v">'+(fee26!=null?$k(fee26):'-')+'</div><div class="bgt-play-hist-s">Fees / BS '+(margin26!=null?margin26+'%':'-')+'</div></div>';
-  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">Fee Budget</div><div class="bgt-play-hist-v">'+(sug.bgt26!=null?$k(sug.bgt26):'-')+'</div><div class="bgt-play-hist-s">Guest DJ envelope</div></div>';
-  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">Suggested 2027 Fee</div><div class="bgt-play-hist-v">'+(sug.suggested!=null?$k(sug.suggested):'-')+'</div><div class="bgt-play-hist-s">From 2025/2026 rule of thumb</div></div>';
+  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">Total Sales</div><div class="bgt-play-hist-v">'+(sales26!=null?$k(sales26):'-')+'</div><div class="bgt-play-hist-s">P&amp;L actual (baked)</div></div>';
+  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">Live Entertainment</div><div class="bgt-play-hist-v">'+(live26!=null?$k(live26):'-')+'</div><div class="bgt-play-hist-s">GL 6750 actual</div></div>';
+  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">DJ Fees</div><div class="bgt-play-hist-v">'+(fee26!=null?$k(fee26):'-')+'</div><div class="bgt-play-hist-s">Fees / Sales '+(margin26!=null?margin26+'%':'-')+'</div></div>';
+  h+='<div class="bgt-play-hist-item"><div class="bgt-play-hist-l">Fee Budget</div><div class="bgt-play-hist-v">'+(bgt26!=null?$k(bgt26):'-')+'</div><div class="bgt-play-hist-s">Guest DJ envelope</div></div>';
   h+='</div>';
   h+='</div>';
-  h+='<div class="bgt-play-build-hd">Target BS · Fees · Margin</div>';
+  h+='<div class="bgt-play-build-hd">Target Total Sales · Fees · %</div>';
 
   var targetMarginShow=_bgtPlayTargetMargin!=null?_bgtPlayTargetMargin:(margin26!=null?margin26:'');
   h+='<div class="bgt-play-inputs">';
-  h+='<div class="bgt-play-fld"><label>2027 BS Sales ($)</label><input id="bgtPlaySales" type="number" inputmode="decimal" value="'+(bsN!=null?bsN:'')+'" placeholder="e.g. 900000" oninput="on2027PlayInput()"></div>';
+  h+='<div class="bgt-play-fld"><label>2027 Total Sales ($)</label><input id="bgtPlaySales" type="number" inputmode="decimal" value="'+(salesN!=null?salesN:'')+'" placeholder="defaults to 2026 actual" oninput="on2027PlayInput()"></div>';
   h+='<div class="bgt-play-fld"><label>2027 DJ Fees ($)</label><input id="bgtPlayFees" type="number" inputmode="decimal" value="'+(feeN!=null?feeN:'')+'" placeholder="e.g. 200000" oninput="on2027PlayInput()"></div>';
-  h+='<div class="bgt-play-fld"><label>Target Fees / BS (%)</label><input id="bgtPlayTargetMargin" type="number" inputmode="decimal" step="0.1" value="'+targetMarginShow+'" placeholder="e.g. 18" oninput="on2027PlayInput()"></div>';
+  h+='<div class="bgt-play-fld"><label>Target Fees / Sales (%)</label><input id="bgtPlayTargetMargin" type="number" inputmode="decimal" step="0.1" value="'+targetMarginShow+'" placeholder="e.g. 8" oninput="on2027PlayInput()"></div>';
   h+='</div>';
 
   h+='<div class="bgt-play-metrics" id="bgtPlayMetrics">';
-  h+=_bgtPlayMetricsHtml(feePct, vsFee26, vsBs26, vsMargin, margin26);
+  h+=_bgtPlayMetricsHtml(feePct, vsFee26, vsSales26, vsMargin, margin26);
   h+='</div>';
 
   h+='<div class="bgt-play-actions">';
-  h+='<button type="button" class="primary" onclick="applySuggested2027Month(\''+mm+'\')">Use suggested fees</button>';
-  h+='<button type="button" onclick="bgtPlayPreset(\'bs26\')">BS = 2026</button>';
-  h+='<button type="button" onclick="bgtPlayPreset(\'bs10\')">BS = 2026 +10%</button>';
+  h+='<button type="button" onclick="bgtPlayPreset(\'sales26\')">Sales = 2026</button>';
+  h+='<button type="button" onclick="bgtPlayPreset(\'sales10\')">Sales = 2026 +10%</button>';
   h+='<button type="button" onclick="bgtPlayPreset(\'fee26\')">Fees = 2026 actual</button>';
-  h+='<button type="button" onclick="bgtPlayPreset(\'matchLive\')">Fees to match 2026 Fees/BS %</button>';
-  h+='<button type="button" onclick="bgtApplyTargetMargin()">Fees from target %</button>';
-  h+='<button type="button" onclick="applyAllSuggested2027()">Use suggested for all months</button>';
+  h+='<button type="button" onclick="bgtPlayPreset(\'matchLive\')">Fees to match 2026 Fees/Sales %</button>';
+  h+='<button type="button" class="primary" onclick="bgtApplyTargetMargin()">Fees from target %</button>';
   h+='</div>';
 
-  /* Prior-year schedule for this fiscal month */
   var pyShows=getShows(2026,venue,mm).slice().sort(function(a,b){return (a.d||'').localeCompare(b.d||'');});
   var pyFee=pyShows.reduce(function(s,r){return s+(+r.fee||+r.cost||0);},0);
   var pyBs=pyShows.reduce(function(s,r){return s+(+r.bs_a||0);},0);
   h+='<div class="bgt-play-month-ov bgt-play-py">';
-  h+='<div class="bgt-play-month-ov-hd">'+MN_FULL[mi-1]+' 2026 prior-year schedule <span>'+fiscalPeriodShortRange(2026,mi-1)+' · '+pyShows.length+' shows · fees '+$k(pyFee)+' · BS actual '+$k(pyBs)+'</span></div>';
+  h+='<div class="bgt-play-month-ov-hd">'+MN_FULL[mi-1]+' 2026 prior-year schedule <span>'+fiscalPeriodShortRange(2026,mi-1)+' · '+pyShows.length+' shows · fees '+$k(pyFee)+' · Total Sales '+(sales26!=null?$k(sales26):'-')+' · BS actual '+$k(pyBs)+'</span></div>';
   if(!pyShows.length){
     h+='<div style="font-size:11px;color:var(--ink3);padding:6px 2px">No performances scheduled in this fiscal month last year.</div>';
   } else {
     h+='<div class="bgt-play-show-row hd"><span>Date</span><span>DJ</span><span>Fee</span><span>BS actual</span><span>Status</span></div>';
     pyShows.forEach(function(r){
-      var st=getShowDjStatus(r,r.d)||'—';
+      var st=getShowDjStatus(r,r.d)||'\u2014';
       h+='<div class="bgt-play-show-row">';
       h+='<span>'+(r.d||'')+'</span>';
       h+='<span>'+djLabel(r.dj)+'</span>';
@@ -703,17 +703,16 @@ function renderBudget2027Builder(){
       h+='</div>';
     });
     var pyAvgFee=pyShows.length?Math.round(pyFee/pyShows.length):0;
-    var pyFeeOnBs=pyBs>0?Math.round(pyFee/pyBs*1000)/10:null;
+    var pyFeeOnSales=sales26>0?Math.round(pyFee/sales26*1000)/10:null;
     h+='<div class="bgt-play-py-recap">';
     h+='<div class="bgt-play-py-metric"><div class="l">Total Fees</div><div class="v">'+$k(pyFee)+'</div></div>';
-    h+='<div class="bgt-play-py-metric"><div class="l">Total BS Actual</div><div class="v">'+$k(pyBs)+'</div></div>';
+    h+='<div class="bgt-play-py-metric"><div class="l">Total Sales</div><div class="v">'+(sales26!=null?$k(sales26):'-')+'</div></div>';
     h+='<div class="bgt-play-py-metric"><div class="l">Avg Fee / Show</div><div class="v">'+$k(pyAvgFee)+'</div></div>';
-    h+='<div class="bgt-play-py-metric"><div class="l">Fees / BS</div><div class="v">'+(pyFeeOnBs!=null?pyFeeOnBs+'%':'-')+'</div></div>';
+    h+='<div class="bgt-play-py-metric"><div class="l">Fees / Sales</div><div class="v">'+(pyFeeOnSales!=null?pyFeeOnSales+'%':'-')+'</div></div>';
     h+='</div>';
   }
   h+='</div>';
 
-  /* Selected month: 2027 schedule overview */
   var monthShows=getShows(2027,venue,mm).slice().sort(function(a,b){return (a.d||'').localeCompare(b.d||'');});
   var monthSchedFee=monthShows.reduce(function(s,r){return s+(+r.fee||+r.cost||0);},0);
   var monthBsT=monthShows.reduce(function(s,r){var t=showTargets(r);return s+(t.bs_m||0);},0);
@@ -740,12 +739,12 @@ function renderBudget2027Builder(){
   h+='</div></div>';
   host.innerHTML=h;
 }
-function _bgtPlayMetricsHtml(feePct, vsFee26, vsBs26, vsMargin, margin26){
+function _bgtPlayMetricsHtml(feePct, vsFee26, vsSales26, vsMargin, margin26){
   var h='';
-  h+='<div class="bgt-play-metric"><div class="l">Fees / BS</div><div class="v">'+(feePct!=null?feePct+'%':'-')+'</div><div class="s">Margin = DJ fees \u00f7 BS sales</div></div>';
-  h+='<div class="bgt-play-metric'+(vsMargin==null?'':(vsMargin<=0?' good':' bad'))+'"><div class="l">vs 2026 Fees / BS %</div><div class="v">'+(vsMargin!=null?((vsMargin>0?'+':'')+vsMargin+' pp'):'-')+'</div><div class="s">2026 was '+(margin26!=null?margin26+'%':'-')+'</div></div>';
+  h+='<div class="bgt-play-metric"><div class="l">Fees / Sales</div><div class="v">'+(feePct!=null?feePct+'%':'-')+'</div><div class="s">DJ fees \u00f7 Total Sales</div></div>';
+  h+='<div class="bgt-play-metric'+(vsMargin==null?'':(vsMargin<=0?' good':' bad'))+'"><div class="l">vs 2026 Fees / Sales %</div><div class="v">'+(vsMargin!=null?((vsMargin>0?'+':'')+vsMargin+' pp'):'-')+'</div><div class="s">2026 was '+(margin26!=null?margin26+'%':'-')+'</div></div>';
   h+='<div class="bgt-play-metric'+(vsFee26==null?'':(vsFee26<=0?' good':' bad'))+'"><div class="l">Fees vs 2026</div><div class="v">'+(vsFee26!=null?$kv(vsFee26):'-')+'</div><div class="s">Plan \u2212 2026 actual fees</div></div>';
-  h+='<div class="bgt-play-metric'+(vsBs26==null?'':(vsBs26>=0?' good':' bad'))+'"><div class="l">BS vs 2026</div><div class="v">'+(vsBs26!=null?$kv(vsBs26):'-')+'</div><div class="s">Plan \u2212 2026 BS actual</div></div>';
+  h+='<div class="bgt-play-metric'+(vsSales26==null?'':(vsSales26>=0?' good':' bad'))+'"><div class="l">Sales vs 2026</div><div class="v">'+(vsSales26!=null?$kv(vsSales26):'-')+'</div><div class="s">Plan \u2212 2026 Total Sales</div></div>';
   return h;
 }
 function bgtApplyTargetMargin(){
@@ -753,10 +752,10 @@ function bgtApplyTargetMargin(){
   var feeEl=document.getElementById('bgtPlayFees');
   var targetEl=document.getElementById('bgtPlayTargetMargin');
   if(!salesEl||!feeEl||!targetEl) return;
-  var bsN=salesEl.value===''?null:parseFloat(salesEl.value);
+  var salesN=salesEl.value===''?null:parseFloat(salesEl.value);
   var targetMargin=targetEl.value===''?null:parseFloat(targetEl.value);
-  if(!(bsN>0) || targetMargin==null || isNaN(targetMargin)) return;
-  feeEl.value=Math.round(bsN*(targetMargin/100)/500)*500;
+  if(!(salesN>0) || targetMargin==null || isNaN(targetMargin)) return;
+  feeEl.value=Math.round(salesN*(targetMargin/100)/500)*500;
   on2027PlayInput();
   renderBudget2027Builder();
 }
@@ -765,26 +764,40 @@ function on2027PlayInput(){
   var salesEl=document.getElementById('bgtPlaySales');
   var feeEl=document.getElementById('bgtPlayFees');
   if(!salesEl||!feeEl) return;
-  var bsN=salesEl.value===''?null:parseFloat(salesEl.value);
+  var salesN=salesEl.value===''?null:parseFloat(salesEl.value);
   var feeN=feeEl.value===''?null:parseFloat(feeEl.value);
   var targetEl=document.getElementById('bgtPlayTargetMargin');
   if(targetEl){
     _bgtPlayTargetMargin=targetEl.value===''?null:parseFloat(targetEl.value);
     if(_bgtPlayTargetMargin!=null && isNaN(_bgtPlayTargetMargin)) _bgtPlayTargetMargin=null;
   }
-  if(bsN!=null && !isNaN(bsN)) setBgtPlanQuiet(venue,2027,mm,'bs',bsN);
-  else setBgtPlanQuiet(venue,2027,mm,'bs',null);
+  /* Write Total Sales into BGT_PLAN.sales so Budget Overview picks it up. */
+  if(salesN!=null && !isNaN(salesN)) setBgtPlanQuiet(venue,2027,mm,'sales',salesN);
+  else setBgtPlanQuiet(venue,2027,mm,'sales',null);
   if(feeN!=null && !isNaN(feeN)) setMonthlyBudgetQuiet(venue,2027,mm,feeN);
   else setMonthlyBudgetQuiet(venue,2027,mm,null);
-  var bs26=(monthPerf(venue,2026,mm).tBS)||null;
+  var sales26=_bgtTotalSales(venue,2026,mm);
   var fee26=(monthPerf(venue,2026,mm).tFee)||null;
-  var margin26=pctLive(bs26,fee26);
-  var feePct=(bsN>0&&feeN!=null)?Math.round(feeN/bsN*1000)/10:null;
+  var margin26=pctLive(sales26,fee26);
+  var feePct=(salesN>0&&feeN!=null)?Math.round(feeN/salesN*1000)/10:null;
   var vsFee26=(feeN!=null&&fee26!=null)?(feeN-fee26):null;
-  var vsBs26=(bsN!=null&&bs26!=null)?(bsN-bs26):null;
+  var vsSales26=(salesN!=null&&sales26!=null)?(salesN-sales26):null;
   var vsMargin=(feePct!=null&&margin26!=null)?Math.round((feePct-margin26)*10)/10:null;
   var box=document.getElementById('bgtPlayMetrics');
-  if(box) box.innerHTML=_bgtPlayMetricsHtml(feePct, vsFee26, vsBs26, vsMargin, margin26);
+  if(box) box.innerHTML=_bgtPlayMetricsHtml(feePct, vsFee26, vsSales26, vsMargin, margin26);
+  /* Keep plan overview + year strip in sync without stealing input focus. */
+  var ytd=document.getElementById('bgtPlayYtd');
+  if(ytd){
+    var tmpY=document.createElement('div');
+    tmpY.innerHTML=_bgtPlayYtdHtml(venue);
+    if(tmpY.firstChild) ytd.replaceWith(tmpY.firstChild);
+  }
+  var ov=document.getElementById('bgtPlayOverview');
+  if(ov){
+    var tmpO=document.createElement('div');
+    tmpO.innerHTML=_bgtPlayOverviewHtml(venue, mi);
+    if(tmpO.firstChild) ov.replaceWith(tmpO.firstChild);
+  }
 }
 function setBgtPlanQuiet(venue, year, mm, field, val){
   if(!BGT_PLAN[venue]) BGT_PLAN[venue]={};
@@ -802,19 +815,17 @@ function setMonthlyBudgetQuiet(venue, year, mm, val){
 }
 function bgtPlayPreset(kind){
   var mi=_bgtPlayMonth||1, mm=padMm(mi), venue=bgtVenue;
-  var bs26=(monthPerf(venue,2026,mm).tBS)||null;
+  var sales26=_bgtTotalSales(venue,2026,mm);
   var fee26=(monthPerf(venue,2026,mm).tFee)||0;
-  var margin26=pctLive(bs26,fee26);
+  var margin26=pctLive(sales26,fee26);
   var salesEl=document.getElementById('bgtPlaySales');
   var feeEl=document.getElementById('bgtPlayFees');
   if(!salesEl||!feeEl) return;
-  if(kind==='bs26' && bs26!=null) salesEl.value=Math.round(bs26);
-  if(kind==='bs10' && bs26!=null) salesEl.value=Math.round(bs26*1.1/1000)*1000;
-  if(kind==='sales26' && bs26!=null) salesEl.value=Math.round(bs26);
-  if(kind==='sales10' && bs26!=null) salesEl.value=Math.round(bs26*1.1/1000)*1000;
+  if((kind==='bs26'||kind==='sales26') && sales26!=null) salesEl.value=Math.round(sales26);
+  if((kind==='bs10'||kind==='sales10') && sales26!=null) salesEl.value=Math.round(sales26*1.1/1000)*1000;
   if(kind==='fee26') feeEl.value=Math.round(fee26);
   if(kind==='matchLive'){
-    var s=+salesEl.value||bs26;
+    var s=+salesEl.value||sales26;
     if(s>0 && margin26!=null) feeEl.value=Math.round(s*(margin26/100)/500)*500;
   }
   on2027PlayInput();
@@ -827,31 +838,14 @@ function on2027BudgetEdit(el){
   var val=(raw===''||raw==null)?null:parseFloat(raw);
   setMonthlyBudget(bgtVenue,2027,mm,val);
   renderBudget2027Builder();
-  if(typeof renderCalMonthRecap==='function'&&typeof curY!=='undefined'){
-    /* refresh calendar strips if viewing 2027 */
-  }
 }
 function applySuggested2027Month(mm){
-  var mi=parseInt(mm,10);
-  _bgtPlayMonth=mi;
-  var s=suggest2027Budget(bgtVenue,mi);
-  if(s.suggested==null) return;
-  setMonthlyBudget(bgtVenue,2027,mm,s.suggested);
+  /* Suggested fees removed from planner — no-op kept for old buttons/cache. */
+  _bgtPlayMonth=parseInt(mm,10)||_bgtPlayMonth;
   renderBudget2027Builder();
 }
 function applyAllSuggested2027(){
-  var before=_clone(MONTHLY_DJ_BUDGET);
-  pushUndo('Apply suggested 2027 budgets',function(){
-    MONTHLY_DJ_BUDGET=_clone(before)||{};
-    saveMonthlyBudget();
-  });
-  if(!MONTHLY_DJ_BUDGET[bgtVenue]) MONTHLY_DJ_BUDGET[bgtVenue]={};
-  if(!MONTHLY_DJ_BUDGET[bgtVenue][2027]) MONTHLY_DJ_BUDGET[bgtVenue][2027]={};
-  for(var mi=1;mi<=12;mi++){
-    var s=suggest2027Budget(bgtVenue,mi);
-    if(s.suggested!=null) MONTHLY_DJ_BUDGET[bgtVenue][2027][padMm(mi)]=s.suggested;
-  }
-  saveMonthlyBudget();
+  /* Suggested fees removed from planner. */
   renderBudget2027Builder();
 }
 
