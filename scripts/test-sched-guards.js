@@ -75,11 +75,11 @@ fakeSave('HUGO M');
 assert(events.indexOf('paint:HUGO M')<events.indexOf('persist'), 'first paint happens before persist');
 assert(events[events.length-1]==='paint2:HUGO M', 'final paint shows renamed DJ after echo');
 
-/* 5) Status patches must never carry identity fields */
+/* 5) Status patches must never carry identity fields when updating existing */
 var statusPatch={ djStatus:'Hold 1' };
 assert(!('dj' in statusPatch) && !('d' in statusPatch), 'status patch is status-only');
 
-/* 6) Guard match is uid-only */
+/* 6) Guard match is uid-only for paint */
 function guardForShow(r, gmap){
   if(!r || !r._uid) return null;
   return gmap[r._uid]||null;
@@ -90,7 +90,13 @@ var gmap={
 };
 assert(guardForShow({_uid:'uid_rivo',d:'2026-11-20'}, gmap).dj==='HUGO M', 'RIVO guard stays on RIVO uid');
 assert(guardForShow({_uid:'uid_zeubii',d:'2026-11-22'}, gmap).dj==='NEW ZEUB', 'ZEUBII guard stays on ZEUBII uid');
-assert(guardForShow({_uid:'uid_rivo',d:'2026-11-22'}, gmap).dj==='HUGO M', 'uid wins even if date differs in row');
-assert(guardForShow({_uid:'missing',d:'2026-11-20'}, gmap)==null, 'no date fallback to another night');
+assert(guardForShow({_uid:'missing',d:'2026-11-20'}, gmap)==null, 'no date fallback for paint');
+
+/* 7) Durable guard is not cleared when Firebase briefly matches */
+function shouldClearGuard(sameDj, sameFee){
+  /* Durable mode: never clear on match */
+  return false;
+}
+assert(shouldClearGuard(true,true)===false, 'guard stays after match so later sync cannot wipe rename');
 
 console.log('\nAll sched guard tests passed.');

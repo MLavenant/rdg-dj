@@ -479,20 +479,37 @@ function _fbSanitize(val){
   return out;
 }
 
+function _alignRecToBakedShow(rec){
+  if(!rec || !rec.d) return false;
+  var venue=rec.v||rec.venue||'';
+  ensureShowUid(rec);
+  if(SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===rec._uid; })){
+    rec._added=0;
+    return true;
+  }
+  /* Never retarget a brand-new add onto a baked uid — day-deletes would wipe it. */
+  if(rec._added) return false;
+  var hits=SCHED_BAKED.filter(function(r){
+    return r && (r.v||r.venue)===venue && r.d===rec.d;
+  });
+  if(hits.length===1){
+    rec._uid=ensureShowUid(hits[0]);
+    rec._added=0;
+    return true;
+  }
+  return false;
+}
 function persistSchedShow(rec){
   applyShowTargets(rec);
   if(rec && rec.ev==null) rec.ev='';
   ensureShowUid(rec);
-  if(!rec._writeKind) rec._writeKind='full';
+  if(!rec._writeKind) rec._writeKind='modal';
+  var isBaked=_alignRecToBakedShow(rec);
   if(typeof window._guardSchedWrite==='function') window._guardSchedWrite(rec);
   if(!window._fbSave||!window._fbRef) return;
   var uid=ensureShowUid(rec);
-  var isBaked = !rec._added && SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===uid; });
-  var fbKey = _schedUidKey(rec);
-  var legacyKey = _schedDateKey(rec);
+  var fbKey=_schedUidKey(rec);
   var payload=_fbSanitize(rec);
-  /* Clear uid-level delete markers for this show only.
-     Do NOT clear day-level deletes — that would resurrect a previously removed baked show. */
   try{
     window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
       if(!vals) return vals;
@@ -506,42 +523,51 @@ function persistSchedShow(rec){
     });
   }catch(eDel){}
   if(isBaked){
-    /* Always write uid key. Legacy venue|date only when this is the sole show that night. */
+    /* UID key only — never legacy venue|date (cross-night bleed). */
     window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_')).set(payload);
-    if(_countShowsOnDate(rec.venue||rec.v, rec.d)<=1){
-      window._fbRef.child('schedOverrides/edits/'+legacyKey.replace(/\//g,'_')).set(payload);
-    } else {
-      window._fbRef.child('schedOverrides/edits/'+legacyKey.replace(/\//g,'_')).remove();
-    }
   } else {
     rec._added=1;
     payload._added=1;
-    /* Race-safe: one Firebase path per uid (no read-modify-write on a shared array). */
     window._fbRef.child('schedOverrides/addsByUid/'+uid).set(payload);
   }
 }
 /* DJ Status only — write djStatus on this show's uid path ONLY.
-   Never stamp dj/fee/date (that leaked renames onto neighboring nights via
-   legacy venue|date keys and wrong-row lookups). */
+   If no edit node exists yet, seed identity from the local row so a later
+   rebuild cannot snap the DJ name back to bake. Never touch other nights. */
 function persistShowDjStatusOnly(rec){
   if(!rec||!rec.d) return;
   ensureShowUid(rec);
   if(!window._fbRef) return;
+  _alignRecToBakedShow(rec);
   var uid=ensureShowUid(rec);
   var nextStatus=rec.djStatus==null ? null : rec.djStatus;
-  var patch=_fbSanitize({ djStatus: nextStatus });
   if(typeof window._guardSchedWrite==='function'){
     window._guardSchedWrite(Object.assign({}, rec, {djStatus: nextStatus}));
   }
-  var isBaked = !rec._added && SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===uid; });
-  if(isBaked){
-    var fbKey=_schedUidKey(rec).replace(/\//g,'_');
-    window._fbRef.child('schedOverrides/edits/'+fbKey).update(patch);
-    /* Do not write legacy venue|date — multi-night bleed risk. */
-  } else {
-    rec._added=1;
-    window._fbRef.child('schedOverrides/addsByUid/'+uid).update(patch);
-  }
+  var isBaked=_alignRecToBakedShow(rec);
+  var path=isBaked
+    ? ('schedOverrides/edits/'+_schedUidKey(rec).replace(/\//g,'_'))
+    : ('schedOverrides/addsByUid/'+uid);
+  if(!isBaked) rec._added=1;
+  window._fbRef.child(path).transaction(function(cur){
+    if(cur && typeof cur==='object'){
+      cur.djStatus=nextStatus;
+      return cur;
+    }
+    /* First write for this show: keep the name/fee currently on screen. */
+    return _fbSanitize({
+      dj: rec.dj||'',
+      fee: rec.fee!=null?rec.fee:null,
+      cost: rec.cost!=null?rec.cost:(rec.fee!=null?rec.fee:null),
+      d: rec.d,
+      v: rec.v||rec.venue||'',
+      venue: rec.venue||rec.v||'',
+      _uid: uid,
+      djStatus: nextStatus,
+      _writeKind: 'statusMerge',
+      _added: isBaked?0:1
+    });
+  });
 }
 function _findSchedByUidOrIdx(uid, idx){
   if(uid){

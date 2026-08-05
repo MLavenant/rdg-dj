@@ -22,9 +22,26 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     window._fbRef.child(path).set(value === undefined ? null : value);
   };
 
-  /* Recent local schedule writes — survive Firebase echoes that rebuild from
-     bake before the rename/status write has landed (classic TBD snap-back). */
+  /* Durable schedule edits — survive later Firebase rebuilds when another night
+     is edited. Memory + sessionStorage; never expire within the browser tab.
+     Cleared only when Firebase already matches the saved identity. */
+  var _SCHED_EDIT_STORE = 'rdg_sched_edits_v2';
   window._schedWriteGuard = window._schedWriteGuard || {};
+  function _loadSchedEditStore(){
+    try{
+      var raw=sessionStorage.getItem(_SCHED_EDIT_STORE);
+      var obj=raw?JSON.parse(raw):{};
+      if(obj && typeof obj==='object'){
+        Object.keys(obj).forEach(function(uid){
+          if(obj[uid] && !window._schedWriteGuard[uid]) window._schedWriteGuard[uid]=obj[uid];
+        });
+      }
+    }catch(e){}
+  }
+  function _saveSchedEditStore(){
+    try{ sessionStorage.setItem(_SCHED_EDIT_STORE, JSON.stringify(window._schedWriteGuard||{})); }catch(e){}
+  }
+  _loadSchedEditStore();
   window._guardSchedWrite = function(rec){
     if(!rec || !rec.d) return;
     ensureShowUid(rec);
@@ -43,23 +60,42 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       note: rec.note||null,
       vipNote: rec.vipNote||null,
       ev: rec.ev||'',
-      bs_a: rec.bs_a,
-      roi_a: rec.roi_a,
-      beat: rec.beat,
-      _s: rec._s
+      bs_a: rec.bs_a!=null?rec.bs_a:null,
+      roi_a: rec.roi_a!=null?rec.roi_a:null,
+      beat: rec.beat!=null?rec.beat:null,
+      _s: rec._s||null
     };
+    _saveSchedEditStore();
   };
   function _reapplySchedGuards(s){
+    _loadSchedEditStore();
     var gmap = window._schedWriteGuard || {};
-    var now = Date.now();
     var needRepush = [];
     Object.keys(gmap).forEach(function(uid){
       var g = gmap[uid];
-      if(!g || (now - g.at) > 60000){ delete gmap[uid]; return; }
-      /* UID only — never fall back to "sole show on that date" (that copied a rename
-         onto the previous night when uids briefly mismatched after a rebuild). */
+      if(!g) return;
       var idx = -1;
       for(var i=0;i<s.length;i++){ if(s[i] && String(s[i]._uid||'')===String(uid)){ idx=i; break; } }
+      if(idx < 0){
+        /* Also match baked row by venue|date when this guard is a rename of that night. */
+        if(g.d && (g.v||g.venue)){
+          var hits = s.filter(function(r){
+            return r && !r._added && r.d===g.d && (r.v||r.venue||'')===(g.v||g.venue||'');
+          });
+          if(hits.length===1){
+            idx = s.indexOf(hits[0]);
+            /* Keep bake uid stable — retarget guard key if needed. */
+            var bakeUid = ensureShowUid(hits[0]);
+            if(bakeUid && bakeUid!==uid){
+              g._uid = bakeUid;
+              window._schedWriteGuard[bakeUid] = g;
+              delete window._schedWriteGuard[uid];
+              uid = bakeUid;
+              _saveSchedEditStore();
+            }
+          }
+        }
+      }
       if(idx < 0){
         if(g._added){
           s.push(Object.assign({}, g, {_added:1, _uid:uid}));
@@ -70,18 +106,19 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       var cur = s[idx];
       var sameDj = (cur.dj||'') === (g.dj||'');
       var sameFee = String(cur.fee!=null?cur.fee:(cur.cost!=null?cur.cost:'')) === String(g.fee!=null?g.fee:(g.cost!=null?g.cost:''));
-      var stOk = (g.djStatus === undefined) || ((cur.djStatus||null) === (g.djStatus||null));
-      if(sameDj && sameFee && stOk){ delete gmap[uid]; return; }
-      /* Identity only — never rewrite this show's date/venue from the guard. */
-      cur.dj = g.dj;
-      cur.fee = g.fee;
-      cur.cost = g.cost!=null?g.cost:g.fee;
-      if(g._writeKind) cur._writeKind = g._writeKind;
-      if(g.note!=null) cur.note = g.note;
-      if(g.vipNote!=null) cur.vipNote = g.vipNote;
-      if(g.ev!=null) cur.ev = g.ev;
+      if(!sameDj || !sameFee){
+        cur.dj = g.dj;
+        cur.fee = g.fee;
+        cur.cost = g.cost!=null?g.cost:g.fee;
+        if(g._writeKind) cur._writeKind = g._writeKind;
+        if(g.note!=null) cur.note = g.note;
+        if(g.vipNote!=null) cur.vipNote = g.vipNote;
+        if(g.ev!=null) cur.ev = g.ev;
+        needRepush.push(cur);
+      }
       if(g.djStatus !== undefined) cur.djStatus = g.djStatus;
-      needRepush.push(cur);
+      /* Do NOT delete the guard when it matches — a later sync can still lose the
+         Firebase edit; keep session truth until the tab closes. */
     });
     return needRepush;
   }
@@ -190,12 +227,11 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
   /* Paint helpers — calendar must show the latest local rename even if a sync
      echo briefly rebuilds SCHED from an older Firebase snapshot. */
   window._guardForShow = function(r){
-    if(!r || !r._uid) return null;
+    if(!r) return null;
+    _loadSchedEditStore();
     var gmap = window._schedWriteGuard || {};
-    var g = gmap[r._uid];
-    if(!g) return null;
-    if((Date.now() - g.at) > 60000) return null;
-    return g;
+    if(r._uid && gmap[r._uid]) return gmap[r._uid];
+    return null;
   };
   window._applySchedGuardsToLiveSched = function(){
     if(!SCHED || !SCHED.length) return;

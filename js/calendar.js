@@ -36,13 +36,12 @@ function renderCal(){
     showMap[r.d].push(r);
   });
 
-  if(calViewMode==='year'){ document.getElementById('view-calendar').classList.remove('cal-list-fit'); renderCalPriorYearRecap(yr, null); renderCalYear(); return; }
-  if(calViewMode==='grid'){ document.getElementById('view-calendar').classList.remove('cal-list-fit'); renderCalPriorYearRecap(yr, mm); renderCalGrid(yr,mo,mm,days,showMap); return; }
+  if(calViewMode==='year'){ document.getElementById('view-calendar').classList.remove('cal-list-fit'); renderCalYear(); return; }
+  if(calViewMode==='grid'){ document.getElementById('view-calendar').classList.remove('cal-list-fit'); renderCalGrid(yr,mo,mm,days,showMap); return; }
 
   var isMobileLayout=document.body.classList.contains('mobile-mode');
   var calEl=document.getElementById('view-calendar');
   if(isMobileLayout) calEl.classList.remove('cal-list-fit'); else calEl.classList.add('cal-list-fit');
-  /* Month / prior-year summary strips removed from calendar list view. */
   var moBox=document.getElementById('calMonthRecap');
   if(moBox){ moBox.innerHTML=''; moBox.style.display='none'; }
   var pyBox=document.getElementById('calPriorYearRecap');
