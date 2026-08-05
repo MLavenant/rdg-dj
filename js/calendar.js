@@ -1123,8 +1123,9 @@ function updateAcctDjStatus(ds,val,sel){
 /* Per-performance DJ status (calendar). New/edited shows start at Not set.
    Status writes must NEVER rewrite DJ guest name / fee / date. */
 function updateShowDjStatus(idx,val,sel,uid){
+  var wantUid=uid||(sel&&sel.dataset&&sel.dataset.uid)||'';
   var r=_findSchedByUidOrIdx
-    ? _findSchedByUidOrIdx(uid||(sel&&sel.dataset&&sel.dataset.uid), idx)
+    ? _findSchedByUidOrIdx(wantUid, wantUid ? -1 : idx)
     : SCHED[idx];
   if(!r||!r.d) return;
   var next=val||'';

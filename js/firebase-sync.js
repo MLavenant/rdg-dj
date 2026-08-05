@@ -25,18 +25,24 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
   /* ?? Rebuild SCHED from baked + Firebase overrides ????????????? */
   function _mergeSchedEdit(target, edit){
     if(!target || !edit) return;
-    /* Pure status patches must never touch artist identity.
-       Older clients wrote _writeKind:'djStatus' ON TOP of full records via
-       .update(), which made us ignore dj/fee and snap back to bake — looked
-       like "changing status changed another DJ's name/fee". If identity
-       fields are present, treat as a full live edit. */
-    var hasIdentity = (edit.dj!=null && edit.dj!=='') || edit.fee!=null || edit.cost!=null || !!edit.d;
-    if(edit._writeKind==='djStatus' && !hasIdentity){
-      target.djStatus = edit.djStatus==null ? null : edit.djStatus;
+    /* Status-only patches must never touch artist identity / fee.
+       Rule: if the Firebase payload has no DJ name and no fee, only apply djStatus
+       (even when d / _writeKind / venue are present). Old clients treated !!edit.d as
+       "identity", then Object.assign'd a status patch onto bake and looked like a
+       rename revert (TBD) — and stale idx could hit the previous night. */
+    var hasDj = edit.dj!=null && String(edit.dj).trim()!=='';
+    var hasFee = edit.fee!=null || edit.cost!=null;
+    if(!hasDj && !hasFee){
+      if(Object.prototype.hasOwnProperty.call(edit,'djStatus')){
+        target.djStatus = edit.djStatus==null ? null : edit.djStatus;
+      }
       return;
     }
     /* Live edits are the source of truth — apply as saved (including ??? names). */
     Object.assign(target, edit);
+    if(target._writeKind==='djStatus') target._writeKind='modal';
+    if(target.v && !target.venue) target.venue=target.v;
+    if(target.venue && !target.v) target.v=target.venue;
   }
   window._fbApplySched = function(ov){
     // Start from baked copy

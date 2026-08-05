@@ -32,7 +32,7 @@ function openEditModal(idx, uid){
   _editIdx=SCHED.indexOf(r);
   if(_editIdx<0 && idx!=null && idx>=0) _editIdx=idx;
   var f=getFields();
-  f.venue.value=r.v||''; f.date.value=r.d||'';
+  f.venue.value=r.v||r.venue||''; f.date.value=r.d||'';
   f.dj.value=r.dj||''; f.fee.value=r.fee||r.cost||'';
   f.bsm.value=r.bs_m||''; f.bsa.value=r.bs_a||'';
   f.roit.value=r.roi_t||''; f.roia.value=r.roi_a||'';
@@ -485,33 +485,56 @@ function persistSchedShow(rec){
     window._fbRef.child('schedOverrides/addsByUid/'+uid).set(rec);
   }
 }
-/* DJ Status only — patch djStatus only. Never touch _writeKind / dj / fee.
-   Setting _writeKind:'djStatus' on an existing full edit made loaders ignore
-   the stored artist and snap back to bake. */
+/* DJ Status only — merge djStatus into the existing Firebase edit.
+   Never rewrite DJ name / fee. Never create a status-only node that can
+   race ahead of a rename and snap the show back to bake (TBD). */
 function persistShowDjStatusOnly(rec){
   if(!rec||!rec.d) return;
   ensureShowUid(rec);
   if(!window._fbRef) return;
   var uid=ensureShowUid(rec);
-  var patch={ djStatus: rec.djStatus==null ? null : rec.djStatus };
+  var nextStatus=rec.djStatus==null ? null : rec.djStatus;
   var isBaked = !rec._added && SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===uid; });
+  function mergeStatus(cur){
+    if(cur && typeof cur==='object'){
+      cur.djStatus=nextStatus;
+      /* Strip poisonous writeKind so future applies never treat this as status-only wipe. */
+      if(cur._writeKind==='djStatus') cur._writeKind='modal';
+      return cur;
+    }
+    /* No existing override yet — seed identity from the live local record. */
+    return {
+      dj: rec.dj||'',
+      fee: rec.fee!=null?rec.fee:null,
+      cost: rec.cost!=null?rec.cost:(rec.fee!=null?rec.fee:null),
+      d: rec.d,
+      v: rec.v||rec.venue||'',
+      venue: rec.venue||rec.v||'',
+      _uid: uid,
+      djStatus: nextStatus,
+      _writeKind: 'statusMerge'
+    };
+  }
   if(isBaked){
     var fbKey=_schedUidKey(rec).replace(/\//g,'_');
     var legacyKey=_schedDateKey(rec).replace(/\//g,'_');
-    window._fbRef.child('schedOverrides/edits/'+fbKey).update(patch);
+    window._fbRef.child('schedOverrides/edits/'+fbKey).transaction(mergeStatus);
     if(_countShowsOnDate(rec.venue||rec.v, rec.d)<=1){
-      window._fbRef.child('schedOverrides/edits/'+legacyKey).update(patch);
+      window._fbRef.child('schedOverrides/edits/'+legacyKey).transaction(mergeStatus);
     }
   } else {
     rec._added=1;
-    window._fbRef.child('schedOverrides/addsByUid/'+uid).update(patch);
+    window._fbRef.child('schedOverrides/addsByUid/'+uid).transaction(mergeStatus);
   }
 }
 function _findSchedByUidOrIdx(uid, idx){
   if(uid){
     for(var i=0;i<SCHED.length;i++){
-      if(SCHED[i] && ensureShowUid(SCHED[i])===uid) return SCHED[i];
+      if(SCHED[i] && ensureShowUid(SCHED[i])===String(uid)) return SCHED[i];
     }
+    /* UID was provided but not found — do NOT fall back to idx (stale idx
+       after re-render was writing status onto the previous night's show). */
+    return null;
   }
   if(idx!=null && idx>=0 && idx<SCHED.length) return SCHED[idx];
   return null;
@@ -606,7 +629,7 @@ function saveEvent(){
   var note=(f.note.value||'').trim()||null;
   var beforeIndex=_editIdx;
   var before=_editIdx>=0?_clone(SCHED[_editIdx]):null;
-  var rec={v:v,yr:yr,d:d,dj:dj,fee:fee,cost:fee,bs_m:bsm,bs_a:null,
+  var rec={v:v,venue:v,yr:yr,d:d,dj:dj,fee:fee,cost:fee,bs_m:bsm,bs_a:null,
            roi_t:roit,roi_a:null,beat:null,ev:ev,tbd:tbd,_s:_s,note:note,
            djStatus:null};
   var pyAtt=resolvePyFields(v,d,null);
