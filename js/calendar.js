@@ -1113,19 +1113,33 @@ var _acctStatusFilter=null; /* when set, only show rows matching this status */
 function acctStatusClass(status){
   if(!status) return 'acct-st-notset';
   if(status==='Paid') return 'acct-st-paid';
-  if(status==='Deposit paid') return 'acct-st-deposit';
+  if(status==='Deposit Paid'||status==='Deposit paid') return 'acct-st-deposit';
   if(status==='On Workflow') return 'acct-st-pending';
   if(status.indexOf('Missing')===0) return 'acct-st-missing';
-  if(status==='Confirmed'||status==='Contract + invoice received') return 'acct-st-confirmed';
+  if(status==='Confirmed'||status==='Invoice + Contract Signed'||status==='Contract + invoice received') return 'acct-st-confirmed';
   if(status==='Offer sent'||status==='Hold 1') return 'acct-st-pending';
   return 'acct-st-notset';
+}
+function _acctCanonicalApStatus(st){
+  if(!st) return st;
+  var map={
+    'Missing contract':'Missing Contract',
+    'Missing invoice':'Missing Invoice',
+    'Missing Mika Signature':'Missing Signature',
+    'Deposit paid':'Deposit Paid',
+    'Contract + invoice received':'Invoice + Contract Signed'
+  };
+  return map[st]||st;
 }
 function _acctNormalize(acct){
   if(!acct) return acct;
   if(acct.djStatus==null && acct.apStatus==null && acct.status){
     if(ACCT_DJ_STATUS.indexOf(acct.status)>=0) acct.djStatus=acct.status;
-    else if(ACCT_AP_STATUS.indexOf(acct.status)>=0) acct.apStatus=acct.status;
+    else if(ACCT_AP_STATUS.indexOf(acct.status)>=0 || _acctCanonicalApStatus(acct.status)!==acct.status){
+      acct.apStatus=_acctCanonicalApStatus(acct.status);
+    }
   }
+  if(acct.apStatus) acct.apStatus=_acctCanonicalApStatus(acct.apStatus);
   if(!acct.log) acct.log=[];
   if(!Array.isArray(acct.contracts)) acct.contracts=[];
   if(!Array.isArray(acct.invoices)) acct.invoices=[];

@@ -683,7 +683,16 @@ function setOthersField(ds, catId, field, val){
 })();
 var ACCT_DEFAULT_CATS = ['Rider','Resident DJ','Fire Show','Cryo','Sound System'];
 var ACCT_DJ_STATUS=["Offer sent","Hold 1","Confirmed"];
-var ACCT_AP_STATUS=["On Workflow","Contract + invoice received","Missing contract","Missing invoice","Missing forms","Missing Countersign","Missing Mika Signature","Deposit paid","Paid"];
+var ACCT_AP_STATUS=[
+  "Missing forms",
+  "Missing Contract",
+  "Missing Signature",
+  "Missing Countersign",
+  "Missing Invoice",
+  "Invoice + Contract Signed",
+  "Deposit Paid",
+  "Paid"
+];
 var ACCT_STATUS_OPTIONS=ACCT_DJ_STATUS.concat(ACCT_AP_STATUS);
 function getAcct(d){
   var k=acctKey(d);
