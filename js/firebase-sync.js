@@ -23,18 +23,6 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
   };
 
   /* ?? Rebuild SCHED from baked + Firebase overrides ????????????? */
-  function _bakedByUid(uid){
-    if(!uid || typeof SCHED_BAKED==='undefined') return null;
-    for(var i=0;i<SCHED_BAKED.length;i++){
-      ensureShowUid(SCHED_BAKED[i]);
-      if(SCHED_BAKED[i]._uid===uid) return SCHED_BAKED[i];
-    }
-    return null;
-  }
-  function _isJunkDjName(dj){
-    var s=String(dj==null?'':dj).trim();
-    return /^\?+$/.test(s);
-  }
   function _mergeSchedEdit(target, edit){
     if(!target || !edit) return;
     /* Status-only patches must never touch artist identity fields. */
@@ -42,15 +30,8 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       target.djStatus = edit.djStatus==null ? null : edit.djStatus;
       return;
     }
-    var baked=_bakedByUid(target._uid) || _bakedByUid(edit._uid);
+    /* Live edits are the source of truth — apply as saved (including ??? names). */
     Object.assign(target, edit);
-    /* Firebase roster edits win (DJ / fee / status / event).
-       Only reject pure ??? placeholder names — those fall back to bake. */
-    if(_isJunkDjName(target.dj) && baked){
-      if(Object.prototype.hasOwnProperty.call(baked,'dj')) target.dj=baked.dj;
-      if(baked.fee!=null) target.fee=baked.fee;
-      else if(baked.cost!=null){ target.cost=baked.cost; if(target.fee==null) target.fee=baked.cost; }
-    }
   }
   window._fbApplySched = function(ov){
     // Start from baked copy
