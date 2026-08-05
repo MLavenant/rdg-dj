@@ -1,4 +1,5 @@
 function renderCal(){
+  if(typeof window._applySchedGuardsToLiveSched==='function') window._applySchedGuardsToLiveSched();
   applyVenueTint();
   var yr=curYr, mo=curM;
   var mm=(mo+1<10?'0':'')+(mo+1);
@@ -93,21 +94,23 @@ function renderCal(){
       h+='<tr class="'+dc+'" data-cal-ds="'+ds+'" ondragover="swDragOver(event)" ondragleave="swDragLeave(event)" ondrop="swDropOnDate(event,\''+ds+'\')">';
       h+='<td class="sc-ev-cell">'+_evLabelHtml(evLabel, ds)+'</td>';
       h+='<td class="sc-date-cell">'+dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
-      h+='<td colspan="9" class="sc-empty-day"><button type="button" class="sc-add-inline" onclick="openAddModal(\''+ds+'\')">+ Add show</button></td>';
+      h+='<td colspan="9" class="sc-empty-day"><button type="button" class="sc-add-inline" data-action="addShow" data-ds="'+ds+'">+ Add show</button></td>';
       h+='<td class="sc-sep"></td>';
       /* Show prior-year match on empty days so planners still see last year's lineup */
       h+=_pyCellsHtml(pyMap[ds]||pyBlank);
-      h+='<td class="sc-act"><button class="sc-add-btn" onclick="openAddModal(\''+ds+'\')">+</button></td>';
+      h+='<td class="sc-act"><button type="button" class="sc-add-btn" data-action="addShow" data-ds="'+ds+'" title="Add show">+</button></td>';
       h+='</tr>';
     } else {
       shows.forEach(function(r,ri){
         var st   = r._s||'nd';
-        var nm   = djLabel(r.dj);
+        var gLive=(typeof window._guardForShow==='function')?window._guardForShow(r):null;
+        var djShow=(gLive && gLive.dj!=null && String(gLive.dj).trim()!=='')?gLive.dj:r.dj;
+        var nm   = djLabel(djShow);
         var idx  = SCHED.indexOf(r);
         var py = (ri===0 ? (pyMap[ds]||pyBlank) : null);
         var tgt=showTargets(r);
         var bsM=tgt.bs_m, roiT=tgt.roi_t;
-        var fee=r.fee||r.cost;
+        var fee=(gLive && gLive.fee!=null)?gLive.fee:(r.fee||r.cost);
         var bCls = perfTone(r.bs_a, bsM, fee, r.roi_a, roiT);
         var rCls = bCls;
         var tSty = toneStyle(bCls);
@@ -169,9 +172,17 @@ function renderCal(){
 /* Reliable click-to-edit (delegation). Avoids broken inline handlers and drag-vs-click fights. */
 function wireCalEditClicks(){
   var body=document.getElementById('calBody');
-  if(!body || body._calEditWired) return;
-  body._calEditWired=true;
+  if(!body || body._calEditWired===2) return;
+  body._calEditWired=2;
   body.addEventListener('click', function(e){
+    var addEl=e.target.closest('[data-action="addShow"]');
+    if(addEl && body.contains(addEl)){
+      e.preventDefault();
+      e.stopPropagation();
+      var ds=addEl.getAttribute('data-ds')||'';
+      if(ds && typeof openAddModal==='function') openAddModal(ds);
+      return;
+    }
     var el=e.target.closest('[data-action="editShow"]');
     if(!el || !body.contains(el)) return;
     e.preventDefault();

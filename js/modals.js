@@ -491,6 +491,20 @@ function persistSchedShow(rec){
   var fbKey = _schedUidKey(rec);
   var legacyKey = _schedDateKey(rec);
   var payload=_fbSanitize(rec);
+  /* Clear uid-level delete markers for this show only.
+     Do NOT clear day-level deletes — that would resurrect a previously removed baked show. */
+  try{
+    window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
+      if(!vals) return vals;
+      var arr=Array.isArray(vals)?vals:Object.values(vals);
+      var next=arr.filter(function(k){
+        if(!k) return false;
+        if(k===fbKey) return false;
+        return true;
+      });
+      return next.length?next:null;
+    });
+  }catch(eDel){}
   if(isBaked){
     /* Always write uid key. Legacy venue|date only when this is the sole show that night. */
     window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_')).set(payload);
@@ -705,12 +719,18 @@ function saveEvent(){
       _fbClearEditKeys(before);
     }
   }
-  /* Always repaint after local mutation — even if Firebase persist throws (e.g. undefined fields). */
+  /* Paint FIRST from local SCHED + guard, then persist. Firebase's local echo of
+     .set() is synchronous and used to rebuild SCHED before go() ran — leaving the
+     old DJ name on screen until a later status change re-rendered. */
+  if(typeof window._guardSchedWrite==='function') window._guardSchedWrite(rec);
+  go();
+  if(curView==='calendar') renderCal();
   try{
     persistSchedShow(rec);
   }catch(ePersist){
     try{ console.warn('persistSchedShow failed', ePersist); }catch(e2){}
   }
+  if(typeof window._applySchedGuardsToLiveSched==='function') window._applySchedGuardsToLiveSched();
   _editUid='';
   go();
   if(curView==='calendar') renderCal();

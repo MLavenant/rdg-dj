@@ -172,7 +172,9 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       var exists = s.some(function(x){ return x._uid===r._uid; });
       if(!exists) s.push(r);
     });
-    /* Deletes: exact uid key, or legacy venue|date (whole day) */
+    /* Deletes: exact uid key, or legacy venue|date (baked shows only).
+       Day-level deletes must NOT remove freshly added shows — that made
+       "+ Add show" look broken on dates where a prior show was deleted. */
     var dels = ov.deletes ? (Array.isArray(ov.deletes)?ov.deletes:Object.values(ov.deletes)) : [];
     s = s.filter(function(r){
       var dateKey=_schedDateKey(r);
@@ -182,7 +184,10 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         if(!dk) continue;
         var p=String(dk).split('|');
         if(p.length>=3){ if(uidKey===dk) return false; }
-        else if(dateKey===dk) return false;
+        else if(dateKey===dk){
+          if(r._added) return true;
+          return false;
+        }
       }
       return true;
     });
@@ -194,6 +199,27 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     if(rep && rep.length && typeof persistSchedShow==='function'){
       rep.forEach(function(r){ try{ persistSchedShow(r); }catch(e){} });
     }
+  };
+
+  /* Paint helpers — calendar must show the latest local rename even if a sync
+     echo briefly rebuilds SCHED from an older Firebase snapshot. */
+  window._guardForShow = function(r){
+    if(!r) return null;
+    var gmap = window._schedWriteGuard || {};
+    var now = Date.now();
+    if(r._uid && gmap[r._uid] && (now - gmap[r._uid].at) <= 60000) return gmap[r._uid];
+    var venue = r.v||r.venue||'';
+    var keys = Object.keys(gmap);
+    for(var i=0;i<keys.length;i++){
+      var g = gmap[keys[i]];
+      if(!g || (now - g.at) > 60000) continue;
+      if(g.d===r.d && (g.v||g.venue||'')===venue) return g;
+    }
+    return null;
+  };
+  window._applySchedGuardsToLiveSched = function(){
+    if(!SCHED || !SCHED.length) return;
+    _reapplySchedGuards(SCHED);
   };
 
   /* ?? Apply full Firebase snapshot ?????????????????????????????? */
