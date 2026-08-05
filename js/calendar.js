@@ -121,15 +121,16 @@ function renderCal(){
             +dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
         }
         var canDrag=!_isCoarsePointer();
-        h+='<td class="sc-dj-cell" data-show-idx="'+idx+'" '
+        var showUid=ensureShowUid(r);
+        var uidJs=JSON.stringify(String(showUid||''));
+        h+='<td class="sc-dj-cell" data-show-idx="'+idx+'" data-uid="'+showUid+'" '
           +(canDrag?'draggable="true" ondragstart="showDragStart(event)" ondragend="swDragEnd(event)" style="cursor:grab" title="Drag to move date / click to edit" ':'style="cursor:pointer" title="Tap to edit (drag-to-move is desktop-only)" ')
-          +'onclick="openEditModal('+idx+')">'
+          +'onclick="openEditModal('+idx+','+uidJs+')">'
           +'<b class="dj-clickname '+bCls+'">'+nm+'</b>'
           +'<span class="dj-fee-inline">'+$k(fee)+'</span>'
           +(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')
           +'</td>';
         var djSt=getShowDjStatus(r, ds)||'';
-        var showUid=ensureShowUid(r);
         h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
           +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status for this performance"')
           +'</div></td>';
@@ -150,7 +151,7 @@ function renderCal(){
           h+='<td class="sc-sep" rowspan="'+nrows+'"></td>';
           h+=_pyCellsHtml(py||pyBlank, nrows);
         }
-        h+='<td class="sc-act"><button class="sc-edit-btn" onclick="openEditModal('+idx+')">&#9998;</button></td>';
+        h+='<td class="sc-act"><button class="sc-edit-btn" onclick="openEditModal('+idx+','+uidJs+')">&#9998;</button></td>';
         h+='</tr>';
       });
     }
@@ -463,7 +464,7 @@ function renderCalGrid(yr,mo,mm,days,showMap){
       var tgt=showTargets(r);
       var bsM=tgt.bs_m;
       var feeCls=feeTierClass(r.fee||r.cost);
-      h+='<div class="cg-chip cg-chip-'+st+'" data-idx="'+idx+'" onclick="event.stopPropagation();openEditModal(+this.dataset.idx)">';
+      h+='<div class="cg-chip cg-chip-'+st+'" data-idx="'+idx+'" data-uid="'+ensureShowUid(r)+'" onclick="event.stopPropagation();openEditModal(+this.dataset.idx,this.dataset.uid)">';
       h+='<div class="cg-chip-dj">'+nm+'</div>';
       if(bsM||r.bs_a){
         h+='<div class="cg-chip-nums">';
@@ -522,7 +523,7 @@ function renderCalYear(){
         if(st==='miss' && idxTone==='near') st='beat';
         var nm=djLabel(r.dj).slice(0,14);
         var idx=SCHED.indexOf(r);
-        h+='<div class="cy-row cy-row-'+st+(isToday?' cy-row-today':'')+'" onclick="openEditModal('+idx+')">';
+        h+='<div class="cy-row cy-row-'+st+(isToday?' cy-row-today':'')+'" onclick="openEditModal('+idx+','+JSON.stringify(String(ensureShowUid(r)||''))+')">';
         h+='<span class="cy-daynum">'+(ri===0?day:'')+'</span>';
         var cyTgtObj=showTargets(r); var cyFee=r.fee||r.cost; var cyTone=perfTone(r.bs_a, cyTgtObj.bs_m, cyFee, r.roi_a, cyTgtObj.roi_t); var cySty=toneStyle(cyTone);
         var cyFeeCls=feeTierClass(cyFee);
@@ -976,7 +977,7 @@ function wireAccountingEvents(){
     btn.addEventListener('click',function(){ openAddModal(btn.dataset.ds); });
   });
   document.querySelectorAll('#acctBody [data-action="edit"]').forEach(function(btn){
-    btn.addEventListener('click',function(){ openEditModal(parseInt(btn.dataset.idx,10)); });
+    btn.addEventListener('click',function(){ openEditModal(parseInt(btn.dataset.idx,10), btn.dataset.uid); });
   });
   document.querySelectorAll('#acctBody [data-action="djStatus"]').forEach(function(sel){
     sel.addEventListener('change',function(){

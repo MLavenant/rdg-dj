@@ -16,8 +16,13 @@ function openAddModal(ds){
   updateFeeTargetsPreview();
   document.getElementById('evModal').classList.remove('hidden');
 }
-function openEditModal(idx){
-  _editIdx=idx; var r=SCHED[idx]; if(!r) return;
+function openEditModal(idx, uid){
+  var r=_findSchedByUidOrIdx
+    ? _findSchedByUidOrIdx(uid, idx)
+    : (idx!=null && idx>=0 ? SCHED[idx] : null);
+  if(!r) return;
+  _editIdx=SCHED.indexOf(r);
+  if(_editIdx<0) _editIdx=idx;
   var f=getFields();
   f.venue.value=r.v||''; f.date.value=r.d||'';
   f.dj.value=r.dj||''; f.fee.value=r.fee||r.cost||'';
@@ -468,16 +473,15 @@ function persistSchedShow(rec){
     window._fbRef.child('schedOverrides/addsByUid/'+uid).set(rec);
   }
 }
-/* DJ Status only — never rewrite artist name / fee / date via a full-record set. */
+/* DJ Status only — patch djStatus only. Never touch _writeKind / dj / fee.
+   Setting _writeKind:'djStatus' on an existing full edit made loaders ignore
+   the stored artist and snap back to bake. */
 function persistShowDjStatusOnly(rec){
   if(!rec||!rec.d) return;
   ensureShowUid(rec);
   if(!window._fbRef) return;
   var uid=ensureShowUid(rec);
-  var patch={
-    djStatus: rec.djStatus==null ? null : rec.djStatus,
-    _writeKind: 'djStatus'
-  };
+  var patch={ djStatus: rec.djStatus==null ? null : rec.djStatus };
   var isBaked = !rec._added && SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===uid; });
   if(isBaked){
     var fbKey=_schedUidKey(rec).replace(/\//g,'_');

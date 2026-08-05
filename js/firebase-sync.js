@@ -25,8 +25,13 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
   /* ?? Rebuild SCHED from baked + Firebase overrides ????????????? */
   function _mergeSchedEdit(target, edit){
     if(!target || !edit) return;
-    /* Status-only patches must never touch artist identity fields. */
-    if(edit._writeKind==='djStatus'){
+    /* Pure status patches must never touch artist identity.
+       Older clients wrote _writeKind:'djStatus' ON TOP of full records via
+       .update(), which made us ignore dj/fee and snap back to bake — looked
+       like "changing status changed another DJ's name/fee". If identity
+       fields are present, treat as a full live edit. */
+    var hasIdentity = (edit.dj!=null && edit.dj!=='') || edit.fee!=null || edit.cost!=null || !!edit.d;
+    if(edit._writeKind==='djStatus' && !hasIdentity){
       target.djStatus = edit.djStatus==null ? null : edit.djStatus;
       return;
     }
@@ -141,12 +146,16 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     }
 
     if(window._fbReady){
-      if(curView==='vip')           renderVIP();
-      else if(curView==='forecast') renderForecast();
-      else if(curView==='live')     renderLive();
-      else if(curView==='system')   renderSystem();
+      if(curView==='vip')             renderVIP();
+      else if(curView==='forecast')   renderForecast();
+      else if(curView==='live')       renderLive();
+      else if(curView==='system')     renderSystem();
       else if(curView==='accounting') renderAccounting();
-      else                          go();
+      else if(curView==='budget'){
+        /* Refresh budget in place — do not call go() (that resets month drill). */
+        if(typeof _budgetInited!=='undefined' && _budgetInited && typeof renderBudget==='function') renderBudget();
+      }
+      else                            go();
     }
   };
 

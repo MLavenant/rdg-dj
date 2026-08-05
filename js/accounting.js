@@ -271,7 +271,7 @@ function renderAccountingGuest(yr, mo, mm, days){
         h+='<td class="acct-doc-cell" rowspan="'+nrows+'">'+_acctDocDropHtml(ds,'invoice',acct.invoices)+'</td>';
         h+='<td class="sc-act-r" rowspan="'+nrows+'"><label class="r365-wrap"><input type="checkbox" class="r365-chk" data-ds="'+ds+'" data-action="r365" '+(acct.r365?'checked':'')+'><span class="r365-box">R</span></label></td>';
       }
-      h+='<td class="sc-act"><button class="sc-edit-btn" data-idx="'+idx+'" data-action="edit">&#9998;</button></td>';
+      h+='<td class="sc-act"><button class="sc-edit-btn" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="edit">&#9998;</button></td>';
       h+='</tr>';
     });
   }
