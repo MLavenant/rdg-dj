@@ -1938,10 +1938,23 @@ function selectVenueRuleTab(v){ _vrEditVenue = v; renderVenueRulesPanel(); }
 var MONTH_NAMES_SHORT=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 function renderVenueRulesPanel(){
+  ensureCnbcSummerRoofRules();
   var venues=Object.keys(VENUE_ROI_RULES);
+  /* Keep Summer Roof next to Beach Club in the tab strip. */
+  venues.sort(function(a,b){
+    var rank=function(v){
+      if(v==='Casa Neos Beach Club') return 1;
+      if(v===CNBC_SUMMER_ROOF_KEY) return 2;
+      if(v==='Casa Neos Lounge') return 3;
+      if(v==='MILA Lounge') return 4;
+      return 9;
+    };
+    return rank(a)-rank(b) || a.localeCompare(b);
+  });
   var tabsHtml='<div class="vr-tabs">';
   venues.forEach(function(v){
-    tabsHtml+='<button class="vr-tab'+(v===_vrEditVenue?' on':'')+'" data-vv="'+v+'">'+v+'</button>';
+    var label=v===CNBC_SUMMER_ROOF_KEY ? 'CNBC Summer Roof' : v;
+    tabsHtml+='<button class="vr-tab'+(v===_vrEditVenue?' on':'')+'" data-vv="'+v+'" title="'+(v===CNBC_SUMMER_ROOF_KEY?'Sunset Rituals · Aug–Sep only':v)+'">'+label+'</button>';
   });
   tabsHtml+='</div>';
   document.getElementById('vrTabs').innerHTML=tabsHtml;
@@ -1953,6 +1966,12 @@ function renderVenueRulesPanel(){
   if(!rules){ document.getElementById('vrBody').innerHTML='<div class="empty">No rules defined for this venue yet.</div>'; return; }
 
   var h='';
+  if(_vrEditVenue===CNBC_SUMMER_ROOF_KEY){
+    h+='<div class="vr-season-box" style="border-left:3px solid #0f766e">';
+    h+='<div class="vr-season-lbl" style="color:#0f766e">Sunset Rituals Rooftop Edition</div>';
+    h+='<div class="vr-season-hint">Applies automatically to <b>Casa Neos Beach Club</b> shows from <b>August 1 through September 30</b> only (ROI, BS Target, and table mins). Outside that window the regular Beach Club rules are used. Floor plan: Diamond 5 · Platinum 6 · Prestige 5 · Gold 4.</div>';
+    h+='</div>';
+  }
 
   h+='<div class="vr-season-box">';
   h+='<div class="vr-season-lbl">High season months</div>';

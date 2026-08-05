@@ -389,16 +389,16 @@ function openShow3dModal(idx){
   modal.className='modal-bg show3d-modal';
   modal.onclick=function(ev){ if(ev.target===modal) closeShow3dModal(); };
   modal.innerHTML='<div class="modal" onclick="event.stopPropagation()">'
-    +'<div class="modal-hd"><h3>'+venue+(summer?' \u00b7 Summer rooftop':'')+' \u00b7 3D tier pricing</h3><button class="modal-close" onclick="closeShow3dModal()">&#10005;</button></div>'
+    +'<div class="modal-hd"><h3>'+venue+(summer?' \u00b7 Sunset Rituals rooftop':'')+' \u00b7 3D tier pricing</h3><button class="modal-close" onclick="closeShow3dModal()">&#10005;</button></div>'
     +'<div class="modal-body">'
     +'<div style="font-size:11px;color:var(--ink2);margin-bottom:8px"><b>'+(djLabel(r.dj)||'TBD')+'</b> \u00b7 '+r.d
       +' \u00b7 Fee <b>'+$k(fee)+'</b> \u00b7 BS Target <b>'+$k(tgt.bs_m)+'</b> \u00b7 ROI Target <b>'+rx(tgt.roi_t)+'</b>'
-      +(summer?' \u00b7 <span style="color:#0f766e">Summer rooftop tiers (Aug\u2013Sep)</span>':'')+'</div>'
+      +(summer?' \u00b7 <span style="color:#0f766e">Sunset Rituals · Aug\u2013Sep only</span>':'')+'</div>'
     +'<div class="show3d-layout">'
     +'<div class="show3d-host" id="show3dHost"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cbb8e8;font-size:12px">Loading floor plan&hellip;</div></div>'
     +'<div class="show3d-side"><div class="fv3d-pricing-hd">Table minimums to hit ROI</div>'
     +'<div class="fv3d-tier-list">'+tiersHtml+'</div>'
-    +'<div class="fv3d-panel-note" style="margin-top:10px">Scaled from the '+(summer?'summer rooftop':'static')+' floor-plan configuration to this show\'s BS target. No booking or event data.</div></div>'
+    +'<div class="fv3d-panel-note" style="margin-top:10px">'+(summer?'Exact Sunset Rituals rooftop table mins for this fee / day.':'Scaled from the static floor-plan configuration to this show\'s BS target.')+' No booking or event data.</div></div>'
     +'</div></div>'
     +'<div class="modal-foot"><button type="button" class="btn-pdf" onclick="closeShow3dModal()">Close</button>'
     +'<button type="button" class="btn-pdf" style="background:var(--ink);color:#fff;border-color:var(--ink)" onclick="closeShow3dModal();_fv3dModelKey=\''+key+'\';_fv3dDate=\''+r.d+'\';setView(\'3d\')">Open full 3D view</button></div>'
