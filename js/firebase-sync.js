@@ -152,8 +152,12 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       else if(curView==='system')     renderSystem();
       else if(curView==='accounting') renderAccounting();
       else if(curView==='budget'){
-        /* Refresh budget in place — do not call go() (that resets month drill). */
-        if(typeof _budgetInited!=='undefined' && _budgetInited && typeof renderBudget==='function') renderBudget();
+        /* Do not rebuild the Budget Planner while the user is typing — Firebase
+           echo of local saves was wiping inputs after one keystroke. */
+        var typing=!!window._bgtPlayTyping;
+        var ae=document.activeElement;
+        if(ae && ae.closest && ae.closest('#budget2027Builder')) typing=true;
+        if(!typing && typeof _budgetInited!=='undefined' && _budgetInited && typeof renderBudget==='function') renderBudget();
       }
       else                            go();
     }
