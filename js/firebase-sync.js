@@ -128,18 +128,31 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     }
     var edits = ov.edits || {};
     var editKeys = Object.keys(edits);
+    var uidAppliedDates = {};
     /* Apply uid-keyed edits first (venue|date|_uid), then legacy venue|date only when safe. */
     editKeys.forEach(function(k){
       var parts = k.split('|'), venue = parts[0], date = parts[1], uid = parts[2]||'';
       if(!uid) return;
-      var idx = s.findIndex(function(r){ return r._uid===uid || (_schedDateKey(r)===(venue+'|'+date) && ensureShowUid(r)===uid); });
-      if(idx >= 0){ _mergeSchedEdit(s[idx], edits[k]); ensureShowUid(s[idx]); }
+      var idx = s.findIndex(function(r){ return r._uid===uid; });
+      if(idx < 0){
+        /* Orphaned uid key (stale idx save): still apply onto the sole show that night. */
+        var dateMatches = s.filter(function(r){ return (r.venue||r.v)===venue && r.d===date; });
+        if(dateMatches.length===1){
+          idx = s.indexOf(dateMatches[0]);
+          if(edits[k] && edits[k]._uid) dateMatches[0]._uid = edits[k]._uid;
+        }
+      }
+      if(idx >= 0){
+        _mergeSchedEdit(s[idx], edits[k]);
+        ensureShowUid(s[idx]);
+        uidAppliedDates[venue+'|'+date]=1;
+      }
     });
     editKeys.forEach(function(k){
       var parts = k.split('|'), venue = parts[0], date = parts[1], uid = parts[2]||'';
       if(uid) return;
-      var hasUidEdit = editKeys.some(function(k2){ return k2.indexOf(venue+'|'+date+'|')===0; });
-      if(hasUidEdit) return;
+      /* Skip legacy only when a uid edit actually landed on this venue|date. */
+      if(uidAppliedDates[venue+'|'+date]) return;
       var matches = s.filter(function(r){ return (r.venue||r.v)===venue && r.d===date; });
       if(matches.length===1){ _mergeSchedEdit(matches[0], edits[k]); ensureShowUid(matches[0]); }
     });

@@ -3,6 +3,7 @@ var curYr    = 2026;
 var curM     = 0;  /* 0-11 fiscal month index */
 var curView  = 'calendar';
 var _editIdx = -1;
+var _editUid = '';
 
 /*    Lookup index: venue+date -> [sched records]                     */
 var IDX = {};

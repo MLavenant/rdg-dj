@@ -1,5 +1,6 @@
 function openAddModal(ds){
   _editIdx=-1;
+  _editUid='';
   var f=getFields();
   f.venue.value=curV;
   var defaultDate=ds;
@@ -31,6 +32,8 @@ function openEditModal(idx, uid){
   }
   _editIdx=SCHED.indexOf(r);
   if(_editIdx<0 && idx!=null && idx>=0) _editIdx=idx;
+  /* Stable identity — SCHED may rebuild while the modal is open; never trust idx alone on save. */
+  _editUid=ensureShowUid(r);
   var f=getFields();
   f.venue.value=r.v||r.venue||''; f.date.value=r.d||'';
   f.dj.value=r.dj||''; f.fee.value=r.fee||r.cost||'';
@@ -613,6 +616,15 @@ function saveEvent(){
   var tbd=0; /* TBD/unconfirmed checkbox removed */
   if(!d){alert('Date required');return;}
   var yr=fiscalYearForDate(d);
+  /* Re-resolve the show by uid — Firebase may have rebuilt SCHED while the modal was open,
+     so a stale _editIdx would write the rename onto another night (calendar kept old name). */
+  if(_editUid){
+    var resolved=-1;
+    for(var ri=0;ri<SCHED.length;ri++){
+      if(SCHED[ri] && ensureShowUid(SCHED[ri])===String(_editUid)){ resolved=ri; break; }
+    }
+    if(resolved>=0) _editIdx=resolved;
+  }
   /* auto-populate BS target and ROI target   venue-specific rules first, generic tier fallback */
   var tmp={v:v,d:d,fee:fee,cost:fee};
   var tgt=showTargets(tmp);
@@ -636,18 +648,29 @@ function saveEvent(){
       rec.bs_a=prev.bs_a; rec.roi_a=prev.roi_a; rec.beat=prev.beat;
       rec.vipNote=prev.vipNote||null;
       if(prev._uid) rec._uid=prev._uid;
+      else if(_editUid) rec._uid=_editUid;
       if(prev._added) rec._added=prev._added;
       if(prev.bs_a&&prev._s!=='fut'&&prev._s!=='tbd') rec._s=prev._s;
-      /* Any edit from the modal is a fresh booking state → DJ Status Not set */
-      rec.djStatus=null;
+      /* Keep existing DJ Status on rename/fee edits — clearing it forced a second
+         status click and made the calendar look like the name only stuck after status. */
+      if(Object.prototype.hasOwnProperty.call(prev,'djStatus')) rec.djStatus=prev.djStatus;
     }
   } else {
     rec._added=1;
     rec.djStatus=null;
   }
+  if(_editUid && !rec._uid) rec._uid=_editUid;
   ensureShowUid(rec);
   rec._writeKind='modal';
-  if(_editIdx>=0) SCHED[_editIdx]=rec; else SCHED.push(rec);
+  if(_editIdx>=0){
+    /* Mutate in place so the same object the calendar already holds updates immediately. */
+    var live=SCHED[_editIdx];
+    Object.keys(live).forEach(function(k){ delete live[k]; });
+    Object.assign(live, rec);
+    rec=live;
+  } else {
+    SCHED.push(rec);
+  }
   var after=_clone(rec);
   pushUndo((before?'Edit show: ':'Add show: ')+(dj||'TBD')+' '+d,function(){
     _undoShowChange(before,after,beforeIndex);
@@ -664,7 +687,9 @@ function saveEvent(){
   }
   /* Persist before paint so Firebase/guards hold the rename before any status click. */
   persistSchedShow(rec);
+  _editUid='';
   go();
+  if(curView==='calendar') renderCal();
   if(curView==='accounting') renderAccounting();
   if(curView==='budget'&&_budgetInited) renderBudget();
   if(curView==='vip') renderVIP();
