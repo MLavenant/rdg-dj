@@ -20,9 +20,11 @@ function openEditModal(idx, uid){
   var r=_findSchedByUidOrIdx
     ? _findSchedByUidOrIdx(uid, idx)
     : (idx!=null && idx>=0 ? SCHED[idx] : null);
+  /* If uid was stale after a live rebuild, still open by index. */
+  if(!r && idx!=null && idx>=0 && idx<SCHED.length) r=SCHED[idx];
   if(!r) return;
   _editIdx=SCHED.indexOf(r);
-  if(_editIdx<0) _editIdx=idx;
+  if(_editIdx<0 && idx!=null && idx>=0) _editIdx=idx;
   var f=getFields();
   f.venue.value=r.v||''; f.date.value=r.d||'';
   f.dj.value=r.dj||''; f.fee.value=r.fee||r.cost||'';

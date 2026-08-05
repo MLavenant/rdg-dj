@@ -122,10 +122,9 @@ function renderCal(){
         }
         var canDrag=!_isCoarsePointer();
         var showUid=ensureShowUid(r);
-        var uidJs=JSON.stringify(String(showUid||''));
         h+='<td class="sc-dj-cell" data-show-idx="'+idx+'" data-uid="'+showUid+'" '
           +(canDrag?'draggable="true" ondragstart="showDragStart(event)" ondragend="swDragEnd(event)" style="cursor:grab" title="Drag to move date / click to edit" ':'style="cursor:pointer" title="Tap to edit (drag-to-move is desktop-only)" ')
-          +'onclick="openEditModal('+idx+','+uidJs+')">'
+          +'onclick="openEditModal('+idx+', this.dataset.uid)">'
           +'<b class="dj-clickname '+bCls+'">'+nm+'</b>'
           +'<span class="dj-fee-inline">'+$k(fee)+'</span>'
           +(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')
@@ -151,7 +150,7 @@ function renderCal(){
           h+='<td class="sc-sep" rowspan="'+nrows+'"></td>';
           h+=_pyCellsHtml(py||pyBlank, nrows);
         }
-        h+='<td class="sc-act"><button class="sc-edit-btn" onclick="openEditModal('+idx+','+uidJs+')">&#9998;</button></td>';
+        h+='<td class="sc-act"><button class="sc-edit-btn" data-idx="'+idx+'" data-uid="'+showUid+'" onclick="openEditModal(+this.dataset.idx, this.dataset.uid)">&#9998;</button></td>';
         h+='</tr>';
       });
     }
@@ -523,7 +522,7 @@ function renderCalYear(){
         if(st==='miss' && idxTone==='near') st='beat';
         var nm=djLabel(r.dj).slice(0,14);
         var idx=SCHED.indexOf(r);
-        h+='<div class="cy-row cy-row-'+st+(isToday?' cy-row-today':'')+'" onclick="openEditModal('+idx+','+JSON.stringify(String(ensureShowUid(r)||''))+')">';
+        h+='<div class="cy-row cy-row-'+st+(isToday?' cy-row-today':'')+'" data-idx="'+idx+'" data-uid="'+ensureShowUid(r)+'" onclick="openEditModal(+this.dataset.idx, this.dataset.uid)">';
         h+='<span class="cy-daynum">'+(ri===0?day:'')+'</span>';
         var cyTgtObj=showTargets(r); var cyFee=r.fee||r.cost; var cyTone=perfTone(r.bs_a, cyTgtObj.bs_m, cyFee, r.roi_a, cyTgtObj.roi_t); var cySty=toneStyle(cyTone);
         var cyFeeCls=feeTierClass(cyFee);
