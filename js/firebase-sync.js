@@ -163,16 +163,23 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
   /* ?? Rebuild SCHED from baked + Firebase overrides ????????????? */
   function _mergeSchedEdit(target, edit){
     if(!target || !edit) return;
-    /* Status-only patches must never touch artist identity / fee.
-       Rule: if the Firebase payload has no DJ name and no fee, only apply djStatus
-       (even when d / _writeKind / venue are present). Old clients treated !!edit.d as
-       "identity", then Object.assign'd a status patch onto bake and looked like a
-       rename revert (TBD) — and stale idx could hit the previous night. */
+    /* Thin patches (no DJ/fee) must still apply status AND event label clears.
+       Clearing special-week tags writes {ev:''}; ignoring that let bake names
+       (HALLOWEEN, etc.) come right back after delete. */
     var hasDj = edit.dj!=null && String(edit.dj).trim()!=='';
     var hasFee = edit.fee!=null || edit.cost!=null;
     if(!hasDj && !hasFee){
       if(Object.prototype.hasOwnProperty.call(edit,'djStatus')){
         target.djStatus = edit.djStatus==null ? null : edit.djStatus;
+      }
+      if(Object.prototype.hasOwnProperty.call(edit,'ev')){
+        target.ev = edit.ev==null ? '' : edit.ev;
+      }
+      if(Object.prototype.hasOwnProperty.call(edit,'note')){
+        target.note = edit.note==null ? null : edit.note;
+      }
+      if(Object.prototype.hasOwnProperty.call(edit,'vipNote')){
+        target.vipNote = edit.vipNote==null ? null : edit.vipNote;
       }
       return;
     }

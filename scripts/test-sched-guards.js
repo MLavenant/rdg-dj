@@ -118,4 +118,40 @@ var afterDel=applyDeletesAndGuards(
 );
 assert(afterDel.length===0, 'deleted add is not resurrected by guard');
 
+/* 9) Thin {ev:''} patches must clear bake event labels (same class as status-only) */
+function mergeSchedEdit(target, edit){
+  var hasDj = edit.dj!=null && String(edit.dj).trim()!=='';
+  var hasFee = edit.fee!=null || edit.cost!=null;
+  if(!hasDj && !hasFee){
+    if(Object.prototype.hasOwnProperty.call(edit,'djStatus')){
+      target.djStatus = edit.djStatus==null ? null : edit.djStatus;
+    }
+    if(Object.prototype.hasOwnProperty.call(edit,'ev')){
+      target.ev = edit.ev==null ? '' : edit.ev;
+    }
+    return;
+  }
+  Object.assign(target, edit);
+}
+var bakeEv={dj:'RIVO', fee:10000, ev:'HALLOWEEN'};
+mergeSchedEdit(bakeEv, {ev:''});
+assert(bakeEv.ev==='', 'thin ev clear wipes bake event label');
+assert(bakeEv.dj==='RIVO', 'thin ev clear does not wipe DJ');
+mergeSchedEdit(bakeEv, {djStatus:'Confirmed'});
+assert(bakeEv.ev==='' && bakeEv.djStatus==='Confirmed', 'status thin patch keeps cleared ev');
+
+/* 10) Rename must drop old special-week label from the edited cluster */
+function upsertLabels(bands, removeNorms, newLabel){
+  var kept=bands.filter(function(s){ return removeNorms.indexOf(String(s.label).toUpperCase())<0; });
+  kept.push({label:newLabel});
+  return kept;
+}
+var afterRename=upsertLabels(
+  [{label:'HALLOWEEN'},{label:'OTHER'}],
+  ['HALLOWEEN','SPOOKY'],
+  'SPOOKY'
+);
+assert(afterRename.length===2 && afterRename.some(function(b){return b.label==='SPOOKY';}) && afterRename.some(function(b){return b.label==='OTHER';}), 'rename replaces old label, keeps other periods');
+assert(!afterRename.some(function(b){return b.label==='HALLOWEEN';}), 'rename does not leave ghost old label');
+
 console.log('\nAll sched guard tests passed.');

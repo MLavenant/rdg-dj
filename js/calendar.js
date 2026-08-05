@@ -42,10 +42,8 @@ function renderCal(){
   var isMobileLayout=document.body.classList.contains('mobile-mode');
   var calEl=document.getElementById('view-calendar');
   if(isMobileLayout) calEl.classList.remove('cal-list-fit'); else calEl.classList.add('cal-list-fit');
-  var moBox=document.getElementById('calMonthRecap');
-  if(moBox){ moBox.innerHTML=''; moBox.style.display='none'; }
-  var pyBox=document.getElementById('calPriorYearRecap');
-  if(pyBox){ pyBox.innerHTML=''; pyBox.style.display='none'; }
+  renderCalMonthRecap(yr, mo, mm, showMap);
+  renderCalPriorYearRecap(yr, mm);
 
   var pyMap=buildPyMapForMonth(curV, yr, mm);
   var pyBlank={py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
@@ -297,7 +295,7 @@ function _calPlMonth(venue, year, mm){
   return { sales:sales, live:live, pct:pctLive(sales, live), hasPl:hasPl };
 }
 
-/* Last-year strip: same decision metrics and order as the current-year strip. */
+/* Last-year strip: Fees / Budget / Variance only (same as this-year strip). */
 function renderCalPriorYearRecap(yr, mm){
   var box=document.getElementById('calPriorYearRecap');
   if(!box) return;
@@ -305,50 +303,26 @@ function renderCalPriorYearRecap(yr, mm){
   var py=yr-1;
   var mi=parseInt(mm,10);
   var s=hs(curV,py,mm);
-  var pl=_calPlMonth(curV,py,mm);
   var hd='<div class="cal-py-hd">'+MN_SH[mi-1]+' '+py+' actual<span>Last year</span></div>';
-  if(!s && !pl.hasPl){
+  var shows=SCHED.filter(function(r){
+    return (r.v||r.venue)===curV && r.d && r._s!=='empty' && inFiscalMonthFilter(r, py, mm);
+  });
+  var fees=0;
+  shows.forEach(function(r){ fees+=(r.fee||r.cost||0); });
+  if(!shows.length&&s) fees=s.tFee||0;
+  if(!shows.length && !s){
     box.innerHTML=hd+'<div class="cal-py-empty">No '+py+' records for '+curV+'.</div>';
     box.style.display='flex';
     return;
   }
-  var shows=SCHED.filter(function(r){
-    return (r.v||r.venue)===curV && r.d && r._s!=='empty' && inFiscalMonthFilter(r, py, mm);
-  });
-  var fees=0,bsT=0,bsA=0,beats=0,misses=0,measured=0;
-  shows.forEach(function(r){
-    var fee=r.fee||r.cost||0; fees+=fee;
-    var tgt=showTargets(r), target=tgt.bs_m;
-    if(target!=null) bsT+=+target;
-    if(r.bs_a!=null) bsA+=+r.bs_a;
-    var tone=perfTone(r.bs_a,target,fee,r.roi_a,tgt.roi_t);
-    if(tone==='hit'||tone==='near'){beats++;measured++;}
-    else if(tone==='low'){misses++;measured++;}
-  });
-  if(!shows.length&&s){
-    fees=s.tFee||0; bsA=s.tBS||0;
-    beats=s.beats||0; misses=s.misses||0; measured=beats+misses;
-  }
   var budget=getMonthlyBudget(curV,py,mm);
   var feeVar=budget!=null?budget-fees:null;
   var feePct=budget?Math.round(fees/budget*100):null;
-  var avgRoi=fees>0&&bsA?+(bsA/fees).toFixed(1):null;
-  var completion=bsT>0?Math.round(bsA/bsT*100):null;
   var varCls=feeVar!=null?(feeVar>=0?'hit':'low'):'';
-  var pctCls=completion!=null?(completion>=100?'hit':completion>=90?'near':'low'):'';
-  var beatHtml=measured
-    ?('<span class="hit">'+beats+'</span> / <span class="low">'+misses+'</span>')
-    :'-';
   var items=[
     {l:'Total DJ Fees',v:fees?$k(fees):'-'},
     {l:'Total Budget',v:budget!=null?$k(budget):'-',s:'Guest DJ monthly budget'},
-    {l:'Budget Variance',v:feeVar!=null?$kv(feeVar):'-',s:feePct!=null?feePct+'% of budget used':'-',cls:varCls},
-    {l:'BS Target',v:bsT?$k(bsT):'-'},
-    {l:'BS Actual',v:bsA?$k(bsA):'-'},
-    {l:'Avg ROI',v:avgRoi!=null?avgRoi+'x':'-'},
-    {l:'ROI Beat & Miss',v:beatHtml,s:measured?Math.round(beats/measured*100)+'% beat rate':'-'},
-    {l:'% Completion',v:completion!=null?completion+'%':'-',s:'BS Actual / Target',cls:pctCls},
-    {l:'Live E %',v:pl.pct!=null?pl.pct+'%':'-',s:'Live / Total Sales'}
+    {l:'Budget Variance',v:feeVar!=null?$kv(feeVar):'-',s:feePct!=null?feePct+'% of budget used':'-',cls:varCls}
   ];
   box.innerHTML=hd+items.map(function(it){
     return '<div class="cal-py-item"><div class="cal-py-l">'+it.l+'</div><div class="cal-py-v'+(it.cls?' '+it.cls:'')+'">'+it.v+'</div>'
@@ -360,37 +334,21 @@ function renderCalPriorYearRecap(yr, mm){
 function renderCalMonthRecap(yr, mo, mm, showMap){
   var box=document.getElementById('calMonthRecap');
   if(!box) return;
-  var fees=0, bsT=0, bsA=0, beats=0, misses=0, measured=0;
+  var fees=0;
   Object.keys(showMap||{}).forEach(function(ds){
     (showMap[ds]||[]).forEach(function(r){
-      var fee=r.fee||r.cost||0;
-      fees+=fee;
-      var tgt=showTargets(r);
-      var bsM=tgt.bs_m, roiT=tgt.roi_t;
-      if(bsM!=null) bsT+=+bsM;
-      if(r.bs_a!=null) bsA+=+r.bs_a;
-      var tone=perfTone(r.bs_a, bsM, fee, r.roi_a, roiT);
-      if(tone==='hit' || tone==='near'){ beats++; measured++; }
-      else if(tone==='low'){ misses++; measured++; }
+      fees+=(r.fee||r.cost||0);
     });
   });
-  var pct=bsT>0 ? Math.round(bsA/bsT*100) : null;
   var budget=(typeof getMonthlyBudget==='function')?getMonthlyBudget(curV, yr, mm):null;
   var feeVar=budget!=null?budget-fees:null;
   var feePct=budget?Math.round(fees/budget*100):null;
-  var pl=_calPlMonth(curV, yr, mm);
-  var avgRoi=(fees>0&&bsA)?+(bsA/fees).toFixed(1):null;
+  box.style.display='flex';
   box.innerHTML=
     '<div class="cal-recap-hd">'+MN_SH[mo]+' '+yr+' actual<span>This year</span></div>'
     +'<div class="cal-recap-item"><div class="cal-recap-l">Total DJ Fees</div><div class="cal-recap-v">'+$k(fees||null)+'</div></div>'
     +'<div class="cal-recap-item"><div class="cal-recap-l">Total Budget</div><div class="cal-recap-v">'+(budget!=null?$k(budget):'-')+'</div><div class="cal-recap-s">Guest DJ monthly budget</div></div>'
-    +'<div class="cal-recap-item"><div class="cal-recap-l">Budget Variance</div><div class="cal-recap-v '+(feeVar!=null?(feeVar>=0?'hit':'low'):'')+'">'+(feeVar!=null?$kv(feeVar):'-')+'</div><div class="cal-recap-s">'+(feePct!=null?feePct+'% of budget used':'set budget in Budget tab')+'</div></div>'
-    +'<div class="cal-recap-item"><div class="cal-recap-l">BS Target</div><div class="cal-recap-v">'+$k(bsT||null)+'</div></div>'
-    +'<div class="cal-recap-item"><div class="cal-recap-l">BS Actual</div><div class="cal-recap-v">'+$k(bsA||null)+'</div></div>'
-    +'<div class="cal-recap-item"><div class="cal-recap-l">Avg ROI</div><div class="cal-recap-v">'+(avgRoi!=null?avgRoi+'x':'-')+'</div></div>'
-    +'<div class="cal-recap-item"><div class="cal-recap-l">ROI Beat &amp; Miss</div><div class="cal-recap-v"><span class="hit">'+beats+'</span> / <span class="low">'+misses+'</span></div><div class="cal-recap-s">'+(measured?Math.round(beats/measured*100)+'% beat rate':'-')+'</div></div>'
-    +'<div class="cal-recap-item"><div class="cal-recap-l">% Completion</div><div class="cal-recap-v '+(pct!=null?(pct>=100?'hit':pct>=90?'near':'low'):'')+'">'+(pct!=null?pct+'%':'-')+'</div><div class="cal-recap-s">BS Actual / Target</div></div>'
-    +'<div class="cal-recap-item"><div class="cal-recap-l">Live E %</div><div class="cal-recap-v">'+(pl.pct!=null?pl.pct+'%':'-')+'</div><div class="cal-recap-s">Live / Total Sales</div></div>';
+    +'<div class="cal-recap-item"><div class="cal-recap-l">Budget Variance</div><div class="cal-recap-v '+(feeVar!=null?(feeVar>=0?'hit':'low'):'')+'">'+(feeVar!=null?$kv(feeVar):'-')+'</div><div class="cal-recap-s">'+(feePct!=null?feePct+'% of budget used':'set budget in Budget tab')+'</div></div>';
 }
 
 function closeShow3dModal(){

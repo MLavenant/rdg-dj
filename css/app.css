@@ -810,12 +810,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 #view-calendar .cal-nav,#view-accounting .cal-nav,#view-calendar #monthSlider,#view-accounting #acctSlider{flex-shrink:0;z-index:5;background:var(--card)}
 .main > [id^="view-"]:not(#view-calendar):not(#view-accounting){flex:1;min-height:0;overflow:auto}
 #calBody,#acctBody{flex:1 1 auto;min-height:0;margin:0 16px 16px;border-radius:var(--r-lg);overflow:auto!important;max-height:none!important;box-shadow:var(--shadow-sm);background:var(--card)}
-.cal-month-recap,.cal-py-recap,#calMonthRecap,#calPriorYearRecap{display:none!important}
-#view-calendar.cal-list-fit .cal-month-recap{display:none!important}
+.cal-month-recap{display:none;flex-shrink:0;margin:0 16px 8px;padding:8px 12px;background:var(--card);border:0.5px solid var(--hair);border-left:3px solid var(--ink);border-radius:12px;box-shadow:var(--shadow-sm);gap:10px;flex-wrap:wrap;align-items:center;z-index:6}
+#view-calendar.cal-list-fit .cal-month-recap{display:flex}
 .cal-recap-hd{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink);min-width:110px;line-height:1.25}
 .cal-recap-hd span{display:block;font-size:8px;font-weight:700;color:var(--ink3);letter-spacing:.04em;margin-top:2px}
 .cal-recap-item{flex:1;min-width:96px;padding:6px 8px;border-radius:9px;background:var(--card2)}
-.cal-py-recap{flex-shrink:0;margin:0 16px 8px;padding:7px 12px;background:var(--card);border:0.5px solid var(--hair);border-left:3px solid var(--ink3);border-radius:12px;box-shadow:var(--shadow-sm);gap:10px;flex-wrap:wrap;align-items:center;z-index:6}
+.cal-py-recap{display:none;flex-shrink:0;margin:0 16px 8px;padding:7px 12px;background:var(--card);border:0.5px solid var(--hair);border-left:3px solid var(--ink3);border-radius:12px;box-shadow:var(--shadow-sm);gap:10px;flex-wrap:wrap;align-items:center;z-index:6}
+#view-calendar.cal-list-fit .cal-py-recap{display:flex}
 .cal-py-hd{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);min-width:110px;line-height:1.25}
 .cal-py-hd span{display:block;font-size:8px;font-weight:700;color:var(--ink4);letter-spacing:.04em;margin-top:2px}
 .cal-py-item{flex:1;min-width:82px;padding:4px 8px;border-radius:8px;background:var(--card2)}

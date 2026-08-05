@@ -810,12 +810,33 @@ function _swNorm(label){ return String(label==null?'':label).trim().toUpperCase(
 function _persistShowEv(rec){
   if(!window._fbRef || !rec || !rec.d) return;
   ensureShowUid(rec);
+  if(typeof _alignRecToBakedShow==='function') _alignRecToBakedShow(rec);
   var uidKey=_schedUidKey(rec).replace(/\//g,'_');
-  try{ window._fbRef.child('schedOverrides/edits/'+uidKey+'/ev').set(rec.ev||''); }catch(e){}
-  /* Legacy date key only when a single show owns that night. */
-  if(_countShowsOnDate(rec.venue||rec.v, rec.d)<=1){
-    var key=_schedDateKey(rec).replace(/\//g,'_');
-    try{ window._fbRef.child('schedOverrides/edits/'+key+'/ev').set(rec.ev||''); }catch(e2){}
+  var evVal=rec.ev==null?'':rec.ev;
+  try{ window._fbRef.child('schedOverrides/edits/'+uidKey+'/ev').set(evVal); }catch(e){}
+  /* Also stamp on a full identity write when clearing, so thin {ev:''} cannot be
+     dropped and bake HALLOWEEN tags cannot resurrect. */
+  if(!evVal){
+    try{
+      var seed=_fbSanitize({
+        dj: rec.dj||'',
+        fee: rec.fee!=null?rec.fee:null,
+        cost: rec.cost!=null?rec.cost:(rec.fee!=null?rec.fee:null),
+        d: rec.d,
+        v: rec.v||rec.venue||'',
+        venue: rec.venue||rec.v||'',
+        _uid: rec._uid,
+        ev: '',
+        _writeKind: 'evClear'
+      });
+      window._fbRef.child('schedOverrides/edits/'+uidKey).transaction(function(cur){
+        if(cur && typeof cur==='object'){
+          cur.ev='';
+          return cur;
+        }
+        return seed;
+      });
+    }catch(eFull){}
   }
 }
 
@@ -1291,37 +1312,42 @@ function deleteSelectedSpecialWeek(){
 function _syncSchedEvForPeriod(oldLabel, newLabel, startStr, endStr, cluster){
   var oldStart=cluster && cluster.start ? cluster.start : startStr;
   var oldEnd=cluster && cluster.end ? cluster.end : endStr;
-  var touched={};
   SCHED.forEach(function(r){
     if(r.v!==curV || !r.d) return;
     var inOld = r.d>=oldStart && r.d<=oldEnd;
     var inNew = r.d>=startStr && r.d<=endStr;
-    var wasThis = (oldLabel && _swNorm(r.ev)===_swNorm(oldLabel)) || _swNorm(r.ev)===_swNorm(newLabel);
-    if(!wasThis) return;
-    if(!inOld && !inNew) return; /* other weeks with same label stay put */
-    var next = inNew ? newLabel : '';
-    if((r.ev||'')===next) return;
-    r.ev=next;
-    touched[(r.venue||r.v)+'|'+r.d]=next;
+    if(!inOld && !inNew) return;
+    var matchOld = oldLabel && _swNorm(r.ev)===_swNorm(oldLabel);
+    var matchNew = newLabel && _swNorm(r.ev)===_swNorm(newLabel);
+    var next=null;
+    var apply=false;
+    if(inNew){
+      /* Stamp the period onto show nights so bake tags cannot outlive rename/delete. */
+      if(!r.ev || matchOld || matchNew){ next=newLabel||''; apply=true; }
+    } else if(inOld && (matchOld || matchNew)){
+      next=''; apply=true;
+    }
+    if(!apply) return;
+    if((r.ev||'')===(next||'')) return;
+    r.ev=next||'';
+    _persistShowEv(r);
   });
-  if(window._fbRef){
-    Object.keys(touched).forEach(function(k){
-      try{ window._fbRef.child('schedOverrides/edits/'+k.replace(/\//g,'_')+'/ev').set(touched[k]); }catch(err){}
-    });
-  }
 }
-/** Upsert one date-range band without wiping other same-label weeks. */
-function _upsertSpecialWeekRange(label, startStr, endStr, replaceCluster){
+/** Upsert one date-range band without wiping other same-label weeks.
+ *  removeLabels: labels to strip from the edited cluster (old name + new name on rename). */
+function _upsertSpecialWeekRange(label, startStr, endStr, replaceCluster, removeLabels){
   if(!label||!startStr||!endStr) return false;
   var sd=new Date(startStr+'T12:00:00'), ed=new Date(endStr+'T12:00:00');
   if(isNaN(sd.getTime())||isNaN(ed.getTime())||sd>ed) return false;
   var oldStart=replaceCluster && replaceCluster.start ? replaceCluster.start : startStr;
   var oldEnd=replaceCluster && replaceCluster.end ? replaceCluster.end : endStr;
+  var drop={};
+  (removeLabels||[label]).forEach(function(lb){ if(lb) drop[_swNorm(lb)]=1; });
   Object.keys(specialWeeks).forEach(function(k){
     if(!k.startsWith(curV+'|')) return;
     var parts=k.split("|");
     specialWeeks[k]=(specialWeeks[k]||[]).filter(function(s){
-      if(_swNorm(s.label)!==_swNorm(label)) return true;
+      if(!drop[_swNorm(s.label)]) return true;
       var a=parts[1]+'-'+parts[2]+'-'+String(s.startDay).padStart(2,'0');
       var b=parts[1]+'-'+parts[2]+'-'+String(s.endDay).padStart(2,'0');
       /* remove only bands that overlap the week being edited */
@@ -1359,12 +1385,14 @@ function saveSpecialWeek(){
   pushUndo((_swEditLabel?'Edit':'Add')+' special week: '+label,function(){ _restoreSpecialPeriodState(before); });
 
   if(_swEditLabel || _swEditSrc){
-    /* Editing an existing week: keep other same-label weeks intact */
-    _upsertSpecialWeekRange(label, startStr, endStr, cluster || {start:startStr,end:endStr});
+    /* Editing an existing week: drop old+new labels in cluster so renames don't leave a ghost band */
+    var rem=[oldLabel, label];
+    _upsertSpecialWeekRange(label, startStr, endStr, cluster || {start:startStr,end:endStr}, rem);
     _syncSchedEvForPeriod(oldLabel, label, startStr, endStr, cluster || {start:startStr,end:endStr});
   } else {
-    /* Brand-new period */
+    /* Brand-new period — also stamp SCHED.ev so bake tags cannot resurrect after delete */
     replaceSpecialWeekRange(label, startStr, endStr);
+    _syncSchedEvForPeriod(null, label, startStr, endStr, {start:startStr,end:endStr});
   }
 
   _swEditKey=null; _swEditLabel=null; _swEditSrc=null; _swEditCluster=null;
