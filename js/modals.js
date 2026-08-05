@@ -452,7 +452,7 @@ function renderVipMinimumGuidance(venue,bsTarget,box){
   }).join('');
   box.style.display='block';
   box.innerHTML='<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#5b368c">VIP table minimums to reach DJ ROI'
-    +(fp&&fp.summer?' <span style="color:#0f766e;font-weight:700">(summer beach)</span>':'')+'</div>'
+    +(fp&&fp.summer?' <span style="color:#0f766e;font-weight:700">(summer rooftop)</span>':'')+'</div>'
     +'<div style="font-size:10px;color:var(--ink2);margin:3px 0 7px">VIP must deliver <b>'+$k(bsTarget)+'</b> in bottle service.'
     +(totalTables?' Across '+totalTables+' sellable tables, the blended minimum is <b>'+$kv(averageMin)+'</b> per table.':'')+'</div>'
     +(tierHtml?'<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px">'+tierHtml+'</div>'

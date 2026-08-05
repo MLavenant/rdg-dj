@@ -412,16 +412,16 @@ function openShow3dModal(idx){
   modal.className='modal-bg show3d-modal';
   modal.onclick=function(ev){ if(ev.target===modal) closeShow3dModal(); };
   modal.innerHTML='<div class="modal" onclick="event.stopPropagation()">'
-    +'<div class="modal-hd"><h3>'+venue+(summer?' \u00b7 Summer beach':'')+' \u00b7 3D tier pricing</h3><button class="modal-close" onclick="closeShow3dModal()">&#10005;</button></div>'
+    +'<div class="modal-hd"><h3>'+venue+(summer?' \u00b7 Summer rooftop':'')+' \u00b7 3D tier pricing</h3><button class="modal-close" onclick="closeShow3dModal()">&#10005;</button></div>'
     +'<div class="modal-body">'
     +'<div style="font-size:11px;color:var(--ink2);margin-bottom:8px"><b>'+(djLabel(r.dj)||'TBD')+'</b> \u00b7 '+r.d
       +' \u00b7 Fee <b>'+$k(fee)+'</b> \u00b7 BS Target <b>'+$k(tgt.bs_m)+'</b> \u00b7 ROI Target <b>'+rx(tgt.roi_t)+'</b>'
-      +(summer?' \u00b7 <span style="color:#0f766e">Summer beach tiers (Aug\u2013Sep)</span>':'')+'</div>'
+      +(summer?' \u00b7 <span style="color:#0f766e">Summer rooftop tiers (Aug\u2013Sep)</span>':'')+'</div>'
     +'<div class="show3d-layout">'
     +'<div class="show3d-host" id="show3dHost"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cbb8e8;font-size:12px">Loading floor plan&hellip;</div></div>'
     +'<div class="show3d-side"><div class="fv3d-pricing-hd">Table minimums to hit ROI</div>'
     +'<div class="fv3d-tier-list">'+tiersHtml+'</div>'
-    +'<div class="fv3d-panel-note" style="margin-top:10px">Scaled from the '+(summer?'summer beach':'static')+' floor-plan configuration to this show\'s BS target. No booking or event data.</div></div>'
+    +'<div class="fv3d-panel-note" style="margin-top:10px">Scaled from the '+(summer?'summer rooftop':'static')+' floor-plan configuration to this show\'s BS target. No booking or event data.</div></div>'
     +'</div></div>'
     +'<div class="modal-foot"><button type="button" class="btn-pdf" onclick="closeShow3dModal()">Close</button>'
     +'<button type="button" class="btn-pdf" style="background:var(--ink);color:#fff;border-color:var(--ink)" onclick="closeShow3dModal();_fv3dModelKey=\''+key+'\';_fv3dDate=\''+r.d+'\';setView(\'3d\')">Open full 3D view</button></div>'
@@ -438,16 +438,17 @@ function openShow3dModal(idx){
     h.innerHTML='';
     var mv=document.createElement('model-viewer');
     mv.setAttribute('src', modelUrl);
-    mv.setAttribute('alt', venue+(summer?' summer beach':'')+' 3D floor plan');
+    mv.setAttribute('alt', venue+(summer?' summer rooftop':'')+' 3D floor plan');
     mv.setAttribute('camera-controls','');
     mv.setAttribute('touch-action','pan-y');
     mv.setAttribute('interaction-prompt','none');
     mv.setAttribute('shadow-intensity','1');
     mv.setAttribute('exposure','1.1');
-    mv.setAttribute('camera-orbit',model.orbit||'45deg 60deg 110%');
+    mv.setAttribute('camera-orbit',(summer && model.summerOrbit) ? model.summerOrbit : (model.orbit||'45deg 60deg 110%'));
     mv.style.cssText='width:100%;height:100%;background:transparent;--poster-color:transparent';
     h.appendChild(mv);
-    renderFv3dHotspots(mv,key,priced?priced.tiers:[]);
+    var hotspotKey=(typeof fv3dEffectiveTableKey==='function')?fv3dEffectiveTableKey(key, r.d):key;
+    renderFv3dHotspots(mv,hotspotKey,priced?priced.tiers:[]);
   });
 }
 
