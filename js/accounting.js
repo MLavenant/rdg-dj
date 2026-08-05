@@ -170,7 +170,7 @@ function renderAccountingGuest(yr, mo, mm, days){
   h+='<th class="sc-num acct-col-target">BS Target</th>';
   h+='<th class="sc-num" style="background:#eef7ee">BS Actual</th>';
   h+='<th class="acct-status-hd">DJ Status</th>';
-  h+='<th class="acct-status-hd">AP Status <span class="acct-ap-lock" title="Password protected">&#128274;</span></th>';
+  h+='<th class="acct-status-hd">AP Status</th>';
   h+='<th class="acct-doc-hd">Contract</th>';
   h+='<th class="acct-doc-hd">Invoice</th>';
   h+='<th class="sc-act-r" title="R365">R365</th>';
@@ -261,7 +261,7 @@ function renderAccountingGuest(yr, mo, mm, days){
         var apSt=acct.apStatus||'';
         var lastHint=acct.updatedBy?('Last: '+acct.updatedBy+' \u00b7 '+_fmtAcctWhen(acct.updatedAt)):'History';
         h+='<td class="acct-status-cell" rowspan="'+nrows+'"><div class="acct-status-wrap">'
-          +'<select class="acct-status-sel '+acctStatusClass(apSt||null)+'" data-ds="'+ds+'" data-action="apStatus" title="Password required">'
+          +'<select class="acct-status-sel '+acctStatusClass(apSt||null)+'" data-ds="'+ds+'" data-action="apStatus" title="AP Status">'
           +'<option value=""'+(!apSt?' selected':'')+'>Not set</option>'
           +ACCT_AP_STATUS.map(function(opt){return '<option value="'+opt+'"'+(apSt===opt?' selected':'')+'>'+opt+'</option>';}).join('')
           +'</select>'

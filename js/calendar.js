@@ -1052,11 +1052,8 @@ function _acctEditorName(){
   return by;
 }
 function _acctRequireApPassword(){
-  var by=_acctEditorName();
-  if(!by) return null;
-  var pw=prompt('Password required to update AP Status:');
-  if(pw!==ACCT_AP_PASSWORD){ alert('Incorrect password.'); return null; }
-  return by;
+  /* Password gate removed — AP Status edits use the same soft editor identity as DJ Status. */
+  return _acctSoftEditorName();
 }
 function _acctPushLog(acct, field, fromVal, toVal, by){
   if(!acct.log) acct.log=[];
