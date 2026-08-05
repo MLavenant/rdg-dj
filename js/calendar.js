@@ -397,12 +397,13 @@ function openShow3dModal(idx){
   var fee=r.fee||r.cost||0;
   var priced=calcTierPricesForShow(venue, r.d, fee);
   var tgt=showTargets(r);
+  var summer=!!(priced&&priced.summer);
   var tiersHtml=(priced?priced.tiers:[]).map(function(t){
     var price=t.suggested!=null?t.suggested:t.minimum;
     return '<div class="fv3d-tier" data-tier="'+t.name+'" style="--tier-color:'+t.color+';cursor:default">'
       +'<div class="fv3d-tier-top"><span class="fv3d-tier-name">'+t.name+'</span><span class="fv3d-tier-min">'+formatFv3dMoney(price)+'</span></div>'
-      +'<div class="fv3d-tier-meta">'+t.tables.length+' tables ? up to '+t.capacity+' guests ? base '+formatFv3dMoney(t.minimum)+'</div>'
-      +'<div class="fv3d-tables">'+t.tables.map(function(id){return '<span class="fv3d-table">#'+id+' ? '+formatFv3dMoney(price)+'</span>';}).join('')+'</div>'
+      +'<div class="fv3d-tier-meta">'+t.tables.length+' tables \u00b7 up to '+t.capacity+' guests \u00b7 base '+formatFv3dMoney(t.minimum)+'</div>'
+      +'<div class="fv3d-tables">'+t.tables.map(function(id){return '<span class="fv3d-table">#'+id+' \u00b7 '+formatFv3dMoney(price)+'</span>';}).join('')+'</div>'
       +'</div>';
   }).join('');
 
@@ -411,24 +412,37 @@ function openShow3dModal(idx){
   modal.className='modal-bg show3d-modal';
   modal.onclick=function(ev){ if(ev.target===modal) closeShow3dModal(); };
   modal.innerHTML='<div class="modal" onclick="event.stopPropagation()">'
-    +'<div class="modal-hd"><h3>'+venue+' ? 3D tier pricing</h3><button class="modal-close" onclick="closeShow3dModal()">&#10005;</button></div>'
+    +'<div class="modal-hd"><h3>'+venue+(summer?' \u00b7 Summer beach':'')+' \u00b7 3D tier pricing</h3><button class="modal-close" onclick="closeShow3dModal()">&#10005;</button></div>'
     +'<div class="modal-body">'
-    +'<div style="font-size:11px;color:var(--ink2);margin-bottom:8px"><b>'+(djLabel(r.dj)||'TBD')+'</b> ? '+r.d
-      +' ? Fee <b>'+$k(fee)+'</b> ? BS Target <b>'+$k(tgt.bs_m)+'</b> ? ROI Target <b>'+rx(tgt.roi_t)+'</b></div>'
+    +'<div style="font-size:11px;color:var(--ink2);margin-bottom:8px"><b>'+(djLabel(r.dj)||'TBD')+'</b> \u00b7 '+r.d
+      +' \u00b7 Fee <b>'+$k(fee)+'</b> \u00b7 BS Target <b>'+$k(tgt.bs_m)+'</b> \u00b7 ROI Target <b>'+rx(tgt.roi_t)+'</b>'
+      +(summer?' \u00b7 <span style="color:#0f766e">Summer beach tiers (Aug\u2013Sep)</span>':'')+'</div>'
     +'<div class="show3d-layout">'
     +'<div class="show3d-host" id="show3dHost"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cbb8e8;font-size:12px">Loading floor plan&hellip;</div></div>'
     +'<div class="show3d-side"><div class="fv3d-pricing-hd">Table minimums to hit ROI</div>'
     +'<div class="fv3d-tier-list">'+tiersHtml+'</div>'
-    +'<div class="fv3d-panel-note" style="margin-top:10px">Scaled from the static floor-plan configuration to this show\'s BS target. No booking or event data.</div></div>'
+    +'<div class="fv3d-panel-note" style="margin-top:10px">Scaled from the '+(summer?'summer beach':'static')+' floor-plan configuration to this show\'s BS target. No booking or event data.</div></div>'
     +'</div></div>'
     +'<div class="modal-foot"><button type="button" class="btn-pdf" onclick="closeShow3dModal()">Close</button>'
-    +'<button type="button" class="btn-pdf" style="background:var(--ink);color:#fff;border-color:var(--ink)" onclick="closeShow3dModal();_fv3dModelKey=\''+key+'\';setView(\'3d\')">Open full 3D view</button></div>'
+    +'<button type="button" class="btn-pdf" style="background:var(--ink);color:#fff;border-color:var(--ink)" onclick="closeShow3dModal();_fv3dModelKey=\''+key+'\';_fv3dDate=\''+r.d+'\';setView(\'3d\')">Open full 3D view</button></div>'
     +'</div>';
   document.body.appendChild(modal);
-  _ensureModelViewerScript(function(){
-    var host=document.getElementById('show3dHost');
-    if(!host||!model) return;
+  var host=document.getElementById('show3dHost');
+  if(!host||!model) return;
+  if(summer && typeof FV_CNBC_SUMMER_IFRAME!=='undefined'){
     host.innerHTML='';
+    var iframe=document.createElement('iframe');
+    iframe.src=FV_CNBC_SUMMER_IFRAME;
+    iframe.title=venue+' summer beach floor plan';
+    iframe.setAttribute('allow','clipboard-write');
+    iframe.style.cssText='width:100%;height:100%;border:0;background:#000';
+    host.appendChild(iframe);
+    return;
+  }
+  _ensureModelViewerScript(function(){
+    var h=document.getElementById('show3dHost');
+    if(!h||!model) return;
+    h.innerHTML='';
     var mv=document.createElement('model-viewer');
     mv.setAttribute('src', model.url);
     mv.setAttribute('alt', venue+' 3D floor plan');
@@ -439,7 +453,7 @@ function openShow3dModal(idx){
     mv.setAttribute('exposure','1.1');
     mv.setAttribute('camera-orbit',model.orbit||'45deg 60deg 110%');
     mv.style.cssText='width:100%;height:100%;background:transparent;--poster-color:transparent';
-    host.appendChild(mv);
+    h.appendChild(mv);
     renderFv3dHotspots(mv,key,priced?priced.tiers:[]);
   });
 }
@@ -3567,7 +3581,7 @@ function buildVipFromSched(mon, sun) {
     if (!vn) return;
     if (!venueMap[vn]) venueMap[vn] = { venue: vn, weekOf: weekLabel, weekKey: weekKey, shows: [] };
 
-    var fp      = _vipFloorPlan[vn] || {};
+    var fp      = (typeof getVipFloorPlan==='function') ? getVipFloorPlan(vn, e.d) : (_vipFloorPlan[vn] || {});
     var budget  = fp.budget || null;
     var tierRef = {};
     Object.keys(fp.tiers||{}).forEach(function(t){

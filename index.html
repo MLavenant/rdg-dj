@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RDG DJ Dashboard v3.84</title>
+<title>RDG DJ Dashboard v3.85</title>
 <!-- Firebase Realtime Database SDK -->
-  <link rel="stylesheet" href="css/app.css?v=3.84">
+  <link rel="stylesheet" href="css/app.css?v=3.85">
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
@@ -14,9 +14,9 @@
 <div class="shell">
 <aside class="sidebar">
   <div class="sb-logo">
-    <img src="assets/rdg-logo.png?v=3.84" alt="RDG" class="sb-logo-img">
+    <img src="assets/rdg-logo.png?v=3.85" alt="RDG" class="sb-logo-img">
     <div class="sb-logo-title">DJ Dashboard</div>
-    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v3.84 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
+    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v3.85 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
   </div>
   <div id="sidebar"></div>
   <div class="sb-tools-section">
@@ -202,6 +202,11 @@
       <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         <label for="fv3dModel" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3)">Venue</label>
         <select id="fv3dModel" onchange="setFv3dModel(this.value)" style="font-size:12px;padding:6px 10px;border:0.5px solid var(--rule);border-radius:8px;font-family:inherit;background:var(--card);color:var(--ink);min-width:200px"></select>
+        <div id="fv3dDateWrap" style="display:none;align-items:center;gap:6px">
+          <label for="fv3dDate" style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3)">Date</label>
+          <input id="fv3dDate" type="date" onchange="setFv3dDate(this.value)" style="font-size:12px;padding:6px 10px;border:0.5px solid var(--rule);border-radius:8px;font-family:inherit;background:var(--card);color:var(--ink)">
+          <span id="fv3dPlanBadge" style="display:none;align-items:center;padding:4px 10px;border-radius:999px;font-size:10px;font-weight:700;letter-spacing:.03em;color:#fff;background:#0f766e"></span>
+        </div>
       </div>
     </div>
     <div class="fv3d-layout">
@@ -416,19 +421,19 @@
     </div>
   </div>
 </div>
-<script src="js/vendor/xlsx.js?v=3.84"></script>
-<script src="data/sched-baked.js?v=3.84"></script>
-<script src="js/state-prelude.js?v=3.84"></script>
-<script src="js/logos.js?v=3.84"></script>
-<script src="js/state.js?v=3.84"></script>
-<script src="js/fiscal.js?v=3.84"></script>
-<script src="js/core.js?v=3.84"></script>
-<script src="js/budget.js?v=3.84"></script>
-<script src="js/firebase-sync.js?v=3.84"></script>
-<script src="js/calendar.js?v=3.84"></script>
-<script src="js/flash-forecast.js?v=3.84"></script>
-<script src="js/accounting.js?v=3.84"></script>
-<script src="js/modals.js?v=3.84"></script>
+<script src="js/vendor/xlsx.js?v=3.85"></script>
+<script src="data/sched-baked.js?v=3.85"></script>
+<script src="js/state-prelude.js?v=3.85"></script>
+<script src="js/logos.js?v=3.85"></script>
+<script src="js/state.js?v=3.85"></script>
+<script src="js/fiscal.js?v=3.85"></script>
+<script src="js/core.js?v=3.85"></script>
+<script src="js/budget.js?v=3.85"></script>
+<script src="js/firebase-sync.js?v=3.85"></script>
+<script src="js/calendar.js?v=3.85"></script>
+<script src="js/flash-forecast.js?v=3.85"></script>
+<script src="js/accounting.js?v=3.85"></script>
+<script src="js/modals.js?v=3.85"></script>
 </body>
 </html>
 
