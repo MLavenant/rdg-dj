@@ -43,27 +43,13 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       return;
     }
     var baked=_bakedByUid(target._uid) || _bakedByUid(edit._uid);
-    var prevDj=target.dj;
-    var prevFee=target.fee!=null?target.fee:target.cost;
     Object.assign(target, edit);
-    /* Modal saves intentionally rename / reprice — but never keep placeholder ??? names. */
-    if(edit._writeKind==='modal'){
-      if(_isJunkDjName(target.dj) && baked){
-        if(Object.prototype.hasOwnProperty.call(baked,'dj')) target.dj=baked.dj;
-        if(baked.fee!=null) target.fee=baked.fee;
-        else if(baked.cost!=null){ target.cost=baked.cost; if(target.fee==null) target.fee=baked.cost; }
-      }
-      return;
-    }
-    /* Everything else must not invent a guest name or fee over the baked schedule. */
-    if(baked){
+    /* Firebase roster edits win (DJ / fee / status / event).
+       Only reject pure ??? placeholder names — those fall back to bake. */
+    if(_isJunkDjName(target.dj) && baked){
       if(Object.prototype.hasOwnProperty.call(baked,'dj')) target.dj=baked.dj;
       if(baked.fee!=null) target.fee=baked.fee;
       else if(baked.cost!=null){ target.cost=baked.cost; if(target.fee==null) target.fee=baked.cost; }
-    } else if(!target.dj && prevDj){
-      target.dj=prevDj;
-    } else if((target.fee==null&&target.cost==null) && prevFee!=null){
-      target.fee=prevFee;
     }
   }
   window._fbApplySched = function(ov){
