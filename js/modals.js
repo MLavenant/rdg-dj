@@ -17,12 +17,18 @@ function openAddModal(ds){
   document.getElementById('evModal').classList.remove('hidden');
 }
 function openEditModal(idx, uid){
-  var r=_findSchedByUidOrIdx
-    ? _findSchedByUidOrIdx(uid, idx)
-    : (idx!=null && idx>=0 ? SCHED[idx] : null);
-  /* If uid was stale after a live rebuild, still open by index. */
+  var r=null;
+  if(typeof _findSchedByUidOrIdx==='function') r=_findSchedByUidOrIdx(uid, idx);
   if(!r && idx!=null && idx>=0 && idx<SCHED.length) r=SCHED[idx];
-  if(!r) return;
+  if(!r && uid){
+    for(var i=0;i<SCHED.length;i++){
+      if(SCHED[i] && String(SCHED[i]._uid||'')===String(uid)){ r=SCHED[i]; break; }
+    }
+  }
+  if(!r){
+    try{ console.warn('openEditModal: show not found', idx, uid); }catch(e){}
+    return;
+  }
   _editIdx=SCHED.indexOf(r);
   if(_editIdx<0 && idx!=null && idx>=0) _editIdx=idx;
   var f=getFields();

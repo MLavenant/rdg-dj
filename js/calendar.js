@@ -120,11 +120,9 @@ function renderCal(){
           h+='<td class="sc-date-cell" rowspan="'+nrows+'">'
             +dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
         }
-        var canDrag=!_isCoarsePointer();
         var showUid=ensureShowUid(r);
-        h+='<td class="sc-dj-cell" data-show-idx="'+idx+'" data-uid="'+showUid+'" '
-          +(canDrag?'draggable="true" ondragstart="showDragStart(event)" ondragend="swDragEnd(event)" style="cursor:grab" title="Drag to move date / click to edit" ':'style="cursor:pointer" title="Tap to edit (drag-to-move is desktop-only)" ')
-          +'onclick="openEditModal('+idx+', this.dataset.uid)">'
+        /* Click opens edit. Drag-to-move uses a small grip so HTML5 drag cannot swallow the click. */
+        h+='<td class="sc-dj-cell" data-show-idx="'+idx+'" data-uid="'+showUid+'" data-action="editShow" style="cursor:pointer" title="Click to edit show">'
           +'<b class="dj-clickname '+bCls+'">'+nm+'</b>'
           +'<span class="dj-fee-inline">'+$k(fee)+'</span>'
           +(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')
@@ -139,7 +137,7 @@ function renderCal(){
         h+='<span class="vip-link'+(vipTxt?' has-note':'')+'" title="'+(vipTxt||'Add VIP note')+'" onclick="editVipNote('+idx+')">'+(vipTxt?vipEsc:'Add VIP note')+'</span>';
         h+='</td>';
         h+='<td class="sc-3d" onclick="event.stopPropagation()"><button type="button" class="sc-3d-btn" onclick="openShow3dModal('+idx+')" title="Open 3D floor plan and tier prices">3D</button></td>';
-        h+='<td class="sc-num fee-cell '+(feeCls||'')+'">'+$k(fee)+'</td>';
+        h+='<td class="sc-num fee-cell '+(feeCls||'')+'" data-show-idx="'+idx+'" data-uid="'+showUid+'" data-action="editShow" style="cursor:pointer" title="Click to edit fee">'+$k(fee)+'</td>';
         h+='<td class="sc-num">'+$k(bsM)+'</td>';
         h+='<td class="sc-num '+bCls+'"'+(tSty?' style="'+tSty+'"':'')+'><b>'+$k(r.bs_a)+'</b>'
           +(bCls?'<div class="sc-beat-icon">'+bsToneIcon(bCls)+'</div>':'')+'</td>';
@@ -150,7 +148,7 @@ function renderCal(){
           h+='<td class="sc-sep" rowspan="'+nrows+'"></td>';
           h+=_pyCellsHtml(py||pyBlank, nrows);
         }
-        h+='<td class="sc-act"><button class="sc-edit-btn" data-idx="'+idx+'" data-uid="'+showUid+'" onclick="openEditModal(+this.dataset.idx, this.dataset.uid)">&#9998;</button></td>';
+        h+='<td class="sc-act"><button type="button" class="sc-edit-btn" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="editShow" title="Edit show">&#9998;</button></td>';
         h+='</tr>';
       });
     }
@@ -163,8 +161,25 @@ function renderCal(){
       else updateAcctDjStatus(sel.dataset.ds, sel.value, sel);
     });
   });
+  wireCalEditClicks();
   initCalColResize();
   fitCalListRows(days);
+}
+
+/* Reliable click-to-edit (delegation). Avoids broken inline handlers and drag-vs-click fights. */
+function wireCalEditClicks(){
+  var body=document.getElementById('calBody');
+  if(!body || body._calEditWired) return;
+  body._calEditWired=true;
+  body.addEventListener('click', function(e){
+    var el=e.target.closest('[data-action="editShow"]');
+    if(!el || !body.contains(el)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var idx=parseInt(el.getAttribute('data-show-idx')||el.getAttribute('data-idx'),10);
+    var uid=el.getAttribute('data-uid')||'';
+    if(typeof openEditModal==='function') openEditModal(idx, uid);
+  });
 }
 
 /* Every Calendar List column can be dragged and retains its width. */
@@ -463,7 +478,7 @@ function renderCalGrid(yr,mo,mm,days,showMap){
       var tgt=showTargets(r);
       var bsM=tgt.bs_m;
       var feeCls=feeTierClass(r.fee||r.cost);
-      h+='<div class="cg-chip cg-chip-'+st+'" data-idx="'+idx+'" data-uid="'+ensureShowUid(r)+'" onclick="event.stopPropagation();openEditModal(+this.dataset.idx,this.dataset.uid)">';
+      h+='<div class="cg-chip cg-chip-'+st+'" data-idx="'+idx+'" data-uid="'+ensureShowUid(r)+'" data-action="editShow">';
       h+='<div class="cg-chip-dj">'+nm+'</div>';
       if(bsM||r.bs_a){
         h+='<div class="cg-chip-nums">';
@@ -482,6 +497,7 @@ function renderCalGrid(yr,mo,mm,days,showMap){
   });
   h+='</div>';
   document.getElementById('calBody').innerHTML=h;
+  wireCalEditClicks();
 }
 
 /*     CALENDAR   Full Year grid (12 mini-months)                    */
@@ -522,7 +538,7 @@ function renderCalYear(){
         if(st==='miss' && idxTone==='near') st='beat';
         var nm=djLabel(r.dj).slice(0,14);
         var idx=SCHED.indexOf(r);
-        h+='<div class="cy-row cy-row-'+st+(isToday?' cy-row-today':'')+'" data-idx="'+idx+'" data-uid="'+ensureShowUid(r)+'" onclick="openEditModal(+this.dataset.idx, this.dataset.uid)">';
+        h+='<div class="cy-row cy-row-'+st+(isToday?' cy-row-today':'')+'" data-idx="'+idx+'" data-uid="'+ensureShowUid(r)+'" data-action="editShow">';
         h+='<span class="cy-daynum">'+(ri===0?day:'')+'</span>';
         var cyTgtObj=showTargets(r); var cyFee=r.fee||r.cost; var cyTone=perfTone(r.bs_a, cyTgtObj.bs_m, cyFee, r.roi_a, cyTgtObj.roi_t); var cySty=toneStyle(cyTone);
         var cyFeeCls=feeTierClass(cyFee);
@@ -537,6 +553,7 @@ function renderCalYear(){
   }
   h+='</div>';
   document.getElementById('calBody').innerHTML=h;
+  wireCalEditClicks();
 }
 function jumpFromYear(mo){ curM=mo; calViewMode='list'; go(); }
 

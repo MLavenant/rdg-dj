@@ -533,13 +533,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 
 /* DJ column ? narrower and clickable */
 .sc-dj{width:160px!important;min-width:140px!important;max-width:180px!important;position:relative}
-.sc-dj-cell{font-size:11px;padding:4px 6px!important;max-width:none;overflow:hidden}
-.dj-clickname{display:block;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink)}
+.sc-dj-cell{font-size:11px;padding:4px 6px!important;max-width:none;overflow:hidden;cursor:pointer}
+.dj-clickname{display:block;font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink);cursor:pointer}
 .dj-clickname.hit{color:var(--beat)!important}
 .dj-clickname.near{color:var(--amb)!important}
 .dj-clickname.low{color:var(--miss)!important}
 .dj-fee-inline{display:block;font-size:9px;color:var(--ink3);margin-top:1px}
-.sc-dj-cell:hover .dj-clickname{text-decoration:underline}
+.sc-dj-cell:hover .dj-clickname{text-decoration:underline;color:var(--blue)}
+.sc-num.fee-cell[data-action="editShow"]{cursor:pointer}
+.sc-num.fee-cell[data-action="editShow"]:hover{text-decoration:underline}
 .sc-tone-near .sc-dj-cell{border-left:3px solid var(--amb)!important}
 .sc-tone-hit .sc-dj-cell{border-left:3px solid var(--beat)!important}
 .sc-tone-low .sc-dj-cell{border-left:3px solid var(--miss)!important}
