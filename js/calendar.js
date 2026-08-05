@@ -998,7 +998,6 @@ function wireAccountingEvents(){
   wireAccountingDocDrops();
 }
 
-var ACCT_AP_PASSWORD="jessica";
 var _acctStatusFilter=null; /* when set, only show rows matching this status */
 
 function acctStatusClass(status){
