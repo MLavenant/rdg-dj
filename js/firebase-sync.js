@@ -248,10 +248,12 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         if(g._writeKind) cur._writeKind = g._writeKind;
         if(g.note!=null) cur.note = g.note;
         if(g.vipNote!=null) cur.vipNote = g.vipNote;
+        if(g.agency !== undefined) cur.agency = g.agency;
         if(g.ev!=null) cur.ev = g.ev;
         needRepush.push(cur);
       }
       if(g.djStatus !== undefined) cur.djStatus = g.djStatus;
+      if(g.agency !== undefined) cur.agency = g.agency;
     });
     return needRepush;
   }
