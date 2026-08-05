@@ -288,8 +288,6 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
   /* ?? Apply full Firebase snapshot ?????????????????????????????? */
   window._fbApply = function(data){
     data = data || {};
-    // specialWeeks
-    if(data.specialWeeks) specialWeeks = data.specialWeeks;
     // VENUE_ROI_RULES first so target recalc uses latest rules
     if(data.venueRoiRules) VENUE_ROI_RULES = data.venueRoiRules;
     /* CRITICAL: the live listener is on the whole `rdg` tree. Writing acctData /
@@ -333,6 +331,9 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     }
     applyOfficialH2Budgets();
     // Accounting status + history
+    var acctSig = data.acctData ? JSON.stringify(data.acctData) : '';
+    var acctChanged = (acctSig !== window._lastAcctDataSig);
+    if(acctChanged) window._lastAcctDataSig = acctSig;
     if(data.acctData) acctData = data.acctData;
     if(data.acctOthersData){
       var fo=data.acctOthersData;
@@ -340,6 +341,10 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         if(fo[k]!=null) acctOthersData[k]=fo[k];
       });
     }
+    var swSig = data.specialWeeks ? JSON.stringify(data.specialWeeks) : '';
+    var swChanged = (swSig !== window._lastSpecialWeeksSig);
+    if(swChanged) window._lastSpecialWeeksSig = swSig;
+    if(data.specialWeeks) specialWeeks = data.specialWeeks;
 
     /* Toast BS Actuals must re-apply after every sched rebuild — edits/baked
        can otherwise wipe a later toastActuals overlay until that node changes. */
@@ -352,7 +357,10 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       else if(curView==='forecast')   renderForecast();
       else if(curView==='live')       renderLive();
       else if(curView==='system')     renderSystem();
-      else if(curView==='accounting') renderAccounting();
+      else if(curView==='accounting'){
+        if(typeof _calUiBusy==='function' && _calUiBusy()) window._calPendingRefresh='go';
+        else renderAccounting();
+      }
       else if(curView==='budget'){
         /* Do not rebuild the Budget Planner while the user is typing — Firebase
            echo of local saves was wiping inputs after one keystroke. */
@@ -363,10 +371,15 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       }
       else {
         /* Calendar / summary / leaderboard / etc.
-           If schedOverrides did not change, do not full-rebuild views from a
-           wiped SCHED — only soft-refresh the calendar when visible. */
-        if(schedChanged) go();
-        else if(curView==='calendar') renderCal();
+           Never soft-rebuild the calendar on unrelated rdg noise (toast/live/
+           scrape) — that closed the DJ Status dropdown mid-open. */
+        if(schedChanged){
+          if(typeof _calUiBusy==='function' && _calUiBusy()) window._calPendingRefresh='go';
+          else if(typeof go==='function') go();
+        } else if(curView==='calendar' && (acctChanged || swChanged)){
+          if(typeof _calUiBusy==='function' && _calUiBusy()) window._calPendingRefresh='cal';
+          else if(typeof renderCal==='function') renderCal();
+        }
       }
     }
   };
@@ -472,6 +485,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     var live = snap.val() || null;
     var n = _applyToastActuals(live) || 0;
     if(window._fbReady && n){
+      if(typeof _calUiBusy==='function' && _calUiBusy()){ window._calPendingRefresh='go'; return; }
       if(curView==='calendar') go();
       else if(curView==='accounting') renderAccounting();
       else if(curView==='leaderboard') renderLeaderboard();

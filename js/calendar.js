@@ -1,4 +1,10 @@
 function renderCal(){
+  /* Never rebuild the table while DJ Status menu is open — Firebase echoes
+     and soft refreshes used to wipe the <select> mid-pick. */
+  if(typeof _calUiBusy==='function' && _calUiBusy()){
+    if(window._calPendingRefresh!=='go') window._calPendingRefresh='cal';
+    return;
+  }
   if(typeof window._applySchedGuardsToLiveSched==='function') window._applySchedGuardsToLiveSched();
   applyVenueTint();
   var yr=curYr, mo=curM;
@@ -159,7 +165,7 @@ function renderCal(){
   h+='</tbody></table>';
   document.getElementById('calBody').innerHTML=h;
   document.querySelectorAll('#calBody [data-action="djStatus"]').forEach(function(sel){
-    sel.addEventListener('change',function(){
+    _wireDjStatusSelect(sel, function(){
       if(sel.dataset.idx!=null && sel.dataset.idx!=='') updateShowDjStatus(+sel.dataset.idx, sel.value, sel, sel.dataset.uid);
       else updateAcctDjStatus(sel.dataset.ds, sel.value, sel);
     });
@@ -975,7 +981,7 @@ function wireAccountingEvents(){
     btn.addEventListener('click',function(){ openEditModal(parseInt(btn.dataset.idx,10), btn.dataset.uid); });
   });
   document.querySelectorAll('#acctBody [data-action="djStatus"]').forEach(function(sel){
-    sel.addEventListener('change',function(){
+    _wireDjStatusSelect(sel, function(){
       if(sel.dataset.idx!=null && sel.dataset.idx!=='') updateShowDjStatus(+sel.dataset.idx, sel.value, sel, sel.dataset.uid);
       else updateAcctDjStatus(sel.dataset.ds, sel.value, sel);
     });
@@ -1097,11 +1103,65 @@ function updateAcctDjStatus(ds,val,sel){
   }
   _acctPushLog(acct,'DJ Status',prev,next||'Not set',by);
   _acctPersistDay(ds);
-  if(curView==='accounting') renderAccounting();
-  else if(curView==='calendar') renderCal();
-  else if(sel){
-    sel.className='acct-status-sel '+acctStatusClass(next||null);
+  if(sel) sel.className='acct-status-sel '+acctStatusClass(next||null);
+  window._calStatusMenuOpen=false;
+  _calRequestRefresh(curView==='accounting'?'go':false);
+}
+/* Keep DJ Status <select> open: Firebase soft-refreshes were rebuilding the
+   calendar mid-open and snapping the menu shut. Lock paint while focused. */
+window._calStatusMenuOpen=false;
+window._calPendingRefresh=false;
+function _calUiBusy(){
+  if(window._calStatusMenuOpen) return true;
+  var ae=document.activeElement;
+  if(!ae) return false;
+  if(ae.tagName==='SELECT' && ae.getAttribute('data-action')==='djStatus') return true;
+  if(ae.tagName==='SELECT' && ae.classList && ae.classList.contains('acct-status-sel')) return true;
+  return false;
+}
+function _calRequestRefresh(forceGo){
+  if(_calUiBusy()){
+    window._calPendingRefresh=forceGo?'go':'cal';
+    return;
   }
+  if(forceGo==='go' || window._calPendingRefresh==='go'){
+    window._calPendingRefresh=false;
+    if(typeof go==='function') go();
+    return;
+  }
+  window._calPendingRefresh=false;
+  if(curView==='calendar' && typeof renderCal==='function') renderCal();
+  else if(curView==='accounting' && typeof renderAccounting==='function') renderAccounting();
+}
+function _calFlushPendingRefresh(){
+  if(!window._calPendingRefresh || _calUiBusy()) return;
+  var kind=window._calPendingRefresh;
+  window._calPendingRefresh=false;
+  if(kind==='go' && typeof go==='function') go();
+  else if(curView==='calendar' && typeof renderCal==='function') renderCal();
+  else if(curView==='accounting' && typeof renderAccounting==='function') renderAccounting();
+}
+function _wireDjStatusSelect(sel, onChange){
+  if(!sel || sel._djStatusWired) return;
+  sel._djStatusWired=1;
+  function lock(e){
+    window._calStatusMenuOpen=true;
+    if(e){ e.stopPropagation(); }
+  }
+  function unlock(){
+    window._calStatusMenuOpen=false;
+    setTimeout(_calFlushPendingRefresh, 0);
+  }
+  sel.addEventListener('pointerdown', lock);
+  sel.addEventListener('mousedown', lock);
+  sel.addEventListener('touchstart', lock, {passive:true});
+  sel.addEventListener('focus', lock);
+  sel.addEventListener('blur', unlock);
+  sel.addEventListener('change', function(){
+    window._calStatusMenuOpen=false;
+    if(typeof onChange==='function') onChange();
+  });
+  sel.addEventListener('click', function(e){ e.stopPropagation(); });
 }
 /* Per-performance DJ status (calendar). New/edited shows start at Not set.
    Status writes must NEVER rewrite DJ guest name / fee / date. */
@@ -1149,9 +1209,11 @@ function updateShowDjStatus(idx,val,sel,uid){
     if(prevAcct!==next) _acctPushLog(acct,'DJ Status',prevAcct,next||'Not set',by);
     _acctPersistDay(r.d);
   }
-  if(curView==='calendar') renderCal();
-  else if(curView==='accounting') renderAccounting();
-  else if(sel) sel.className='acct-status-sel '+acctStatusClass(next||null);
+  /* Update this control in place — full calendar rebuild can wait until the
+     menu is closed (and Firebase echo must not snap it shut mid-pick). */
+  if(sel) sel.className='acct-status-sel '+acctStatusClass(next||null);
+  window._calStatusMenuOpen=false;
+  _calRequestRefresh(curView==='accounting'?'go':false);
 }
 function _djStatusSelectHtml(djSt, extraAttrs){
   var opts=(typeof ACCT_DJ_STATUS!=='undefined'?ACCT_DJ_STATUS:['Offer sent','Hold 1','Confirmed']);
