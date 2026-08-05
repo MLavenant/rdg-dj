@@ -58,6 +58,12 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       if(!g || (now - g.at) > 45000){ delete gmap[uid]; return; }
       var idx = -1;
       for(var i=0;i<s.length;i++){ if(s[i] && s[i]._uid===uid){ idx=i; break; } }
+      if(idx < 0 && g.d){
+        var dateHits = s.filter(function(r){
+          return r && r.d===g.d && (r.v||r.venue||'')===(g.v||g.venue||'');
+        });
+        if(dateHits.length===1) idx = s.indexOf(dateHits[0]);
+      }
       if(idx < 0){
         if(g._added){
           s.push(Object.assign({}, g, {_added:1}));
@@ -68,23 +74,22 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       var cur = s[idx];
       var sameDj = (cur.dj||'') === (g.dj||'');
       var sameFee = String(cur.fee!=null?cur.fee:(cur.cost!=null?cur.cost:'')) === String(g.fee!=null?g.fee:(g.cost!=null?g.cost:''));
-      if(!sameDj || !sameFee){
-        cur.dj = g.dj;
-        cur.fee = g.fee;
-        cur.cost = g.cost!=null?g.cost:g.fee;
-        if(g.d) cur.d = g.d;
-        if(g.v){ cur.v = g.v; cur.venue = g.venue||g.v; }
-        if(g._writeKind) cur._writeKind = g._writeKind;
-        if(g.note!=null) cur.note = g.note;
-        if(g.vipNote!=null) cur.vipNote = g.vipNote;
-        if(g.ev!=null) cur.ev = g.ev;
-        needRepush.push(cur);
-      }
-      if(g.djStatus !== undefined) cur.djStatus = g.djStatus;
-      sameDj = (cur.dj||'') === (g.dj||'');
-      sameFee = String(cur.fee!=null?cur.fee:(cur.cost!=null?cur.cost:'')) === String(g.fee!=null?g.fee:(g.cost!=null?g.cost:''));
       var stOk = (g.djStatus === undefined) || ((cur.djStatus||null) === (g.djStatus||null));
-      if(sameDj && sameFee && stOk) delete gmap[uid];
+      /* Only clear the guard when Firebase already matches — never clear after a local force,
+         or a later echo can snap the calendar back to the old DJ name. */
+      if(sameDj && sameFee && stOk){ delete gmap[uid]; return; }
+      cur.dj = g.dj;
+      cur.fee = g.fee;
+      cur.cost = g.cost!=null?g.cost:g.fee;
+      if(g.d) cur.d = g.d;
+      if(g.v){ cur.v = g.v; cur.venue = g.venue||g.v; }
+      if(g._writeKind) cur._writeKind = g._writeKind;
+      if(g.note!=null) cur.note = g.note;
+      if(g.vipNote!=null) cur.vipNote = g.vipNote;
+      if(g.ev!=null) cur.ev = g.ev;
+      if(g.djStatus !== undefined) cur.djStatus = g.djStatus;
+      if(g._uid) cur._uid = g._uid;
+      needRepush.push(cur);
     });
     return needRepush;
   }

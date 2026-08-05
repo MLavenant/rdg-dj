@@ -463,6 +463,22 @@ function renderVipMinimumGuidance(venue,bsTarget,box){
 }
 function closeModal(){ document.getElementById('evModal').classList.add('hidden'); }
 
+/* Firebase RTDB .set()/.update() throw if any property is undefined — that aborted
+   saveEvent before go()/renderCal, so SCHED had the new DJ but the calendar still
+   showed the old name until a later status change re-rendered. */
+function _fbSanitize(val){
+  if(val===undefined) return null;
+  if(val===null || typeof val!=='object') return val;
+  if(Array.isArray(val)) return val.map(_fbSanitize);
+  var out={};
+  Object.keys(val).forEach(function(k){
+    var v=val[k];
+    if(v===undefined) return;
+    out[k]=_fbSanitize(v);
+  });
+  return out;
+}
+
 function persistSchedShow(rec){
   applyShowTargets(rec);
   if(rec && rec.ev==null) rec.ev='';
@@ -474,18 +490,20 @@ function persistSchedShow(rec){
   var isBaked = !rec._added && SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===uid; });
   var fbKey = _schedUidKey(rec);
   var legacyKey = _schedDateKey(rec);
+  var payload=_fbSanitize(rec);
   if(isBaked){
     /* Always write uid key. Legacy venue|date only when this is the sole show that night. */
-    window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_')).set(rec);
+    window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_')).set(payload);
     if(_countShowsOnDate(rec.venue||rec.v, rec.d)<=1){
-      window._fbRef.child('schedOverrides/edits/'+legacyKey.replace(/\//g,'_')).set(rec);
+      window._fbRef.child('schedOverrides/edits/'+legacyKey.replace(/\//g,'_')).set(payload);
     } else {
       window._fbRef.child('schedOverrides/edits/'+legacyKey.replace(/\//g,'_')).remove();
     }
   } else {
     rec._added=1;
+    payload._added=1;
     /* Race-safe: one Firebase path per uid (no read-modify-write on a shared array). */
-    window._fbRef.child('schedOverrides/addsByUid/'+uid).set(rec);
+    window._fbRef.child('schedOverrides/addsByUid/'+uid).set(payload);
   }
 }
 /* DJ Status only — merge djStatus without replacing the whole node.
@@ -497,7 +515,7 @@ function persistShowDjStatusOnly(rec){
   if(!window._fbRef) return;
   var uid=ensureShowUid(rec);
   var nextStatus=rec.djStatus==null ? null : rec.djStatus;
-  var patch={
+  var patch=_fbSanitize({
     dj: rec.dj||'',
     fee: rec.fee!=null?rec.fee:null,
     cost: rec.cost!=null?rec.cost:(rec.fee!=null?rec.fee:null),
@@ -507,7 +525,7 @@ function persistShowDjStatusOnly(rec){
     _uid: uid,
     djStatus: nextStatus,
     _writeKind: 'statusMerge'
-  };
+  });
   if(typeof window._guardSchedWrite==='function'){
     window._guardSchedWrite(Object.assign({}, rec, patch));
   }
@@ -662,6 +680,8 @@ function saveEvent(){
   if(_editUid && !rec._uid) rec._uid=_editUid;
   ensureShowUid(rec);
   rec._writeKind='modal';
+  /* Normalize undefined → null so Firebase writes and in-memory state stay clean. */
+  Object.keys(rec).forEach(function(k){ if(rec[k]===undefined) rec[k]=null; });
   if(_editIdx>=0){
     /* Mutate in place so the same object the calendar already holds updates immediately. */
     var live=SCHED[_editIdx];
@@ -685,8 +705,12 @@ function saveEvent(){
       _fbClearEditKeys(before);
     }
   }
-  /* Persist before paint so Firebase/guards hold the rename before any status click. */
-  persistSchedShow(rec);
+  /* Always repaint after local mutation — even if Firebase persist throws (e.g. undefined fields). */
+  try{
+    persistSchedShow(rec);
+  }catch(ePersist){
+    try{ console.warn('persistSchedShow failed', ePersist); }catch(e2){}
+  }
   _editUid='';
   go();
   if(curView==='calendar') renderCal();
