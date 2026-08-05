@@ -55,18 +55,14 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     var needRepush = [];
     Object.keys(gmap).forEach(function(uid){
       var g = gmap[uid];
-      if(!g || (now - g.at) > 45000){ delete gmap[uid]; return; }
+      if(!g || (now - g.at) > 60000){ delete gmap[uid]; return; }
+      /* UID only — never fall back to "sole show on that date" (that copied a rename
+         onto the previous night when uids briefly mismatched after a rebuild). */
       var idx = -1;
-      for(var i=0;i<s.length;i++){ if(s[i] && s[i]._uid===uid){ idx=i; break; } }
-      if(idx < 0 && g.d){
-        var dateHits = s.filter(function(r){
-          return r && r.d===g.d && (r.v||r.venue||'')===(g.v||g.venue||'');
-        });
-        if(dateHits.length===1) idx = s.indexOf(dateHits[0]);
-      }
+      for(var i=0;i<s.length;i++){ if(s[i] && String(s[i]._uid||'')===String(uid)){ idx=i; break; } }
       if(idx < 0){
         if(g._added){
-          s.push(Object.assign({}, g, {_added:1}));
+          s.push(Object.assign({}, g, {_added:1, _uid:uid}));
           needRepush.push(s[s.length-1]);
         }
         return;
@@ -75,20 +71,16 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       var sameDj = (cur.dj||'') === (g.dj||'');
       var sameFee = String(cur.fee!=null?cur.fee:(cur.cost!=null?cur.cost:'')) === String(g.fee!=null?g.fee:(g.cost!=null?g.cost:''));
       var stOk = (g.djStatus === undefined) || ((cur.djStatus||null) === (g.djStatus||null));
-      /* Only clear the guard when Firebase already matches — never clear after a local force,
-         or a later echo can snap the calendar back to the old DJ name. */
       if(sameDj && sameFee && stOk){ delete gmap[uid]; return; }
+      /* Identity only — never rewrite this show's date/venue from the guard. */
       cur.dj = g.dj;
       cur.fee = g.fee;
       cur.cost = g.cost!=null?g.cost:g.fee;
-      if(g.d) cur.d = g.d;
-      if(g.v){ cur.v = g.v; cur.venue = g.venue||g.v; }
       if(g._writeKind) cur._writeKind = g._writeKind;
       if(g.note!=null) cur.note = g.note;
       if(g.vipNote!=null) cur.vipNote = g.vipNote;
       if(g.ev!=null) cur.ev = g.ev;
       if(g.djStatus !== undefined) cur.djStatus = g.djStatus;
-      if(g._uid) cur._uid = g._uid;
       needRepush.push(cur);
     });
     return needRepush;
@@ -139,14 +131,8 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       var parts = k.split('|'), venue = parts[0], date = parts[1], uid = parts[2]||'';
       if(!uid) return;
       var idx = s.findIndex(function(r){ return r._uid===uid; });
-      if(idx < 0){
-        /* Orphaned uid key (stale idx save): still apply onto the sole show that night. */
-        var dateMatches = s.filter(function(r){ return (r.venue||r.v)===venue && r.d===date; });
-        if(dateMatches.length===1){
-          idx = s.indexOf(dateMatches[0]);
-          if(edits[k] && edits[k]._uid) dateMatches[0]._uid = edits[k]._uid;
-        }
-      }
+      /* No date-only orphan apply — that could attach another night's edit onto the
+         sole show that day when uids drifted. */
       if(idx >= 0){
         _mergeSchedEdit(s[idx], edits[k]);
         ensureShowUid(s[idx]);
@@ -204,18 +190,12 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
   /* Paint helpers — calendar must show the latest local rename even if a sync
      echo briefly rebuilds SCHED from an older Firebase snapshot. */
   window._guardForShow = function(r){
-    if(!r) return null;
+    if(!r || !r._uid) return null;
     var gmap = window._schedWriteGuard || {};
-    var now = Date.now();
-    if(r._uid && gmap[r._uid] && (now - gmap[r._uid].at) <= 60000) return gmap[r._uid];
-    var venue = r.v||r.venue||'';
-    var keys = Object.keys(gmap);
-    for(var i=0;i<keys.length;i++){
-      var g = gmap[keys[i]];
-      if(!g || (now - g.at) > 60000) continue;
-      if(g.d===r.d && (g.v||g.venue||'')===venue) return g;
-    }
-    return null;
+    var g = gmap[r._uid];
+    if(!g) return null;
+    if((Date.now() - g.at) > 60000) return null;
+    return g;
   };
   window._applySchedGuardsToLiveSched = function(){
     if(!SCHED || !SCHED.length) return;

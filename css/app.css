@@ -156,6 +156,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .kc-b{color:var(--blue)}.beat{color:var(--beat)}.miss{color:var(--miss)}
 /* PY columns */
 .sc-py{background:rgba(0,0,0,.01)}
+.sc-py-badge{display:inline-block;font-size:8px;font-weight:800;letter-spacing:.04em;color:var(--ink3);background:var(--card4);border:0.5px solid var(--hair);border-radius:3px;padding:0 3px;margin-right:3px;vertical-align:middle}
 .py-beat{background:#f0faf0!important}.py-miss{background:#fdf4f4!important}
 .py-badge{margin-left:3px;font-size:10px;font-weight:700}
 .py-b{color:var(--beat)}.py-m{color:var(--miss)}.py-dim{color:var(--ink3)}

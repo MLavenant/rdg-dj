@@ -261,8 +261,8 @@ function _pyCellsHtml(py, rowspan){
   var pyRCls=pyBCls;
   var pyFeeCls=feeTierClass(py.py_fee);
   var rs=rowspan && rowspan>1 ? ' rowspan="'+rowspan+'"' : '';
-  var h='<td class="sc-py"'+rs+'>';
-  if(pyNm) h+='<b class="'+pyBCls+'">'+pyNm+'</b>';
+  var h='<td class="sc-py"'+rs+' title="Prior year ('+((py&&py.py_dj)? 'last year lineup':'no show last year')+') — not a second booking this year">';
+  if(pyNm) h+='<span class="sc-py-badge">LY</span> <b class="'+pyBCls+'">'+pyNm+'</b>';
   else h+='-';
   h+='</td>';
   h+='<td class="sc-num fee-cell '+(pyFeeCls||'py-dim')+'"'+rs+'>'+$k(py.py_fee)+'</td>';

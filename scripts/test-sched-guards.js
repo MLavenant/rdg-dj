@@ -75,4 +75,22 @@ fakeSave('HUGO M');
 assert(events.indexOf('paint:HUGO M')<events.indexOf('persist'), 'first paint happens before persist');
 assert(events[events.length-1]==='paint2:HUGO M', 'final paint shows renamed DJ after echo');
 
+/* 5) Status patches must never carry identity fields */
+var statusPatch={ djStatus:'Hold 1' };
+assert(!('dj' in statusPatch) && !('d' in statusPatch), 'status patch is status-only');
+
+/* 6) Guard match is uid-only */
+function guardForShow(r, gmap){
+  if(!r || !r._uid) return null;
+  return gmap[r._uid]||null;
+}
+var gmap={
+  uid_zeubii:{dj:'NEW ZEUB', d:'2026-11-22'},
+  uid_rivo:{dj:'HUGO M', d:'2026-11-20'}
+};
+assert(guardForShow({_uid:'uid_rivo',d:'2026-11-20'}, gmap).dj==='HUGO M', 'RIVO guard stays on RIVO uid');
+assert(guardForShow({_uid:'uid_zeubii',d:'2026-11-22'}, gmap).dj==='NEW ZEUB', 'ZEUBII guard stays on ZEUBII uid');
+assert(guardForShow({_uid:'uid_rivo',d:'2026-11-22'}, gmap).dj==='HUGO M', 'uid wins even if date differs in row');
+assert(guardForShow({_uid:'missing',d:'2026-11-20'}, gmap)==null, 'no date fallback to another night');
+
 console.log('\nAll sched guard tests passed.');

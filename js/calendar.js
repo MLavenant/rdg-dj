@@ -42,8 +42,11 @@ function renderCal(){
   var isMobileLayout=document.body.classList.contains('mobile-mode');
   var calEl=document.getElementById('view-calendar');
   if(isMobileLayout) calEl.classList.remove('cal-list-fit'); else calEl.classList.add('cal-list-fit');
-  renderCalMonthRecap(yr, mo, mm, showMap);
-  renderCalPriorYearRecap(yr, mm);
+  /* Month / prior-year summary strips removed from calendar list view. */
+  var moBox=document.getElementById('calMonthRecap');
+  if(moBox){ moBox.innerHTML=''; moBox.style.display='none'; }
+  var pyBox=document.getElementById('calPriorYearRecap');
+  if(pyBox){ pyBox.innerHTML=''; pyBox.style.display='none'; }
 
   var pyMap=buildPyMapForMonth(curV, yr, mm);
   var pyBlank={py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
@@ -60,13 +63,13 @@ function renderCal(){
   h+='<th class="sc-num">BS Actual</th>';
   h+='<th class="sc-num">ROI Tgt</th>';
   h+='<th class="sc-num">ROI Act</th>';
-  h+='<th class="sc-sep"></th>';
-  h+='<th class="sc-py sc-py-hd">PY DJ ('+(yr-1)+')</th>';
-  h+='<th class="sc-num">PY Fee</th>';
-  h+='<th class="sc-num">PY BS Tgt</th>';
-  h+='<th class="sc-num">PY BS Act</th>';
-  h+='<th class="sc-num">PY ROI Tgt</th>';
-  h+='<th class="sc-num">PY ROI Act</th>';
+  h+='<th class="sc-sep" title="Prior-year comparison"></th>';
+  h+='<th class="sc-py sc-py-hd" title="Same date last year — not a second booking">Last year DJ</th>';
+  h+='<th class="sc-num" title="Prior-year fee">LY Fee</th>';
+  h+='<th class="sc-num" title="Prior-year BS target">LY BS Tgt</th>';
+  h+='<th class="sc-num" title="Prior-year BS actual">LY BS Act</th>';
+  h+='<th class="sc-num" title="Prior-year ROI target">LY ROI Tgt</th>';
+  h+='<th class="sc-num" title="Prior-year ROI actual">LY ROI Act</th>';
   h+='<th class="sc-act"></th>';
   h+='</tr></thead><tbody>';
 
@@ -1147,10 +1150,21 @@ function updateAcctDjStatus(ds,val,sel){
    Status writes must NEVER rewrite DJ guest name / fee / date. */
 function updateShowDjStatus(idx,val,sel,uid){
   var wantUid=uid||(sel&&sel.dataset&&sel.dataset.uid)||'';
+  var wantDs=(sel&&sel.dataset&&sel.dataset.ds)||'';
+  if(!wantUid){
+    try{ console.warn('updateShowDjStatus: missing uid — ignored to protect other nights'); }catch(e){}
+    return;
+  }
   var r=_findSchedByUidOrIdx
-    ? _findSchedByUidOrIdx(wantUid, wantUid ? -1 : idx)
-    : SCHED[idx];
+    ? _findSchedByUidOrIdx(wantUid, -1)
+    : null;
   if(!r||!r.d) return;
+  /* Hard date check — never apply status to a different night than the control. */
+  if(wantDs && r.d!==wantDs){
+    try{ console.warn('updateShowDjStatus: date mismatch', wantDs, r.d); }catch(e2){}
+    return;
+  }
+  if(String(ensureShowUid(r))!==String(wantUid)) return;
   var next=val||'';
   var prev=getShowDjStatus(r,r.d)||'';
   if(prev===next) return;

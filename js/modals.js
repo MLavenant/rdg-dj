@@ -520,37 +520,24 @@ function persistSchedShow(rec){
     window._fbRef.child('schedOverrides/addsByUid/'+uid).set(payload);
   }
 }
-/* DJ Status only — merge djStatus without replacing the whole node.
-   Always stamp current local DJ/fee so a stale Firebase transaction cannot
-   overwrite a just-saved rename with bake TBD. */
+/* DJ Status only — write djStatus on this show's uid path ONLY.
+   Never stamp dj/fee/date (that leaked renames onto neighboring nights via
+   legacy venue|date keys and wrong-row lookups). */
 function persistShowDjStatusOnly(rec){
   if(!rec||!rec.d) return;
   ensureShowUid(rec);
   if(!window._fbRef) return;
   var uid=ensureShowUid(rec);
   var nextStatus=rec.djStatus==null ? null : rec.djStatus;
-  var patch=_fbSanitize({
-    dj: rec.dj||'',
-    fee: rec.fee!=null?rec.fee:null,
-    cost: rec.cost!=null?rec.cost:(rec.fee!=null?rec.fee:null),
-    d: rec.d,
-    v: rec.v||rec.venue||'',
-    venue: rec.venue||rec.v||'',
-    _uid: uid,
-    djStatus: nextStatus,
-    _writeKind: 'statusMerge'
-  });
+  var patch=_fbSanitize({ djStatus: nextStatus });
   if(typeof window._guardSchedWrite==='function'){
-    window._guardSchedWrite(Object.assign({}, rec, patch));
+    window._guardSchedWrite(Object.assign({}, rec, {djStatus: nextStatus}));
   }
   var isBaked = !rec._added && SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===uid; });
   if(isBaked){
     var fbKey=_schedUidKey(rec).replace(/\//g,'_');
-    var legacyKey=_schedDateKey(rec).replace(/\//g,'_');
     window._fbRef.child('schedOverrides/edits/'+fbKey).update(patch);
-    if(_countShowsOnDate(rec.venue||rec.v, rec.d)<=1){
-      window._fbRef.child('schedOverrides/edits/'+legacyKey).update(patch);
-    }
+    /* Do not write legacy venue|date — multi-night bleed risk. */
   } else {
     rec._added=1;
     window._fbRef.child('schedOverrides/addsByUid/'+uid).update(patch);
@@ -655,7 +642,13 @@ function saveEvent(){
     for(var ri=0;ri<SCHED.length;ri++){
       if(SCHED[ri] && ensureShowUid(SCHED[ri])===String(_editUid)){ resolved=ri; break; }
     }
-    if(resolved>=0) _editIdx=resolved;
+    if(resolved>=0){
+      _editIdx=resolved;
+    } else if(_editIdx>=0){
+      /* Refuse stale index writes — better to abort than corrupt the previous night. */
+      alert('This show refreshed while the editor was open. Please close and edit it again.');
+      return;
+    }
   }
   /* auto-populate BS target and ROI target   venue-specific rules first, generic tier fallback */
   var tmp={v:v,d:d,fee:fee,cost:fee};
