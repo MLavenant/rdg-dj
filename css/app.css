@@ -682,6 +682,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 #view-accounting.acct-others-mode .acct-others-name{width:100%}
 #view-accounting.acct-others-mode .acct-others-cost{width:100%}
 #view-accounting.acct-others-mode .sc-date-cell{white-space:nowrap;text-overflow:ellipsis}
+.acct-agency-hd{min-width:88px;max-width:110px;width:96px;text-align:center!important}
+.acct-agency-cell{min-width:88px;max-width:120px;vertical-align:middle!important;padding:3px 4px!important}
+.acct-agency-inp{width:100%;box-sizing:border-box;font-size:10px;font-weight:600;font-family:inherit;padding:4px 5px;border:0.5px solid var(--rule);border-radius:6px;background:#fff;color:var(--ink);outline:none}
+.acct-agency-inp:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(0,113,227,.12)}
 .acct-note-hd{min-width:140px;text-align:center!important}
 .acct-note-cell{min-width:140px;max-width:220px;vertical-align:top!important;padding:4px 5px!important}
 .acct-note-inp{width:100%;min-height:42px;box-sizing:border-box;resize:vertical;font-size:10px;font-family:inherit;line-height:1.3;padding:5px 6px;border:0.5px solid var(--rule);border-radius:6px;background:var(--card);color:var(--ink);outline:none}

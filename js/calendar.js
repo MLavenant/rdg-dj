@@ -1107,6 +1107,17 @@ function wireAccountingEvents(){
       if(typeof _calFlushPendingRefresh==='function') setTimeout(_calFlushPendingRefresh, 0);
     });
   });
+  document.querySelectorAll('#acctBody [data-action="acctAgency"]').forEach(function(inp){
+    inp.addEventListener('focus', function(){ window._calStatusMenuOpen=true; });
+    inp.addEventListener('keydown', function(e){
+      if(e.key==='Enter'){ e.preventDefault(); inp.blur(); }
+    });
+    inp.addEventListener('blur', function(){
+      window._calStatusMenuOpen=false;
+      updateShowAgency(inp.dataset.uid, inp.dataset.idx, inp.value, inp.dataset.ds);
+      if(typeof _calFlushPendingRefresh==='function') setTimeout(_calFlushPendingRefresh, 0);
+    });
+  });
   document.querySelectorAll('#acctBody [data-action="acctHist"]').forEach(function(btn){
     btn.addEventListener('click',function(){ showAcctHistory(btn.dataset.ds); });
   });
@@ -1245,6 +1256,7 @@ function _calUiBusy(){
   if(ae.tagName==='SELECT' && ae.getAttribute('data-action')==='djStatus') return true;
   if(ae.tagName==='SELECT' && ae.classList && ae.classList.contains('acct-status-sel')) return true;
   if(ae.tagName==='TEXTAREA' && ae.getAttribute('data-action')==='acctNote') return true;
+  if(ae.tagName==='INPUT' && ae.getAttribute('data-action')==='acctAgency') return true;
   return false;
 }
 function _calRequestRefresh(forceGo){
@@ -1378,6 +1390,31 @@ function updateAcctNote(ds,val){
   acct.note=next;
   _acctPushLog(acct,'Notes',prev||'',next||'(cleared)',_acctSoftEditorName());
   _acctPersistDay(ds);
+}
+function updateShowAgency(uid, idx, val, ds){
+  var r=_findSchedByUidOrIdx
+    ? _findSchedByUidOrIdx(uid, idx!=null && idx!=='' ? +idx : -1)
+    : null;
+  if(!r && idx!=null && idx!=='' && SCHED[+idx]) r=SCHED[+idx];
+  if(!r) return;
+  if(ds && r.d && r.d!==ds) return;
+  var next=String(val==null?'':val).trim()||null;
+  var prev=r.agency||null;
+  if((prev||'')===(next||'')) return;
+  r.agency=next;
+  ensureShowUid(r);
+  if(typeof window._guardSchedWrite==='function'){
+    window._guardSchedWrite(Object.assign({}, r, {agency: next}));
+  }
+  if(window._fbRef){
+    try{
+      var uidKey=_schedUidKey(r).replace(/\//g,'_');
+      window._fbRef.child('schedOverrides/edits/'+uidKey+'/agency').set(next);
+    }catch(e){}
+  }
+  if(typeof persistSchedShow==='function' && r._added){
+    try{ persistSchedShow(r); }catch(e2){}
+  }
 }
 function updateAcctStatus(ds,val){ /* legacy */ updateAcctDjStatus(ds,val); }
 function _fmtAcctWhen(iso){

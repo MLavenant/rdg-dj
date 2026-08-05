@@ -73,6 +73,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       djStatus: Object.prototype.hasOwnProperty.call(rec,'djStatus') ? (rec.djStatus==null?null:rec.djStatus) : undefined,
       note: rec.note||null,
       vipNote: rec.vipNote||null,
+      agency: Object.prototype.hasOwnProperty.call(rec,'agency') ? (rec.agency==null?null:rec.agency) : undefined,
       ev: rec.ev||'',
       bs_a: rec.bs_a!=null?rec.bs_a:null,
       roi_a: rec.roi_a!=null?rec.roi_a:null,
@@ -127,6 +128,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     if(!keep.djStatus && lose.djStatus) keep.djStatus=lose.djStatus;
     if(!keep.note && lose.note) keep.note=lose.note;
     if(!keep.vipNote && lose.vipNote) keep.vipNote=lose.vipNote;
+    if(!keep.agency && lose.agency) keep.agency=lose.agency;
     if(!keep.ev && lose.ev) keep.ev=lose.ev;
     if(keep.bs_a==null && lose.bs_a!=null) keep.bs_a=lose.bs_a;
     if(keep.roi_a==null && lose.roi_a!=null) keep.roi_a=lose.roi_a;
@@ -274,6 +276,9 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       }
       if(Object.prototype.hasOwnProperty.call(edit,'vipNote')){
         target.vipNote = edit.vipNote==null ? null : edit.vipNote;
+      }
+      if(Object.prototype.hasOwnProperty.call(edit,'agency')){
+        target.agency = edit.agency==null ? null : edit.agency;
       }
       return;
     }
