@@ -333,11 +333,32 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       var matches = s.filter(function(r){ return (r.venue||r.v)===venue && r.d===date; });
       if(matches.length===1){ _mergeSchedEdit(matches[0], edits[k]); ensureShowUid(matches[0]); }
     });
-    /* Apply deletes BEFORE adds. Day-level tombstones must remove bake first —
-       otherwise a shadow add folds into bake, then both vanish → cleanup
-       re-persists → freeze loop (MILA Sat Aug 29 / DARMON). */
-    var dels = ov.deletes ? (Array.isArray(ov.deletes)?ov.deletes:Object.values(ov.deletes)) : [];
+    /* Apply uid deletes BEFORE adds. Legacy day-level tombstones (venue|date)
+       are IGNORED — they hid null-fee bake nights (DARMON/ONOMA/BARUT…) and
+       caused add/edit freezes. Only uid tombstones can hide a show. */
+    var delsRaw = ov.deletes ? (Array.isArray(ov.deletes)?ov.deletes:Object.values(ov.deletes)) : [];
+    var dels = [];
+    var hadDayLevel = false;
+    delsRaw.forEach(function(dk){
+      if(!dk) return;
+      if(String(dk).split('|').length >= 3) dels.push(dk);
+      else hadDayLevel = true;
+    });
     window._lastSchedDeletes = dels;
+    /* Purge legacy day keys from Firebase so old clients cannot keep re-hiding bake. */
+    if(hadDayLevel && window._fbRef && !window._scrubDayDelLock){
+      window._scrubDayDelLock = true;
+      try{
+        window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
+          if(!vals) return vals;
+          var arr = Array.isArray(vals)?vals:Object.values(vals);
+          var next = arr.filter(function(k){ return k && String(k).split('|').length >= 3; });
+          if(next.length === arr.length) return vals;
+          return next.length ? next : null;
+        });
+      }catch(eScrub){}
+      setTimeout(function(){ window._scrubDayDelLock = false; }, 2500);
+    }
     /* If Firebase has an edit for a show, drop local/session tombstones for that
        uid — otherwise this browser keeps hiding bake after a delete while other
        clients (and the edit payload) still have the show. */
@@ -349,6 +370,22 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
           delete window._schedDeletedUids[uid];
         }
       });
+      /* Also clear local tombstones for any baked show that still exists in bake
+         and is not uid-deleted in Firebase — recovers null-fee nights after a
+         stale session delete. */
+      var uidDelSet={};
+      dels.forEach(function(dk){
+        var p=String(dk).split('|');
+        if(p.length>=3) uidDelSet[p[2]]=1;
+      });
+      Object.keys(window._schedDeletedUids||{}).forEach(function(uid){
+        if(uidDelSet[uid]) return;
+        if(window._bakedUidIndex && window._bakedUidIndex[uid]){
+          delete window._schedDeletedUids[uid];
+        } else if((SCHED_BAKED||[]).some(function(r){ return r && ensureShowUid(r)===uid; })){
+          delete window._schedDeletedUids[uid];
+        }
+      });
       _saveSchedEditStore();
     }catch(eClr){}
     s = s.filter(function(r){
@@ -356,8 +393,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       if(window._schedDeletedUids && r._uid && window._schedDeletedUids[r._uid]) return false;
       var dateKey=_schedDateKey(r);
       var uidKey=_schedUidKey(r);
-      /* Active edit for this uid means the show is intentional — keep it even if
-         a legacy day tombstone still exists in Firebase. */
+      /* Active edit for this uid means the show is intentional — keep it. */
       var hasUidEdit=!!(r._uid && (
         edits[uidKey] || edits[dateKey+'|'+r._uid] ||
         Object.keys(edits).some(function(k){
@@ -374,12 +410,8 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
             if(hasUidEdit) continue;
             return false;
           }
-        } else if(dateKey===dk){
-          /* Legacy day tombstones: ignore when this night has an edit (restore).
-             Otherwise hide bake only — never remove a live add. */
-          if(hasUidEdit || r._added) continue;
-          return false;
         }
+        /* day-level keys already stripped from dels — ignored */
       }
       return true;
     });

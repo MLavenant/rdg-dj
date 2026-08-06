@@ -481,18 +481,16 @@ function _alignRecToBakedShow(rec){
   /* One-show-per-night: fold shadow adds onto the baked uid for that date,
      unless this night/bake was deleted (then the add must stay an add). */
   var bakeUid=ensureShowUid(hits[0]);
-  var dateKey=venue+'|'+rec.d;
   var bakeGone=!!(window._schedDeletedUids && window._schedDeletedUids[bakeUid]);
   try{
+    /* Only uid tombstones count — legacy day-level deletes must NOT block align,
+       or null-fee bake nights stay uneditable forever. */
     (window._lastSchedDeletes||[]).forEach(function(dk){
       if(!dk) return;
-      if(dk===dateKey) bakeGone=true;
       var p=String(dk).split('|');
       if(p.length>=3 && p[2]===bakeUid) bakeGone=true;
     });
   }catch(e){}
-  /* If bake is tombstoned, do NOT retarget onto it — caller will clear the
-     day tombstone on persist, then a later apply can align. */
   if(rec._added && bakeGone) return false;
   rec._uid=bakeUid;
   rec._added=0;
@@ -514,13 +512,14 @@ function persistSchedShow(rec){
     window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
       if(!vals) return vals;
       var arr=Array.isArray(vals)?vals:Object.values(vals);
-      /* Clearing the day tombstone is required — otherwise bake stays hidden forever
-         and add/edit loops (MILA 2026-08-29 day delete hid DARMON). */
+      /* Drop this show's uid tombstone AND every legacy day-level key.
+         Day keys re-hide null-fee bake nights whenever an old client writes them. */
       var next=arr.filter(function(k){
         if(!k) return false;
-        if(k===fbKey || k===dateKey) return false;
         var p=String(k).split('|');
-        if(p.length>=3 && p[0]===(rec.v||rec.venue||'') && p[1]===rec.d && p[2]===uid) return false;
+        if(p.length < 3) return false; /* scrub all day-level */
+        if(k===fbKey) return false;
+        if(p[0]===(rec.v||rec.venue||'') && p[1]===rec.d && p[2]===uid) return false;
         return true;
       });
       return next.length?next:null;
@@ -632,8 +631,8 @@ function _fbRemoveSchedRecord(rec){
   window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
     var arr=vals?(Array.isArray(vals)?vals:Object.values(vals)):[];
     if(arr.indexOf(uidKey)<0) arr.push(uidKey);
-    /* Strip any legacy day tombstone for this night so bake can return if undeleted. */
-    return arr.filter(function(k){ return k && k!==dateKey; });
+    /* Never keep day-level keys — strip all of them on every delete write. */
+    return arr.filter(function(k){ return k && String(k).split('|').length >= 3; });
   });
 }
 function _fbRestoreSchedRecord(rec){
