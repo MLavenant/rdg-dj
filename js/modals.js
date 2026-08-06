@@ -168,7 +168,13 @@ function _modalBookingEngineBlock(venue, dateStr, fee, name){
 }
 
 /* Live DJ-history lookup for the Add/Edit Show modal — 3 sections: artist, budget, sales */
+var _djSuggestTimer=null;
 function checkDjSuggestion(){
+  /* Debounce: every keystroke was scanning SCHED + DJ_PROFILES and freezing the modal. */
+  if(_djSuggestTimer) clearTimeout(_djSuggestTimer);
+  _djSuggestTimer=setTimeout(_checkDjSuggestionNow, 120);
+}
+function _checkDjSuggestionNow(){
   var f=getFields();
   var name=(f.dj.value||'').trim();
   var box=document.getElementById('fldDjSuggest');
@@ -425,7 +431,17 @@ function renderVipMinimumGuidance(venue,bsTarget,box){
     +(tierHtml?'<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px">'+tierHtml+'</div>'
       :'<div style="font-size:10px;color:var(--ink3)">Floor-plan table counts are not available for this venue yet.</div>');
 }
-function closeModal(){ document.getElementById('evModal').classList.add('hidden'); }
+function closeModal(opts){
+  document.getElementById('evModal').classList.add('hidden');
+  /* Save/delete already paint — skip flush so we don't double go()/renderCal. */
+  if(opts && opts.skipFlush){
+    window._calPendingRefresh=false;
+    return;
+  }
+  if(typeof _calFlushPendingRefresh==='function'){
+    try{ setTimeout(_calFlushPendingRefresh, 0); }catch(e){}
+  }
+}
 
 /* Firebase RTDB .set()/.update() throw if any property is undefined — that aborted
    saveEvent before go()/renderCal, so SCHED had the new DJ but the calendar still
@@ -447,7 +463,14 @@ function _alignRecToBakedShow(rec){
   if(!rec || !rec.d) return false;
   var venue=rec.v||rec.venue||'';
   ensureShowUid(rec);
-  if(SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===rec._uid; })){
+  if(!window._bakedUidIndex){
+    window._bakedUidIndex={};
+    (SCHED_BAKED||[]).forEach(function(r){
+      if(!r) return;
+      window._bakedUidIndex[ensureShowUid(r)]=r;
+    });
+  }
+  if(window._bakedUidIndex[rec._uid]){
     rec._added=0;
     return true;
   }
@@ -468,6 +491,8 @@ function _alignRecToBakedShow(rec){
       if(p.length>=3 && p[2]===bakeUid) bakeGone=true;
     });
   }catch(e){}
+  /* If bake is tombstoned, do NOT retarget onto it — caller will clear the
+     day tombstone on persist, then a later apply can align. */
   if(rec._added && bakeGone) return false;
   rec._uid=bakeUid;
   rec._added=0;
@@ -485,12 +510,17 @@ function persistSchedShow(rec){
   var fbKey=_schedUidKey(rec);
   var payload=_fbSanitize(rec);
   try{
+    var dateKey=_schedDateKey(rec);
     window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
       if(!vals) return vals;
       var arr=Array.isArray(vals)?vals:Object.values(vals);
+      /* Clearing the day tombstone is required — otherwise bake stays hidden forever
+         and add/edit loops (MILA 2026-08-29 day delete hid DARMON). */
       var next=arr.filter(function(k){
         if(!k) return false;
-        if(k===fbKey) return false;
+        if(k===fbKey || k===dateKey) return false;
+        var p=String(k).split('|');
+        if(p.length>=3 && p[0]===(rec.v||rec.venue||'') && p[1]===rec.d && p[2]===uid) return false;
         return true;
       });
       return next.length?next:null;
@@ -559,7 +589,14 @@ function _schedRecordKey(rec){ return _schedUidKey(rec); }
 function _isBakedSchedRecord(rec){
   if(!rec) return false;
   ensureShowUid(rec);
-  if(SCHED_BAKED.some(function(r){ ensureShowUid(r); return r._uid===rec._uid; })) return true;
+  if(!window._bakedUidIndex){
+    window._bakedUidIndex={};
+    (SCHED_BAKED||[]).forEach(function(r){
+      if(!r) return;
+      window._bakedUidIndex[ensureShowUid(r)]=r;
+    });
+  }
+  if(window._bakedUidIndex[rec._uid]) return true;
   if(rec._added) return false;
   var venue=rec.v||rec.venue||'';
   var hits=SCHED_BAKED.filter(function(r){ return r && (r.v||r.venue)===venue && r.d===rec.d; });
@@ -722,7 +759,7 @@ function saveEvent(){
   pushUndo((before?'Edit show: ':'Add show: ')+(dj||'TBD')+' '+d,function(){
     _undoShowChange(before,after,beforeIndex);
   });
-  IDX=buildIdx(SCHED); closeModal();
+  IDX=buildIdx(SCHED); closeModal({skipFlush:true});
   if(typeof syncLinkedTabsFromSched==='function') syncLinkedTabsFromSched(rec);
   /* If date/venue changed, retire old Firebase keys so the show does not ghost on reload. */
   if(before && _schedDateKey(before)!==_schedDateKey(rec)){
@@ -745,8 +782,8 @@ function saveEvent(){
   }
   if(typeof window._applySchedGuardsToLiveSched==='function') window._applySchedGuardsToLiveSched();
   _editUid='';
-  go();
-  if(curView==='calendar') renderCal();
+  /* One paint is enough — a second go()/renderCal here plus the Firebase echo
+     was freezing the app after Save (esp. on bake nights like MILA Aug 29). */
   if(curView==='accounting') renderAccounting();
   if(curView==='budget'&&_budgetInited) renderBudget();
   if(curView==='vip') renderVIP();
@@ -775,7 +812,7 @@ function deleteEvent(){
   SCHED.splice(_editIdx,1);
   _editIdx=-1; _editUid='';
   IDX=buildIdx(SCHED);
-  closeModal();
+  closeModal({skipFlush:true});
   go();
   if(curView==='calendar') renderCal();
   if(curView==='accounting') renderAccounting();

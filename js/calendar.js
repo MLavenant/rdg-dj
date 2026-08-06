@@ -1288,6 +1288,12 @@ window._calStatusMenuOpen=false;
 window._calPendingRefresh=false;
 function _calUiBusy(){
   if(window._calStatusMenuOpen) return true;
+  /* Do not rebuild calendar/accounting under an open Add/Edit Show modal —
+     Firebase echoes were freezing the UI mid-edit (esp. null-fee bake nights). */
+  try{
+    var modal=document.getElementById('evModal');
+    if(modal && !modal.classList.contains('hidden')) return true;
+  }catch(eModal){}
   var ae=document.activeElement;
   if(!ae) return false;
   if(ae.tagName==='SELECT' && ae.getAttribute('data-action')==='djStatus') return true;
