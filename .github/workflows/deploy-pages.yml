@@ -23,12 +23,34 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Prepare site (exclude huge easter media)
+        run: |
+          mkdir -p _site
+          shopt -s dotglob
+          for item in *; do
+            case "$item" in
+              _site|.git|.github|docs) ;;
+              *) cp -a "$item" _site/ ;;
+            esac
+          done
+          # Keep easter images; drop multi‑MB audio that stalls Pages sync
+          rm -f _site/assets/easter/*.mp3 _site/assets/easter/*.MP3 || true
+          # Drop local/dev-only files if present
+          rm -f _site/today-dashboard-with-network.html || true
+          du -sh _site
+          find _site -type f -printf '%s %p\n' | sort -nr | head -20
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
+
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          timeout: 1800000
