@@ -338,18 +338,46 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
        re-persists → freeze loop (MILA Sat Aug 29 / DARMON). */
     var dels = ov.deletes ? (Array.isArray(ov.deletes)?ov.deletes:Object.values(ov.deletes)) : [];
     window._lastSchedDeletes = dels;
+    /* If Firebase has an edit for a show, drop local/session tombstones for that
+       uid — otherwise this browser keeps hiding bake after a delete while other
+       clients (and the edit payload) still have the show. */
+    try{
+      Object.keys(edits||{}).forEach(function(k){
+        var parts=String(k).split('|');
+        var uid=parts[2]||(edits[k]&&edits[k]._uid)||'';
+        if(uid && window._schedDeletedUids && window._schedDeletedUids[uid]){
+          delete window._schedDeletedUids[uid];
+        }
+      });
+      _saveSchedEditStore();
+    }catch(eClr){}
     s = s.filter(function(r){
       if(!r) return false;
       if(window._schedDeletedUids && r._uid && window._schedDeletedUids[r._uid]) return false;
       var dateKey=_schedDateKey(r);
       var uidKey=_schedUidKey(r);
+      /* Active edit for this uid means the show is intentional — keep it even if
+         a legacy day tombstone still exists in Firebase. */
+      var hasUidEdit=!!(r._uid && (
+        edits[uidKey] || edits[dateKey+'|'+r._uid] ||
+        Object.keys(edits).some(function(k){
+          var p=String(k).split('|');
+          return p.length>=3 && p[2]===r._uid;
+        })
+      ));
       for(var di=0;di<dels.length;di++){
         var dk=dels[di];
         if(!dk) continue;
         var p=String(dk).split('|');
-        if(p.length>=3){ if(uidKey===dk || (r._uid && p[2]===r._uid)) return false; }
-        else if(dateKey===dk){
-          /* Day tombstone only hides bake — never keep a doomed row for folding. */
+        if(p.length>=3){
+          if(uidKey===dk || (r._uid && p[2]===r._uid)){
+            if(hasUidEdit) continue;
+            return false;
+          }
+        } else if(dateKey===dk){
+          /* Legacy day tombstones: ignore when this night has an edit (restore).
+             Otherwise hide bake only — never remove a live add. */
+          if(hasUidEdit || r._added) continue;
           return false;
         }
       }

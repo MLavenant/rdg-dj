@@ -627,13 +627,13 @@ function _fbRemoveSchedRecord(rec){
     var next=arr.filter(function(r){ return !(r && (r._uid===uid || _schedKeysMatch(r,rec))); });
     return next.length?next:null;
   });
-  /* Tombstone baked rows (and any uid) so apply cannot resurrect from bake. */
+  /* Tombstone by uid only. Day-level deletes hid bake forever (MILA Aug 29 /
+     DARMON) and fought re-adds — uid tombstone is enough to keep a night empty. */
   window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
     var arr=vals?(Array.isArray(vals)?vals:Object.values(vals)):[];
     if(arr.indexOf(uidKey)<0) arr.push(uidKey);
-    /* Also day-key when this is the only show that night — empty day stays empty. */
-    if(_countShowsOnDate(rec.venue||rec.v, rec.d)<=1 && arr.indexOf(dateKey)<0) arr.push(dateKey);
-    return arr;
+    /* Strip any legacy day tombstone for this night so bake can return if undeleted. */
+    return arr.filter(function(k){ return k && k!==dateKey; });
   });
 }
 function _fbRestoreSchedRecord(rec){
