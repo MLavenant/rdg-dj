@@ -360,41 +360,10 @@ function renderCalPriorYearRecap(yr, mm){
     {l:'BS Target',v:bs.n?$k(bs.tBSM):'-',s:mtdHint},
     {l:'BS Actual',v:bs.n?$k(bs.tBSA):'-',s:mtdHint}
   ];
-  var summary=hd+items.map(function(it){
+  box.innerHTML=hd+items.map(function(it){
     return '<div class="cal-py-item"><div class="cal-py-l">'+it.l+'</div><div class="cal-py-v'+(it.cls?' '+it.cls:'')+'">'+it.v+'</div>'
       +(it.s?'<div class="cal-recap-s">'+it.s+'</div>':'')+'</div>';
   }).join('');
-
-  /* Show-level LY detail (date, DJ, fee, BS target/actual, ROI) — Act. vs For. style. */
-  var detail='';
-  if(shows.length){
-    detail='<div class="cal-py-detail"><table class="cal-py-detail-tbl"><thead><tr>'
-      +'<th>Date</th><th>DJ</th><th class="num">DJ Cost</th><th class="num">BS Target</th><th class="num">BS Actual</th>'
-      +'<th class="num">ROI Act</th><th class="num">ROI For.</th>'
-      +'</tr></thead><tbody>';
-    shows.forEach(function(r){
-      var tgt=(typeof showTargets==='function')?showTargets(r):{bs_m:r.bs_m,roi_t:r.roi_t};
-      var bsM=tgt&&tgt.bs_m!=null?tgt.bs_m:r.bs_m;
-      var roiT=tgt&&tgt.roi_t!=null?tgt.roi_t:r.roi_t;
-      var roiA=r.roi_a;
-      if(roiA==null && r.bs_a!=null && (r.fee||r.cost)) roiA=r.bs_a/(r.fee||r.cost);
-      var tone=perfTone(r.bs_a, bsM, (r.fee||r.cost), roiA, roiT);
-      var dObj=_parseYmd(r.d);
-      var dateLbl=DOW_FULL[dObj.getDay()].slice(0,3)+' '+MN_SH[dObj.getMonth()]+' '+dObj.getDate();
-      detail+='<tr>'
-        +'<td>'+dateLbl+'</td>'
-        +'<td><b>'+djLabel(r.dj)+'</b></td>'
-        +'<td class="num">'+$k(r.fee||r.cost||null)+'</td>'
-        +'<td class="num">'+$k(bsM)+'</td>'
-        +'<td class="num '+tone+'"><b>'+$k(r.bs_a)+'</b></td>'
-        +'<td class="num '+tone+'">'+(roiA!=null?(Number(roiA).toFixed(1)+'x'):'-')+'</td>'
-        +'<td class="num">'+(roiT!=null?(Number(roiT).toFixed(1)+'x'):'-')+'</td>'
-        +'</tr>';
-    });
-    detail+='</tbody></table></div>';
-  }
-
-  box.innerHTML='<div class="cal-py-summary">'+summary+'</div>'+detail;
   box.style.display='flex';
 }
 
