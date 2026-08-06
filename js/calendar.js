@@ -301,7 +301,32 @@ function _calPlMonth(venue, year, mm){
   return { sales:sales, live:live, pct:pctLive(sales, live), hasPl:hasPl };
 }
 
-/* Last-year strip: Fees / Budget / Variance only (same as this-year strip). */
+/** MTD cutoff for overlay BS sums: include only dates on/before today in the viewed period. */
+function _overlayMtdMaxDate(yr, mm){
+  if(typeof TODAY!=='string'||!TODAY) return null;
+  var info=(typeof fiscalInfoForDate==='function')?fiscalInfoForDate(TODAY):null;
+  if(!info) return TODAY;
+  var y=+yr, mi=(typeof fiscalMonthIndexFromMm==='function')?fiscalMonthIndexFromMm(mm):((parseInt(mm,10)||1)-1);
+  if(y<info.year) return null;          /* past fiscal year → full month */
+  if(y>info.year) return '0000-01-01';  /* future fiscal year → nothing */
+  if(mi<info.monthIndex) return null;   /* earlier period this year → full */
+  if(mi>info.monthIndex) return '0000-01-01'; /* later period → nothing yet */
+  return TODAY;                         /* current period → MTD */
+}
+function _overlaySumBs(shows, maxDate){
+  var tBSM=0, tBSA=0, n=0;
+  (shows||[]).forEach(function(r){
+    if(!r||r._s==='empty') return;
+    if(maxDate && r.d && r.d>maxDate) return;
+    n++;
+    var tgt=(typeof showTargets==='function')?showTargets(r):{bs_m:r.bs_m};
+    tBSM+=(tgt&&tgt.bs_m!=null)?(+tgt.bs_m||0):(r.bs_m||0);
+    tBSA+=(r.bs_a||0);
+  });
+  return {tBSM:tBSM, tBSA:tBSA, n:n};
+}
+
+/* Last-year strip: Fees / Budget / Variance + MTD BS Target / BS Actual (+ show detail). */
 function renderCalPriorYearRecap(yr, mm){
   var box=document.getElementById('calPriorYearRecap');
   if(!box) return;
@@ -312,7 +337,7 @@ function renderCalPriorYearRecap(yr, mm){
   var hd='<div class="cal-py-hd">'+MN_SH[mi-1]+' '+py+' actual<span>Last year</span></div>';
   var shows=SCHED.filter(function(r){
     return (r.v||r.venue)===curV && r.d && r._s!=='empty' && inFiscalMonthFilter(r, py, mm);
-  });
+  }).slice().sort(function(a,b){ return (a.d||'').localeCompare(b.d||''); });
   var fees=0;
   shows.forEach(function(r){ fees+=(r.fee||r.cost||0); });
   if(!shows.length&&s) fees=s.tFee||0;
@@ -325,15 +350,51 @@ function renderCalPriorYearRecap(yr, mm){
   var feeVar=budget!=null?budget-fees:null;
   var feePct=budget?Math.round(fees/budget*100):null;
   var varCls=feeVar!=null?(feeVar>=0?'hit':'low'):'';
+  var mtdMax=_overlayMtdMaxDate(py, mm);
+  var bs=_overlaySumBs(shows, mtdMax);
+  var mtdHint=mtdMax?('MTD thru '+mtdMax.slice(5)):'Full month';
   var items=[
     {l:'Total DJ Fees',v:fees?$k(fees):'-'},
     {l:'Total Budget',v:budget!=null?$k(budget):'-',s:'Guest DJ monthly budget'},
-    {l:'Budget Variance',v:feeVar!=null?$kv(feeVar):'-',s:feePct!=null?feePct+'% of budget used':'-',cls:varCls}
+    {l:'Budget Variance',v:feeVar!=null?$kv(feeVar):'-',s:feePct!=null?feePct+'% of budget used':'-',cls:varCls},
+    {l:'BS Target',v:bs.n?$k(bs.tBSM):'-',s:mtdHint},
+    {l:'BS Actual',v:bs.n?$k(bs.tBSA):'-',s:mtdHint}
   ];
-  box.innerHTML=hd+items.map(function(it){
+  var summary=hd+items.map(function(it){
     return '<div class="cal-py-item"><div class="cal-py-l">'+it.l+'</div><div class="cal-py-v'+(it.cls?' '+it.cls:'')+'">'+it.v+'</div>'
       +(it.s?'<div class="cal-recap-s">'+it.s+'</div>':'')+'</div>';
   }).join('');
+
+  /* Show-level LY detail (date, DJ, fee, BS target/actual, ROI) — Act. vs For. style. */
+  var detail='';
+  if(shows.length){
+    detail='<div class="cal-py-detail"><table class="cal-py-detail-tbl"><thead><tr>'
+      +'<th>Date</th><th>DJ</th><th class="num">DJ Cost</th><th class="num">BS Target</th><th class="num">BS Actual</th>'
+      +'<th class="num">ROI Act</th><th class="num">ROI For.</th>'
+      +'</tr></thead><tbody>';
+    shows.forEach(function(r){
+      var tgt=(typeof showTargets==='function')?showTargets(r):{bs_m:r.bs_m,roi_t:r.roi_t};
+      var bsM=tgt&&tgt.bs_m!=null?tgt.bs_m:r.bs_m;
+      var roiT=tgt&&tgt.roi_t!=null?tgt.roi_t:r.roi_t;
+      var roiA=r.roi_a;
+      if(roiA==null && r.bs_a!=null && (r.fee||r.cost)) roiA=r.bs_a/(r.fee||r.cost);
+      var tone=perfTone(r.bs_a, bsM, (r.fee||r.cost), roiA, roiT);
+      var dObj=_parseYmd(r.d);
+      var dateLbl=DOW_FULL[dObj.getDay()].slice(0,3)+' '+MN_SH[dObj.getMonth()]+' '+dObj.getDate();
+      detail+='<tr>'
+        +'<td>'+dateLbl+'</td>'
+        +'<td><b>'+djLabel(r.dj)+'</b></td>'
+        +'<td class="num">'+$k(r.fee||r.cost||null)+'</td>'
+        +'<td class="num">'+$k(bsM)+'</td>'
+        +'<td class="num '+tone+'"><b>'+$k(r.bs_a)+'</b></td>'
+        +'<td class="num '+tone+'">'+(roiA!=null?(Number(roiA).toFixed(1)+'x'):'-')+'</td>'
+        +'<td class="num">'+(roiT!=null?(Number(roiT).toFixed(1)+'x'):'-')+'</td>'
+        +'</tr>';
+    });
+    detail+='</tbody></table></div>';
+  }
+
+  box.innerHTML='<div class="cal-py-summary">'+summary+'</div>'+detail;
   box.style.display='flex';
 }
 
@@ -341,20 +402,27 @@ function renderCalMonthRecap(yr, mo, mm, showMap){
   var box=document.getElementById('calMonthRecap');
   if(!box) return;
   var fees=0;
+  var monthShows=[];
   Object.keys(showMap||{}).forEach(function(ds){
     (showMap[ds]||[]).forEach(function(r){
       fees+=(r.fee||r.cost||0);
+      monthShows.push(r);
     });
   });
   var budget=(typeof getMonthlyBudget==='function')?getMonthlyBudget(curV, yr, mm):null;
   var feeVar=budget!=null?budget-fees:null;
   var feePct=budget?Math.round(fees/budget*100):null;
+  var mtdMax=_overlayMtdMaxDate(yr, mm);
+  var bs=_overlaySumBs(monthShows, mtdMax);
+  var mtdHint=mtdMax?(mtdMax==='0000-01-01'?'No MTD yet':('MTD thru '+mtdMax.slice(5))):'Full month';
   box.style.display='flex';
   box.innerHTML=
     '<div class="cal-recap-hd">'+MN_SH[mo]+' '+yr+' actual<span>This year</span></div>'
     +'<div class="cal-recap-item"><div class="cal-recap-l">Total DJ Fees</div><div class="cal-recap-v">'+$k(fees||null)+'</div></div>'
     +'<div class="cal-recap-item"><div class="cal-recap-l">Total Budget</div><div class="cal-recap-v">'+(budget!=null?$k(budget):'-')+'</div><div class="cal-recap-s">Guest DJ monthly budget</div></div>'
-    +'<div class="cal-recap-item"><div class="cal-recap-l">Budget Variance</div><div class="cal-recap-v '+(feeVar!=null?(feeVar>=0?'hit':'low'):'')+'">'+(feeVar!=null?$kv(feeVar):'-')+'</div><div class="cal-recap-s">'+(feePct!=null?feePct+'% of budget used':'set budget in Budget tab')+'</div></div>';
+    +'<div class="cal-recap-item"><div class="cal-recap-l">Budget Variance</div><div class="cal-recap-v '+(feeVar!=null?(feeVar>=0?'hit':'low'):'')+'">'+(feeVar!=null?$kv(feeVar):'-')+'</div><div class="cal-recap-s">'+(feePct!=null?feePct+'% of budget used':'set budget in Budget tab')+'</div></div>'
+    +'<div class="cal-recap-item"><div class="cal-recap-l">BS Target</div><div class="cal-recap-v">'+(bs.n?$k(bs.tBSM):'-')+'</div><div class="cal-recap-s">'+mtdHint+'</div></div>'
+    +'<div class="cal-recap-item"><div class="cal-recap-l">BS Actual</div><div class="cal-recap-v">'+(bs.n?$k(bs.tBSA):'-')+'</div><div class="cal-recap-s">'+mtdHint+'</div></div>';
 }
 
 function closeShow3dModal(){
