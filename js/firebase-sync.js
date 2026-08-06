@@ -176,9 +176,13 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       delete window._schedWriteGuard[lose._uid];
       _saveSchedEditStore();
     }
-    /* Persist merged identity onto the kept (usually baked) show. */
+    /* Persist merged identity onto the kept (usually baked) show — defer if a
+       re-push burst is in flight so we don't re-feed the write storm. */
     if(keep && typeof persistSchedShow==='function'){
-      try{ persistSchedShow(keep); }catch(e3){}
+      var delay=window._schedRepushLock?900:0;
+      setTimeout(function(){
+        try{ persistSchedShow(keep); }catch(e3){}
+      }, delay);
     }
   }
 
@@ -239,8 +243,10 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         return;
       }
       var cur = s[idx];
-      var sameDj = (cur.dj||'') === (g.dj||'');
-      var sameFee = String(cur.fee!=null?cur.fee:(cur.cost!=null?cur.cost:'')) === String(g.fee!=null?g.fee:(g.cost!=null?g.cost:''));
+      var sameDj = String(cur.dj||'') === String(g.dj||'');
+      var curFee = cur.fee!=null?cur.fee:(cur.cost!=null?cur.cost:null);
+      var gFee = g.fee!=null?g.fee:(g.cost!=null?g.cost:null);
+      var sameFee = (curFee==null && gFee==null) || (curFee!=null && gFee!=null && Number(curFee)===Number(gFee));
       if(!sameDj || !sameFee){
         cur.dj = g.dj;
         cur.fee = g.fee;
@@ -300,9 +306,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     if(!ov) {
       var rep0 = _reapplySchedGuards(s);
       SCHED = s; IDX = buildIdx(SCHED);
-      if(rep0 && rep0.length && typeof persistSchedShow==='function'){
-        rep0.forEach(function(r){ try{ persistSchedShow(r); }catch(e){} });
-      }
+      _maybeRepushGuards(rep0);
       return;
     }
     var edits = ov.edits || {};
@@ -329,32 +333,9 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       var matches = s.filter(function(r){ return (r.venue||r.v)===venue && r.d===date; });
       if(matches.length===1){ _mergeSchedEdit(matches[0], edits[k]); ensureShowUid(matches[0]); }
     });
-    /* Added shows: legacy array + race-safe addsByUid map.
-       If that night already has a show (usually bake), fold the add into it —
-       never create a second calendar row for the same venue|date. */
-    var adds = ov.adds ? (Array.isArray(ov.adds)?ov.adds:Object.values(ov.adds)) : [];
-    var byUid = ov.addsByUid ? (typeof ov.addsByUid==='object'?ov.addsByUid:{}) : {};
-    Object.keys(byUid).forEach(function(uid){ if(byUid[uid]) adds.push(byUid[uid]); });
-    var foldedAdds=[];
-    adds.forEach(function(r){
-      if(!r) return;
-      ensureShowUid(r);
-      if(window._schedDeletedUids && window._schedDeletedUids[r._uid]) return;
-      r._added=1;
-      var exists = s.some(function(x){ return x._uid===r._uid; });
-      if(exists) return;
-      var night = _nightKey(r);
-      var occupied = night ? s.filter(function(x){ return x && _nightKey(x)===night; }) : [];
-      if(occupied.length){
-        _mergeDupFields(occupied[0], r);
-        foldedAdds.push({lose:r, keep:occupied[0]});
-        return;
-      }
-      s.push(r);
-    });
-    /* Deletes: exact uid key, or legacy venue|date (baked shows only).
-       Day-level deletes must NOT remove freshly added shows — that made
-       "+ Add show" look broken on dates where a prior show was deleted. */
+    /* Apply deletes BEFORE adds. Day-level tombstones must remove bake first —
+       otherwise a shadow add folds into bake, then both vanish → cleanup
+       re-persists → freeze loop (MILA Sat Aug 29 / DARMON). */
     var dels = ov.deletes ? (Array.isArray(ov.deletes)?ov.deletes:Object.values(ov.deletes)) : [];
     window._lastSchedDeletes = dels;
     s = s.filter(function(r){
@@ -368,25 +349,89 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         var p=String(dk).split('|');
         if(p.length>=3){ if(uidKey===dk || (r._uid && p[2]===r._uid)) return false; }
         else if(dateKey===dk){
-          if(r._added) return true;
+          /* Day tombstone only hides bake — never keep a doomed row for folding. */
           return false;
         }
       }
       return true;
     });
+    /* Added shows: legacy array + race-safe addsByUid map.
+       If that night already has a show (usually bake), fold the add into it —
+       never create a second calendar row for the same venue|date.
+       Bake already removed by day/uid deletes above, so re-adds land cleanly. */
+    var adds = ov.adds ? (Array.isArray(ov.adds)?ov.adds:Object.values(ov.adds)) : [];
+    var byUid = ov.addsByUid ? (typeof ov.addsByUid==='object'?ov.addsByUid:{}) : {};
+    Object.keys(byUid).forEach(function(uid){ if(byUid[uid]) adds.push(byUid[uid]); });
+    var foldedAdds=[];
+    var delSet={};
+    dels.forEach(function(dk){ if(dk) delSet[dk]=1; });
+    adds.forEach(function(r){
+      if(!r) return;
+      ensureShowUid(r);
+      if(window._schedDeletedUids && window._schedDeletedUids[r._uid]) return;
+      if(delSet[_schedUidKey(r)] || (r._uid && dels.some(function(dk){
+        var p=String(dk||'').split('|'); return p.length>=3 && p[2]===r._uid;
+      }))) return;
+      r._added=1;
+      var exists = s.some(function(x){ return x._uid===r._uid; });
+      if(exists) return;
+      var night = _nightKey(r);
+      var occupied = night ? s.filter(function(x){ return x && _nightKey(x)===night; }) : [];
+      if(occupied.length){
+        _mergeDupFields(occupied[0], r);
+        foldedAdds.push({lose:r, keep:occupied[0]});
+        return;
+      }
+      s.push(r);
+    });
     s.forEach(function(r){ if(r&&r.dj) r.dj=fixKnownAccents(r.dj); ensureShowUid(r); });
     var rep = _reapplySchedGuards(s);
-    s = _dedupeSchedOnePerNight(s, _cleanupFoldedDuplicate);
+    s = _dedupeSchedOnePerNight(s, null);
+    /* Queue Firebase cleanup for folded shadow adds — never delete during apply.
+       Sync removes inside apply → value echo → apply → remove → freeze/lag loop. */
+    if(!window._pendingFoldCleanup) window._pendingFoldCleanup={};
     foldedAdds.forEach(function(pair){
-      try{ _cleanupFoldedDuplicate(pair.lose, pair.keep); }catch(eFold){}
+      if(pair && pair.lose && pair.lose._uid) window._pendingFoldCleanup[pair.lose._uid]=pair;
     });
+    if(Object.keys(window._pendingFoldCleanup).length && !window._foldCleanupTimer){
+      window._foldCleanupTimer=setTimeout(function(){
+        window._foldCleanupTimer=null;
+        var pending=window._pendingFoldCleanup||{};
+        window._pendingFoldCleanup={};
+        Object.keys(pending).forEach(function(uid){
+          try{ _cleanupFoldedDuplicate(pending[uid].lose, pending[uid].keep); }catch(eFold){}
+        });
+      }, 750);
+    }
     SCHED = s;
     IDX   = buildIdx(SCHED);
     if(typeof recalcAllSchedTargets==='function') recalcAllSchedTargets();
-    if(rep && rep.length && typeof persistSchedShow==='function'){
-      rep.forEach(function(r){ try{ persistSchedShow(r); }catch(e){} });
-    }
+    _maybeRepushGuards(rep);
   };
+
+  /* Guards already corrected local SCHED. Re-persist at most once per burst —
+     unbounded persistSchedShow from every snapshot caused write storms that
+     locked the UI when editing bake nights (MILA Sat Aug 29, etc.). */
+  function _maybeRepushGuards(rep){
+    if(!rep || !rep.length || typeof persistSchedShow!=='function') return;
+    if(window._schedRepushLock) return;
+    window._schedRepushLock=true;
+    try{
+      var seen={};
+      var now=Date.now();
+      if(!window._schedLastRepushAt) window._schedLastRepushAt={};
+      rep.forEach(function(r){
+        if(!r||!r._uid||seen[r._uid]) return;
+        seen[r._uid]=1;
+        var last=window._schedLastRepushAt[r._uid]||0;
+        if(now-last<1500) return;
+        window._schedLastRepushAt[r._uid]=now;
+        try{ persistSchedShow(r); }catch(e){}
+      });
+    }finally{
+      setTimeout(function(){ window._schedRepushLock=false; }, 800);
+    }
+  }
 
   /* Paint helpers — calendar must show the latest local rename even if a sync
      echo briefly rebuilds SCHED from an older Firebase snapshot. */
