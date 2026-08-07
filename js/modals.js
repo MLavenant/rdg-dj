@@ -470,7 +470,25 @@ function _alignRecToBakedShow(rec){
       window._bakedUidIndex[ensureShowUid(r)]=r;
     });
   }
+  function bakeDeleted(bakeUid){
+    if(typeof window._bakeUidIsDeleted==='function'){
+      return window._bakeUidIsDeleted(bakeUid, venue, rec.d);
+    }
+    if(window._schedDeletedUids && window._schedDeletedUids[bakeUid]) return true;
+    var nk=venue+'|'+rec.d;
+    if(window._schedClearedNights && window._schedClearedNights[nk] &&
+       window._schedClearedNights[nk].uid===bakeUid) return true;
+    try{
+      var dels=window._lastSchedDeletes||[];
+      for(var i=0;i<dels.length;i++){
+        var p=String(dels[i]||'').split('|');
+        if(p.length>=3 && p[2]===bakeUid) return true;
+      }
+    }catch(e){}
+    return false;
+  }
   if(window._bakedUidIndex[rec._uid]){
+    if(bakeDeleted(rec._uid)) return false;
     rec._added=0;
     return true;
   }
@@ -478,20 +496,11 @@ function _alignRecToBakedShow(rec){
     return r && (r.v||r.venue)===venue && r.d===rec.d;
   });
   if(hits.length!==1) return false;
-  /* One-show-per-night: fold shadow adds onto the baked uid for that date,
-     unless this night/bake was deleted (then the add must stay an add). */
+  /* One-show-per-night: fold shadow adds onto the baked uid ONLY if that bake
+     was not deleted. Otherwise the add must stay an add (AMOG after DARMON delete). */
   var bakeUid=ensureShowUid(hits[0]);
-  var bakeGone=!!(window._schedDeletedUids && window._schedDeletedUids[bakeUid]);
-  try{
-    /* Only uid tombstones count — legacy day-level deletes must NOT block align,
-       or null-fee bake nights stay uneditable forever. */
-    (window._lastSchedDeletes||[]).forEach(function(dk){
-      if(!dk) return;
-      var p=String(dk).split('|');
-      if(p.length>=3 && p[2]===bakeUid) bakeGone=true;
-    });
-  }catch(e){}
-  if(rec._added && bakeGone) return false;
+  if(bakeDeleted(bakeUid)) return false;
+  if(rec._added && bakeDeleted(bakeUid)) return false;
   rec._uid=bakeUid;
   rec._added=0;
   return true;
@@ -501,32 +510,33 @@ function persistSchedShow(rec){
   if(rec && rec.ev==null) rec.ev='';
   ensureShowUid(rec);
   if(!rec._writeKind) rec._writeKind='modal';
+  var wasAdded=!!rec._added;
   var isBaked=_alignRecToBakedShow(rec);
+  /* If this started as an add on a cleared/deleted bake night, force add path. */
+  if(wasAdded && !isBaked){ rec._added=1; }
   if(typeof window._guardSchedWrite==='function') window._guardSchedWrite(rec);
   if(!window._fbSave||!window._fbRef) return;
   var uid=ensureShowUid(rec);
   var fbKey=_schedUidKey(rec);
   var payload=_fbSanitize(rec);
   try{
-    var dateKey=_schedDateKey(rec);
     window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
       if(!vals) return vals;
       var arr=Array.isArray(vals)?vals:Object.values(vals);
-      /* Drop this show's uid tombstone AND every legacy day-level key.
-         Day keys re-hide null-fee bake nights whenever an old client writes them. */
+      /* Only clear THIS show's uid tombstone. Never clear another uid on the same
+         night (that resurrected bake after replacing with a new add). Scrub day keys. */
       var next=arr.filter(function(k){
         if(!k) return false;
         var p=String(k).split('|');
-        if(p.length < 3) return false; /* scrub all day-level */
+        if(p.length < 3) return false;
         if(k===fbKey) return false;
-        if(p[0]===(rec.v||rec.venue||'') && p[1]===rec.d && p[2]===uid) return false;
+        if(p[2]===uid) return false;
         return true;
       });
       return next.length?next:null;
     });
   }catch(eDel){}
   if(isBaked){
-    /* UID key only — never legacy venue|date (cross-night bleed). */
     window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_')).set(payload);
   } else {
     rec._added=1;

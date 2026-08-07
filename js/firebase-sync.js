@@ -27,8 +27,10 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
      Cleared only when Firebase already matches the saved identity. */
   var _SCHED_EDIT_STORE = 'rdg_sched_edits_v2';
   var _SCHED_DEL_STORE = 'rdg_sched_deleted_v1';
+  var _SCHED_CLEAR_STORE = 'rdg_sched_cleared_nights_v1';
   window._schedWriteGuard = window._schedWriteGuard || {};
   window._schedDeletedUids = window._schedDeletedUids || {};
+  window._schedClearedNights = window._schedClearedNights || {};
   function _loadSchedEditStore(){
     try{
       var raw=sessionStorage.getItem(_SCHED_EDIT_STORE);
@@ -48,17 +50,36 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         });
       }
     }catch(e2){}
+    try{
+      var craw=sessionStorage.getItem(_SCHED_CLEAR_STORE);
+      var cobj=craw?JSON.parse(craw):{};
+      if(cobj && typeof cobj==='object'){
+        Object.keys(cobj).forEach(function(nk){
+          if(cobj[nk] && !window._schedClearedNights[nk]) window._schedClearedNights[nk]=cobj[nk];
+        });
+      }
+    }catch(e3){}
   }
   function _saveSchedEditStore(){
     try{ sessionStorage.setItem(_SCHED_EDIT_STORE, JSON.stringify(window._schedWriteGuard||{})); }catch(e){}
     try{ sessionStorage.setItem(_SCHED_DEL_STORE, JSON.stringify(window._schedDeletedUids||{})); }catch(e2){}
+    try{ sessionStorage.setItem(_SCHED_CLEAR_STORE, JSON.stringify(window._schedClearedNights||{})); }catch(e3){}
   }
   _loadSchedEditStore();
   window._guardSchedWrite = function(rec){
     if(!rec || !rec.d) return;
     ensureShowUid(rec);
-    /* Saving/editing a show clears any delete tombstone for it. */
-    if(window._schedDeletedUids[rec._uid]) delete window._schedDeletedUids[rec._uid];
+    /* Saving an ADD must not clear a deleted bake tombstone for the same night —
+       that was resurrecting DARMON after delete → add AMOG → delete AMOG. */
+    var isAdd=!!rec._added;
+    if(!isAdd && window._schedDeletedUids[rec._uid]) delete window._schedDeletedUids[rec._uid];
+    if(!isAdd){
+      var nk=(rec.v||rec.venue||'')+'|'+rec.d;
+      if(window._schedClearedNights && window._schedClearedNights[nk] &&
+         window._schedClearedNights[nk].uid===rec._uid){
+        delete window._schedClearedNights[nk];
+      }
+    }
     window._schedWriteGuard[rec._uid] = {
       at: Date.now(),
       dj: rec.dj||'',
@@ -93,13 +114,51 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       v: rec.v||rec.venue||'',
       _uid: uid
     };
+    /* Sticky night clear so bake cannot return after delete → add → delete-add. */
+    var nk=(rec.v||rec.venue||'')+'|'+(rec.d||'');
+    if(nk && nk!=='|'){
+      var prev=window._schedClearedNights[nk];
+      var deletingBake=false;
+      if(window._bakedUidIndex && window._bakedUidIndex[uid]) deletingBake=true;
+      else if(!_isAddedRec(rec)){
+        try{
+          deletingBake=(SCHED_BAKED||[]).some(function(r){
+            return r && ensureShowUid(r)===uid;
+          });
+        }catch(eB){ deletingBake=!_isAddedRec(rec); }
+      }
+      if(deletingBake){
+        window._schedClearedNights[nk] = { uid: uid, at: Date.now(), baked: true };
+      } else if(!prev || !prev.baked){
+        /* Deleting a replacement add: keep an existing bake clear intact. */
+        window._schedClearedNights[nk] = { uid: uid, at: Date.now(), baked: false };
+      }
+    }
     _saveSchedEditStore();
   };
+  function _isAddedRec(rec){ return !!(rec && rec._added); }
   window._guardUndelete = function(rec){
     if(!rec) return;
     ensureShowUid(rec);
     if(window._schedDeletedUids[rec._uid]) delete window._schedDeletedUids[rec._uid];
+    var nk=(rec.v||rec.venue||'')+'|'+(rec.d||'');
+    if(nk && window._schedClearedNights[nk]) delete window._schedClearedNights[nk];
     _saveSchedEditStore();
+  };
+  window._bakeUidIsDeleted = function(bakeUid, venue, dateStr){
+    if(!bakeUid) return false;
+    if(window._schedDeletedUids && window._schedDeletedUids[bakeUid]) return true;
+    var nk=(venue||'')+'|'+(dateStr||'');
+    if(nk && window._schedClearedNights && window._schedClearedNights[nk] &&
+       window._schedClearedNights[nk].uid===bakeUid) return true;
+    try{
+      var dels=window._lastSchedDeletes||[];
+      for(var i=0;i<dels.length;i++){
+        var p=String(dels[i]||'').split('|');
+        if(p.length>=3 && p[2]===bakeUid) return true;
+      }
+    }catch(e){}
+    return false;
   };
   function _nightKey(r){
     if(!r||!r.d) return '';
@@ -359,31 +418,42 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       }catch(eScrub){}
       setTimeout(function(){ window._scrubDayDelLock = false; }, 2500);
     }
-    /* If Firebase has an edit for a show, drop local/session tombstones for that
-       uid — otherwise this browser keeps hiding bake after a delete while other
-       clients (and the edit payload) still have the show. */
+    /* Sync sticky night-clears from Firebase uid deletes of baked shows.
+       Never auto-clear local bake tombstones just because a snapshot is lagging —
+       that resurrected DARMON after delete → add → delete. */
     try{
-      Object.keys(edits||{}).forEach(function(k){
-        var parts=String(k).split('|');
-        var uid=parts[2]||(edits[k]&&edits[k]._uid)||'';
-        if(uid && window._schedDeletedUids && window._schedDeletedUids[uid]){
-          delete window._schedDeletedUids[uid];
-        }
-      });
-      /* Also clear local tombstones for any baked show that still exists in bake
-         and is not uid-deleted in Firebase — recovers null-fee nights after a
-         stale session delete. */
+      if(!window._bakedUidIndex){
+        window._bakedUidIndex={};
+        (SCHED_BAKED||[]).forEach(function(r){
+          if(!r) return;
+          window._bakedUidIndex[ensureShowUid(r)]=r;
+        });
+      }
       var uidDelSet={};
       dels.forEach(function(dk){
         var p=String(dk).split('|');
-        if(p.length>=3) uidDelSet[p[2]]=1;
+        if(p.length>=3){
+          uidDelSet[p[2]]=1;
+          if(window._bakedUidIndex[p[2]]){
+            var bakeRow=window._bakedUidIndex[p[2]];
+            var nk=(bakeRow.v||bakeRow.venue||'')+'|'+(bakeRow.d||'');
+            if(nk && nk!=='|'){
+              window._schedClearedNights[nk]={ uid:p[2], at:Date.now(), baked:true };
+            }
+          }
+        }
       });
-      Object.keys(window._schedDeletedUids||{}).forEach(function(uid){
-        if(uidDelSet[uid]) return;
-        if(window._bakedUidIndex && window._bakedUidIndex[uid]){
+      /* Only clear a local tombstone when Firebase has an edit AND no uid delete. */
+      Object.keys(edits||{}).forEach(function(k){
+        var parts=String(k).split('|');
+        var uid=parts[2]||(edits[k]&&edits[k]._uid)||'';
+        if(!uid || uidDelSet[uid]) return;
+        if(window._schedDeletedUids && window._schedDeletedUids[uid]){
           delete window._schedDeletedUids[uid];
-        } else if((SCHED_BAKED||[]).some(function(r){ return r && ensureShowUid(r)===uid; })){
-          delete window._schedDeletedUids[uid];
+        }
+        var enk=(parts[0]||'')+'|'+(parts[1]||'');
+        if(enk && window._schedClearedNights[enk] && window._schedClearedNights[enk].uid===uid){
+          delete window._schedClearedNights[enk];
         }
       });
       _saveSchedEditStore();
@@ -393,25 +463,20 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       if(window._schedDeletedUids && r._uid && window._schedDeletedUids[r._uid]) return false;
       var dateKey=_schedDateKey(r);
       var uidKey=_schedUidKey(r);
-      /* Active edit for this uid means the show is intentional — keep it. */
-      var hasUidEdit=!!(r._uid && (
-        edits[uidKey] || edits[dateKey+'|'+r._uid] ||
-        Object.keys(edits).some(function(k){
-          var p=String(k).split('|');
-          return p.length>=3 && p[2]===r._uid;
-        })
-      ));
+      /* Cleared night: suppress bake (not live adds) so delete → add → delete
+         cannot bring the original bake DJ back. */
+      if(!r._added && window._schedClearedNights && window._schedClearedNights[dateKey]){
+        var clr=window._schedClearedNights[dateKey];
+        if(clr && (clr.baked || clr.uid===r._uid)) return false;
+      }
       for(var di=0;di<dels.length;di++){
         var dk=dels[di];
         if(!dk) continue;
         var p=String(dk).split('|');
         if(p.length>=3){
-          if(uidKey===dk || (r._uid && p[2]===r._uid)){
-            if(hasUidEdit) continue;
-            return false;
-          }
+          /* Honor uid deletes always — do not let a stale edit resurrect bake. */
+          if(uidKey===dk || (r._uid && p[2]===r._uid)) return false;
         }
-        /* day-level keys already stripped from dels — ignored */
       }
       return true;
     });
