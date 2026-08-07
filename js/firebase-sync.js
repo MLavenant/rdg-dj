@@ -42,18 +42,22 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       if(title) el.title=title;
     }catch(eDot){}
   }
-  /* Surface websocket state even before the first rdg snapshot arrives. */
+  var _fbBootAt=Date.now();
+  /* Surface websocket state even before the first schedule snapshot arrives.
+     Do not paint red on the initial false blip from .info/connected. */
   try{
     window._fbDb.ref('.info/connected').on('value', function(snap){
       if(window._fbReady) return;
-      if(snap.val()===true) _setSyncDot('#f59e0b', 'Connected — loading live data…');
-      else _setSyncDot('#ef4444', 'Offline — check network / VPN / ad blocker');
+      if(snap.val()===true) _setSyncDot('#f59e0b', 'Connected — loading schedule…');
+      else if(Date.now()-_fbBootAt>4000){
+        _setSyncDot('#ef4444', 'Offline — check network / VPN / ad blocker');
+      }
     });
   }catch(eConn){}
   setTimeout(function(){
     if(window._fbReady) return;
-    _setSyncDot('#ef4444', 'Still connecting after 12s — allow *.firebaseio.com and refresh');
-  }, 12000);
+    _setSyncDot('#ef4444', 'Still connecting after 15s — allow *.firebaseio.com and refresh');
+  }, 15000);
 
   /* ?? Write helper ??????????????????????????????????????????????? */
   window._fbSave = function(path, value){
@@ -710,26 +714,47 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     }
   };
 
-  /* Live listener — fires immediately on load and on any change */
-  window._fbRef.on('value', function(snap){
+  /* Live listeners — per-path instead of the whole `rdg` tree (~2.4MB).
+     Listening to the full tree often never completed (orange/red forever) while
+     schedOverrides alone is ~80KB and enough to mark sync ready. */
+  window._fbLiveBundle = window._fbLiveBundle || {};
+  function _fbIngest(path, val){
+    window._fbLiveBundle[path] = val;
     var firstLoad=!window._fbReady;
-    if(firstLoad){
+    /* Ready as soon as schedule overrides arrive (or null = empty overrides). */
+    if(firstLoad && path==='schedOverrides'){
       window._fbReady = true;
-      /* Mark green before apply so a heavy first sync never looks “stuck orange”. */
       _setSyncDot('#22c55e', 'Live sync active');
     }
     try{
-      window._fbApply(snap.val());
+      window._fbApply(window._fbLiveBundle);
     }catch(errApply){
       console.error('Firebase apply failed', errApply);
       _setSyncDot('#ef4444', 'Sync error — open console for details');
+      return;
     }
-    if(firstLoad){
-      if(typeof go==='function') go();
-    }
-  }, function(errListen){
-    console.error('Firebase listener failed', errListen);
-    _setSyncDot('#ef4444', 'Firebase listener error — check database rules / network');
+    if(firstLoad && window._fbReady && typeof go==='function') go();
+  }
+  [
+    'schedOverrides',
+    'specialWeeks',
+    'acctData',
+    'acctOthersData',
+    'venueRoiRules',
+    'feeTiers',
+    'monthlyDjBudget',
+    'bgtPlan',
+    'bgtCatSpend',
+    'bgtCustomCats'
+  ].forEach(function(key){
+    window._fbDb.ref('rdg/'+key).on('value', function(snap){
+      _fbIngest(key, snap.val());
+    }, function(errListen){
+      console.error('Firebase listener failed for '+key, errListen);
+      if(key==='schedOverrides'){
+        _setSyncDot('#ef4444', 'Firebase schedule listener error — check network');
+      }
+    });
   });
 
   /* ?? Pacing history listener (separate ref, read-only) ????????????????????? */
