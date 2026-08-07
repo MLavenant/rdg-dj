@@ -11,11 +11,49 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     messagingSenderId: "46000430246",
     appId:             "1:46000430246:web:19e9705e453cc50d64e867"
   };
-  firebase.initializeApp(cfg);
-  window._fbDb  = firebase.database();
-  window._fbRef = window._fbDb.ref('rdg');
+  if(typeof firebase==='undefined'){
+    console.error('Firebase SDK failed to load — check network / ad blocker');
+    try{
+      var el0=document.getElementById('fbSyncDot');
+      if(el0){ el0.style.background='#ef4444'; el0.title='Firebase SDK blocked — allow gstatic.com / firebaseio.com'; }
+    }catch(e0){}
+    return;
+  }
+  try{
+    firebase.initializeApp(cfg);
+    window._fbDb  = firebase.database();
+    window._fbRef = window._fbDb.ref('rdg');
+  }catch(eInit){
+    console.error('Firebase init failed', eInit);
+    try{
+      var el1=document.getElementById('fbSyncDot');
+      if(el1){ el1.style.background='#ef4444'; el1.title='Firebase init failed'; }
+    }catch(e1){}
+    return;
+  }
   try{ window._fbStorage = firebase.storage(); }catch(e){ window._fbStorage = null; }
   window._fbReady = false;
+
+  function _setSyncDot(color, title){
+    try{
+      var el=document.getElementById('fbSyncDot');
+      if(!el) return;
+      el.style.background=color;
+      if(title) el.title=title;
+    }catch(eDot){}
+  }
+  /* Surface websocket state even before the first rdg snapshot arrives. */
+  try{
+    window._fbDb.ref('.info/connected').on('value', function(snap){
+      if(window._fbReady) return;
+      if(snap.val()===true) _setSyncDot('#f59e0b', 'Connected — loading live data…');
+      else _setSyncDot('#ef4444', 'Offline — check network / VPN / ad blocker');
+    });
+  }catch(eConn){}
+  setTimeout(function(){
+    if(window._fbReady) return;
+    _setSyncDot('#ef4444', 'Still connecting after 12s — allow *.firebaseio.com and refresh');
+  }, 12000);
 
   /* ?? Write helper ??????????????????????????????????????????????? */
   window._fbSave = function(path, value){
@@ -675,16 +713,23 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
   /* Live listener — fires immediately on load and on any change */
   window._fbRef.on('value', function(snap){
     var firstLoad=!window._fbReady;
-    if(firstLoad) window._fbReady = true;
-    window._fbApply(snap.val());
     if(firstLoad){
-      var el = document.getElementById('fbSyncDot');
-      if(el){ el.style.background='#22c55e'; el.title='Live sync active'; }
-      /* First snapshot previously skipped go() because _fbReady was still false
-         inside _fbApply — calendar could show baked TBD while SCHED already had
-         a Firebase override (e.g. wrong DJ in the edit modal). */
+      window._fbReady = true;
+      /* Mark green before apply so a heavy first sync never looks “stuck orange”. */
+      _setSyncDot('#22c55e', 'Live sync active');
+    }
+    try{
+      window._fbApply(snap.val());
+    }catch(errApply){
+      console.error('Firebase apply failed', errApply);
+      _setSyncDot('#ef4444', 'Sync error — open console for details');
+    }
+    if(firstLoad){
       if(typeof go==='function') go();
     }
+  }, function(errListen){
+    console.error('Firebase listener failed', errListen);
+    _setSyncDot('#ef4444', 'Firebase listener error — check database rules / network');
   });
 
   /* ?? Pacing history listener (separate ref, read-only) ????????????????????? */
