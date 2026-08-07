@@ -1,3 +1,12 @@
+/* Miami calendar day — must live outside sched-baked.js so bake regenerations
+   cannot wipe it (that broke sync from v4.17: miamiToday ReferenceError → red dot). */
+function miamiToday(){
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).format(new Date());
+}
+var TODAY = miamiToday();
+
 var HIDE_V   = ['AVA Winter Park'];
 var CORE_VENUES = ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'];
 function listActiveVenues(){

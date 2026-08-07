@@ -683,33 +683,38 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     }
 
     if(window._fbReady){
-      if(curView==='vip')             renderVIP();
-      else if(curView==='forecast')   renderForecast();
-      else if(curView==='live')       renderLive();
-      else if(curView==='system')     renderSystem();
-      else if(curView==='accounting'){
-        if(typeof _calUiBusy==='function' && _calUiBusy()) window._calPendingRefresh='go';
-        else renderAccounting();
-      }
-      else if(curView==='budget'){
-        /* Do not rebuild the Budget Planner while the user is typing — Firebase
-           echo of local saves was wiping inputs after one keystroke. */
-        var typing=!!window._bgtPlayTyping;
-        var ae=document.activeElement;
-        if(ae && ae.closest && ae.closest('#budget2027Builder')) typing=true;
-        if(!typing && typeof _budgetInited!=='undefined' && _budgetInited && typeof renderBudget==='function') renderBudget();
-      }
-      else {
-        /* Calendar / summary / leaderboard / etc.
-           Never soft-rebuild the calendar on unrelated rdg noise (toast/live/
-           scrape) — that closed the DJ Status dropdown mid-open. */
-        if(schedChanged){
+      /* View refresh must not mark sync as failed — data already applied. */
+      try{
+        if(curView==='vip')             renderVIP();
+        else if(curView==='forecast')   renderForecast();
+        else if(curView==='live')       renderLive();
+        else if(curView==='system')     renderSystem();
+        else if(curView==='accounting'){
           if(typeof _calUiBusy==='function' && _calUiBusy()) window._calPendingRefresh='go';
-          else if(typeof go==='function') go();
-        } else if(curView==='calendar' && (acctChanged || swChanged)){
-          if(typeof _calUiBusy==='function' && _calUiBusy()) window._calPendingRefresh='cal';
-          else if(typeof renderCal==='function') renderCal();
+          else renderAccounting();
         }
+        else if(curView==='budget'){
+          /* Do not rebuild the Budget Planner while the user is typing — Firebase
+             echo of local saves was wiping inputs after one keystroke. */
+          var typing=!!window._bgtPlayTyping;
+          var ae=document.activeElement;
+          if(ae && ae.closest && ae.closest('#budget2027Builder')) typing=true;
+          if(!typing && typeof _budgetInited!=='undefined' && _budgetInited && typeof renderBudget==='function') renderBudget();
+        }
+        else {
+          /* Calendar / summary / leaderboard / etc.
+             Never soft-rebuild the calendar on unrelated rdg noise (toast/live/
+             scrape) — that closed the DJ Status dropdown mid-open. */
+          if(schedChanged){
+            if(typeof _calUiBusy==='function' && _calUiBusy()) window._calPendingRefresh='go';
+            else if(typeof go==='function') go();
+          } else if(curView==='calendar' && (acctChanged || swChanged)){
+            if(typeof _calUiBusy==='function' && _calUiBusy()) window._calPendingRefresh='cal';
+            else if(typeof renderCal==='function') renderCal();
+          }
+        }
+      }catch(errView){
+        console.error('Firebase view refresh failed', errView);
       }
     }
   };

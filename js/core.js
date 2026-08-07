@@ -600,7 +600,11 @@ function render3dView(){
 /* Recompute schedule status from Miami today + BS Actual vs target.
    Future nights stay fut/tbd; past nights with Actual become beat/miss; past without Actual = nd. */
 function recalcSchedStatuses(){
-  TODAY = miamiToday();
+  TODAY = (typeof miamiToday==='function')
+    ? miamiToday()
+    : new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit'
+      }).format(new Date());
   SCHED.forEach(function(r){
     if(!r || r._s==='empty' || !r.d) return;
     if(r.tbd){ r.tbd=0; /* legacy TBD cleared */ }
