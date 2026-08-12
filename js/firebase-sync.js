@@ -936,8 +936,10 @@ function setOthersField(ds, catId, field, val){
 var ACCT_DEFAULT_CATS = ['Rider','Resident DJ','Fire Show','Cryo','Sound System'];
 var ACCT_DJ_STATUS=["Offer sent","Hold 1","Confirmed"];
 var ACCT_AP_STATUS=[
+  "On Workflow",
   "Missing forms",
   "Missing Contract",
+  "Missing Contract & Invoice",
   "Missing Signature",
   "Missing Countersign",
   "Missing Invoice",

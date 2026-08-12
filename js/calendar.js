@@ -1180,7 +1180,10 @@ function _acctCanonicalApStatus(st){
   var map={
     'Missing contract':'Missing Contract',
     'Missing invoice':'Missing Invoice',
+    'Missing Contract and Invoice':'Missing Contract & Invoice',
+    'Missing contract & invoice':'Missing Contract & Invoice',
     'Missing Mika Signature':'Missing Signature',
+    'On workflow':'On Workflow',
     'Deposit paid':'Deposit Paid',
     'Contract + invoice received':'Invoice + Contract Signed'
   };
