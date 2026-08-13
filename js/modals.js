@@ -571,19 +571,44 @@ function persistSchedShow(rec){
   if(rec.roi_t!=null) identity.roi_t=rec.roi_t;
 
   try{
-    window._fbRef.child('schedOverrides/editsByUid/'+uid).update(_fbSanitize(identity), _onSchedWrite);
+    window._fbRef.child('schedOverrides/editsByUid/'+uid).transaction(function(cur){
+      var next=_fbSanitize(Object.assign({}, cur&&typeof cur==='object'?cur:{}, identity));
+      if(cur && cur.updatedAt && identity.updatedAt && String(cur.updatedAt)>String(identity.updatedAt)) return cur;
+      /* Never let a status-only local row overwrite a newer modal rename. */
+      if(cur && cur._writeKind==='modal' && cur.dj && identity.dj && cur.dj!==identity.dj){
+        var curT=Date.parse(cur.updatedAt||'')||0;
+        var nextT=Date.parse(identity.updatedAt||'')||0;
+        if(curT>nextT) return cur;
+      }
+      return next;
+    }, _onSchedWrite);
   }catch(eUid){ _onSchedWrite(eUid); }
 
   if(isBaked){
     try{
-      window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_')).update(_fbSanitize(Object.assign({}, payload, identity, {_added:0})), _onSchedWrite);
+      window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_')).transaction(function(cur){
+        var base=cur&&typeof cur==='object'?cur:{};
+        var next=_fbSanitize(Object.assign({}, base, payload, identity, {_added:0}));
+        if(base.updatedAt && identity.updatedAt && String(base.updatedAt)>String(identity.updatedAt)) return cur;
+        return next;
+      }, _onSchedWrite);
     }catch(eEdit){ _onSchedWrite(eEdit); }
   } else {
     rec._added=1;
     payload._added=1;
     identity._added=1;
     try{
-      window._fbRef.child('schedOverrides/addsByUid/'+uid).update(_fbSanitize(Object.assign({}, payload, identity)), _onSchedWrite);
+      window._fbRef.child('schedOverrides/addsByUid/'+uid).transaction(function(cur){
+        var base=cur&&typeof cur==='object'?cur:{};
+        var next=_fbSanitize(Object.assign({}, base, payload, identity));
+        if(base.updatedAt && identity.updatedAt && String(base.updatedAt)>String(identity.updatedAt)) return cur;
+        if(base._writeKind==='modal' && base.dj && identity.dj && base.dj!==identity.dj){
+          var curT=Date.parse(base.updatedAt||'')||0;
+          var nextT=Date.parse(identity.updatedAt||'')||0;
+          if(curT>nextT) return cur;
+        }
+        return next;
+      }, _onSchedWrite);
     }catch(eAdd){ _onSchedWrite(eAdd); }
   }
 }
