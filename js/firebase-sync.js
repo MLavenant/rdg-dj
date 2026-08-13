@@ -123,6 +123,14 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     try{ sessionStorage.setItem(_SCHED_CLEAR_STORE, JSON.stringify(window._schedClearedNights||{})); }catch(e3){}
   }
   _loadSchedEditStore();
+  /* Drop pre-v4.24 identity guards — they froze DJ name/fee across sessions. */
+  try{
+    if(sessionStorage.getItem('rdg_sched_guard_ver')!=='v4'){
+      window._schedWriteGuard={};
+      sessionStorage.removeItem(_SCHED_EDIT_STORE);
+      sessionStorage.setItem('rdg_sched_guard_ver','v4');
+    }
+  }catch(eGuardVer){}
   window._guardSchedWrite = function(rec){
     if(!rec || !rec.d) return;
     ensureShowUid(rec);
@@ -137,26 +145,32 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         delete window._schedClearedNights[nk];
       }
     }
+    var kind=rec._writeKind||'modal';
+    var prev=(window._schedWriteGuard[rec._uid]||{});
+    /* Status/agency patches must NOT freeze DJ name/fee into the local guard —
+       that blocked other sessions' renames and re-pushed stale identity. */
+    var identityLocked=(kind==='modal' || kind==='evClear' || !!rec._added);
     window._schedWriteGuard[rec._uid] = {
       at: Date.now(),
-      dj: rec.dj||'',
-      fee: rec.fee!=null?rec.fee:null,
-      cost: rec.cost!=null?rec.cost:(rec.fee!=null?rec.fee:null),
+      dj: identityLocked ? (rec.dj||'') : (prev.dj!=null?prev.dj:(rec.dj||'')),
+      fee: identityLocked ? (rec.fee!=null?rec.fee:null) : (prev.fee!==undefined?prev.fee:(rec.fee!=null?rec.fee:null)),
+      cost: identityLocked ? (rec.cost!=null?rec.cost:(rec.fee!=null?rec.fee:null)) : (prev.cost!==undefined?prev.cost:(rec.cost!=null?rec.cost:(rec.fee!=null?rec.fee:null))),
       d: rec.d,
       v: rec.v||rec.venue||'',
       venue: rec.venue||rec.v||'',
       _uid: rec._uid,
       _added: rec._added||0,
-      _writeKind: rec._writeKind||'modal',
-      djStatus: Object.prototype.hasOwnProperty.call(rec,'djStatus') ? (rec.djStatus==null?null:rec.djStatus) : undefined,
-      note: rec.note||null,
-      vipNote: rec.vipNote||null,
-      agency: Object.prototype.hasOwnProperty.call(rec,'agency') ? (rec.agency==null?null:rec.agency) : undefined,
-      ev: rec.ev||'',
-      bs_a: rec.bs_a!=null?rec.bs_a:null,
-      roi_a: rec.roi_a!=null?rec.roi_a:null,
-      beat: rec.beat!=null?rec.beat:null,
-      _s: rec._s||null
+      _writeKind: kind,
+      _lockIdentity: identityLocked,
+      djStatus: Object.prototype.hasOwnProperty.call(rec,'djStatus') ? (rec.djStatus==null?null:rec.djStatus) : prev.djStatus,
+      note: identityLocked ? (rec.note||null) : (prev.note!==undefined?prev.note:(rec.note||null)),
+      vipNote: identityLocked ? (rec.vipNote||null) : (prev.vipNote!==undefined?prev.vipNote:(rec.vipNote||null)),
+      agency: Object.prototype.hasOwnProperty.call(rec,'agency') ? (rec.agency==null?null:rec.agency) : prev.agency,
+      ev: identityLocked ? (rec.ev||'') : (prev.ev!==undefined?prev.ev:(rec.ev||'')),
+      bs_a: identityLocked ? (rec.bs_a!=null?rec.bs_a:null) : (prev.bs_a!==undefined?prev.bs_a:(rec.bs_a!=null?rec.bs_a:null)),
+      roi_a: identityLocked ? (rec.roi_a!=null?rec.roi_a:null) : (prev.roi_a!==undefined?prev.roi_a:(rec.roi_a!=null?rec.roi_a:null)),
+      beat: identityLocked ? (rec.beat!=null?rec.beat:null) : (prev.beat!==undefined?prev.beat:(rec.beat!=null?rec.beat:null)),
+      _s: identityLocked ? (rec._s||null) : (prev._s!==undefined?prev._s:(rec._s||null))
     };
     _saveSchedEditStore();
   };
@@ -236,10 +250,21 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
   }
   function _mergeDupFields(keep, lose){
     if(!keep||!lose) return;
-    if((!keep.dj || String(keep.dj).toUpperCase()==='TBD') && lose.dj) keep.dj=lose.dj;
-    if((keep.fee==null && keep.cost==null) && (lose.fee!=null || lose.cost!=null)){
-      keep.fee=lose.fee!=null?lose.fee:lose.cost;
-      keep.cost=lose.cost!=null?lose.cost:lose.fee;
+    /* Modal / live add identity always wins over bake placeholders.
+       Old fill-only-if-empty logic kept bake DJ names when an edit arrived as addsByUid. */
+    var loseModal=lose._writeKind==='modal' || lose._writeKind==='evClear';
+    if(loseModal || (lose._added && lose.dj && String(lose.dj).trim()!=='')){
+      if(lose.dj!=null) keep.dj=lose.dj;
+      if(lose.fee!=null || lose.cost!=null){
+        keep.fee=lose.fee!=null?lose.fee:lose.cost;
+        keep.cost=lose.cost!=null?lose.cost:lose.fee;
+      }
+    } else {
+      if((!keep.dj || String(keep.dj).toUpperCase()==='TBD') && lose.dj) keep.dj=lose.dj;
+      if((keep.fee==null && keep.cost==null) && (lose.fee!=null || lose.cost!=null)){
+        keep.fee=lose.fee!=null?lose.fee:lose.cost;
+        keep.cost=lose.cost!=null?lose.cost:lose.fee;
+      }
     }
     if(!keep.djStatus && lose.djStatus) keep.djStatus=lose.djStatus;
     if(!keep.note && lose.note) keep.note=lose.note;
@@ -363,25 +388,23 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       var curFee = cur.fee!=null?cur.fee:(cur.cost!=null?cur.cost:null);
       var gFee = g.fee!=null?g.fee:(g.cost!=null?g.cost:null);
       var sameFee = (curFee==null && gFee==null) || (curFee!=null && gFee!=null && Number(curFee)===Number(gFee));
-      if(!sameDj || !sameFee){
-        if(_schedGuardIsFresh(g)){
-          /* Own recent save — keep local identity through the Firebase echo. */
-          cur.dj = g.dj;
-          cur.fee = g.fee;
-          cur.cost = g.cost!=null?g.cost:g.fee;
-          if(g._writeKind) cur._writeKind = g._writeKind;
-          if(g.note!=null) cur.note = g.note;
-          if(g.vipNote!=null) cur.vipNote = g.vipNote;
-          if(g.agency !== undefined) cur.agency = g.agency;
-          if(g.ev!=null) cur.ev = g.ev;
-          needRepush.push(cur);
-        } else {
-          /* Stale local guard vs live Firebase — drop guard so other users win. */
-          delete gmap[uid];
-          _saveSchedEditStore();
-        }
+      var canLockIdentity=!!g._lockIdentity && (g._writeKind==='modal' || g._writeKind==='evClear' || !!g._added);
+      if((!sameDj || !sameFee) && canLockIdentity && _schedGuardIsFresh(g)){
+        /* Own recent modal save — keep local identity through the Firebase echo.
+           Never re-push here: saveEvent already wrote Firebase. Guard re-pushes
+           were wiping other users' DJ name/fee edits. */
+        cur.dj = g.dj;
+        cur.fee = g.fee;
+        cur.cost = g.cost!=null?g.cost:g.fee;
+        if(g._writeKind) cur._writeKind = g._writeKind;
+        if(g.note!=null) cur.note = g.note;
+        if(g.vipNote!=null) cur.vipNote = g.vipNote;
+        if(g.agency !== undefined) cur.agency = g.agency;
+        if(g.ev!=null) cur.ev = g.ev;
+      } else if(!sameDj || !sameFee){
+        delete gmap[uid];
+        _saveSchedEditStore();
       }
-      /* Fresh status/agency patches only — never re-apply stale status over remote. */
       if(gmap[uid] && _schedGuardIsFresh(gmap[uid])){
         if(gmap[uid].djStatus !== undefined) cur.djStatus = gmap[uid].djStatus;
         if(gmap[uid].agency !== undefined) cur.agency = gmap[uid].agency;
@@ -393,9 +416,22 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
   /* ?? Rebuild SCHED from baked + Firebase overrides ????????????? */
   function _mergeSchedEdit(target, edit){
     if(!target || !edit) return;
-    /* Thin patches (no DJ/fee) must still apply status AND event label clears.
-       Clearing special-week tags writes {ev:''}; ignoring that let bake names
-       (HALLOWEEN, etc.) come right back after delete. */
+    var kind=edit._writeKind||'';
+    /* Status seeds must not overwrite a live modal DJ name/fee. */
+    if(kind==='statusMerge' || kind==='djStatus'){
+      if(Object.prototype.hasOwnProperty.call(edit,'djStatus')){
+        target.djStatus = edit.djStatus==null ? null : edit.djStatus;
+      }
+      if(Object.prototype.hasOwnProperty.call(edit,'agency')){
+        target.agency = edit.agency==null ? null : edit.agency;
+      }
+      if((!target.dj || String(target.dj).toUpperCase()==='TBD') && edit.dj) target.dj=edit.dj;
+      if((target.fee==null && target.cost==null) && (edit.fee!=null || edit.cost!=null)){
+        target.fee=edit.fee!=null?edit.fee:edit.cost;
+        target.cost=edit.cost!=null?edit.cost:edit.fee;
+      }
+      return;
+    }
     var hasDj = edit.dj!=null && String(edit.dj).trim()!=='';
     var hasFee = edit.fee!=null || edit.cost!=null;
     if(!hasDj && !hasFee){
@@ -416,7 +452,11 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       }
       return;
     }
-    /* Live edits are the source of truth — apply as saved (including ??? names). */
+    if(edit.dj!=null) target.dj=edit.dj;
+    if(edit.fee!=null || edit.cost!=null){
+      target.fee=edit.fee!=null?edit.fee:edit.cost;
+      target.cost=edit.cost!=null?edit.cost:edit.fee;
+    }
     Object.assign(target, edit);
     if(target._writeKind==='djStatus') target._writeKind='modal';
     if(target.v && !target.venue) target.venue=target.v;
@@ -601,28 +641,11 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     _maybeRepushGuards(rep);
   };
 
-  /* Guards already corrected local SCHED. Re-persist at most once per burst —
-     unbounded persistSchedShow from every snapshot caused write storms that
-     locked the UI when editing bake nights (MILA Sat Aug 29, etc.). */
+  /* Identity re-push disabled — it rewrote Firebase with stale DJ name/fee from
+     local status guards and undid other sessions' modal edits. Adds that are
+     truly missing are already written by persistSchedShow at save time. */
   function _maybeRepushGuards(rep){
-    if(!rep || !rep.length || typeof persistSchedShow!=='function') return;
-    if(window._schedRepushLock) return;
-    window._schedRepushLock=true;
-    try{
-      var seen={};
-      var now=Date.now();
-      if(!window._schedLastRepushAt) window._schedLastRepushAt={};
-      rep.forEach(function(r){
-        if(!r||!r._uid||seen[r._uid]) return;
-        seen[r._uid]=1;
-        var last=window._schedLastRepushAt[r._uid]||0;
-        if(now-last<1500) return;
-        window._schedLastRepushAt[r._uid]=now;
-        try{ persistSchedShow(r); }catch(e){}
-      });
-    }finally{
-      setTimeout(function(){ window._schedRepushLock=false; }, 800);
-    }
+    return;
   }
 
   /* Paint helpers — calendar must show the latest local rename even if a sync
@@ -632,9 +655,8 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     _loadSchedEditStore();
     var gmap = window._schedWriteGuard || {};
     var g = (r._uid && gmap[r._uid]) ? gmap[r._uid] : null;
-    /* Only overlay the calendar for a fresh local edit — stale guards were
-       hiding other users' DJ name / fee updates on this browser. */
-    if(g && _schedGuardIsFresh(g)) return g;
+    /* Overlay DJ name/fee only for a fresh local modal save — never for status. */
+    if(g && g._lockIdentity && _schedGuardIsFresh(g)) return g;
     return null;
   };
   window._applySchedGuardsToLiveSched = function(){

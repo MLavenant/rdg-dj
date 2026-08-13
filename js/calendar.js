@@ -1450,7 +1450,7 @@ function updateShowAgency(uid, idx, val, ds){
   r.agency=next;
   ensureShowUid(r);
   if(typeof window._guardSchedWrite==='function'){
-    window._guardSchedWrite(Object.assign({}, r, {agency: next}));
+    window._guardSchedWrite(Object.assign({}, r, {agency: next, _writeKind: 'agency'}));
   }
   if(window._fbRef){
     try{

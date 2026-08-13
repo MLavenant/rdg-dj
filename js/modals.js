@@ -546,7 +546,27 @@ function persistSchedShow(rec){
     });
   }catch(eDel){}
   if(isBaked){
-    window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_')).set(payload, _onSchedWrite);
+    var editRef=window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_'));
+    /* Merge transaction so a concurrent status change cannot wipe the new DJ/fee,
+       and so we always stamp modal identity + updatedAt for other sessions. */
+    editRef.transaction(function(cur){
+      var base=(cur && typeof cur==='object')?cur:{};
+      var next=Object.assign({}, base, payload);
+      next.dj=payload.dj!=null?payload.dj:'';
+      next.fee=payload.fee!=null?payload.fee:null;
+      next.cost=payload.cost!=null?payload.cost:payload.fee;
+      next._writeKind='modal';
+      next.updatedAt=payload.updatedAt;
+      next._uid=uid;
+      next.d=rec.d;
+      next.v=rec.v||rec.venue||'';
+      next.venue=rec.venue||rec.v||'';
+      next._added=0;
+      return next;
+    }, function(err, committed){
+      if(err) _onSchedWrite(err);
+      else if(!committed) _onSchedWrite(new Error('modal edit transaction not committed'));
+    });
   } else {
     rec._added=1;
     payload._added=1;
@@ -564,7 +584,7 @@ function persistShowDjStatusOnly(rec){
   var uid=ensureShowUid(rec);
   var nextStatus=rec.djStatus==null ? null : rec.djStatus;
   if(typeof window._guardSchedWrite==='function'){
-    window._guardSchedWrite(Object.assign({}, rec, {djStatus: nextStatus}));
+    window._guardSchedWrite(Object.assign({}, rec, {djStatus: nextStatus, _writeKind: 'statusMerge'}));
   }
   var isBaked=_alignRecToBakedShow(rec);
   var path=isBaked
@@ -573,8 +593,10 @@ function persistShowDjStatusOnly(rec){
   if(!isBaked) rec._added=1;
   window._fbRef.child(path).transaction(function(cur){
     if(cur && typeof cur==='object'){
-      cur.djStatus=nextStatus;
-      return cur;
+      /* Never rewrite DJ name/fee on status change — only djStatus. */
+      var next=Object.assign({}, cur);
+      next.djStatus=nextStatus;
+      return next;
     }
     /* First write for this show: keep the name/fee currently on screen. */
     return _fbSanitize({
