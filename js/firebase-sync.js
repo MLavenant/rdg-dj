@@ -594,13 +594,33 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       }
       return true;
     });
-    /* Added shows: legacy array + race-safe addsByUid map.
-       If that night already has a show (usually bake), fold the add into it —
-       never create a second calendar row for the same venue|date.
-       Bake already removed by day/uid deletes above, so re-adds land cleanly. */
-    var adds = ov.adds ? (Array.isArray(ov.adds)?ov.adds:Object.values(ov.adds)) : [];
+    /* Added shows: addsByUid is source of truth. Legacy `adds` array often still
+       holds the OLD name/fee for the same deterministic uid (e.g. RESIDENT DJ
+       before rename to barut). If legacy is applied first, addsByUid is skipped
+       via exists-check and the rename vanishes after refresh. */
     var byUid = ov.addsByUid ? (typeof ov.addsByUid==='object'?ov.addsByUid:{}) : {};
-    Object.keys(byUid).forEach(function(uid){ if(byUid[uid]) adds.push(byUid[uid]); });
+    var legacyAdds = ov.adds ? (Array.isArray(ov.adds)?ov.adds:Object.values(ov.adds)) : [];
+    var addMap = {};
+    legacyAdds.forEach(function(r){
+      if(!r) return;
+      ensureShowUid(r);
+      if(!addMap[r._uid]) addMap[r._uid]=r;
+    });
+    Object.keys(byUid).forEach(function(uid){
+      if(byUid[uid]) addMap[uid]=byUid[uid]; /* always wins over legacy */
+    });
+    /* editsByUid modal patches for added shows (uid-only identity SoT). */
+    var byUidEdits2 = ov.editsByUid ? (typeof ov.editsByUid==='object'?ov.editsByUid:{}) : {};
+    Object.keys(byUidEdits2).forEach(function(uid){
+      var ed=byUidEdits2[uid];
+      if(!ed) return;
+      if(addMap[uid]){
+        _mergeSchedEdit(addMap[uid], ed);
+      } else if(ed._added && ed.d){
+        addMap[uid]=Object.assign({}, ed, {_uid:uid, _added:1});
+      }
+    });
+    var adds = Object.keys(addMap).map(function(uid){ return addMap[uid]; });
     var foldedAdds=[];
     var delSet={};
     dels.forEach(function(dk){ if(dk) delSet[dk]=1; });
@@ -612,8 +632,12 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         var p=String(dk||'').split('|'); return p.length>=3 && p[2]===r._uid;
       }))) return;
       r._added=1;
-      var exists = s.some(function(x){ return x._uid===r._uid; });
-      if(exists) return;
+      var existIdx=-1;
+      for(var ei=0;ei<s.length;ei++){ if(s[ei] && s[ei]._uid===r._uid){ existIdx=ei; break; } }
+      if(existIdx>=0){
+        _mergeSchedEdit(s[existIdx], r);
+        return;
+      }
       var night = _nightKey(r);
       var occupied = night ? s.filter(function(x){ return x && _nightKey(x)===night; }) : [];
       if(occupied.length){
@@ -623,6 +647,31 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       }
       s.push(r);
     });
+    /* Opportunistic: drop stale legacy adds that addsByUid already superseded
+       (same uid or same night) so reloads stop resurrecting old DJ names. */
+    if(window._fbRef && legacyAdds.length && Object.keys(byUid).length && !window._scrubLegacyAddsLock){
+      window._scrubLegacyAddsLock=true;
+      try{
+        var coveredNight={};
+        Object.keys(byUid).forEach(function(uid){
+          var row=byUid[uid]; if(!row||!row.d) return;
+          coveredNight[(row.v||row.venue||'')+'|'+row.d]=1;
+        });
+        window._fbRef.child('schedOverrides/adds').transaction(function(vals){
+          if(!vals) return vals;
+          var arr=Array.isArray(vals)?vals:Object.values(vals);
+          var next=arr.filter(function(r){
+            if(!r||!r.d) return false;
+            var nk=(r.v||r.venue||'')+'|'+r.d;
+            if(coveredNight[nk]) return false;
+            return true;
+          });
+          if(next.length===arr.length) return vals;
+          return next.length?next:null;
+        });
+      }catch(eScrubAdds){}
+      setTimeout(function(){ window._scrubLegacyAddsLock=false; }, 5000);
+    }
     s.forEach(function(r){ if(r&&r.dj) r.dj=fixKnownAccents(r.dj); ensureShowUid(r); });
     var rep = _reapplySchedGuards(s);
     s = _dedupeSchedOnePerNight(s, null);
