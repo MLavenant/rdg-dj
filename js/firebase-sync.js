@@ -61,18 +61,33 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
 
   /* ?? Write helper ??????????????????????????????????????????????? */
   window._fbSave = function(path, value){
-    window._fbRef.child(path).set(value === undefined ? null : value);
+    try{
+      window._fbRef.child(path).set(value === undefined ? null : value, function(err){
+        if(err){
+          console.error('Firebase write failed', path, err);
+          _setSyncDot('#ef4444', 'Write denied — check Firebase rules / network');
+        }
+      });
+    }catch(eSave){
+      console.error('Firebase write threw', path, eSave);
+      _setSyncDot('#ef4444', 'Write failed — check Firebase / console');
+    }
   };
 
-  /* Durable schedule edits — survive later Firebase rebuilds when another night
-     is edited. Memory + sessionStorage; never expire within the browser tab.
-     Cleared only when Firebase already matches the saved identity. */
+  /* Local write-guards protect YOUR in-flight rename against a bake rebuild /
+     Firebase echo for a few seconds. They must NOT permanently override other
+     users' live edits (that froze DJ name/fee on other sessions). */
+  var _SCHED_GUARD_GRACE_MS = 8000;
   var _SCHED_EDIT_STORE = 'rdg_sched_edits_v2';
   var _SCHED_DEL_STORE = 'rdg_sched_deleted_v1';
   var _SCHED_CLEAR_STORE = 'rdg_sched_cleared_nights_v1';
   window._schedWriteGuard = window._schedWriteGuard || {};
   window._schedDeletedUids = window._schedDeletedUids || {};
   window._schedClearedNights = window._schedClearedNights || {};
+  function _schedGuardIsFresh(g){
+    if(!g || !g.at) return false;
+    return (Date.now() - Number(g.at)) <= _SCHED_GUARD_GRACE_MS;
+  }
   function _loadSchedEditStore(){
     try{
       var raw=sessionStorage.getItem(_SCHED_EDIT_STORE);
@@ -349,18 +364,28 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       var gFee = g.fee!=null?g.fee:(g.cost!=null?g.cost:null);
       var sameFee = (curFee==null && gFee==null) || (curFee!=null && gFee!=null && Number(curFee)===Number(gFee));
       if(!sameDj || !sameFee){
-        cur.dj = g.dj;
-        cur.fee = g.fee;
-        cur.cost = g.cost!=null?g.cost:g.fee;
-        if(g._writeKind) cur._writeKind = g._writeKind;
-        if(g.note!=null) cur.note = g.note;
-        if(g.vipNote!=null) cur.vipNote = g.vipNote;
-        if(g.agency !== undefined) cur.agency = g.agency;
-        if(g.ev!=null) cur.ev = g.ev;
-        needRepush.push(cur);
+        if(_schedGuardIsFresh(g)){
+          /* Own recent save — keep local identity through the Firebase echo. */
+          cur.dj = g.dj;
+          cur.fee = g.fee;
+          cur.cost = g.cost!=null?g.cost:g.fee;
+          if(g._writeKind) cur._writeKind = g._writeKind;
+          if(g.note!=null) cur.note = g.note;
+          if(g.vipNote!=null) cur.vipNote = g.vipNote;
+          if(g.agency !== undefined) cur.agency = g.agency;
+          if(g.ev!=null) cur.ev = g.ev;
+          needRepush.push(cur);
+        } else {
+          /* Stale local guard vs live Firebase — drop guard so other users win. */
+          delete gmap[uid];
+          _saveSchedEditStore();
+        }
       }
-      if(g.djStatus !== undefined) cur.djStatus = g.djStatus;
-      if(g.agency !== undefined) cur.agency = g.agency;
+      /* Fresh status/agency patches only — never re-apply stale status over remote. */
+      if(gmap[uid] && _schedGuardIsFresh(gmap[uid])){
+        if(gmap[uid].djStatus !== undefined) cur.djStatus = gmap[uid].djStatus;
+        if(gmap[uid].agency !== undefined) cur.agency = gmap[uid].agency;
+      }
     });
     return needRepush;
   }
@@ -606,7 +631,10 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     if(!r) return null;
     _loadSchedEditStore();
     var gmap = window._schedWriteGuard || {};
-    if(r._uid && gmap[r._uid]) return gmap[r._uid];
+    var g = (r._uid && gmap[r._uid]) ? gmap[r._uid] : null;
+    /* Only overlay the calendar for a fresh local edit — stale guards were
+       hiding other users' DJ name / fee updates on this browser. */
+    if(g && _schedGuardIsFresh(g)) return g;
     return null;
   };
   window._applySchedGuardsToLiveSched = function(){

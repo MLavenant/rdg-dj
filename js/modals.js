@@ -519,6 +519,15 @@ function persistSchedShow(rec){
   var uid=ensureShowUid(rec);
   var fbKey=_schedUidKey(rec);
   var payload=_fbSanitize(rec);
+  payload.updatedAt=new Date().toISOString();
+  function _onSchedWrite(err){
+    if(!err) return;
+    console.error('Firebase schedule write failed', err);
+    try{
+      var el=document.getElementById('fbSyncDot');
+      if(el){ el.style.background='#ef4444'; el.title='Schedule write denied — check Firebase rules'; }
+    }catch(eDot){}
+  }
   try{
     window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
       if(!vals) return vals;
@@ -537,11 +546,11 @@ function persistSchedShow(rec){
     });
   }catch(eDel){}
   if(isBaked){
-    window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_')).set(payload);
+    window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_')).set(payload, _onSchedWrite);
   } else {
     rec._added=1;
     payload._added=1;
-    window._fbRef.child('schedOverrides/addsByUid/'+uid).set(payload);
+    window._fbRef.child('schedOverrides/addsByUid/'+uid).set(payload, _onSchedWrite);
   }
 }
 /* DJ Status only — write djStatus on this show's uid path ONLY.
