@@ -125,10 +125,10 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
   _loadSchedEditStore();
   /* Drop pre-v4.24 identity guards — they froze DJ name/fee across sessions. */
   try{
-    if(sessionStorage.getItem('rdg_sched_guard_ver')!=='v4'){
+    if(sessionStorage.getItem('rdg_sched_guard_ver')!=='v5'){
       window._schedWriteGuard={};
       sessionStorage.removeItem(_SCHED_EDIT_STORE);
-      sessionStorage.setItem('rdg_sched_guard_ver','v4');
+      sessionStorage.setItem('rdg_sched_guard_ver','v5');
     }
   }catch(eGuardVer){}
   window._guardSchedWrite = function(rec){
@@ -317,14 +317,8 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       delete window._schedWriteGuard[lose._uid];
       _saveSchedEditStore();
     }
-    /* Persist merged identity onto the kept (usually baked) show — defer if a
-       re-push burst is in flight so we don't re-feed the write storm. */
-    if(keep && typeof persistSchedShow==='function'){
-      var delay=window._schedRepushLock?900:0;
-      setTimeout(function(){
-        try{ persistSchedShow(keep); }catch(e3){}
-      }, delay);
-    }
+    /* Do NOT persistSchedShow(keep) here — that re-wrote bake identity over a
+       live modal rename on the same night and broke cross-session name/fee sync. */
   }
 
   function _reapplySchedGuards(s){
@@ -498,6 +492,19 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       if(uidAppliedDates[venue+'|'+date]) return;
       var matches = s.filter(function(r){ return (r.venue||r.v)===venue && r.d===date; });
       if(matches.length===1){ _mergeSchedEdit(matches[0], edits[k]); ensureShowUid(matches[0]); }
+    });
+    /* editsByUid is the live SoT for DJ name/fee (same reliability as addsByUid).
+       Apply LAST by exact uid only — never by date — so one show cannot touch another. */
+    var byUidEdits = ov.editsByUid ? (typeof ov.editsByUid==='object'?ov.editsByUid:{}) : {};
+    Object.keys(byUidEdits).forEach(function(uid){
+      var edit=byUidEdits[uid];
+      if(!edit) return;
+      var idx=s.findIndex(function(r){ return r && String(r._uid||'')===String(uid); });
+      if(idx<0) return;
+      _mergeSchedEdit(s[idx], edit);
+      ensureShowUid(s[idx]);
+      var nk=(s[idx].v||s[idx].venue||'')+'|'+(s[idx].d||'');
+      if(nk!=='|') uidAppliedDates[nk]=1;
     });
     /* Apply uid deletes BEFORE adds. Legacy day-level tombstones (venue|date)
        are IGNORED — they hid null-fee bake nights (DARMON/ONOMA/BARUT…) and

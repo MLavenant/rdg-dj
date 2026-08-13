@@ -515,11 +515,14 @@ function persistSchedShow(rec){
   /* If this started as an add on a cleared/deleted bake night, force add path. */
   if(wasAdded && !isBaked){ rec._added=1; }
   if(typeof window._guardSchedWrite==='function') window._guardSchedWrite(rec);
-  if(!window._fbSave||!window._fbRef) return;
+  if(!window._fbRef) return;
   var uid=ensureShowUid(rec);
   var fbKey=_schedUidKey(rec);
   var payload=_fbSanitize(rec);
-  payload.updatedAt=new Date().toISOString();
+  var updatedAt=new Date().toISOString();
+  payload.updatedAt=updatedAt;
+  payload._writeKind='modal';
+  payload._uid=uid;
   function _onSchedWrite(err){
     if(!err) return;
     console.error('Firebase schedule write failed', err);
@@ -528,12 +531,11 @@ function persistSchedShow(rec){
       if(el){ el.style.background='#ef4444'; el.title='Schedule write denied — check Firebase rules'; }
     }catch(eDot){}
   }
+  /* Isolation rule: only clear THIS uid's delete tombstone — never other nights. */
   try{
     window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
       if(!vals) return vals;
       var arr=Array.isArray(vals)?vals:Object.values(vals);
-      /* Only clear THIS show's uid tombstone. Never clear another uid on the same
-         night (that resurrected bake after replacing with a new add). Scrub day keys. */
       var next=arr.filter(function(k){
         if(!k) return false;
         var p=String(k).split('|');
@@ -545,32 +547,44 @@ function persistSchedShow(rec){
       return next.length?next:null;
     });
   }catch(eDel){}
+
+  /* Identity patch — same style as working addsByUid / status field updates.
+     Dual-write editsByUid (uid map) + edits/venue|date|uid (legacy).
+     .update() merges so concurrent djStatus changes are not wiped. */
+  var identity={
+    dj: rec.dj||'',
+    fee: rec.fee!=null?rec.fee:null,
+    cost: rec.cost!=null?rec.cost:(rec.fee!=null?rec.fee:null),
+    d: rec.d,
+    v: rec.v||rec.venue||'',
+    venue: rec.venue||rec.v||'',
+    _uid: uid,
+    _writeKind: 'modal',
+    updatedAt: updatedAt,
+    _added: isBaked?0:1
+  };
+  if(Object.prototype.hasOwnProperty.call(rec,'djStatus')) identity.djStatus=rec.djStatus==null?null:rec.djStatus;
+  if(Object.prototype.hasOwnProperty.call(rec,'ev')) identity.ev=rec.ev==null?'':rec.ev;
+  if(Object.prototype.hasOwnProperty.call(rec,'note')) identity.note=rec.note==null?null:rec.note;
+  if(Object.prototype.hasOwnProperty.call(rec,'agency')) identity.agency=rec.agency==null?null:rec.agency;
+  if(rec.bs_m!=null) identity.bs_m=rec.bs_m;
+  if(rec.roi_t!=null) identity.roi_t=rec.roi_t;
+
+  try{
+    window._fbRef.child('schedOverrides/editsByUid/'+uid).update(_fbSanitize(identity), _onSchedWrite);
+  }catch(eUid){ _onSchedWrite(eUid); }
+
   if(isBaked){
-    var editRef=window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_'));
-    /* Merge transaction so a concurrent status change cannot wipe the new DJ/fee,
-       and so we always stamp modal identity + updatedAt for other sessions. */
-    editRef.transaction(function(cur){
-      var base=(cur && typeof cur==='object')?cur:{};
-      var next=Object.assign({}, base, payload);
-      next.dj=payload.dj!=null?payload.dj:'';
-      next.fee=payload.fee!=null?payload.fee:null;
-      next.cost=payload.cost!=null?payload.cost:payload.fee;
-      next._writeKind='modal';
-      next.updatedAt=payload.updatedAt;
-      next._uid=uid;
-      next.d=rec.d;
-      next.v=rec.v||rec.venue||'';
-      next.venue=rec.venue||rec.v||'';
-      next._added=0;
-      return next;
-    }, function(err, committed){
-      if(err) _onSchedWrite(err);
-      else if(!committed) _onSchedWrite(new Error('modal edit transaction not committed'));
-    });
+    try{
+      window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_')).update(_fbSanitize(Object.assign({}, payload, identity, {_added:0})), _onSchedWrite);
+    }catch(eEdit){ _onSchedWrite(eEdit); }
   } else {
     rec._added=1;
     payload._added=1;
-    window._fbRef.child('schedOverrides/addsByUid/'+uid).set(payload, _onSchedWrite);
+    identity._added=1;
+    try{
+      window._fbRef.child('schedOverrides/addsByUid/'+uid).update(_fbSanitize(Object.assign({}, payload, identity)), _onSchedWrite);
+    }catch(eAdd){ _onSchedWrite(eAdd); }
   }
 }
 /* DJ Status only — write djStatus on this show's uid path ONLY.
@@ -591,14 +605,15 @@ function persistShowDjStatusOnly(rec){
     ? ('schedOverrides/edits/'+_schedUidKey(rec).replace(/\//g,'_'))
     : ('schedOverrides/addsByUid/'+uid);
   if(!isBaked) rec._added=1;
+  /* Status-only: never rewrite DJ name/fee. Touch this uid only. */
+  var statusPatch={ djStatus: nextStatus, _uid: uid, d: rec.d, v: rec.v||rec.venue||'', venue: rec.venue||rec.v||'' };
+  try{ window._fbRef.child('schedOverrides/editsByUid/'+uid).update(statusPatch); }catch(e1){}
   window._fbRef.child(path).transaction(function(cur){
     if(cur && typeof cur==='object'){
-      /* Never rewrite DJ name/fee on status change — only djStatus. */
       var next=Object.assign({}, cur);
       next.djStatus=nextStatus;
       return next;
     }
-    /* First write for this show: keep the name/fee currently on screen. */
     return _fbSanitize({
       dj: rec.dj||'',
       fee: rec.fee!=null?rec.fee:null,
