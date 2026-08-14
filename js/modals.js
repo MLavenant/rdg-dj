@@ -661,6 +661,17 @@ function persistSchedShow(rec){
       if((row.v||row.venue||'')!==venue) return;
       delete map[other];
     });
+    var prev=map[uid];
+    if(prev && typeof prev==='object'){
+      var prevAt=prev.updatedAt?Date.parse(prev.updatedAt):0;
+      var newAt=payload.updatedAt?Date.parse(payload.updatedAt):0;
+      if(payload.djStatus==null && prev.djStatus!=null) payload.djStatus=prev.djStatus;
+      if(payload.agency==null && prev.agency!=null) payload.agency=prev.agency;
+      if(prevAt && newAt && prevAt>newAt){
+        if(prev.djStatus!=null) payload.djStatus=prev.djStatus;
+        if(prev.agency!=null) payload.agency=prev.agency;
+      }
+    }
     map[uid]=payload;
     return map;
   }, _fbOnSchedWrite);
@@ -682,15 +693,18 @@ function persistShowDjStatusOnly(rec){
   }
   var isBaked=_alignRecToBakedShow(rec);
   if(!isBaked) rec._added=1;
-  window._fbRef.child('schedOverrides/shows/'+uid).transaction(function(cur){
+  window._fbRef.child('schedOverrides/shows').transaction(function(map){
+    if(!map || typeof map!=='object') map={};
+    var cur=map[uid];
     if(cur && typeof cur==='object'){
       var next=Object.assign({}, cur);
       next.djStatus=nextStatus;
       next.updatedAt=new Date().toISOString();
       next._writeKind='statusMerge';
-      return next;
+      map[uid]=next;
+      return map;
     }
-    return _fbSanitize({
+    map[uid]=_fbSanitize({
       dj: rec.dj||'',
       fee: rec.fee!=null?rec.fee:null,
       cost: rec.cost!=null?rec.cost:(rec.fee!=null?rec.fee:null),
@@ -703,7 +717,8 @@ function persistShowDjStatusOnly(rec){
       _added: isBaked?0:1,
       updatedAt: new Date().toISOString()
     });
-  });
+    return map;
+  }, _fbOnSchedWrite);
 }
 function _findSchedByUidOrIdx(uid, idx){
   if(uid){

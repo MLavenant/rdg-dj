@@ -430,10 +430,8 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         delete gmap[uid];
         _saveSchedEditStore();
       }
-      if(gmap[uid] && _schedGuardIsFresh(gmap[uid])){
-        if(gmap[uid].djStatus !== undefined) cur.djStatus = gmap[uid].djStatus;
-        if(gmap[uid].agency !== undefined) cur.agency = gmap[uid].agency;
-      }
+      /* Do not paint local DJ status/agency over a remote workbook overwrite.
+         Session A used to keep its own status after Session B changed it. */
     });
     return needRepush;
   }
