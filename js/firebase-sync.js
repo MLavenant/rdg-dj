@@ -84,6 +84,9 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
   window._schedWriteGuard = window._schedWriteGuard || {};
   window._schedDeletedUids = window._schedDeletedUids || {};
   window._schedClearedNights = window._schedClearedNights || {};
+  window._schedSeenRemote = window._schedSeenRemote || {};
+  window._lastWorkbookUids = window._lastWorkbookUids || {};
+  window._lastWorkbookActive = false;
   function _schedGuardIsFresh(g){
     if(!g || !g.at) return false;
     return (Date.now() - Number(g.at)) <= _SCHED_GUARD_GRACE_MS;
@@ -231,6 +234,21 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     }catch(e){}
     return false;
   };
+  function _uidIsRemoteDeleted(uid){
+    if(!uid) return false;
+    var dels=window._lastSchedDeletes||[];
+    for(var i=0;i<dels.length;i++){
+      var p=String(dels[i]||'').split('|');
+      if(p.length>=3 && p[2]===uid) return true;
+    }
+    return false;
+  }
+  function _dropWriteGuard(uid){
+    if(!uid) return;
+    if(window._schedWriteGuard && window._schedWriteGuard[uid]) delete window._schedWriteGuard[uid];
+    if(window._schedSeenRemote && window._schedSeenRemote[uid]) delete window._schedSeenRemote[uid];
+    _saveSchedEditStore();
+  }
   function _nightKey(r){
     if(!r||!r.d) return '';
     return (r.v||r.venue||'')+'|'+r.d;
@@ -356,8 +374,18 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         }
       }
       if(idx < 0){
-        /* Never re-push deleted adds. Never create a second show on an occupied night. */
+        /* Never re-push deleted adds. Never create a second show on an occupied night.
+           Session A used to resurrect its own add after Session B deleted it,
+           because renderCal re-applied the local write-guard. Remote workbook wins. */
         if(g._added && !deleted[uid]){
+          var goneRemote=_uidIsRemoteDeleted(uid) ||
+            (window._lastWorkbookActive && !(window._lastWorkbookUids && window._lastWorkbookUids[uid]) &&
+              ((window._schedSeenRemote && window._schedSeenRemote[uid]) || !_schedGuardIsFresh(g)));
+          if(goneRemote){
+            delete gmap[uid];
+            _saveSchedEditStore();
+            return;
+          }
           var nightHits = s.filter(function(r){
             return r && r.d===g.d && (r.v||r.venue||'')===(g.v||g.venue||'');
           });
@@ -479,6 +507,8 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       var delsWRaw = ov.deletes ? (Array.isArray(ov.deletes)?ov.deletes:Object.values(ov.deletes)) : [];
       var delsW = delsWRaw.filter(function(dk){ return dk && String(dk).split('|').length>=3; });
       window._lastSchedDeletes = delsW;
+      window._lastWorkbookActive = true;
+      window._lastWorkbookUids = {};
       workbookUids.forEach(function(uid){
         var edit=workbook[uid];
         if(!edit) return;
@@ -490,6 +520,8 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
           }
         }
         if(dead) return;
+        window._lastWorkbookUids[uid]=1;
+        window._schedSeenRemote[uid]=1;
         var idx=s.findIndex(function(r){ return r && String(r._uid||'')===String(uid); });
         if(idx>=0){
           _mergeSchedEdit(s[idx], edit);
@@ -518,6 +550,13 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         return true;
       });
       s.forEach(function(r){ if(r&&r.dj) r.dj=fixKnownAccents(r.dj); ensureShowUid(r); });
+      Object.keys(window._schedWriteGuard||{}).forEach(function(uid){
+        var g=window._schedWriteGuard[uid];
+        if(!g) return;
+        if(_uidIsRemoteDeleted(uid) || (window._schedSeenRemote[uid] && !window._lastWorkbookUids[uid])){
+          _dropWriteGuard(uid);
+        }
+      });
       /* Do not re-apply local add/rename guards here — they hid the first
          remote name change on the tab that originally added the show. */
       s=_dedupeSchedOnePerNight(s, null);
@@ -770,6 +809,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     var g = (r._uid && gmap[r._uid]) ? gmap[r._uid] : null;
     /* Overlay DJ name/fee only for a fresh local modal save — never for status. */
     if(g && g._lockIdentity && _schedGuardIsFresh(g)){
+      if(_uidIsRemoteDeleted(r._uid) || (window._schedSeenRemote && window._schedSeenRemote[r._uid] && !(window._lastWorkbookUids && window._lastWorkbookUids[r._uid]))) return null;
       /* Remote workbook with a newer timestamp always wins — otherwise the
          person who ADDED the show never saw the first rename from another tab. */
       var remoteAt=r && r.updatedAt ? Date.parse(r.updatedAt) : 0;
