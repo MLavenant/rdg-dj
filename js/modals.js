@@ -580,9 +580,20 @@ function persistSchedShow(rec){
       return next.length?next:null;
     });
   }catch(eDel){}
-  window._fbRef.child('schedOverrides/shows/'+uid).set(payload, _fbOnSchedWrite);
+  window._fbRef.child('schedOverrides/shows').transaction(function(map){
+    if(!map || typeof map!=='object') map={};
+    var venue=payload.v||payload.venue||'';
+    Object.keys(map).forEach(function(other){
+      if(other===uid) return;
+      var row=map[other];
+      if(!row||row.d!==payload.d) return;
+      if((row.v||row.venue||'')!==venue) return;
+      delete map[other];
+    });
+    map[uid]=payload;
+    return map;
+  }, _fbOnSchedWrite);
   _fbEraseLegacyCopies(rec);
-  _fbDropOtherShowsOnNight(rec);
 }
 /* DJ Status only — write djStatus on this show's uid path ONLY.
    If no edit node exists yet, seed identity from the local row so a later

@@ -149,7 +149,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     var prev=(window._schedWriteGuard[rec._uid]||{});
     /* Status/agency patches must NOT freeze DJ name/fee into the local guard —
        that blocked other sessions' renames and re-pushed stale identity. */
-    var identityLocked=(kind==='modal' || kind==='evClear' || !!rec._added);
+    var identityLocked=(kind==='modal' || kind==='evClear');
     window._schedWriteGuard[rec._uid] = {
       at: Date.now(),
       dj: identityLocked ? (rec.dj||'') : (prev.dj!=null?prev.dj:(rec.dj||'')),
@@ -384,17 +384,20 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       var sameFee = (curFee==null && gFee==null) || (curFee!=null && gFee!=null && Number(curFee)===Number(gFee));
       var canLockIdentity=!!g._lockIdentity && (g._writeKind==='modal' || g._writeKind==='evClear' || !!g._added);
       if((!sameDj || !sameFee) && canLockIdentity && _schedGuardIsFresh(g)){
-        /* Own recent modal save — keep local identity through the Firebase echo.
-           Never re-push here: saveEvent already wrote Firebase. Guard re-pushes
-           were wiping other users' DJ name/fee edits. */
-        cur.dj = g.dj;
-        cur.fee = g.fee;
-        cur.cost = g.cost!=null?g.cost:g.fee;
-        if(g._writeKind) cur._writeKind = g._writeKind;
-        if(g.note!=null) cur.note = g.note;
-        if(g.vipNote!=null) cur.vipNote = g.vipNote;
-        if(g.agency !== undefined) cur.agency = g.agency;
-        if(g.ev!=null) cur.ev = g.ev;
+        var remoteAt=cur.updatedAt ? Date.parse(cur.updatedAt) : 0;
+        if(remoteAt && remoteAt>Number(g.at||0)){
+          delete gmap[uid];
+          _saveSchedEditStore();
+        } else {
+          cur.dj = g.dj;
+          cur.fee = g.fee;
+          cur.cost = g.cost!=null?g.cost:g.fee;
+          if(g._writeKind) cur._writeKind = g._writeKind;
+          if(g.note!=null) cur.note = g.note;
+          if(g.vipNote!=null) cur.vipNote = g.vipNote;
+          if(g.agency !== undefined) cur.agency = g.agency;
+          if(g.ev!=null) cur.ev = g.ev;
+        }
       } else if(!sameDj || !sameFee){
         delete gmap[uid];
         _saveSchedEditStore();
@@ -507,12 +510,12 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         return true;
       });
       s.forEach(function(r){ if(r&&r.dj) r.dj=fixKnownAccents(r.dj); ensureShowUid(r); });
-      var repW=_reapplySchedGuards(s);
+      /* Do not re-apply local add/rename guards here — they hid the first
+         remote name change on the tab that originally added the show. */
       s=_dedupeSchedOnePerNight(s, null);
       SCHED=s;
       IDX=buildIdx(SCHED);
       if(typeof recalcAllSchedTargets==='function') recalcAllSchedTargets();
-      _maybeRepushGuards(repW);
       return;
     }
     var edits = ov.edits || {};
@@ -758,7 +761,13 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     var gmap = window._schedWriteGuard || {};
     var g = (r._uid && gmap[r._uid]) ? gmap[r._uid] : null;
     /* Overlay DJ name/fee only for a fresh local modal save — never for status. */
-    if(g && g._lockIdentity && _schedGuardIsFresh(g)) return g;
+    if(g && g._lockIdentity && _schedGuardIsFresh(g)){
+      /* Remote workbook with a newer timestamp always wins — otherwise the
+         person who ADDED the show never saw the first rename from another tab. */
+      var remoteAt=r && r.updatedAt ? Date.parse(r.updatedAt) : 0;
+      if(remoteAt && remoteAt>Number(g.at||0)) return null;
+      return g;
+    }
     return null;
   };
   window._applySchedGuardsToLiveSched = function(){

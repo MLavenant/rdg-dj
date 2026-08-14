@@ -3,20 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RDG DJ Dashboard v4.28</title>
+<title>RDG DJ Dashboard v4.29</title>
 <!-- Firebase Realtime Database SDK -->
-  <link rel="stylesheet" href="css/app.css?v=4.28">
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <link rel="stylesheet" href="css/app.css?v=4.29">
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 </head>
 <body>
 <div class="shell">
 <aside class="sidebar">
   <div class="sb-logo">
-    <img src="assets/rdg-logo.png?v=4.28" alt="RDG" class="sb-logo-img">
+    <img src="assets/rdg-logo.png?v=4.29" alt="RDG" class="sb-logo-img">
     <div class="sb-logo-title">DJ Dashboard</div>
-    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v4.28 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
+    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v4.29 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
   </div>
   <div id="sidebar"></div>
   <div class="sb-tools-section">
@@ -112,11 +112,11 @@
       <button type="button" class="acct-tab" id="bgtTabPlanner" onclick="setBudgetSubTab('planner')">Budget Planner</button>
       <label class="acct-location"><span>Location</span><select id="budgetVenue" class="acct-venue-sel"></select></label>
       <select id="budgetYear" style="font-size:11px;font-weight:700;padding:6px 10px;border:0.5px solid var(--rule);border-radius:18px;background:var(--card);color:var(--ink);font-family:inherit;margin-left:6px">
-        <option value="2028">2028</option><option value="2027">2027</option><option value="2026">2026</option><option value="2025">2025</option>
-      </select>
+          <option value="2028">2028</option><option value="2027">2027</option><option value="2026">2026</option><option value="2025">2025</option>
+        </select>
       <button class="btn-add" onclick="addBudgetRow()" style="margin-left:6px">+ Add Show</button>
       <button onclick="exportBudgetCSV()" style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:var(--r);border:0.5px solid var(--rule);background:var(--card);color:var(--ink2);cursor:pointer;font-family:inherit;margin-left:4px">Export CSV</button>
-    </div>
+      </div>
     <div class="pg-section" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:10px">
       <div><div class="pg-title2" id="budgetPageTitle">Overview</div><div id="budgetMeta" style="font-size:10px;color:var(--ink3)">?</div></div>
     </div>
@@ -177,7 +177,7 @@
   <div id="view-live" style="display:none">
     <div class="pg-section" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div>
-        <div class="pg-title2" style="color:#dc2626;margin:0"><span class="live-pulse"></span>LIVE</div>
+      <div class="pg-title2" style="color:#dc2626;margin:0"><span class="live-pulse"></span>LIVE</div>
         <div style="font-size:10px;color:var(--ink3);margin-top:2px">All venues ? night-of Toast BS (ignores venue filter)</div>
       </div>
       <button type="button" id="liveRefreshBtn" onclick="refreshLive()" style="font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;border:0.5px solid var(--rule);background:var(--card2);cursor:pointer;font-family:inherit">Refresh</button>
@@ -429,19 +429,19 @@
     </div>
   </div>
 </div>
-<script src="js/vendor/xlsx.js?v=4.28"></script>
-<script src="data/sched-baked.js?v=4.28"></script>
-<script src="js/state-prelude.js?v=4.28"></script>
-<script src="js/logos.js?v=4.28"></script>
-<script src="js/state.js?v=4.28"></script>
-<script src="js/fiscal.js?v=4.28"></script>
-<script src="js/core.js?v=4.28"></script>
-<script src="js/budget.js?v=4.28"></script>
-<script src="js/firebase-sync.js?v=4.28"></script>
-<script src="js/calendar.js?v=4.28"></script>
-<script src="js/flash-forecast.js?v=4.28"></script>
-<script src="js/accounting.js?v=4.28"></script>
-<script src="js/modals.js?v=4.28"></script>
+<script src="js/vendor/xlsx.js?v=4.29"></script>
+<script src="data/sched-baked.js?v=4.29"></script>
+<script src="js/state-prelude.js?v=4.29"></script>
+<script src="js/logos.js?v=4.29"></script>
+<script src="js/state.js?v=4.29"></script>
+<script src="js/fiscal.js?v=4.29"></script>
+<script src="js/core.js?v=4.29"></script>
+<script src="js/budget.js?v=4.29"></script>
+<script src="js/firebase-sync.js?v=4.29"></script>
+<script src="js/calendar.js?v=4.29"></script>
+<script src="js/flash-forecast.js?v=4.29"></script>
+<script src="js/accounting.js?v=4.29"></script>
+<script src="js/modals.js?v=4.29"></script>
 </body>
 </html>
 
