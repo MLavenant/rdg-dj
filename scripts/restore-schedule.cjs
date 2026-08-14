@@ -1,16 +1,11 @@
 /**
- * Restore the live workbook from a weekly backup.
- * Usage: node scripts/restore-schedule.cjs schedule-w2026-33
- * Requires CONFIRM=YES so this cannot run by accident.
+ * Restore live workbook from the single latest backup.
+ * Usage: CONFIRM=YES node scripts/restore-schedule.cjs
  */
 const https = require("https");
-const key = process.argv[2];
-if (!key || key.indexOf("schedule-w") !== 0) {
-  console.error("Usage: CONFIRM=YES node scripts/restore-schedule.cjs schedule-wYYYY-WW");
-  process.exit(1);
-}
 if (process.env.CONFIRM !== "YES") {
   console.error("Refusing to restore without CONFIRM=YES");
+  console.error("Usage: CONFIRM=YES node scripts/restore-schedule.cjs");
   process.exit(1);
 }
 
@@ -47,31 +42,33 @@ function req(method, p, body) {
 }
 
 (async () => {
-  const snap = await req("GET", "/rdg/scheduleBackups/" + encodeURIComponent(key) + ".json");
-  if (!snap.json || !snap.json.shows) {
-    console.error("No backup found for " + key);
+  const snap = await req("GET", "/rdg/scheduleBackups/latest.json");
+  const bak = snap.json;
+  if (!bak || (!bak.liveShows && !bak.calendar && !bak.shows)) {
+    console.error("No latest backup found");
     process.exit(1);
   }
   const current = await req("GET", "/rdg/schedOverrides.json");
-  const safetyKey = "pre-restore-" + new Date().toISOString().replace(/[:.]/g, "-");
-  await req("PUT", "/rdg/scheduleBackups/" + encodeURIComponent(safetyKey) + ".json", {
-    name: "pre-restore safety",
-    key: safetyKey,
-    savedAt: new Date().toISOString(),
-    shows: (current.json && current.json.shows) || {},
-    deletes: (current.json && current.json.deletes) || null
-  });
+  const liveShows = bak.liveShows || bak.shows || {};
+  const liveDeletes = bak.liveDeletes != null ? bak.liveDeletes : bak.deletes || null;
   const next = Object.assign({}, current.json || {}, {
-    shows: snap.json.shows,
-    deletes: snap.json.deletes || null
+    shows: liveShows,
+    deletes: liveDeletes
   });
   const put = await req("PUT", "/rdg/schedOverrides.json", next);
   if (put.status !== 200) {
     console.error("Restore failed", put.status, put.body);
     process.exit(1);
   }
-  console.log("Restored " + (snap.json.name || key) + " (" + Object.keys(snap.json.shows).length + " shows)");
-  console.log("Safety copy of previous live data: " + safetyKey);
+  console.log(
+    "Restored schedule latest (" +
+      (bak.savedAt || "") +
+      ") — live workbook " +
+      Object.keys(liveShows).length +
+      " overlay shows; calendar snapshot had " +
+      (bak.count || Object.keys(bak.calendar || {}).length) +
+      " nights for 2025-2027."
+  );
 })().catch((e) => {
   console.error(e);
   process.exit(1);

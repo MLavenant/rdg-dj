@@ -14,5 +14,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
-      - name: Snapshot schedule workbook
+      - name: Snapshot 2025–2027 calendar (overwrites previous backup)
         run: node scripts/backup-schedule.cjs
