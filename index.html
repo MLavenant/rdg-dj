@@ -3,20 +3,33 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RDG DJ Dashboard v4.34</title>
+<title>RDG DJ Dashboard v4.35</title>
 <!-- Firebase Realtime Database SDK -->
-  <link rel="stylesheet" href="css/app.css?v=4.34">
+  <link rel="stylesheet" href="css/app.css?v=4.35">
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 </head>
 <body>
+<div id="sessionGate" class="session-gate hidden" role="dialog" aria-modal="true" aria-labelledby="sessionGateTitle">
+  <div class="session-gate-card">
+    <div class="session-gate-kicker">RDG</div>
+    <h2 id="sessionGateTitle">DJ Dashboard</h2>
+    <p id="sessionGateNote">Enter your name to open the DJ Dashboard.</p>
+    <label for="sessionGateName">Your name</label>
+    <input id="sessionGateName" type="text" maxlength="40" autocomplete="name" placeholder="First name" onkeydown="if(event.key==='Enter'){event.preventDefault();submitSessionGate();}">
+    <div class="session-gate-actions">
+      <button type="button" class="btn-cancel" id="sessionGateCancel" onclick="cancelSessionGate()" style="display:none">Cancel</button>
+      <button type="button" class="btn-save" onclick="submitSessionGate()">Continue</button>
+    </div>
+  </div>
+</div>
 <div class="shell">
 <aside class="sidebar">
   <div class="sb-logo">
-    <img src="assets/rdg-logo.png?v=4.34" alt="RDG" class="sb-logo-img">
+    <img src="assets/rdg-logo.png?v=4.35" alt="RDG" class="sb-logo-img">
     <div class="sb-logo-title">DJ Dashboard</div>
-    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v4.34 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
+    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v4.35 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
   </div>
   <div id="sidebar"></div>
   <div class="sb-tools-section">
@@ -429,19 +442,19 @@
     </div>
   </div>
 </div>
-<script src="js/vendor/xlsx.js?v=4.34"></script>
-<script src="data/sched-baked.js?v=4.34"></script>
-<script src="js/state-prelude.js?v=4.34"></script>
-<script src="js/logos.js?v=4.34"></script>
-<script src="js/state.js?v=4.34"></script>
-<script src="js/fiscal.js?v=4.34"></script>
-<script src="js/core.js?v=4.34"></script>
-<script src="js/budget.js?v=4.34"></script>
-<script src="js/firebase-sync.js?v=4.34"></script>
-<script src="js/calendar.js?v=4.34"></script>
-<script src="js/flash-forecast.js?v=4.34"></script>
-<script src="js/accounting.js?v=4.34"></script>
-<script src="js/modals.js?v=4.34"></script>
+<script src="js/vendor/xlsx.js?v=4.35"></script>
+<script src="data/sched-baked.js?v=4.35"></script>
+<script src="js/state-prelude.js?v=4.35"></script>
+<script src="js/logos.js?v=4.35"></script>
+<script src="js/state.js?v=4.35"></script>
+<script src="js/fiscal.js?v=4.35"></script>
+<script src="js/core.js?v=4.35"></script>
+<script src="js/budget.js?v=4.35"></script>
+<script src="js/firebase-sync.js?v=4.35"></script>
+<script src="js/calendar.js?v=4.35"></script>
+<script src="js/flash-forecast.js?v=4.35"></script>
+<script src="js/accounting.js?v=4.35"></script>
+<script src="js/modals.js?v=4.35"></script>
 </body>
 </html>
 

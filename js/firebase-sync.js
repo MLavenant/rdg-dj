@@ -139,6 +139,110 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     }
   };
 
+  function _swMetaKey(k){ return k==='_migrated' || k==='migratedAt'; }
+  function _ymdShift(dateStr, days){
+    var d=new Date(dateStr+'T12:00:00');
+    d.setDate(d.getDate()+days);
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function _stripSwRecordMeta(recs){
+    var out={};
+    Object.keys(recs||{}).forEach(function(k){
+      if(_swMetaKey(k)) return;
+      var r=recs[k];
+      if(!r || typeof r!=='object') return;
+      out[k]={ _uid:k, v:r.v, label:r.label, start:r.start, end:r.end, updatedAt:r.updatedAt||null };
+    });
+    return out;
+  }
+  function _expandSwRecordsToMap(recs){
+    var map={};
+    Object.keys(recs||{}).forEach(function(uid){
+      if(_swMetaKey(uid)) return;
+      var rec=recs[uid];
+      if(!rec || !rec.v || !rec.label || !rec.start || !rec.end) return;
+      var sd=new Date(rec.start+'T12:00:00'), ed=new Date(rec.end+'T12:00:00');
+      if(isNaN(sd.getTime())||isNaN(ed.getTime())||sd>ed) return;
+      var cur=new Date(sd);
+      while(cur<=ed){
+        var yr2=cur.getFullYear(), mo2=cur.getMonth();
+        var mm2=(mo2+1<10?'0':'')+(mo2+1);
+        var startDay=cur.getDate();
+        var monthEnd=new Date(yr2,mo2+1,0);
+        var endInMonth=ed<=monthEnd?ed:monthEnd;
+        var k=rec.v+'|'+yr2+'|'+mm2;
+        if(!map[k]) map[k]=[];
+        map[k].push({ label:rec.label, startDay:startDay, endDay:endInMonth.getDate(), _uid:uid });
+        cur=new Date(yr2, mo2+1, 1);
+      }
+    });
+    return map;
+  }
+  function _legacySpecialWeeksToRecords(sw){
+    var pieces=[];
+    Object.keys(sw||{}).forEach(function(k){
+      if(_swMetaKey(k)) return;
+      var parts=k.split('|');
+      if(parts.length<3) return;
+      var v=parts[0], yr=parts[1], mm=parts[2];
+      (sw[k]||[]).forEach(function(band){
+        if(!band || !band.label) return;
+        pieces.push({
+          v:v,
+          label:String(band.label).trim(),
+          start:yr+'-'+mm+'-'+String(band.startDay).padStart(2,'0'),
+          end:yr+'-'+mm+'-'+String(band.endDay).padStart(2,'0')
+        });
+      });
+    });
+    pieces.sort(function(a,b){
+      var ka=a.v+'|'+String(a.label).toUpperCase()+'|'+a.start;
+      var kb=b.v+'|'+String(b.label).toUpperCase()+'|'+b.start;
+      return ka<kb?-1:ka>kb?1:0;
+    });
+    var merged=[];
+    pieces.forEach(function(p){
+      var prev=merged[merged.length-1];
+      if(prev && prev.v===p.v && String(prev.label).toUpperCase()===String(p.label).toUpperCase()){
+        if(p.start<=_ymdShift(prev.end, 1)){
+          if(p.end>prev.end) prev.end=p.end;
+          return;
+        }
+      }
+      merged.push({ v:p.v, label:p.label, start:p.start, end:p.end });
+    });
+    var recs={};
+    merged.forEach(function(p,i){
+      var uid='sw_mig_'+i+'_'+String(p.v).replace(/\W+/g,'_')+'_'+String(p.start).replace(/-/g,'');
+      recs[uid]={ v:p.v, label:p.label, start:p.start, end:p.end };
+    });
+    return recs;
+  }
+  function _kickSpecialWeekMigrate(legacy){
+    if(window._swMigrateLock || !window._fbRef) return;
+    window._swMigrateLock=true;
+    window._fbRef.child('specialWeekRecords').transaction(function(cur){
+      if(cur && cur._migrated) return cur;
+      var recs=_legacySpecialWeeksToRecords(legacy);
+      if(cur){
+        Object.keys(cur).forEach(function(k){
+          if(_swMetaKey(k)) return;
+          recs[k]=cur[k];
+        });
+      }
+      recs._migrated=true;
+      recs.migratedAt=new Date().toISOString();
+      return recs;
+    }, function(){ window._swMigrateLock=false; });
+  }
+  window._expandSwRecordsToMap=_expandSwRecordsToMap;
+  window._stripSwRecordMeta=_stripSwRecordMeta;
+  try{
+    if(typeof _sessionIsActive==='function' && !_sessionIsActive() && window._fbDb){
+      window._fbDb.goOffline();
+    }
+  }catch(eOff){}
+
   /* Local write-guards protect YOUR in-flight rename against a bake rebuild /
      Firebase echo for a few seconds. They must NOT permanently override other
      users' live edits (that froze DJ name/fee on other sessions). */
@@ -943,10 +1047,22 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         if(fo[k]!=null) acctOthersData[k]=fo[k];
       });
     }
-    var swSig = data.specialWeeks ? JSON.stringify(data.specialWeeks) : '';
+    var swRecs = data.specialWeekRecords || null;
+    var swSig = swRecs
+      ? JSON.stringify(swRecs)
+      : (data.specialWeeks ? JSON.stringify(data.specialWeeks) : '');
     var swChanged = (swSig !== window._lastSpecialWeeksSig);
     if(swChanged) window._lastSpecialWeeksSig = swSig;
-    if(data.specialWeeks) specialWeeks = data.specialWeeks;
+    if(swRecs && swRecs._migrated){
+      window._swRecordsMigrated = true;
+      window._swRecords = _stripSwRecordMeta(swRecs);
+      specialWeeks = _expandSwRecordsToMap(window._swRecords);
+    } else {
+      window._swRecordsMigrated = false;
+      if(swRecs) window._swRecords = _stripSwRecordMeta(swRecs);
+      if(data.specialWeeks) specialWeeks = data.specialWeeks;
+      if(data.specialWeeks) _kickSpecialWeekMigrate(data.specialWeeks);
+    }
 
     /* Toast BS Actuals must re-apply after every sched rebuild — edits/baked
        can otherwise wipe a later toastActuals overlay until that node changes. */
@@ -1018,6 +1134,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
   [
     'schedOverrides',
     'specialWeeks',
+    'specialWeekRecords',
     'acctData',
     'acctOthersData',
     'venueRoiRules',

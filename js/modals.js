@@ -954,6 +954,64 @@ function _persistShowEv(rec){
   }
 }
 
+function _swUseRecords(){ return !!window._swRecordsMigrated; }
+function _swMetaKey(k){ return k==='_migrated' || k==='migratedAt'; }
+function _swNewUid(){ return 'sw_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8); }
+function _rebuildSpecialWeeksFromRecords(){
+  if(typeof window._expandSwRecordsToMap!=='function') return;
+  specialWeeks=window._expandSwRecordsToMap(window._swRecords||{});
+}
+function persistSwRecord(rec){
+  if(!rec || !rec.v || !rec.label || !rec.start || !rec.end) return null;
+  rec._uid=rec._uid || _swNewUid();
+  rec.updatedAt=new Date().toISOString();
+  window._swRecords=window._swRecords||{};
+  window._swRecords[rec._uid]={ _uid:rec._uid, v:rec.v, label:rec.label, start:rec.start, end:rec.end, updatedAt:rec.updatedAt };
+  if(_swUseRecords()) _rebuildSpecialWeeksFromRecords();
+  if(!window._fbRef) return rec._uid;
+  try{ window._fbRef.child('specialWeekRecords/_migrated').set(true); }catch(e0){}
+  try{
+    window._fbRef.child('specialWeekRecords/'+rec._uid).set({
+      v:rec.v, label:rec.label, start:rec.start, end:rec.end, updatedAt:rec.updatedAt
+    });
+  }catch(e1){}
+  return rec._uid;
+}
+function removeSwRecord(uid){
+  if(!uid) return;
+  if(window._swRecords) delete window._swRecords[uid];
+  if(_swUseRecords()) _rebuildSpecialWeeksFromRecords();
+  if(window._fbRef){
+    try{ window._fbRef.child('specialWeekRecords/'+uid).remove(); }catch(e){}
+  }
+}
+function _swFindUid(venue, label, start, end){
+  var norm=_swNorm(label), hit=null, hitSpan=1e9;
+  Object.keys(window._swRecords||{}).forEach(function(uid){
+    if(_swMetaKey(uid)) return;
+    var r=window._swRecords[uid];
+    if(!r || r.v!==venue || _swNorm(r.label)!==norm) return;
+    if(start && end && (r.end<start || r.start>end)) return;
+    var span=String(r.end||'').localeCompare(String(r.start||''));
+    if(start && r.start<=start && r.end>=start){ hit=uid; hitSpan=-1; return; }
+    if(hitSpan>=0){ hit=uid; }
+  });
+  return hit;
+}
+function _swUidsForLabel(venue, label){
+  var norm=_swNorm(label), out=[];
+  Object.keys(window._swRecords||{}).forEach(function(uid){
+    if(_swMetaKey(uid)) return;
+    var r=window._swRecords[uid];
+    if(r && r.v===venue && _swNorm(r.label)===norm) out.push(uid);
+  });
+  return out;
+}
+function _saveSpecialWeeksTree(){
+  if(_swUseRecords()) return;
+  if(window._fbSave) window._fbSave('specialWeeks', specialWeeks);
+}
+
 function _dedupeSpecialWeeks(){
   var changed=false;
   Object.keys(specialWeeks).forEach(function(k){
@@ -966,7 +1024,7 @@ function _dedupeSpecialWeeks(){
     if(!kept.length){ delete specialWeeks[k]; changed=true; }
     else specialWeeks[k]=kept;
   });
-  if(changed && window._fbSave) window._fbSave('specialWeeks', specialWeeks);
+  if(changed) _saveSpecialWeeksTree();
   return changed;
 }
 
@@ -1077,7 +1135,11 @@ function deleteSpecialPeriodByLabel(label){
     specialWeeks[k]=(specialWeeks[k]||[]).filter(function(sw){ return _swNorm(sw.label)!==norm; });
     if(!specialWeeks[k].length) delete specialWeeks[k];
   });
-  if(window._fbSave) window._fbSave('specialWeeks', specialWeeks);
+  if(_swUseRecords()){
+    _swUidsForLabel(curV, label).forEach(removeSwRecord);
+  } else {
+    _saveSpecialWeeksTree();
+  }
   dates.forEach(function(r){ r.ev=''; _persistShowEv(r); });
   _swEditKey=null; _swEditLabel=null; _swEditSrc=null; _swEditCluster=null;
   _setSwCoverageNote('');
@@ -1139,13 +1201,17 @@ function findSpecialWeekCoverage(label, aroundDate){
       var start=parts[1]+'-'+parts[2]+'-'+String(sw.startDay).padStart(2,'0');
       var end=parts[1]+'-'+parts[2]+'-'+String(sw.endDay).padStart(2,'0');
       if(aroundDate && aroundDate>=start && aroundDate<=end){
-        swHit={ key:k, start:start, end:end, startDay:sw.startDay, endDay:sw.endDay };
+        swHit={ key:k, start:start, end:end, startDay:sw.startDay, endDay:sw.endDay, uid:sw._uid||null };
       }
     });
   });
   if(swHit){
-    var inBand=allDates.filter(function(d){ return d>=swHit.start && d<=swHit.end; });
-    return { label:label, start:swHit.start, end:swHit.end, dates:inBand, src:"sw", key:swHit.key, cluster:true };
+    var uid=swHit.uid||_swFindUid(curV, label, swHit.start, swHit.end);
+    var rec=uid && window._swRecords ? window._swRecords[uid] : null;
+    var start=rec && rec.start ? rec.start : swHit.start;
+    var end=rec && rec.end ? rec.end : swHit.end;
+    var inBand=allDates.filter(function(d){ return d>=start && d<=end; });
+    return { label:label, start:start, end:end, dates:inBand, src:"sw", key:swHit.key, cluster:true, uid:uid||null };
   }
 
   if(!allDates.length) return null;
@@ -1158,7 +1224,8 @@ function findSpecialWeekCoverage(label, aroundDate){
     dates:cluster,
     src:'sched',
     key:null,
-    cluster:true
+    cluster:true,
+    uid:_swFindUid(curV, label, cluster[0], cluster[cluster.length-1])
   };
 }
 function _fmtSwCoverage(cov){
@@ -1191,7 +1258,7 @@ function openEditSpecialWeek(label, ds){
     _swEditKey   = cov.key || null;
     _swEditLabel = cov.label;
     _swEditSrc   = cov.src;
-    _swEditCluster = { start:cov.start, end:cov.end, dates:(cov.dates||[]).slice() };
+    _swEditCluster = { start:cov.start, end:cov.end, dates:(cov.dates||[]).slice(), uid:cov.uid||null };
     document.getElementById('swModalTitle').textContent = 'Edit Special Period';
     document.getElementById('swFormLabel').textContent  = 'Editing "'+cov.label+'"';
     document.getElementById('swSaveBtn').textContent    = 'Save Changes';
@@ -1234,10 +1301,14 @@ function findSpecialWeekRange(label){
   });
   return found ? {start:min, end:max} : null;
 }
-function replaceSpecialWeekRange(label, startStr, endStr){
+function replaceSpecialWeekRange(label, startStr, endStr, uid){
   if(!label||!startStr||!endStr) return false;
   var sd=new Date(startStr+'T12:00:00'), ed=new Date(endStr+'T12:00:00');
   if(isNaN(sd.getTime())||isNaN(ed.getTime())||sd>ed) return false;
+  if(_swUseRecords()){
+    persistSwRecord({ _uid:uid||_swNewUid(), v:curV, label:label, start:startStr, end:endStr });
+    return true;
+  }
   Object.keys(specialWeeks).forEach(function(k){
     if(!k.startsWith(curV+'|')) return;
     specialWeeks[k]=(specialWeeks[k]||[]).filter(function(s){ return s.label!==label; });
@@ -1258,17 +1329,13 @@ function replaceSpecialWeekRange(label, startStr, endStr){
     cur=new Date(yr2,mo2+1,1);
   }
   _dedupeSpecialWeeks();
-  if(window._fbSave) window._fbSave('specialWeeks', specialWeeks);
+  _saveSpecialWeeksTree();
   return true;
 }
 function swNudgePeriod(label, edge, delta){
-  var range=findSpecialWeekRange(label);
-  if(!range){
-    var cov=findSpecialWeekCoverage(label, null);
-    if(!cov) return;
-    range={start:cov.start, end:cov.end};
-  }
-  var start=range.start, end=range.end;
+  var cov=findSpecialWeekCoverage(label, null);
+  if(!cov) return;
+  var start=cov.start, end=cov.end;
   if(edge==='start') start=_shiftYmd(start, delta);
   else end=_shiftYmd(end, delta);
   if(start>end){
@@ -1277,7 +1344,7 @@ function swNudgePeriod(label, edge, delta){
   }
   var before=_captureSpecialPeriodState();
   pushUndo('Move special week: '+label,function(){ _restoreSpecialPeriodState(before); });
-  replaceSpecialWeekRange(label, start, end);
+  replaceSpecialWeekRange(label, start, end, cov.uid);
   go();
 }
 var _swDrag = null;
@@ -1314,18 +1381,15 @@ function swDropOnDate(e, toDate){
   document.querySelectorAll('.sc-row-drop').forEach(function(tr){ tr.classList.remove('sc-row-drop'); });
   if(!drag || !toDate) return;
   if(drag.type==='period'){
-    var range=findSpecialWeekRange(drag.label);
-    if(!range){
-      var cov=findSpecialWeekCoverage(drag.label, drag.from||toDate);
-      if(!cov) return;
-      range={start:cov.start, end:cov.end};
-    }
+    var cov=findSpecialWeekCoverage(drag.label, drag.from||toDate);
+    var range=cov ? {start:cov.start, end:cov.end} : findSpecialWeekRange(drag.label);
+    if(!range) return;
     var from=drag.from||range.start;
     var deltaDays=Math.round((new Date(toDate+'T12:00:00')-new Date(from+'T12:00:00'))/86400000);
     if(!deltaDays) return;
     var beforePeriod=_captureSpecialPeriodState();
     pushUndo('Move special week: '+drag.label,function(){ _restoreSpecialPeriodState(beforePeriod); });
-    replaceSpecialWeekRange(drag.label, _shiftYmd(range.start, deltaDays), _shiftYmd(range.end, deltaDays));
+    replaceSpecialWeekRange(drag.label, _shiftYmd(range.start, deltaDays), _shiftYmd(range.end, deltaDays), cov && cov.uid);
     go();
     return;
   }
@@ -1379,12 +1443,29 @@ function _captureSpecialPeriodState(){
   SCHED.forEach(function(r){
     if(r.v===curV && r.d) evs[(r.venue||r.v)+'|'+r.d]=r.ev||'';
   });
-  return {venue:curV,specialWeeks:_clone(specialWeeks),evs:evs};
+  var recs={};
+  Object.keys(window._swRecords||{}).forEach(function(uid){
+    if(_swMetaKey(uid)) return;
+    var r=window._swRecords[uid];
+    if(r && r.v===curV) recs[uid]=_clone(r);
+  });
+  return {venue:curV,specialWeeks:_clone(specialWeeks),recs:recs,evs:evs};
 }
 function _restoreSpecialPeriodState(state){
   if(!state) return;
-  specialWeeks=_clone(state.specialWeeks)||{};
-  if(window._fbSave) window._fbSave('specialWeeks',specialWeeks);
+  if(_swUseRecords()){
+    Object.keys(window._swRecords||{}).forEach(function(uid){
+      if(_swMetaKey(uid)) return;
+      var r=window._swRecords[uid];
+      if(r && r.v===state.venue && !(state.recs && state.recs[uid])) removeSwRecord(uid);
+    });
+    Object.keys(state.recs||{}).forEach(function(uid){
+      persistSwRecord(state.recs[uid]);
+    });
+  } else {
+    specialWeeks=_clone(state.specialWeeks)||{};
+    _saveSpecialWeeksTree();
+  }
   SCHED.forEach(function(r){
     if(r.v!==state.venue || !r.d) return;
     var key=(r.venue||r.v)+'|'+r.d;
@@ -1402,18 +1483,29 @@ function deleteSelectedSpecialWeek(){
   if(!confirm('Delete "'+label+'" for '+start+' through '+end+'?\n\nOnly this selected week will be removed.')) return;
   var before=_captureSpecialPeriodState();
   pushUndo('Delete special week: '+label,function(){ _restoreSpecialPeriodState(before); });
-  Object.keys(specialWeeks).forEach(function(k){
-    if(!k.startsWith(curV+'|')) return;
-    var parts=k.split('|');
-    specialWeeks[k]=(specialWeeks[k]||[]).filter(function(sw){
-      if(_swNorm(sw.label)!==_swNorm(label)) return true;
-      var a=parts[1]+'-'+parts[2]+'-'+String(sw.startDay).padStart(2,'0');
-      var b=parts[1]+'-'+parts[2]+'-'+String(sw.endDay).padStart(2,'0');
-      return !(a<=end && b>=start);
+  if(_swUseRecords()){
+    var uid=_swEditCluster.uid || _swFindUid(curV, label, start, end);
+    if(uid) removeSwRecord(uid);
+    else {
+      _swUidsForLabel(curV, label).forEach(function(id){
+        var r=window._swRecords[id];
+        if(r && !(r.end<start || r.start>end)) removeSwRecord(id);
+      });
+    }
+  } else {
+    Object.keys(specialWeeks).forEach(function(k){
+      if(!k.startsWith(curV+'|')) return;
+      var parts=k.split('|');
+      specialWeeks[k]=(specialWeeks[k]||[]).filter(function(sw){
+        if(_swNorm(sw.label)!==_swNorm(label)) return true;
+        var a=parts[1]+'-'+parts[2]+'-'+String(sw.startDay).padStart(2,'0');
+        var b=parts[1]+'-'+parts[2]+'-'+String(sw.endDay).padStart(2,'0');
+        return !(a<=end && b>=start);
+      });
+      if(!specialWeeks[k].length) delete specialWeeks[k];
     });
-    if(!specialWeeks[k].length) delete specialWeeks[k];
-  });
-  if(window._fbSave) window._fbSave('specialWeeks',specialWeeks);
+    _saveSpecialWeeksTree();
+  }
   SCHED.forEach(function(r){
     if(r.v!==curV || _swNorm(r.ev)!==_swNorm(label) || !r.d || r.d<start || r.d>end) return;
     r.ev='';
@@ -1455,6 +1547,11 @@ function _upsertSpecialWeekRange(label, startStr, endStr, replaceCluster, remove
   if(isNaN(sd.getTime())||isNaN(ed.getTime())||sd>ed) return false;
   var oldStart=replaceCluster && replaceCluster.start ? replaceCluster.start : startStr;
   var oldEnd=replaceCluster && replaceCluster.end ? replaceCluster.end : endStr;
+  if(_swUseRecords()){
+    var uid=(replaceCluster && replaceCluster.uid) || _swFindUid(curV, (removeLabels&&removeLabels[0])||label, oldStart, oldEnd) || _swNewUid();
+    persistSwRecord({ _uid:uid, v:curV, label:label, start:startStr, end:endStr });
+    return true;
+  }
   var drop={};
   (removeLabels||[label]).forEach(function(lb){ if(lb) drop[_swNorm(lb)]=1; });
   Object.keys(specialWeeks).forEach(function(k){
@@ -1483,7 +1580,7 @@ function _upsertSpecialWeekRange(label, startStr, endStr, replaceCluster, remove
     cur=new Date(yr2,mo2+1,1);
   }
   _dedupeSpecialWeeks();
-  if(window._fbSave) window._fbSave('specialWeeks', specialWeeks);
+  _saveSpecialWeeksTree();
   return true;
 }
 function saveSpecialWeek(){
@@ -1505,7 +1602,7 @@ function saveSpecialWeek(){
     _syncSchedEvForPeriod(oldLabel, label, startStr, endStr, cluster || {start:startStr,end:endStr});
   } else {
     /* Brand-new period — also stamp SCHED.ev so bake tags cannot resurrect after delete */
-    replaceSpecialWeekRange(label, startStr, endStr);
+    replaceSpecialWeekRange(label, startStr, endStr, _swNewUid());
     _syncSchedEvForPeriod(null, label, startStr, endStr, {start:startStr,end:endStr});
   }
 

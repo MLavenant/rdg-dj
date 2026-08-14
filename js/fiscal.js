@@ -467,12 +467,102 @@ function normalizeKnownAccents(){
 var _presenceRows={};
 var _presenceRef=null;
 var _presenceSessionId=null;
+var SESSION_IDLE_MS=20*60*1000;
 function _presenceName(){
   var name='';
   try{ name=localStorage.getItem('rdg_presence_name')||''; }catch(e){}
   name=String(name||'').trim();
   if(!name || /^guest(\s|$)/i.test(name)) return '';
   return name;
+}
+function _sessionIsActive(){
+  try{
+    if(sessionStorage.getItem('rdg_session_active')!=='1') return false;
+    var t=+sessionStorage.getItem('rdg_session_activity')||0;
+    if(!t || Date.now()-t>SESSION_IDLE_MS) return false;
+    if(!_presenceName()) return false;
+    return true;
+  }catch(e){ return false; }
+}
+function _touchSessionActivity(){
+  if(!_sessionIsActive()) return;
+  try{ sessionStorage.setItem('rdg_session_activity', String(Date.now())); }catch(e){}
+}
+function _showSessionGate(msg){
+  var gate=document.getElementById('sessionGate');
+  var note=document.getElementById('sessionGateNote');
+  var inp=document.getElementById('sessionGateName');
+  var cancel=document.getElementById('sessionGateCancel');
+  if(note) note.textContent=msg||'Enter your name to continue.';
+  if(inp) inp.value=_presenceName();
+  if(cancel) cancel.style.display=_sessionIsActive() ? '' : 'none';
+  if(gate){
+    gate.classList.remove('hidden');
+    document.body.classList.add('session-locked');
+    setTimeout(function(){ try{ inp && inp.focus(); }catch(e){} }, 50);
+  }
+}
+function _hideSessionGate(){
+  var gate=document.getElementById('sessionGate');
+  if(gate) gate.classList.add('hidden');
+  document.body.classList.remove('session-locked');
+}
+function cancelSessionGate(){
+  if(_sessionIsActive()) _hideSessionGate();
+}
+function _sessionLogout(reason){
+  try{
+    sessionStorage.removeItem('rdg_session_active');
+    sessionStorage.removeItem('rdg_session_activity');
+  }catch(e){}
+  try{ if(_presenceRef) _presenceRef.remove(); }catch(e2){}
+  try{ if(window._fbDb) window._fbDb.goOffline(); }catch(e3){}
+  refreshPresenceChip();
+  _showSessionGate(reason==='idle'
+    ? 'Signed out after 20 minutes idle. Enter your name to continue.'
+    : 'Enter your name to continue.');
+}
+function submitSessionGate(){
+  var inp=document.getElementById('sessionGateName');
+  var name=inp ? String(inp.value||'').trim() : '';
+  if(!_setPresenceName(name)){
+    var note=document.getElementById('sessionGateNote');
+    if(note) note.textContent='Please enter your real name (not Guest).';
+    if(inp) inp.focus();
+    return;
+  }
+  try{
+    sessionStorage.setItem('rdg_session_active','1');
+    sessionStorage.setItem('rdg_session_activity', String(Date.now()));
+  }catch(e){}
+  _hideSessionGate();
+  try{ if(window._fbDb) window._fbDb.goOnline(); }catch(eOn){}
+  _writePresence();
+  refreshPresenceChip();
+}
+function initSessionWatch(){
+  if(window._sessionWatchReady) return;
+  window._sessionWatchReady=true;
+  ['pointerdown','keydown','click','scroll','touchstart'].forEach(function(ev){
+    document.addEventListener(ev, function(){
+      var marked=false;
+      try{ marked=sessionStorage.getItem('rdg_session_active')==='1'; }catch(e){}
+      if(!marked) return;
+      if(!_sessionIsActive()) _sessionLogout('idle');
+      else _touchSessionActivity();
+    }, {passive:true});
+  });
+  setInterval(function(){
+    var marked=false;
+    try{ marked=sessionStorage.getItem('rdg_session_active')==='1'; }catch(e){}
+    if(marked && !_sessionIsActive()) _sessionLogout('idle');
+  }, 15000);
+  if(!_sessionIsActive()){
+    _showSessionGate('Enter your name to open the DJ Dashboard.');
+  } else {
+    _hideSessionGate();
+    _touchSessionActivity();
+  }
 }
 function _presenceDeviceLabel(){
   var ua=navigator.userAgent||'';
@@ -498,18 +588,11 @@ function _setPresenceName(name){
   return true;
 }
 function _askPresenceName(force){
-  var current=_presenceName();
-  if(current && !force) return current;
-  var next=prompt('Enter your name so others can see who is connected on this computer:', current||'');
-  if(next===null) return current;
-  if(!_setPresenceName(next)){
-    alert('Please enter your real name (not Guest).');
-    return _askPresenceName(true);
-  }
+  _showSessionGate(force ? 'Update the name others see on this computer.' : 'Enter your name to continue.');
   return _presenceName();
 }
 function editPresenceName(){
-  _askPresenceName(true);
+  _showSessionGate('Update the name others see on this computer.');
 }
 function _presencePayload(){
   return {
@@ -522,6 +605,7 @@ function _presencePayload(){
 }
 function _writePresence(){
   if(!_presenceRef) return;
+  if(!_sessionIsActive() || !_presenceName()) return;
   _presenceRef.update(_presencePayload());
 }
 function _activePresenceRows(){
@@ -539,21 +623,22 @@ function refreshPresenceChip(){
   var me=_presenceName();
   if(chip){
     chip.classList.toggle('online',!!rows.length);
-    chip.title=me ? ('Signed in as '+me+' \u00b7 click to change name') : 'Click to enter your name';
+    chip.title=me ? ('Signed in as '+me+' · click to change name') : 'Enter your name to sign in';
   }
-  if(txt) txt.textContent=me ? (rows.length+' online \u00b7 '+me) : (rows.length+' online \u00b7 set your name');
+  if(txt) txt.textContent=me && _sessionIsActive() ? (rows.length+' online · '+me) : (rows.length+' online · sign in');
 }
 function initPresence(){
   if(!window._fbDb) return;
   try{
+    initSessionWatch();
     _presenceSessionId=sessionStorage.getItem('rdg_presence_session')||'';
     if(!_presenceSessionId){
       _presenceSessionId='s_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,9);
       sessionStorage.setItem('rdg_presence_session',_presenceSessionId);
     }
-    _askPresenceName(false);
     window._fbDb.ref('.info/connected').on('value',function(snap){
       if(snap.val()!==true) return;
+      if(!_sessionIsActive() || !_presenceName()) return;
       _presenceRef=window._fbDb.ref('rdgPresence/'+_presenceSessionId);
       _presenceRef.onDisconnect().remove();
       _presenceRef.set(_presencePayload());
@@ -647,3 +732,4 @@ function initLayoutMode(){
 }
 
 /*     BOOT                                                         */
+try{ initSessionWatch(); }catch(eSess){}

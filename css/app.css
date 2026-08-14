@@ -199,6 +199,18 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 /* Modal */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:100}
 .modal-bg.hidden{display:none}
+.session-gate{position:fixed;inset:0;background:rgba(12,16,24,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:400}
+.session-gate.hidden{display:none}
+.session-gate-card{background:var(--card);border-radius:16px;width:360px;max-width:92vw;padding:22px 22px 18px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;gap:8px}
+.session-gate-kicker{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ink3)}
+.session-gate-card h2{font-size:18px;font-weight:800;margin:0}
+.session-gate-card p{font-size:12px;color:var(--ink2);line-height:1.45;margin:0 0 6px}
+.session-gate-card label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)}
+.session-gate-card input{font-size:16px;padding:8px 10px;border:0.5px solid var(--rule);border-radius:var(--r);font-family:inherit;outline:none;background:var(--card);color:var(--ink)}
+.session-gate-card input:focus{border-color:var(--blue)}
+.session-gate-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+body.session-locked{overflow:hidden}
+body.session-locked .shell{pointer-events:none;user-select:none}
 .modal{background:var(--card);border-radius:var(--r-lg);width:440px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
 .modal-hd{padding:12px 16px;border-bottom:0.5px solid var(--rule);display:flex;align-items:center;justify-content:space-between}
 .modal-hd h3{font-size:14px;font-weight:800}
