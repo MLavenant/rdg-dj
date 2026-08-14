@@ -525,6 +525,77 @@ function _fbEraseLegacyCopies(rec){
   try{ window._fbRef.child('schedOverrides/edits/'+uidKey).remove(); }catch(e3){}
   try{ window._fbRef.child('schedOverrides/edits/'+dateKey).remove(); }catch(e4){}
 }
+function _fbEraseNightCopies(venue, dateStr, keepUid){
+  if(!window._fbRef||!venue||!dateStr) return;
+  function scrub(path){
+    window._fbRef.child(path).once('value', function(snap){
+      var map=snap.val()||{};
+      Object.keys(map).forEach(function(k){
+        var row=map[k];
+        if(!row||typeof row!=='object') return;
+        if(keepUid && (k===keepUid || row._uid===keepUid)) return;
+        if(row.d===dateStr && (row.v||row.venue||'')===venue){
+          try{ window._fbRef.child(path+'/'+k).remove(); }catch(e){}
+        }
+      });
+    });
+  }
+  scrub('schedOverrides/addsByUid');
+  scrub('schedOverrides/editsByUid');
+  window._fbRef.child('schedOverrides/edits').once('value', function(snap){
+    var map=snap.val()||{};
+    Object.keys(map).forEach(function(k){
+      var row=map[k];
+      var parts=String(k).split('|');
+      var hit=(parts[0]===venue && parts[1]===dateStr) ||
+        (row && row.d===dateStr && (row.v||row.venue||'')===venue);
+      if(hit && !(keepUid && (parts[2]===keepUid || (row&&row._uid===keepUid)))){
+        try{ window._fbRef.child('schedOverrides/edits/'+k).remove(); }catch(e){}
+      }
+    });
+  });
+  window._fbRef.child('schedOverrides/adds').transaction(function(vals){
+    if(!vals) return vals;
+    var arr=Array.isArray(vals)?vals:Object.values(vals);
+    var next=arr.filter(function(r){
+      if(!r||!r.d) return false;
+      if(r.d===dateStr && (r.v||r.venue||'')===venue) return false;
+      return true;
+    });
+    return next.length?next:null;
+  });
+}
+function _fbRemoveSchedRecord(rec){
+  if(!rec||!window._fbRef) return;
+  ensureShowUid(rec);
+  var uid=rec._uid;
+  var venue=rec.v||rec.venue||'';
+  var dateStr=rec.d||'';
+  var uidKey=_schedUidKey(rec);
+  if(typeof window._guardClearDeleted==='function') window._guardClearDeleted(rec);
+  function _tombstone(keys){
+    window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
+      var arr=vals?(Array.isArray(vals)?vals:Object.values(vals)):[];
+      keys.forEach(function(k){ if(k && arr.indexOf(k)<0) arr.push(k); });
+      return arr.filter(function(k){ return k && String(k).split('|').length >= 3; });
+    });
+  }
+  _tombstone([uidKey]);
+  window._fbRef.child('schedOverrides/shows').transaction(function(map){
+    if(!map || typeof map!=='object') return map;
+    Object.keys(map).forEach(function(id){
+      var row=map[id];
+      if(id===uid){ delete map[id]; return; }
+      if(row && row.d===dateStr && (row.v||row.venue||'')===venue) delete map[id];
+    });
+    return Object.keys(map).length?map:null;
+  }, function(){
+    var extra=[uidKey];
+    _tombstone(extra);
+  });
+  _fbEraseLegacyCopies(rec);
+  _fbEraseNightCopies(venue, dateStr, null);
+}
 function _fbDropOtherShowsOnNight(rec){
   if(!rec||!window._fbRef||!rec.d) return;
   var uid=ensureShowUid(rec);
@@ -594,6 +665,7 @@ function persistSchedShow(rec){
     return map;
   }, _fbOnSchedWrite);
   _fbEraseLegacyCopies(rec);
+  _fbEraseNightCopies(payload.v||payload.venue||'', rec.d, uid);
 }
 /* DJ Status only — write djStatus on this show's uid path ONLY.
    If no edit node exists yet, seed identity from the local row so a later
@@ -614,6 +686,8 @@ function persistShowDjStatusOnly(rec){
     if(cur && typeof cur==='object'){
       var next=Object.assign({}, cur);
       next.djStatus=nextStatus;
+      next.updatedAt=new Date().toISOString();
+      next._writeKind='statusMerge';
       return next;
     }
     return _fbSanitize({
@@ -665,26 +739,6 @@ function _fbClearEditKeys(rec){
   ensureShowUid(rec);
   _fbEraseLegacyCopies(rec);
   try{ window._fbRef.child('schedOverrides/shows/'+rec._uid).remove(); }catch(e){}
-}
-function _fbRemoveSchedRecord(rec){
-  if(!rec||!window._fbRef) return;
-  ensureShowUid(rec);
-  var uidKey=_schedUidKey(rec);
-  var uid=rec._uid;
-  if(typeof window._guardClearDeleted==='function') window._guardClearDeleted(rec);
-  try{ window._fbRef.child('schedOverrides/shows/'+uid).remove(); }catch(eS){}
-  _fbEraseLegacyCopies(rec);
-  window._fbRef.child('schedOverrides/adds').transaction(function(vals){
-    if(!vals) return vals;
-    var arr=Array.isArray(vals)?vals:Object.values(vals);
-    var next=arr.filter(function(r){ return !(r && (r._uid===uid || _schedKeysMatch(r,rec))); });
-    return next.length?next:null;
-  });
-  window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
-    var arr=vals?(Array.isArray(vals)?vals:Object.values(vals)):[];
-    if(arr.indexOf(uidKey)<0) arr.push(uidKey);
-    return arr.filter(function(k){ return k && String(k).split('|').length >= 3; });
-  });
 }
 function _fbRestoreSchedRecord(rec){
   if(!rec||!window._fbRef) return;

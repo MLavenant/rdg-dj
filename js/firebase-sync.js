@@ -482,6 +482,14 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       workbookUids.forEach(function(uid){
         var edit=workbook[uid];
         if(!edit) return;
+        var dead=false;
+        for(var di0=0;di0<delsW.length;di0++){
+          var p0=String(delsW[di0]||'').split('|');
+          if(delsW[di0]===((edit.v||edit.venue||'')+'|'+(edit.d||'')+'|'+uid) || (p0.length>=3 && p0[2]===uid)){
+            dead=true; break;
+          }
+        }
+        if(dead) return;
         var idx=s.findIndex(function(r){ return r && String(r._uid||'')===String(uid); });
         if(idx>=0){
           _mergeSchedEdit(s[idx], edit);
