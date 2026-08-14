@@ -469,6 +469,52 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       _maybeRepushGuards(rep0);
       return;
     }
+    /* Single workbook: schedOverrides/shows/{uid} overwrites bake for that show only. */
+    var workbook = ov.shows && typeof ov.shows==='object' ? ov.shows : {};
+    var workbookUids = Object.keys(workbook).filter(function(uid){ return workbook[uid]; });
+    if(workbookUids.length){
+      var delsWRaw = ov.deletes ? (Array.isArray(ov.deletes)?ov.deletes:Object.values(ov.deletes)) : [];
+      var delsW = delsWRaw.filter(function(dk){ return dk && String(dk).split('|').length>=3; });
+      window._lastSchedDeletes = delsW;
+      workbookUids.forEach(function(uid){
+        var edit=workbook[uid];
+        if(!edit) return;
+        var idx=s.findIndex(function(r){ return r && String(r._uid||'')===String(uid); });
+        if(idx>=0){
+          _mergeSchedEdit(s[idx], edit);
+          ensureShowUid(s[idx]);
+          return;
+        }
+        var row=Object.assign({}, edit, {_uid:uid});
+        ensureShowUid(row);
+        var night=_nightKey(row);
+        var occupied=night ? s.filter(function(x){ return x && _nightKey(x)===night; }) : [];
+        if(occupied.length){
+          _mergeSchedEdit(occupied[0], row);
+        } else {
+          row._added=1;
+          s.push(row);
+        }
+      });
+      s = s.filter(function(r){
+        if(!r) return false;
+        if(window._schedDeletedUids && r._uid && window._schedDeletedUids[r._uid]) return false;
+        var uidKey=_schedUidKey(r);
+        for(var di=0;di<delsW.length;di++){
+          var p=String(delsW[di]||'').split('|');
+          if(uidKey===delsW[di] || (p.length>=3 && p[2]===r._uid)) return false;
+        }
+        return true;
+      });
+      s.forEach(function(r){ if(r&&r.dj) r.dj=fixKnownAccents(r.dj); ensureShowUid(r); });
+      var repW=_reapplySchedGuards(s);
+      s=_dedupeSchedOnePerNight(s, null);
+      SCHED=s;
+      IDX=buildIdx(SCHED);
+      if(typeof recalcAllSchedTargets==='function') recalcAllSchedTargets();
+      _maybeRepushGuards(repW);
+      return;
+    }
     var edits = ov.edits || {};
     var editKeys = Object.keys(edits);
     var uidAppliedDates = {};

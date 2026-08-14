@@ -505,6 +505,41 @@ function _alignRecToBakedShow(rec){
   rec._added=0;
   return true;
 }
+function _fbOnSchedWrite(err){
+  if(!err) return;
+  console.error('Firebase schedule write failed', err);
+  try{
+    var el=document.getElementById('fbSyncDot');
+    if(el){ el.style.background='#ef4444'; el.title='Schedule write denied — check Firebase rules'; }
+  }catch(eDot){}
+}
+/* ONE workbook: rdg/schedOverrides/shows/{uid} is the only live record.
+   Save overwrites that node and erases leftover copies for the same show. */
+function _fbEraseLegacyCopies(rec){
+  if(!rec||!window._fbRef) return;
+  var uid=ensureShowUid(rec);
+  var uidKey=_schedUidKey(rec).replace(/\//g,'_');
+  var dateKey=_schedDateKey(rec).replace(/\//g,'_');
+  try{ window._fbRef.child('schedOverrides/addsByUid/'+uid).remove(); }catch(e1){}
+  try{ window._fbRef.child('schedOverrides/editsByUid/'+uid).remove(); }catch(e2){}
+  try{ window._fbRef.child('schedOverrides/edits/'+uidKey).remove(); }catch(e3){}
+  try{ window._fbRef.child('schedOverrides/edits/'+dateKey).remove(); }catch(e4){}
+}
+function _fbDropOtherShowsOnNight(rec){
+  if(!rec||!window._fbRef||!rec.d) return;
+  var uid=ensureShowUid(rec);
+  var venue=rec.v||rec.venue||'';
+  window._fbRef.child('schedOverrides/shows').once('value', function(snap){
+    var map=snap.val()||{};
+    Object.keys(map).forEach(function(other){
+      if(other===uid) return;
+      var row=map[other];
+      if(!row||row.d!==rec.d) return;
+      if((row.v||row.venue||'')!==venue) return;
+      try{ window._fbRef.child('schedOverrides/shows/'+other).remove(); }catch(e){}
+    });
+  });
+}
 function persistSchedShow(rec){
   applyShowTargets(rec);
   if(rec && rec.ev==null) rec.ev='';
@@ -512,26 +547,24 @@ function persistSchedShow(rec){
   if(!rec._writeKind) rec._writeKind='modal';
   var wasAdded=!!rec._added;
   var isBaked=_alignRecToBakedShow(rec);
-  /* If this started as an add on a cleared/deleted bake night, force add path. */
   if(wasAdded && !isBaked){ rec._added=1; }
   if(typeof window._guardSchedWrite==='function') window._guardSchedWrite(rec);
   if(!window._fbRef) return;
   var uid=ensureShowUid(rec);
   var fbKey=_schedUidKey(rec);
+  if(!isBaked) rec._added=1;
+  else rec._added=0;
   var payload=_fbSanitize(rec);
-  var updatedAt=new Date().toISOString();
-  payload.updatedAt=updatedAt;
+  payload.updatedAt=new Date().toISOString();
   payload._writeKind='modal';
   payload._uid=uid;
-  function _onSchedWrite(err){
-    if(!err) return;
-    console.error('Firebase schedule write failed', err);
-    try{
-      var el=document.getElementById('fbSyncDot');
-      if(el){ el.style.background='#ef4444'; el.title='Schedule write denied — check Firebase rules'; }
-    }catch(eDot){}
-  }
-  /* Isolation rule: only clear THIS uid's delete tombstone — never other nights. */
+  payload.d=rec.d;
+  payload.v=rec.v||rec.venue||'';
+  payload.venue=rec.venue||rec.v||'';
+  payload.dj=rec.dj||'';
+  payload.fee=rec.fee!=null?rec.fee:null;
+  payload.cost=rec.cost!=null?rec.cost:(rec.fee!=null?rec.fee:null);
+  payload._added=isBaked?0:1;
   try{
     window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
       if(!vals) return vals;
@@ -547,70 +580,9 @@ function persistSchedShow(rec){
       return next.length?next:null;
     });
   }catch(eDel){}
-
-  /* Identity patch — same style as working addsByUid / status field updates.
-     Dual-write editsByUid (uid map) + edits/venue|date|uid (legacy).
-     .update() merges so concurrent djStatus changes are not wiped. */
-  var identity={
-    dj: rec.dj||'',
-    fee: rec.fee!=null?rec.fee:null,
-    cost: rec.cost!=null?rec.cost:(rec.fee!=null?rec.fee:null),
-    d: rec.d,
-    v: rec.v||rec.venue||'',
-    venue: rec.venue||rec.v||'',
-    _uid: uid,
-    _writeKind: 'modal',
-    updatedAt: updatedAt,
-    _added: isBaked?0:1
-  };
-  if(Object.prototype.hasOwnProperty.call(rec,'djStatus')) identity.djStatus=rec.djStatus==null?null:rec.djStatus;
-  if(Object.prototype.hasOwnProperty.call(rec,'ev')) identity.ev=rec.ev==null?'':rec.ev;
-  if(Object.prototype.hasOwnProperty.call(rec,'note')) identity.note=rec.note==null?null:rec.note;
-  if(Object.prototype.hasOwnProperty.call(rec,'agency')) identity.agency=rec.agency==null?null:rec.agency;
-  if(rec.bs_m!=null) identity.bs_m=rec.bs_m;
-  if(rec.roi_t!=null) identity.roi_t=rec.roi_t;
-
-  try{
-    window._fbRef.child('schedOverrides/editsByUid/'+uid).transaction(function(cur){
-      var next=_fbSanitize(Object.assign({}, cur&&typeof cur==='object'?cur:{}, identity));
-      if(cur && cur.updatedAt && identity.updatedAt && String(cur.updatedAt)>String(identity.updatedAt)) return cur;
-      /* Never let a status-only local row overwrite a newer modal rename. */
-      if(cur && cur._writeKind==='modal' && cur.dj && identity.dj && cur.dj!==identity.dj){
-        var curT=Date.parse(cur.updatedAt||'')||0;
-        var nextT=Date.parse(identity.updatedAt||'')||0;
-        if(curT>nextT) return cur;
-      }
-      return next;
-    }, _onSchedWrite);
-  }catch(eUid){ _onSchedWrite(eUid); }
-
-  if(isBaked){
-    try{
-      window._fbRef.child('schedOverrides/edits/'+fbKey.replace(/\//g,'_')).transaction(function(cur){
-        var base=cur&&typeof cur==='object'?cur:{};
-        var next=_fbSanitize(Object.assign({}, base, payload, identity, {_added:0}));
-        if(base.updatedAt && identity.updatedAt && String(base.updatedAt)>String(identity.updatedAt)) return cur;
-        return next;
-      }, _onSchedWrite);
-    }catch(eEdit){ _onSchedWrite(eEdit); }
-  } else {
-    rec._added=1;
-    payload._added=1;
-    identity._added=1;
-    try{
-      window._fbRef.child('schedOverrides/addsByUid/'+uid).transaction(function(cur){
-        var base=cur&&typeof cur==='object'?cur:{};
-        var next=_fbSanitize(Object.assign({}, base, payload, identity));
-        if(base.updatedAt && identity.updatedAt && String(base.updatedAt)>String(identity.updatedAt)) return cur;
-        if(base._writeKind==='modal' && base.dj && identity.dj && base.dj!==identity.dj){
-          var curT=Date.parse(base.updatedAt||'')||0;
-          var nextT=Date.parse(identity.updatedAt||'')||0;
-          if(curT>nextT) return cur;
-        }
-        return next;
-      }, _onSchedWrite);
-    }catch(eAdd){ _onSchedWrite(eAdd); }
-  }
+  window._fbRef.child('schedOverrides/shows/'+uid).set(payload, _fbOnSchedWrite);
+  _fbEraseLegacyCopies(rec);
+  _fbDropOtherShowsOnNight(rec);
 }
 /* DJ Status only — write djStatus on this show's uid path ONLY.
    If no edit node exists yet, seed identity from the local row so a later
@@ -626,14 +598,8 @@ function persistShowDjStatusOnly(rec){
     window._guardSchedWrite(Object.assign({}, rec, {djStatus: nextStatus, _writeKind: 'statusMerge'}));
   }
   var isBaked=_alignRecToBakedShow(rec);
-  var path=isBaked
-    ? ('schedOverrides/edits/'+_schedUidKey(rec).replace(/\//g,'_'))
-    : ('schedOverrides/addsByUid/'+uid);
   if(!isBaked) rec._added=1;
-  /* Status-only: never rewrite DJ name/fee. Touch this uid only. */
-  var statusPatch={ djStatus: nextStatus, _uid: uid, d: rec.d, v: rec.v||rec.venue||'', venue: rec.venue||rec.v||'' };
-  try{ window._fbRef.child('schedOverrides/editsByUid/'+uid).update(statusPatch); }catch(e1){}
-  window._fbRef.child(path).transaction(function(cur){
+  window._fbRef.child('schedOverrides/shows/'+uid).transaction(function(cur){
     if(cur && typeof cur==='object'){
       var next=Object.assign({}, cur);
       next.djStatus=nextStatus;
@@ -649,7 +615,8 @@ function persistShowDjStatusOnly(rec){
       _uid: uid,
       djStatus: nextStatus,
       _writeKind: 'statusMerge',
-      _added: isBaked?0:1
+      _added: isBaked?0:1,
+      updatedAt: new Date().toISOString()
     });
   });
 }
@@ -685,34 +652,26 @@ function _isBakedSchedRecord(rec){
 function _fbClearEditKeys(rec){
   if(!rec||!window._fbRef) return;
   ensureShowUid(rec);
-  try{
-    window._fbRef.child('schedOverrides/edits/'+_schedUidKey(rec).replace(/\//g,'_')).remove();
-    window._fbRef.child('schedOverrides/edits/'+_schedDateKey(rec).replace(/\//g,'_')).remove();
-  }catch(e){}
+  _fbEraseLegacyCopies(rec);
+  try{ window._fbRef.child('schedOverrides/shows/'+rec._uid).remove(); }catch(e){}
 }
 function _fbRemoveSchedRecord(rec){
   if(!rec||!window._fbRef) return;
   ensureShowUid(rec);
   var uidKey=_schedUidKey(rec);
-  var dateKey=_schedDateKey(rec);
   var uid=rec._uid;
   if(typeof window._guardClearDeleted==='function') window._guardClearDeleted(rec);
-  /* Always strip any add/edit payload for this uid so it cannot come back. */
-  try{ window._fbRef.child('schedOverrides/addsByUid/'+uid).remove(); }catch(eA){}
-  try{ window._fbRef.child('schedOverrides/edits/'+uidKey.replace(/\//g,'_')).remove(); }catch(eE){}
-  try{ window._fbRef.child('schedOverrides/edits/'+dateKey.replace(/\//g,'_')).remove(); }catch(eL){}
+  try{ window._fbRef.child('schedOverrides/shows/'+uid).remove(); }catch(eS){}
+  _fbEraseLegacyCopies(rec);
   window._fbRef.child('schedOverrides/adds').transaction(function(vals){
     if(!vals) return vals;
     var arr=Array.isArray(vals)?vals:Object.values(vals);
     var next=arr.filter(function(r){ return !(r && (r._uid===uid || _schedKeysMatch(r,rec))); });
     return next.length?next:null;
   });
-  /* Tombstone by uid only. Day-level deletes hid bake forever (MILA Aug 29 /
-     DARMON) and fought re-adds — uid tombstone is enough to keep a night empty. */
   window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
     var arr=vals?(Array.isArray(vals)?vals:Object.values(vals)):[];
     if(arr.indexOf(uidKey)<0) arr.push(uidKey);
-    /* Never keep day-level keys — strip all of them on every delete write. */
     return arr.filter(function(k){ return k && String(k).split('|').length >= 3; });
   });
 }
@@ -728,7 +687,7 @@ function _fbRestoreSchedRecord(rec){
       var next=arr.filter(function(k){return k!==uidKey && k!==_schedDateKey(rec);});
       return next.length?next:null;
     });
-    window._fbRef.child('schedOverrides/edits/'+uidKey.replace(/\//g,'_')).set(_fbSanitize(rec));
+    persistSchedShow(rec);
   }else{
     persistSchedShow(rec);
   }
@@ -835,10 +794,6 @@ function saveEvent(){
   } else {
     SCHED.push(rec);
   }
-  var after=_clone(rec);
-  pushUndo((before?'Edit show: ':'Add show: ')+(dj||'TBD')+' '+d,function(){
-    _undoShowChange(before,after,beforeIndex);
-  });
   IDX=buildIdx(SCHED); closeModal({skipFlush:true});
   if(typeof syncLinkedTabsFromSched==='function') syncLinkedTabsFromSched(rec);
   /* If date/venue changed, retire old Firebase keys so the show does not ghost on reload. */
@@ -882,11 +837,7 @@ function deleteEvent(){
   var show = SCHED[_editIdx];
   if(!show) return;
   var label = (show.dj||'this performance') + ' on ' + (show.d||'');
-  if(!confirm('Delete ' + label + '?\n\nYou can undo this from Tools if needed.')) return;
-  var before=_clone(show), beforeIndex=_editIdx;
-  pushUndo('Delete show: '+(show.dj||'TBD')+' '+show.d,function(){
-    _undoShowChange(before,null,beforeIndex);
-  });
+  if(!confirm('Delete ' + label + '?\n\nThis removes it for everyone.')) return;
   if(typeof window._guardClearDeleted==='function') window._guardClearDeleted(show);
   if(window._fbRef) _fbRemoveSchedRecord(show);
   SCHED.splice(_editIdx,1);
@@ -916,32 +867,10 @@ function _persistShowEv(rec){
   if(!window._fbRef || !rec || !rec.d) return;
   ensureShowUid(rec);
   if(typeof _alignRecToBakedShow==='function') _alignRecToBakedShow(rec);
-  var uidKey=_schedUidKey(rec).replace(/\//g,'_');
   var evVal=rec.ev==null?'':rec.ev;
-  try{ window._fbRef.child('schedOverrides/edits/'+uidKey+'/ev').set(evVal); }catch(e){}
-  /* Also stamp on a full identity write when clearing, so thin {ev:''} cannot be
-     dropped and bake HALLOWEEN tags cannot resurrect. */
+  try{ window._fbRef.child('schedOverrides/shows/'+rec._uid+'/ev').set(evVal); }catch(e){}
   if(!evVal){
-    try{
-      var seed=_fbSanitize({
-        dj: rec.dj||'',
-        fee: rec.fee!=null?rec.fee:null,
-        cost: rec.cost!=null?rec.cost:(rec.fee!=null?rec.fee:null),
-        d: rec.d,
-        v: rec.v||rec.venue||'',
-        venue: rec.venue||rec.v||'',
-        _uid: rec._uid,
-        ev: '',
-        _writeKind: 'evClear'
-      });
-      window._fbRef.child('schedOverrides/edits/'+uidKey).transaction(function(cur){
-        if(cur && typeof cur==='object'){
-          cur.ev='';
-          return cur;
-        }
-        return seed;
-      });
-    }catch(eFull){}
+    try{ persistSchedShow(Object.assign({}, rec, {ev:'', _writeKind:'evClear'})); }catch(eFull){}
   }
 }
 

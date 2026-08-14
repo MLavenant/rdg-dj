@@ -1454,8 +1454,7 @@ function updateShowAgency(uid, idx, val, ds){
   }
   if(window._fbRef){
     try{
-      var uidKey=_schedUidKey(r).replace(/\//g,'_');
-      window._fbRef.child('schedOverrides/edits/'+uidKey+'/agency').set(next);
+      window._fbRef.child('schedOverrides/shows/'+ensureShowUid(r)+'/agency').set(next);
     }catch(e){}
   }
   if(typeof persistSchedShow==='function' && r._added){
