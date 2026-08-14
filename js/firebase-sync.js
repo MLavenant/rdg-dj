@@ -59,7 +59,44 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     _setSyncDot('#ef4444', 'Still connecting after 15s — allow *.firebaseio.com and refresh');
   }, 15000);
 
-  /* ?? Write helper ??????????????????????????????????????????????? */
+  function _isoWeekBackupMeta(d){
+    var date=new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    var dayNum=date.getUTCDay()||7;
+    date.setUTCDate(date.getUTCDate()+4-dayNum);
+    var year=date.getUTCFullYear();
+    var yearStart=new Date(Date.UTC(year,0,1));
+    var week=Math.ceil((((date-yearStart)/86400000)+1)/7);
+    var ww=week<10?'0'+week:String(week);
+    return { key:'schedule-w'+year+'-'+ww, name:'schedule w'+week+' '+year };
+  }
+  function _maybeWeeklySchedBackup(ov){
+    if(!window._fbRef || !ov || !ov.shows || window._schedBackupTried) return;
+    window._schedBackupTried=1;
+    var meta=_isoWeekBackupMeta(new Date());
+    window._fbRef.child('scheduleBackups/'+meta.key+'/savedAt').once('value', function(snap){
+      if(snap && snap.val()) return;
+      var shows=ov.shows||{};
+      var count=0;
+      Object.keys(shows).forEach(function(k){ if(shows[k]) count++; });
+      var payload={
+        name: meta.name,
+        key: meta.key,
+        savedAt: new Date().toISOString(),
+        showCount: count,
+        shows: shows,
+        deletes: ov.deletes||null,
+        source: 'client'
+      };
+      window._fbRef.child('scheduleBackups/'+meta.key).set(payload);
+      window._fbRef.child('scheduleBackups/_meta').set({
+        lastKey: meta.key,
+        lastName: meta.name,
+        lastAt: payload.savedAt,
+        lastShowCount: count
+      });
+    });
+  }
+
   window._fbSave = function(path, value){
     try{
       window._fbRef.child(path).set(value === undefined ? null : value, function(err){
@@ -937,6 +974,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     if(firstLoad && path==='schedOverrides'){
       window._fbReady = true;
       _setSyncDot('#22c55e', 'Live sync active');
+      try{ _maybeWeeklySchedBackup(val); }catch(eBk){}
     }
     try{
       window._fbApply(window._fbLiveBundle);
