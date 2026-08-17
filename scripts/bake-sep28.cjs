@@ -1,0 +1,10 @@
+const fs = require("fs");
+const src = fs.readFileSync("data/sched-baked.js", "utf8");
+const i = src.indexOf("var SCHED = ");
+const j = src.indexOf(";\nvar BS");
+const SCHED = JSON.parse(src.slice(i + "var SCHED = ".length, j));
+const rows = SCHED.filter((r) => (r.v || r.venue) === "MILA Lounge" && r.d === "2026-09-28");
+console.log("bake count", rows.length);
+rows.forEach((r) => console.log(JSON.stringify({ dj: r.dj, fee: r.fee || r.cost, _s: r._s, ev: r.ev })));
+const nearby = SCHED.filter((r) => (r.v || r.venue) === "MILA Lounge" && r.d >= "2026-09-26" && r.d <= "2026-09-30");
+console.log("nearby", nearby.map((r) => r.d + " " + (r.dj || "") + " " + (r.fee || r.cost)));
