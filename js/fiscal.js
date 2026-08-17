@@ -510,6 +510,51 @@ function _hideSessionGate(){
 function cancelSessionGate(){
   if(_sessionIsActive()) _hideSessionGate();
 }
+function _appVersionLocal(){
+  return String(window.RDG_APP_VERSION||'').trim();
+}
+function _appIndexFetchUrl(){
+  var base=location.href.split('#')[0].split('?')[0];
+  if(/index\.html$/i.test(base)) return base;
+  return base.replace(/\/?$/,'/')+'index.html';
+}
+/** After idle / sign-in: if GitHub Pages has a newer build, hard-reload onto it. */
+function _ensureLatestAppThen(done){
+  var local=_appVersionLocal();
+  var fetchUrl=_appIndexFetchUrl();
+  var finished=false;
+  function finish(){
+    if(finished) return;
+    finished=true;
+    if(typeof done==='function') done();
+  }
+  var t=setTimeout(finish, 4000);
+  try{
+    fetch(fetchUrl+'?_='+Date.now(), {cache:'no-store', credentials:'same-origin'})
+      .then(function(r){ return r.text(); })
+      .then(function(html){
+        clearTimeout(t);
+        var m=String(html||'').match(/RDG_APP_VERSION\s*=\s*['"]([\d.]+)['"]/)
+          || String(html||'').match(/RDG DJ Dashboard v([\d.]+)/);
+        var remote=m ? String(m[1]).trim() : '';
+        if(remote && local && remote!==local){
+          try{
+            sessionStorage.setItem('rdg_session_active','1');
+            sessionStorage.setItem('rdg_session_activity', String(Date.now()));
+          }catch(eKeep){}
+          var dest=location.pathname;
+          if(!/index\.html$/i.test(dest) && !/\/$/.test(dest)) dest+='/';
+          location.replace(dest+'?v='+encodeURIComponent(remote)+'&_='+Date.now());
+          return;
+        }
+        finish();
+      })
+      .catch(function(){ clearTimeout(t); finish(); });
+  }catch(eFetch){
+    clearTimeout(t);
+    finish();
+  }
+}
 function _sessionLogout(reason){
   try{
     sessionStorage.removeItem('rdg_session_active');
@@ -531,14 +576,19 @@ function submitSessionGate(){
     if(inp) inp.focus();
     return;
   }
-  try{
-    sessionStorage.setItem('rdg_session_active','1');
-    sessionStorage.setItem('rdg_session_activity', String(Date.now()));
-  }catch(e){}
-  _hideSessionGate();
-  try{ if(window._fbDb) window._fbDb.goOnline(); }catch(eOn){}
-  _writePresence();
-  refreshPresenceChip();
+  var btn=document.querySelector('#sessionGate .btn-save');
+  if(btn){ btn.disabled=true; btn.textContent='Checking…'; }
+  _ensureLatestAppThen(function(){
+    try{
+      sessionStorage.setItem('rdg_session_active','1');
+      sessionStorage.setItem('rdg_session_activity', String(Date.now()));
+    }catch(e){}
+    _hideSessionGate();
+    try{ if(window._fbDb) window._fbDb.goOnline(); }catch(eOn){}
+    _writePresence();
+    refreshPresenceChip();
+    if(btn){ btn.disabled=false; btn.textContent='Continue'; }
+  });
 }
 function initSessionWatch(){
   if(window._sessionWatchReady) return;
