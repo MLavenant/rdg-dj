@@ -121,24 +121,48 @@ function _modalBudgetBlock(venue, dateStr, feeToAdd){
   h+='</div></div></div>';
   return h;
 }
+/** Same calendar date one year earlier (Add/Edit modal LY panel). */
+function _modalLyDate(dateStr){
+  if(!dateStr || String(dateStr).length<10) return null;
+  var parts=String(dateStr).split('-');
+  var y=parseInt(parts[0],10)-1;
+  if(!(y>=2000) || !parts[1] || !parts[2]) return null;
+  return y+'-'+parts[1]+'-'+parts[2];
+}
+/** Live schedule show on exact LY calendar date (bake + shows overlays). */
+function _modalLySameDateShow(venue, dateStr){
+  var ly=_modalLyDate(dateStr);
+  if(!venue || !ly) return null;
+  if(typeof _schedShowOn==='function') return _schedShowOn(venue, ly);
+  var best=null;
+  (typeof SCHED!=='undefined'?SCHED:[]).forEach(function(r){
+    if((r.v||r.venue)!==venue || r._s==='empty' || r.d!==ly) return;
+    if(!(r.dj||'').trim()) return;
+    if(!best || ((r.bs_a||0)>(best.bs_a||0))) best=r;
+  });
+  return best;
+}
 function _modalSalesBlock(venue, dateStr, feeToAdd, name){
   if(!venue || !dateStr) return '';
-  var py=typeof resolvePyFields==='function' ? resolvePyFields(venue, dateStr) : null;
+  var lyDate=_modalLyDate(dateStr);
+  var show=_modalLySameDateShow(venue, dateStr);
+  var py=show && typeof _pyFieldsFromShow==='function' ? _pyFieldsFromShow(show) : null;
   function row(label, val, cls){
     return '<div class="dj-sugg-row"><span>'+label+'</span><b'+(cls?' class="'+cls+'"':'')+'>'+val+'</b></div>';
   }
   var h='<div class="dj-sugg-sec dj-sugg-sales">';
-  h+='<div class="dj-sugg-sec-hd">Same weekend last year</div>';
+  h+='<div class="dj-sugg-sec-hd">Same date last year'+(lyDate?' <span class="dj-sugg-sub">('+lyDate+')</span>':'')+'</div>';
   h+='<div class="dj-sugg-grid">';
   h+='<div class="dj-sugg-panel">';
   if(py && py.py_dj){
     h+=row('Artist', djLabel(py.py_dj));
     h+=row('Fee', $k(py.py_fee));
+    h+=row('BS Target', $k(py.py_bs_m));
     h+=row('BS Actual', $k(py.py_bs_a));
     h+=row('ROI Actual', py.py_roi_a!=null?(Number(py.py_roi_a).toFixed(1)+'x'):'-');
     h+=row('Beat?', py.py_beat==1?'Yes':(py.py_beat==0?'No':'-'), py.py_beat==1?'pos':(py.py_beat==0?'neg':''));
   } else {
-    h+='<div class="dj-sugg-row"><span class="muted">No prior-year match for this weekend</span><b></b></div>';
+    h+='<div class="dj-sugg-row"><span class="muted">No show on '+(lyDate||'that date')+' last year</span><b></b></div>';
   }
   h+='</div></div></div>';
   return h;
@@ -180,7 +204,8 @@ function _checkDjSuggestionNow(){
   var box=document.getElementById('fldDjSuggest');
   if(!box) return;
   var venue=f.venue.value, dateStr=f.date.value;
-  var proposedFee=parseFloat(f.fee.value)||null;
+  var proposedFee=parseFloat(String(f.fee.value||'').replace(/,/g,''));
+  if(!(proposedFee>0)) proposedFee=null;
   var proj=name ? djProj(name,null) : {p:null};
   var feeToAdd = proposedFee || (proj.p?(realisticSuggestedFee(proj.p, venue, dateStr)||cappedSuggestedFee(proj.p.avg_bs,proj.p.avg_fee)):0) || 0;
 
