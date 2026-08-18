@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RDG DJ Dashboard v4.37</title>
+<title>RDG DJ Dashboard v4.38</title>
 <!-- Firebase Realtime Database SDK -->
-  <link rel="stylesheet" href="css/app.css?v=4.37">
-<script>window.RDG_APP_VERSION='4.37';</script>
+  <link rel="stylesheet" href="css/app.css?v=4.38">
+<script>window.RDG_APP_VERSION='4.38';</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
@@ -28,16 +28,15 @@
 <div class="shell">
 <aside class="sidebar">
   <div class="sb-logo">
-    <img src="assets/rdg-logo.png?v=4.37" alt="RDG" class="sb-logo-img">
+    <img src="assets/rdg-logo.png?v=4.38" alt="RDG" class="sb-logo-img">
     <div class="sb-logo-title">DJ Dashboard</div>
-    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v4.37 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
+    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v4.38 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
   </div>
   <div id="sidebar"></div>
   <div class="sb-tools-section">
     <div class="sb-section-lbl">Tools</div>
     <button class="sb-help-btn" onclick="openVenueRulesEditor()">&#127919; Venue ROI Rules</button>
     <button class="sb-help-btn" onclick="openImportModal()">&#8635; Import from Excel</button>
-    <button class="sb-help-btn" id="undoBtn" onclick="openUndoHistory()" disabled>&#8630; Undo (0)</button>
     <button class="sb-help-btn" id="sbHelpBtn" type="button">&#9432; Help &amp; Feedback</button>
     <button type="button" class="sb-help-egg" id="sbHelpEgg" tabindex="-1" aria-hidden="true">&#183;</button>
   </div>
@@ -344,23 +343,6 @@
   </div>
 </div>
 
-<!-- Undo History Modal -->
-<div class="modal-bg hidden" id="undoModal">
-  <div class="modal" style="width:430px">
-    <div class="modal-hd">
-      <h3>Undo History</h3>
-      <button class="modal-close" onclick="closeUndoHistory()">&#10005;</button>
-    </div>
-    <div class="modal-body">
-      <div style="font-size:10px;color:var(--ink3);line-height:1.45">Your last 10 changes from this browser session. Undoing to an older item reverses that item and everything above it.</div>
-      <div id="undoHistoryList" class="undo-list"></div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn-cancel" onclick="closeUndoHistory()">Close</button>
-    </div>
-  </div>
-</div>
-
 <!-- Help & Feedback Modal -->
 <div class="modal-bg hidden" id="helpModal">
   <div class="modal" style="width:480px">
@@ -443,19 +425,19 @@
     </div>
   </div>
 </div>
-<script src="js/vendor/xlsx.js?v=4.37"></script>
-<script src="data/sched-baked.js?v=4.37"></script>
-<script src="js/state-prelude.js?v=4.37"></script>
-<script src="js/logos.js?v=4.37"></script>
-<script src="js/state.js?v=4.37"></script>
-<script src="js/fiscal.js?v=4.37"></script>
-<script src="js/core.js?v=4.37"></script>
-<script src="js/budget.js?v=4.37"></script>
-<script src="js/firebase-sync.js?v=4.37"></script>
-<script src="js/calendar.js?v=4.37"></script>
-<script src="js/flash-forecast.js?v=4.37"></script>
-<script src="js/accounting.js?v=4.37"></script>
-<script src="js/modals.js?v=4.37"></script>
+<script src="js/vendor/xlsx.js?v=4.38"></script>
+<script src="data/sched-baked.js?v=4.38"></script>
+<script src="js/state-prelude.js?v=4.38"></script>
+<script src="js/logos.js?v=4.38"></script>
+<script src="js/state.js?v=4.38"></script>
+<script src="js/fiscal.js?v=4.38"></script>
+<script src="js/core.js?v=4.38"></script>
+<script src="js/budget.js?v=4.38"></script>
+<script src="js/firebase-sync.js?v=4.38"></script>
+<script src="js/calendar.js?v=4.38"></script>
+<script src="js/flash-forecast.js?v=4.38"></script>
+<script src="js/accounting.js?v=4.38"></script>
+<script src="js/modals.js?v=4.38"></script>
 </body>
 </html>
 

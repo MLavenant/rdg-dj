@@ -383,58 +383,12 @@ function getBSRecs(yr, venue, mm) {
   });
 }
 
-/* Session undo history: action-specific callbacks avoid reverting unrelated
-   changes made by another connected user. */
-var _undoStack=[];
-var _undoRunning=false;
-function pushUndo(label, undoFn){
-  if(_undoRunning || typeof undoFn!=='function') return;
-  _undoStack.unshift({label:label||'Change',at:new Date(),undo:undoFn});
-  if(_undoStack.length>10) _undoStack.length=10;
-  refreshUndoUI();
-}
-function refreshUndoUI(){
-  var btn=document.getElementById('undoBtn');
-  if(btn){
-    btn.disabled=!_undoStack.length;
-    btn.innerHTML='&#8630; Undo ('+_undoStack.length+')';
-    btn.title=_undoStack.length?'Next: '+_undoStack[0].label:'No changes to undo';
-  }
-  var list=document.getElementById('undoHistoryList');
-  if(!list) return;
-  if(!_undoStack.length){
-    list.innerHTML='<div style="font-size:11px;color:var(--ink3);padding:8px 0">No changes to undo.</div>';
-    return;
-  }
-  list.innerHTML=_undoStack.map(function(a,i){
-    var when=a.at.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-    return '<div class="undo-row"><span class="undo-row-num">'+(i+1)+'</span>'
-      +'<span class="undo-row-label">'+_escHtml(a.label)+'</span>'
-      +'<span class="undo-row-time">'+when+'</span>'
-      +'<button class="btn-cancel" style="padding:4px 9px" onclick="undoToIndex('+i+')">Undo to here</button></div>';
-  }).join('');
-}
-function openUndoHistory(){
-  refreshUndoUI();
-  document.getElementById('undoModal').classList.remove('hidden');
-}
-function closeUndoHistory(){ document.getElementById('undoModal').classList.add('hidden'); }
-function undoToIndex(index){
-  index=parseInt(index,10);
-  if(index<0 || index>=_undoStack.length) return;
-  var actions=_undoStack.splice(0,index+1);
-  _undoRunning=true;
-  try{ actions.forEach(function(a){ a.undo(); }); }
-  catch(err){
-    console.error('Undo failed',err);
-    alert('Undo could not be completed. Please refresh and try again.');
-  }finally{ _undoRunning=false; }
-  refreshUndoUI();
-  closeUndoHistory();
-  go();
-  if(curView==='accounting') renderAccounting();
-  if(curView==='budget'&&_budgetInited) renderBudget();
-}
+/* Undo UI removed. Saves still last-write to Firebase; no local reverse stack. */
+function pushUndo(){}
+function refreshUndoUI(){}
+function openUndoHistory(){}
+function closeUndoHistory(){}
+function undoToIndex(){}
 function _clone(v){ return v==null?v:JSON.parse(JSON.stringify(v)); }
 function _escHtml(s){
   return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')

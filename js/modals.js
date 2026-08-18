@@ -1152,7 +1152,7 @@ function deleteSpecialPeriodByLabel(label){
   var scope=[];
   if(dates.length) scope.push(dates.length+' tagged show day'+(dates.length===1?'':'s'));
   if(bands) scope.push(bands+' calendar week'+(bands===1?'':'s'));
-  if(!confirm('Delete "'+label+'" from '+curV+'?\n\nRemoves '+scope.join(' and ')+' across every month. Undo is available in Tools.')) return;
+  if(!confirm('Delete "'+label+'" from '+curV+'?\n\nRemoves '+scope.join(' and ')+' across every month.')) return;
   var before=_captureSpecialPeriodState();
   pushUndo('Delete special period: '+label,function(){ _restoreSpecialPeriodState(before); });
   Object.keys(specialWeeks).forEach(function(k){
