@@ -996,6 +996,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     // VENUE_ROI_RULES first so target recalc uses latest rules
     if(data.venueRoiRules) VENUE_ROI_RULES = data.venueRoiRules;
     if(typeof ensureCnbcSummerRoofRules==='function') ensureCnbcSummerRoofRules();
+    if(data.roiSpecialEvents) ROI_SPECIAL_EVENTS = data.roiSpecialEvents;
     /* CRITICAL: the live listener is on the whole `rdg` tree. Writing acctData /
        budget / toast must NOT rebuild SCHED from bake — that wiped in-flight
        DJ renames when status changed (name snapped back to TBD). */
@@ -1138,6 +1139,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     'acctData',
     'acctOthersData',
     'venueRoiRules',
+    'roiSpecialEvents',
     'feeTiers',
     'monthlyDjBudget',
     'bgtPlan',

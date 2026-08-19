@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RDG DJ Dashboard v4.38</title>
+<title>RDG DJ Dashboard v4.40</title>
 <!-- Firebase Realtime Database SDK -->
-  <link rel="stylesheet" href="css/app.css?v=4.38">
-<script>window.RDG_APP_VERSION='4.38';</script>
+  <link rel="stylesheet" href="css/app.css?v=4.40">
+<script>window.RDG_APP_VERSION='4.40';</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
@@ -28,14 +28,14 @@
 <div class="shell">
 <aside class="sidebar">
   <div class="sb-logo">
-    <img src="assets/rdg-logo.png?v=4.38" alt="RDG" class="sb-logo-img">
+    <img src="assets/rdg-logo.png?v=4.40" alt="RDG" class="sb-logo-img">
     <div class="sb-logo-title">DJ Dashboard</div>
-    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v4.38 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
+    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v4.40 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
   </div>
   <div id="sidebar"></div>
   <div class="sb-tools-section">
     <div class="sb-section-lbl">Tools</div>
-    <button class="sb-help-btn" onclick="openVenueRulesEditor()">&#127919; Venue ROI Rules</button>
+    <button class="sb-help-btn" onclick="setView('roi-rules')">&#127919; Venue ROI Rules</button>
     <button class="sb-help-btn" onclick="openImportModal()">&#8635; Import from Excel</button>
     <button class="sb-help-btn" id="sbHelpBtn" type="button">&#9432; Help &amp; Feedback</button>
     <button type="button" class="sb-help-egg" id="sbHelpEgg" tabindex="-1" aria-hidden="true">&#183;</button>
@@ -184,6 +184,17 @@
       </div>
     </div>
     <div id="fcastBody" class="fcast-wrap"></div>
+  </div>
+
+  <!-- VENUE ROI RULES -->
+  <div id="view-roi-rules" style="display:none">
+    <div class="pg-section" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div>
+        <div class="pg-title2">&#127919; Venue ROI Rules</div>
+        <div style="font-size:10px;color:var(--ink3);margin-top:2px">BS targets, table minimums, sunset layout, and special-day performances</div>
+      </div>
+    </div>
+    <div id="roiRulesBody" class="roi-page-wrap"></div>
   </div>
 
   <!-- LIVE (Toast BS night-of) -->
@@ -425,19 +436,20 @@
     </div>
   </div>
 </div>
-<script src="js/vendor/xlsx.js?v=4.38"></script>
-<script src="data/sched-baked.js?v=4.38"></script>
-<script src="js/state-prelude.js?v=4.38"></script>
-<script src="js/logos.js?v=4.38"></script>
-<script src="js/state.js?v=4.38"></script>
-<script src="js/fiscal.js?v=4.38"></script>
-<script src="js/core.js?v=4.38"></script>
-<script src="js/budget.js?v=4.38"></script>
-<script src="js/firebase-sync.js?v=4.38"></script>
-<script src="js/calendar.js?v=4.38"></script>
-<script src="js/flash-forecast.js?v=4.38"></script>
-<script src="js/accounting.js?v=4.38"></script>
-<script src="js/modals.js?v=4.38"></script>
+<script src="js/vendor/xlsx.js?v=4.40"></script>
+<script src="data/sched-baked.js?v=4.40"></script>
+<script src="js/state-prelude.js?v=4.40"></script>
+<script src="js/logos.js?v=4.40"></script>
+<script src="js/state.js?v=4.40"></script>
+<script src="js/fiscal.js?v=4.40"></script>
+<script src="js/core.js?v=4.40"></script>
+<script src="js/budget.js?v=4.40"></script>
+<script src="js/firebase-sync.js?v=4.40"></script>
+<script src="js/calendar.js?v=4.40"></script>
+<script src="js/flash-forecast.js?v=4.40"></script>
+<script src="js/accounting.js?v=4.40"></script>
+<script src="js/modals.js?v=4.40"></script>
+<script src="js/roi-rules.js?v=4.40"></script>
 </body>
 </html>
 

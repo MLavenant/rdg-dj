@@ -2,6 +2,7 @@ function boot() {
   normalizeKnownAccents();
   loadSavedRules();
   loadSavedVenueRules();
+  loadSavedRoiSpecialEvents();
 recalcAllSchedTargets(); /* boot */
   loadSavedMonthlyBudget();
   IDX = buildIdx(SCHED);
@@ -40,6 +41,7 @@ function buildSidebar() {
   [
     {id:'vip',        ic:'&#9889;', lb:'Weekly Flash'},
     {id:'forecast',   ic:'&#9650;',  lb:'Forecast'},
+    {id:'roi-rules',  ic:'&#127919;', lb:'Venue ROI Rules'},
   ].forEach(function(b) {
     html += '<button class="sb-btn" data-view="'+b.id+'" onclick="setView(\''+b.id+'\')">'
           + '<span class="sb-ic">'+b.ic+'</span>'+b.lb+'</button>';
@@ -114,7 +116,7 @@ function setView(v) {
   closeMobileNav();
   curView = v;
   if(_presenceRef) _presenceRef.update({view:v,lastSeen:firebase.database.ServerValue.TIMESTAMP});
-  ['calendar','summary','allshows','leaderboard','budget','accounting','vip','forecast','live','system','3d'].forEach(function(id){
+  ['calendar','summary','allshows','leaderboard','budget','accounting','vip','forecast','roi-rules','live','system','3d'].forEach(function(id){
     var el = document.getElementById('view-'+id);
     if (!el) return;
     var on = id===v;
@@ -149,6 +151,12 @@ function setView(v) {
   }
   if (v === 'forecast') {
     renderForecast();
+    return;
+  }
+  if (v === 'roi-rules') {
+    clearGlobalCalChrome();
+    document.getElementById('pgSub').innerHTML = '<span>Venue ROI Rules · BS targets, table mins, special days</span>';
+    if(typeof renderRoiRulesPage==='function') renderRoiRulesPage();
     return;
   }
   if (v === 'live') {
@@ -297,6 +305,22 @@ function setFv3dDate(dateStr){
 }
 /* VIP / fee-guidance floor plan for a venue on a given date (CNBC swaps to rooftop Aug–Sep). */
 function getVipFloorPlan(venue, dateStr){
+  var sp=(typeof roiSpecialEventFor==='function')?roiSpecialEventFor(venue,dateStr):null;
+  if(sp&&sp.floorPlan==='regular'){
+    if(typeof _vipFloorPlan!=='undefined'&&_vipFloorPlan&&_vipFloorPlan[venue]) return Object.assign({},_vipFloorPlan[venue],{summer:false});
+    return {budget:0,tiers:{},summer:false};
+  }
+  if(sp&&sp.floorPlan==='summer'&&venue==='Casa Neos Beach Club'){
+    var summerOnly=FV_3D_TABLES['casa-neos-beach-club-summer']||[];
+    var tierRef2={}; var budget2=0;
+    summerOnly.forEach(function(t){
+      var name=t.name.charAt(0).toUpperCase()+t.name.slice(1).toLowerCase();
+      var n=(t.tables&&t.tables.length)||0;
+      budget2+=n;
+      tierRef2[name]={total:n,min:t.minimum||0,color:t.color||'#eee',textColor:'#333'};
+    });
+    return {budget:budget2,tiers:tierRef2,summer:true,label:'Sunset Rituals Rooftop Edition'};
+  }
   if(venue==='Casa Neos Beach Club' && typeof isCnbcSummerFloor==='function' && isCnbcSummerFloor(dateStr)){
     var summer=FV_3D_TABLES['casa-neos-beach-club-summer']||[];
     var tierRef={};
@@ -645,6 +669,7 @@ function go() {
   else if (curView==='accounting'){ renderAccounting(); }
   else if (curView==='vip')         renderVIP();
   else if (curView==='forecast')    renderForecast();
+  else if (curView==='roi-rules'&&typeof renderRoiRulesPage==='function') renderRoiRulesPage();
   else if (curView==='budget'){
     /* Venue AND year pills changed while already ON the budget tab   keep them in sync live */
     bgtVenue=curV; bgtYear=curYr; bgtMonth=null;
@@ -1002,11 +1027,54 @@ function saveVenueRules(){
   go();
   if(curView==='accounting') renderAccounting();
   if(curView==='budget'&&_budgetInited) renderBudget();
+  if(curView==='roi-rules'&&typeof renderRoiRulesPage==='function') renderRoiRulesPage();
+}
+
+/* Special-day / holiday performances — override standard venue rules for date ranges
+   (e.g. Labor Day Monday at Casa Neos BC). Synced via Firebase roiSpecialEvents. */
+var ROI_SPECIAL_EVENTS = {};
+function loadSavedRoiSpecialEvents(){
+  try{
+    var saved=localStorage.getItem('rdg_roi_special_events');
+    if(saved){
+      var parsed=JSON.parse(saved);
+      if(parsed && typeof parsed==='object') ROI_SPECIAL_EVENTS=parsed;
+    }
+  }catch(e){}
+}
+function saveRoiSpecialEvents(){
+  try{ localStorage.setItem('rdg_roi_special_events', JSON.stringify(ROI_SPECIAL_EVENTS)); }catch(e){}
+  if(window._fbSave) window._fbSave('roiSpecialEvents', ROI_SPECIAL_EVENTS);
+  recalcAllSchedTargets();
+  go();
+  if(curView==='accounting') renderAccounting();
+  if(curView==='budget'&&_budgetInited) renderBudget();
+  if(curView==='forecast') renderForecast();
+  if(curView==='roi-rules'&&typeof renderRoiRulesPage==='function') renderRoiRulesPage();
+}
+function roiSpecialEventFor(venue, dateStr){
+  if(!venue||!dateStr||!ROI_SPECIAL_EVENTS) return null;
+  var day=dayNameFor(dateStr);
+  var best=null;
+  Object.keys(ROI_SPECIAL_EVENTS).forEach(function(uid){
+    var ev=ROI_SPECIAL_EVENTS[uid];
+    if(!ev||ev.venue!==venue) return;
+    if(dateStr<ev.start||dateStr>ev.end) return;
+    if(ev.days&&ev.days.length&&ev.days.indexOf(day)===-1) return;
+    if(!best||ev.start>best.start) best=ev;
+  });
+  return best;
+}
+function _cloneVenueRules(srcKey){
+  var src=VENUE_ROI_RULES[srcKey];
+  if(!src) return null;
+  return JSON.parse(JSON.stringify(src));
 }
 
 /* Determine High/Low season for a venue given a date string (YYYY-MM-DD) */
-function seasonFor(venue, dateStr){
-  var rules=VENUE_ROI_RULES[venue]; if(!rules) return 'High';
+function seasonFor(venueOrRules, dateStr){
+  var rules=(typeof venueOrRules==='string')?VENUE_ROI_RULES[venueOrRules]:venueOrRules;
+  if(!rules) return 'High';
   var month=parseInt(dateStr.slice(5,7),10);
   return (rules.highSeasonMonths||[]).indexOf(month)>-1 ? 'High' : 'Low';
 }
@@ -1019,8 +1087,9 @@ function dayNameFor(dateStr){
 
 /* Find the nearest fee tier for a venue (ties broken toward the lower tier is NOT
    the rule   nearest by absolute distance, matching: 9000->5000 (closer), 11000->15000 (closer) */
-function nearestTier(venue, fee){
-  var rules=VENUE_ROI_RULES[venue]; if(!rules||!rules.tiers||!rules.tiers.length) return null;
+function nearestTier(venueOrRules, fee){
+  var rules=(typeof venueOrRules==='string')?VENUE_ROI_RULES[venueOrRules]:venueOrRules;
+  if(!rules||!rules.tiers||!rules.tiers.length) return null;
   var best=null, bestDist=Infinity;
   rules.tiers.forEach(function(t){
     var dist=Math.abs(t.fee-fee);
@@ -1036,12 +1105,34 @@ function nearestTier(venue, fee){
                 a pricier one a lower ROI, while still owing the same $ target).
    Casa Neos Beach Club Aug–Sep uses Sunset Rituals Summer Roof rules (not before/after). */
 function venueRoiLookup(venue, dateStr, fee){
-  var rulesVenue=effectiveRoiVenue(venue, dateStr, fee);
-  var rules=VENUE_ROI_RULES[rulesVenue];
+  var sp=roiSpecialEventFor(venue, dateStr);
+  var rulesVenue, rules;
+  if(sp){
+    if(sp.rules&&sp.rules.tiers){
+      rules=sp.rules;
+      rulesVenue=sp.label||'special';
+    }else if(sp.rulesVenue&&VENUE_ROI_RULES[sp.rulesVenue]){
+      rulesVenue=sp.rulesVenue;
+      rules=VENUE_ROI_RULES[rulesVenue];
+    }else{
+      rulesVenue=effectiveRoiVenue(venue, dateStr, fee);
+      rules=VENUE_ROI_RULES[rulesVenue];
+    }
+  }else{
+    rulesVenue=effectiveRoiVenue(venue, dateStr, fee);
+    rules=VENUE_ROI_RULES[rulesVenue];
+  }
   if(!rules || !fee || fee<=0) return null;
   var day=dayNameFor(dateStr);
-  if(rules.days.indexOf(day)===-1) return null; /* venue doesn't run DJs this day */
-  var season=seasonFor(rulesVenue, dateStr);
+  var lookupDay=day;
+  if(rules.days.indexOf(day)===-1){
+    if(sp&&sp.extraDays&&sp.extraDays.indexOf(day)>-1){
+      lookupDay=sp.dayTemplate||'Sunday';
+    }else{
+      return null;
+    }
+  }
+  var season=seasonFor(rules, dateStr);
 
   /* Above the highest defined tier: flat 2x ROI, any day, any season */
   var highestTier=rules.tiers[rules.tiers.length-1];
@@ -1053,17 +1144,18 @@ function venueRoiLookup(venue, dateStr, fee){
     };
   }
 
-  var tier=nearestTier(rulesVenue, fee);
+  var tier=nearestTier(rules, fee);
   if(!tier) return null;
-  var dayData=(tier[season]||{})[day];
+  var dayData=(tier[season]||{})[lookupDay];
   if(!dayData) return null;
   var bsTarget=dayData.sales;
   var roiTarget = (fee===tier.fee) ? dayData.roi : (bsTarget && fee ? +(bsTarget/fee).toFixed(2) : dayData.roi);
   return {
     bsTarget: bsTarget, roiTarget: roiTarget,
-    tierFee: tier.fee, season: season, day: day,
+    tierFee: tier.fee, season: season, day: lookupDay,
     tables: dayData.tables||{},
-    rulesVenue: rulesVenue, summerRoof: rulesVenue===CNBC_SUMMER_ROOF_KEY
+    rulesVenue: rulesVenue, summerRoof: rulesVenue===CNBC_SUMMER_ROOF_KEY,
+    specialEvent: sp ? sp.label : null
   };
 }
 

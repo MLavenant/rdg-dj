@@ -2026,6 +2026,19 @@ function _daysTo(dateStr){
   var d = new Date(dateStr+'T12:00:00'); d.setHours(0,0,0,0);
   return Math.round((d-now)/86400000);
 }
+/* Forecast row filters: chart = next N from today; details/pickup = through end of next calendar month */
+function _fcastFromToday(events){
+  return (events||[]).filter(function(e){ return _daysTo(e.date) >= 0; });
+}
+function _fcastWithinOneMonth(events){
+  var now = new Date(); now.setHours(0,0,0,0);
+  var end = new Date(now);
+  end.setMonth(end.getMonth()+1);
+  return (events||[]).filter(function(e){
+    var d = new Date(e.date+'T12:00:00'); d.setHours(0,0,0,0);
+    return d >= now && d <= end;
+  });
+}
 
 /* For a forecast event, get fee + dj name from SCHED and compute bsTarget via ROI rules */
 function _fcastEnrich(e){
@@ -3189,7 +3202,8 @@ function _fcastDetailsTableHtml(events, venueShort){
     var act = e.totalRevenue || 0;
     var tgt = e.bsTarget || (function(){ var r=venueRoiLookup(e.venue,e.date,fee); return r?r.bsTarget:0; })() || 0;
     var roi = fee>0 && tgt>0 ? Math.round((tgt/fee)*10)/10 : (fee>0 && act>0 ? Math.round((act/fee)*10)/10 : 0);
-    var fpBudget = (typeof _vipFloorPlan!=='undefined' && _vipFloorPlan[e.venue]) ? (_vipFloorPlan[e.venue].budget||0) : 0;
+    var fpPlan = (typeof getVipFloorPlan==='function') ? getVipFloorPlan(e.venue, e.date) : null;
+    var fpBudget = fpPlan ? (fpPlan.budget||0) : ((typeof _vipFloorPlan!=='undefined' && _vipFloorPlan[e.venue]) ? (_vipFloorPlan[e.venue].budget||0) : 0);
     var totTables = (e.totalTables>0 ? e.totalTables : fpBudget) || 0;
     var booked = e.bookedTables || 0;
     var tablesLeft = totTables>0 ? Math.max(0, totTables - booked) : null;
@@ -3480,10 +3494,11 @@ function renderForecast(venueIdx, view){
     });
     h += '</div>';
 
-    var upcoming = events.filter(function(e){ return _daysTo(e.date)>=-1; });
-    // Horizontal booking chart: BC = next 4, Lounge & MILA = next 8
+    var upcomingToday = _fcastFromToday(events);
+    var upcomingMonth = _fcastWithinOneMonth(events);
+    // Horizontal booking chart: BC = next 4, Lounge & MILA = next 8 (includes today)
     var chartLimit = (curV==='Casa Neos Beach Club') ? 4 : 8;
-    var viewRows = upcoming.slice(0, chartLimit);
+    var viewRows = upcomingToday.slice(0, chartLimit);
     var venueShort = (curV==='Casa Neos Beach Club') ? 'CASA NEOS BC'
       : (curV==='Casa Neos Lounge') ? 'CASA NEOS LOUNGE'
       : (curV==='MILA Lounge') ? 'MILA LOUNGE'
@@ -3515,7 +3530,7 @@ function renderForecast(venueIdx, view){
     // ============================================================
     // 2) DETAILS ? booking performance detail table (PDF page 1)
     // ============================================================
-    h += _fcastDetailsTableHtml(upcoming, venueShort);
+    h += _fcastDetailsTableHtml(upcomingMonth, venueShort);
     h += '</div>';
 
     // ============================================================
@@ -3525,7 +3540,7 @@ function renderForecast(venueIdx, view){
     h += '<div class="fcast-chart-wrap fcast-print-below" style="padding:0;overflow:hidden">';
     h += '<div class="fcast-chart-title" style="padding:12px 16px 0">PICK UP PACE</div>';
     h += '<div style="padding:4px 16px 10px;font-size:10px;color:var(--ink3)">Today = FourVenues Sales export &middot; vs yesterday, beginning of day, and week start (Mon) &middot; Pickup % = day gain vs remaining gap to target.</div>';
-    var paceFocus = upcoming.slice();
+    var paceFocus = upcomingMonth.slice();
     h += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
     h += '<thead><tr>'
        + '<th style="text-align:left;padding:8px 12px;border-bottom:1px solid var(--rule);color:var(--ink3);font-size:10px">Date / Artist</th>'

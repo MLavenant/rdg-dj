@@ -2236,6 +2236,8 @@ function renderVenueRulesPanel(){
   h+='<button class="btn-add" id="vrAddTierBtn">+ Add DJ fee tier</button>';
 
   document.getElementById('vrBody').innerHTML=h;
+  var vrBodyEl=document.getElementById('vrBody');
+  if(vrBodyEl) vrBodyEl.style.maxHeight=document.getElementById('view-roi-rules')?'none':'50vh';
   wireVenueRulesEvents();
 }
 
