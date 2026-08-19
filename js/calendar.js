@@ -1835,53 +1835,337 @@ function _tierWins(sh){
   });
   return {wins:wins, soft:soft};
 }
+/* ---- Weekly Flash narrative helpers ---- */
+function _flashShowRoi(s){
+  if(s.roiActual!=null && !isNaN(+s.roiActual)) return Math.round(+s.roiActual*10)/10;
+  var fee=+(s.fee||0);
+  if(fee>0 && s.bsActual!=null) return Math.round(s.bsActual/fee*10)/10;
+  return null;
+}
+function _flashShowRoiTarget(s){
+  if(s.roiTarget!=null && +s.roiTarget>0) return Math.round(+s.roiTarget*10)/10;
+  var fee=+(s.fee||0);
+  if(fee>0 && s.bsMin>0) return Math.round(s.bsMin/fee*10)/10;
+  return null;
+}
+function _flashShowTone(s){
+  return (typeof perfTone==='function')
+    ? perfTone(s.bsActual, s.bsMin, s.fee, s.roiActual, s.roiTarget)
+    : (s.bsMin>0 && s.bsActual>=s.bsMin ? 'hit' : 'low');
+}
+function _flashShowBeat(s){ return _flashShowTone(s)==='hit'; }
+function _flashShowNear(s){ return _flashShowTone(s)==='near'; }
+function _flashAvgPerTable(s){
+  if(!s.tablesActual || s.tablesActual<=0) return null;
+  return Math.round((s.bsActual||0)/s.tablesActual);
+}
+function _flashMinAvgPerTable(s){
+  if(!s.tablesBudget || !s.bsMin) return null;
+  return Math.round(s.bsMin/s.tablesBudget);
+}
+function _flashPricingHealthy(s){
+  var apt=_flashAvgPerTable(s), min=_flashMinAvgPerTable(s);
+  if(apt!=null && min!=null) return apt>=min;
+  var tw=_tierWins(s);
+  if(!tw.wins.length && !tw.soft.length) return null;
+  return tw.soft.length===0;
+}
+function _flashVenueDisplayName(venue, shows){
+  var base=_venueShortName(venue);
+  if(/Beach Club/i.test(venue) && (shows||[]).some(function(s){
+    return typeof isCnbcSummerFloor==='function' && isCnbcSummerFloor(s.date);
+  })) return 'Casa Neos BC / Rooftop';
+  return base;
+}
+function _flashDayListText(shows){
+  var days=(shows||[]).map(_dowShortFromLabel).filter(Boolean);
+  if(!days.length) return '';
+  if(days.length===1) return days[0];
+  if(days.length===2) return days[0]+' and '+days[1];
+  return days.slice(0,-1).join(', ')+' through '+days[days.length-1];
+}
+function _flashWeekMon(shows){
+  var dates=(shows||[]).map(function(s){ return s.date; }).filter(Boolean).sort();
+  return dates.length ? dates[0] : '';
+}
+function _flashRooftopWeekendIndex(venue, weekMon){
+  if(!/Beach Club/i.test(venue) || !weekMon) return 0;
+  var wks={};
+  if(typeof SCHED!=='undefined'){
+    SCHED.forEach(function(r){
+      if((r.v||r.venue)!==venue || !r.d || r._s==='empty') return;
+      if(typeof isCnbcSummerFloor!=='function' || !isCnbcSummerFloor(r.d)) return;
+      if(r.d>=weekMon) return;
+      wks[getISOWeek(new Date(r.d+'T12:00:00Z'))]=true;
+    });
+  }
+  return Object.keys(wks).length+1;
+}
+function _flashTierAggregate(shows, mode){
+  /* mode: 'allBeat' = tiers beating min every night sold; 'anyBeat' = tiers with any wins */
+  var tierN={}, tierBeat={};
+  (shows||[]).forEach(function(sh){
+    Object.keys(sh.tiers||{}).forEach(function(t){
+      var x=sh.tiers[t]; if(!x||!(x.soldTables>0)) return;
+      tierN[t]=(tierN[t]||0)+1;
+      if(x.avgPerTable>=x.minPerTable) tierBeat[t]=(tierBeat[t]||0)+1;
+    });
+  });
+  if(mode==='allBeat') return Object.keys(tierN).filter(function(t){ return tierBeat[t]===tierN[t]; });
+  return Object.keys(tierBeat).filter(function(t){ return tierBeat[t]>0; });
+}
+function _flashCancelSentence(venue, shows){
+  if(typeof SCHED==='undefined') return '';
+  var found=[];
+  (shows||[]).forEach(function(sh){
+    var note=String(sh.note||'');
+    if(/cancel|replac|substitut|swap/i.test(note)){
+      var m=note.match(/cancel(?:led|lation)?[^.]*?(?:replac(?:ed|ement)?|with|by)\s+([^,.]+)/i)
+        || note.match(/replac(?:ed|ement)?[^.]*?(?:with|by)\s+([^,.]+)/i);
+      if(m) found.push({orig:sh.dj||'the scheduled artist', repl:m[1].trim(), note:note});
+    }
+    var rows=(typeof SCHED!=='undefined'?SCHED:[]).filter(function(r){
+      return (r.v||r.venue)===venue && r.d===sh.date;
+    });
+    rows.forEach(function(r){
+      var note=String(r.note||'');
+      if(!/cancel|replac|substitut|swap/i.test(note)) return;
+      var m=note.match(/cancel(?:led|lation)?[^.]*?(?:replac(?:ed|ement)?|with|by)\s+([^,.]+)/i)
+        || note.match(/replac(?:ed|ement)?[^.]*?(?:with|by)\s+([^,.]+)/i);
+      if(m) found.push({orig:r.dj||'the scheduled artist', repl:m[1].trim(), note:note});
+      else if(/cancel/i.test(note) && rows.length>1){
+        rows.forEach(function(r2){
+          if(r2!==r && r2.dj && r.dj && r2.dj!==r.dj)
+            found.push({orig:r.dj, repl:r2.dj, note:note});
+        });
+      }
+    });
+    /* same-date pair: one row cancelled/TBD note, another is replacement */
+    if(rows.length>=2){
+      var cancelled=rows.filter(function(r){ return /cancel|withdraw|drop/i.test(String(r.note||'')) || r._s==='cancel'; });
+      var active=rows.filter(function(r){ return r.dj && cancelled.indexOf(r)<0 && r._s!=='empty'; });
+      cancelled.forEach(function(r){
+        active.forEach(function(r2){
+          if(r.dj && r2.dj && r.dj!==r2.dj)
+            found.push({orig:r.dj, repl:r2.dj, note:r.note||''});
+        });
+      });
+    }
+  });
+  if(!found.length) return '';
+  var f=found[0];
+  return ' It is also important to note that '+f.orig+'\'s scheduled performance was cancelled and replaced by '+f.repl+', which materially impacted the weekend\'s overall performance and should be considered when evaluating these results.';
+}
+function _flashPtdTail(venue, asOfDate, name, opts){
+  opts=opts||{};
+  if(typeof fiscalInfoForDate!=='function' || typeof _vipRoiCompletionStats!=='function') return '';
+  var info=fiscalInfoForDate(asOfDate);
+  var cur=_vipRoiCompletionStats(venue, info.year, info.monthIndex, asOfDate);
+  if(!cur.measured) return '';
+  var monthName=(typeof MN_SH!=='undefined'?MN_SH[info.monthIndex]:('P'+(info.monthIndex+1)));
+  var pct=cur.pct!=null?cur.pct:null;
+  var opener=opts.volumeChallenge
+    ? ('Overall, volume remains '+name+'\'s critical challenge, with '+monthName+' now at only '+(pct!=null?pct+'%':'—')+' ROI completion ('+cur.beats+' of '+cur.measured+' performance'+(cur.measured===1?'':'s')+')')
+    : ('Overall, '+monthName+' stands at '+(pct!=null?pct+'%':'—')+' ROI completion ('+cur.beats+' of '+cur.measured+' performance'+(cur.measured===1?'':'s')+')');
+  if(info.monthIndex>0){
+    var priorEnd=fiscalPeriodRange(info.year, info.monthIndex-1).to;
+    var prior=_vipRoiCompletionStats(venue, info.year, info.monthIndex-1, priorEnd);
+    if(prior.measured && prior.pct!=null && pct!=null){
+      var priorName=(typeof MN_SH!=='undefined'?MN_SH[info.monthIndex-1]:('P'+info.monthIndex));
+      if(pct<prior.pct-5) opener+=', a significant deterioration from '+priorName+'\'s already soft '+prior.pct+'%';
+      else if(pct>prior.pct+5) opener+=', an improvement from '+priorName+'\'s '+prior.pct+'%';
+      else opener+=', compared with '+priorName+'\'s '+prior.pct+'%';
+    }
+  }
+  return opener+'.';
+}
 function _generateVenueFlashParagraph(d){
   var shows=(d&&d.shows)||[];
   if(!shows.length) return '';
-  var name=_venueShortName(d.venue);
-  var beat=shows.filter(function(s){return s.bsActual>=s.bsMin && s.bsMin>0;});
-  var miss=shows.filter(function(s){return s.bsMin>0 && s.bsActual<s.bsMin;});
+  var name=_flashVenueDisplayName(d.venue, shows);
+  var beat=shows.filter(_flashShowBeat);
+  var near=shows.filter(function(s){ return !_flashShowBeat(s)&&_flashShowNear(s); });
+  var miss=shows.filter(function(s){ return !_flashShowBeat(s)&&!_flashShowNear(s); });
   var n=shows.length;
   var beatPct=Math.round(beat.length/n*100);
+  var weekMon=_flashWeekMon(shows);
+  var asOfDate=shows.reduce(function(m,s){ return (!m||s.date>m)?s.date:m; }, '');
   var parts=[];
+
+  /* ---- Opening: ROI completion headline ---- */
+  var withTbl=shows.filter(function(s){ return s.tablesBudget>0; });
+  var tblNums=withTbl.map(function(s){ return s.tablesActual||0; });
+  var minTbl=tblNums.length?Math.min.apply(null,tblNums):0;
+  var maxTbl=tblNums.length?Math.max.apply(null,tblNums):0;
+  var tblBudget=withTbl.length?withTbl[0].tablesBudget:0;
+  var avgFill=withTbl.length?withTbl.reduce(function(s,sh){ return s+((sh.tablesActual||0)/(sh.tablesBudget||1)); },0)/withTbl.length:0;
+  var isRooftop=/Beach Club/i.test(d.venue) && shows.some(function(s){ return typeof isCnbcSummerFloor==='function' && isCnbcSummerFloor(s.date); });
+  var roofWk=isRooftop?_flashRooftopWeekendIndex(d.venue, weekMon):0;
+
   if(beat.length===n){
-    parts.push(name+' delivered a strong week, with every performance exceeding DJ Bottle Service Ratio targets, resulting in 100% ROI completion.');
+    var topTiers=_flashTierAggregate(shows,'allBeat');
+    var led=beat.slice().sort(function(a,b){ return (b.bsActual||0)-(a.bsActual||0); });
+    var ledNames=led.slice(0,2).map(function(s){ return s.dj; }).filter(Boolean);
+    if(avgFill>=0.65 && topTiers.length>=2){
+      var ledBit=ledNames.length?(', led by an exceptional '+ledNames[0]+' performance'+(ledNames[1]?' and another strong showing from '+ledNames[1]:'')+'.'):'.';
+      parts.push(name+' delivered an outstanding week, with all '+n+' performance'+(n===1?'':'s')+' exceeding DJ Bottle Service Ratio targets'+ledBit);
+    } else {
+      parts.push(name+' delivered a strong week, with every performance exceeding DJ Bottle Service Ratio targets, resulting in 100% ROI completion.');
+    }
   } else if(beat.length===0){
-    parts.push(name+' continued to face significant ROI challenges, with all '+n+' performance'+(n===1?'':'s')+' finishing below DJ Bottle Service Ratio targets, resulting in 0% ROI completion.');
+    if(isRooftop && roofWk>=2 && n<=3){
+      var ord=['','first','second','third','fourth','fifth'];
+      parts.push('The '+ord[roofWk]+' weekend since transitioning from the Beach Club to the Rooftop remained below ROI expectations, with all '+n+' performance'+(n===1?'':'s')+' missing their DJ Bottle Service Ratio targets, resulting in 0% ROI completion.');
+    } else if(minTbl<=2 || avgFill<0.35){
+      parts.push(name+' delivered a very challenging week, with all '+n+' performance'+(n===1?'':'s')+' missing their DJ Bottle Service Ratio targets, resulting in 0% ROI completion.');
+    } else {
+      parts.push(name+' continued to face significant ROI challenges, with all '+n+' performance'+(n===1?'':'s')+' finishing below DJ Bottle Service Ratio targets, resulting in 0% ROI completion.');
+    }
   } else {
-    var beatBits=beat.map(function(s){return s.dj+(s.bsActual>s.bsMin*1.15?' significantly exceeding':' exceeding')+' targets';}).join(', while ');
-    var missBits=miss.map(function(s){return s.dj+' fell '+(s.bsActual<s.bsMin*0.5?'well ':'')+'short';}).join(' and ');
-    parts.push(name+' delivered another split weekend, with '+beatBits+(missBits?', while '+missBits:'')+', resulting in '+beatPct+'% ROI completion.');
-  }
-  var ranked=shows.slice().sort(function(a,b){
-    var fa=a.tablesBudget?((a.tablesActual||0)/a.tablesBudget):0;
-    var fb=b.tablesBudget?((b.tablesActual||0)/b.tablesBudget):0;
-    return fa-fb;
-  });
-  var weak=ranked[0], strong=ranked[ranked.length-1];
-  if(weak && weak.tablesBudget){
-    var wFill=(weak.tablesActual||0)+'/'+weak.tablesBudget;
-    var wDay=_dowShortFromLabel(weak.label)||'The softest night';
-    if((weak.tablesActual||0)/weak.tablesBudget<=0.45){
-      parts.push(wDay+'\'s performance'+(weak.dj?' ('+weak.dj+')':'')+' was impacted by very weak demand ('+wFill+' tables sold)'+(weak.bsMin?', with bottle service at '+$kv(weak.bsActual||0)+' versus a '+$kv(weak.bsMin)+' minimum':'')+'.');
+    var ranked=shows.slice().sort(function(a,b){
+      var fa=a.tablesBudget?((a.tablesActual||0)/a.tablesBudget):0;
+      var fb=b.tablesBudget?((b.tablesActual||0)/b.tablesBudget):0;
+      return fb-fa;
+    });
+    var standNight=ranked[0];
+    var standDay=_dowShortFromLabel(standNight&&standNight.label);
+    if(beat.length===1 && n>=2 && standNight && _flashShowBeat(standNight) && standDay){
+      parts.push(name+' showed a meaningful improvement on '+standDay+', but the overall week remained under pressure, with only '+beat[0].dj+' exceeding the DJ Bottle Service Ratio target, resulting in '+beatPct+'% ROI completion.');
+    } else if(beat.length===1 && miss.length===1 && n===2){
+      parts.push(name+' experienced a highly polarized week, with '+beat[0].dj+' delivering an exceptional ROI performance that significantly exceeded DJ Bottle Service Ratio targets, while '+miss[0].dj+' fell well below expectations, resulting in '+beatPct+'% ROI completion for the weekend.');
+    } else if(beat.length<=2 && miss.length>=1){
+      var beatBits=beat.map(function(s){
+        var sig=s.bsActual>(s.bsMin||0)*1.15;
+        return s.dj+(sig?' significantly exceeding':' exceeding')+' targets';
+      }).join(', while ');
+      var missBits=miss.map(function(s){
+        return s.dj+' fell '+(s.bsActual<(s.bsMin||0)*0.5?'well ':'')+'below expectations';
+      }).join(' and ');
+      parts.push(name+' delivered a split weekend, with '+beatBits+(missBits?', while '+missBits:'')+', resulting in '+beatPct+'% ROI completion.');
+    } else {
+      parts.push(name+' delivered a mixed week, with '+beat.length+' of '+n+' performance'+(n===1?'':'s')+' exceeding DJ Bottle Service Ratio targets, resulting in '+beatPct+'% ROI completion.');
     }
   }
-  if(strong && strong!==weak && strong.tablesBudget && (strong.tablesActual||0)/strong.tablesBudget>=0.7){
-    var tw=_tierWins(strong);
-    var sFill=(strong.tablesActual||0)+'/'+strong.tablesBudget;
-    var sDay=_dowShortFromLabel(strong.label)||'The strongest night';
-    var tierBit=tw.wins.length?('particularly across '+tw.wins.join(', ')):'strong premium-tier monetization';
-    parts.push('In contrast, '+sDay+' combined solid table volume ('+sFill+' sold) with '+tierBit+', supporting one of the stronger ROI performances of the week.');
-  } else if(/MILA/i.test(d.venue) && beatPct<60){
-    parts.push('This continues the broader trend that MILA\'s opportunity lies in increasing table volume rather than lowering pricing.');
-  } else if(beatPct>=50){
-    parts.push('The results reinforce that '+name+' delivers strong ROI when demand materializes.');
-  } else {
-    var anyTier=shows.reduce(function(a,sh){return a.concat(_tierWins(sh).wins);},[]);
-    var uniq=[]; anyTier.forEach(function(t){ if(uniq.indexOf(t)<0) uniq.push(t); });
-    if(uniq.length) parts.push('While '+uniq.slice(0,4).join(', ')+' pricing was healthy in places, low table volume prevented meaningful bottle service conversion throughout the week.');
+
+  /* ---- Table volume narrative ---- */
+  if(withTbl.length && tblBudget){
+    var weakSorted=withTbl.slice().sort(function(a,b){
+      return ((a.tablesActual||0)/(a.tablesBudget||1))-((b.tablesActual||0)/(b.tablesBudget||1));
+    });
+    var weak=weakSorted[0], strong=weakSorted[weakSorted.length-1];
+    if(beat.length===n && minTbl>=Math.ceil(tblBudget*0.6)){
+      parts.push('Results were driven by significantly improved table volume ('+minTbl+'\u2013'+maxTbl+'/'+tblBudget+' sold)'+(function(){
+        var tiers=_flashTierAggregate(shows,'allBeat');
+        if(!tiers.length) return '.';
+        return ' and exceptional pricing across '+tiers.slice(0,3).join(', ')+' tier'+(tiers.length>1?'s':'')+', both of which materially exceeded target average spend.';
+      })());
+    } else if(beat.length===0 && maxTbl<tblBudget*0.5){
+      var volSent='The primary issue was extremely weak table demand, with only '+minTbl+'\u2013'+maxTbl+' of '+tblBudget+' tables sold nightly';
+      var wDay=_dowShortFromLabel(weak.label);
+      if(wDay && (weak.tablesActual||0)<=2) volSent+='; '+wDay+' was particularly concerning with just '+(weak.tablesActual||0)+' table'+((weak.tablesActual||0)===1?'':'s')+' sold';
+      else if(wDay && (weak.tablesActual||0)<maxTbl) volSent+='; '+wDay+' was particularly soft with only '+(weak.tablesActual||0)+' of '+tblBudget+' tables sold';
+      if(strong && strong!==weak && (strong.tablesActual||0)>minTbl)
+        volSent+=', while even '+(_dowShortFromLabel(strong.label)||'the strongest night')+'\'s '+(strong.tablesActual||0)+'-table performance was insufficient to reach the required bottle service level';
+      parts.push(volSent+'.');
+    } else if(beat.length>0 && beat.length<n && strong && (strong.tablesActual||0)/strong.tablesBudget>=0.7){
+      var sDay=_dowShortFromLabel(strong.label)||'The strongest night';
+      var roiA=_flashShowRoi(strong), roiT=_flashShowRoiTarget(strong);
+      parts.push(sDay+' clearly stood out, with '+(strong.tablesActual||0)+' of '+strong.tablesBudget+' tables sold'
+        +(strong.bsMin?', bottle service '+(strong.bsActual>=strong.bsMin?'exceeding minimum ('+$kv(strong.bsActual||0)+' vs. '+$kv(strong.bsMin)+')':'at '+$kv(strong.bsActual||0)+' versus a '+$kv(strong.bsMin)+' minimum'):'')
+        +(roiA!=null&&roiT!=null?', and a '+roiA+' ratio vs. '+roiT+' target':'')+'.');
+      var softNights=withTbl.filter(function(s){ return s!==strong && ((s.tablesActual||0)/(s.tablesBudget||1))<0.5; });
+      if(softNights.length){
+        var softDays=softNights.map(_dowShortFromLabel).filter(Boolean);
+        if(softDays.length) parts.push('By contrast, '+_flashDayListText(softNights)+' suffered from insufficient table volume, with only '+minTbl+'\u2013'+Math.max.apply(null,softNights.map(function(s){return s.tablesActual||0;}))+' tables sold.');
+      }
+    } else if(beat.length===0 && withTbl.length<=3){
+      var fills=withTbl.map(function(s){ return (s.tablesActual||0)+'/'+s.tablesBudget; });
+      parts.push('Table volume remained low at just '+fills.join(' and ')+' tables sold.');
+    } else if(beat.length>0 && beat.length<n && miss.length){
+      var bShow=beat.slice().sort(function(a,b){ return (b.tablesActual||0)-(a.tablesActual||0); })[0];
+      var mShow=miss.slice().sort(function(a,b){ return (a.tablesActual||0)-(b.tablesActual||0); })[0];
+      if(bShow&&mShow&&bShow.tablesBudget){
+        parts.push('The contrast was driven almost entirely by table demand and premium-tier monetization: '+mShow.dj+' sold only '+(mShow.tablesActual||0)+' of '+mShow.tablesBudget+' tables, while '+bShow.dj+' sold '+(bShow.tablesActual||0)+' of '+bShow.tablesBudget);
+        var bTiers=_flashTierAggregate([bShow],'anyBeat');
+        if(bTiers.length) parts[parts.length-1]+=', with '+bTiers.slice(0,3).join(', ')+' tier'+(bTiers.length>1?'s':'')+' substantially outperforming target pricing';
+        parts[parts.length-1]+='.';
+      }
+    }
   }
-  return parts.join(' ');
+
+  /* ---- Pricing vs volume ---- */
+  var priceOk=shows.filter(function(s){ return _flashPricingHealthy(s)===true; });
+  var priceBad=shows.filter(function(s){ return _flashPricingHealthy(s)===false; });
+  if(beat.length===0 && priceOk.length>=2 && priceBad.length===0){
+    parts.push('Average spend per table remained above minimum on '+_flashDayListText(priceOk)+', suggesting that pricing itself was not the core issue\u2014the lack of sell-through prevented healthy ROI conversion.');
+  } else if(beat.length===0 && priceOk.length && withTbl.length){
+    var hiAvg=withTbl.filter(function(s){ var a=_flashAvgPerTable(s); return a!=null && a>=2000; });
+    if(hiAvg.length){
+      var avgs=hiAvg.map(function(s){ return $kv(_flashAvgPerTable(s)); }).join(' and ');
+      parts.push('Average spend per table was exceptionally strong at '+avgs+', well above minimums\u2014reinforcing that pricing is not the issue; building demand'+(isRooftop?' at the new Rooftop location':'')+' remains the key priority.');
+    }
+  } else if(beat.length<n && priceOk.length && priceBad.length===0 && beat.length>0){
+    parts.push('Average spend per table exceeded minimum on '+_flashDayListText(priceOk)+', despite softer nights elsewhere.');
+  }
+
+  /* ---- Close-to-target ROI (near misses) ---- */
+  if(near.length && beat.length<n){
+    near.sort(function(a,b){
+      var ga=(_flashShowRoiTarget(a)||0)-(_flashShowRoi(a)||0);
+      var gb=(_flashShowRoiTarget(b)||0)-(_flashShowRoi(b)||0);
+      return ga-gb;
+    });
+    var nearBits=near.map(function(s){
+      var ra=_flashShowRoi(s), rt=_flashShowRoiTarget(s);
+      return s.dj+' came relatively close to ROI at '+(ra!=null?ra:'—')+' vs. '+(rt!=null?rt:'—')+' target';
+    });
+    var farMiss=miss.filter(function(s){
+      var ra=_flashShowRoi(s), rt=_flashShowRoiTarget(s);
+      return ra!=null&&rt!=null&&(rt-ra)>=2;
+    });
+    if(nearBits.length){
+      var farBit=farMiss.length?('; whereas '+farMiss.map(function(s){
+        return s.dj+' finished further behind at '+_flashShowRoi(s)+' vs. '+_flashShowRoiTarget(s);
+      }).join(', ')):'';
+      parts.push(nearBits.join(', ')+farBit+'.');
+    }
+  }
+
+  /* ---- Tier / trend closing (when PTD tail not used) ---- */
+  var cancelBit=_flashCancelSentence(d.venue, shows);
+  var ptdBit='';
+  var volumeChallenge=/MILA/i.test(d.venue)||(beat.length===0&&avgFill<0.45);
+  if(asOfDate && typeof fiscalInfoForDate==='function'){
+    var fi=fiscalInfoForDate(asOfDate);
+    var weekInPeriod=shows.some(function(s){ return dateInFiscalPeriod(s.date, fi.year, fi.monthIndex); });
+    if(weekInPeriod) ptdBit=_flashPtdTail(d.venue, asOfDate, name, {volumeChallenge:volumeChallenge});
+  }
+
+  if(!ptdBit){
+    if(beat.length===n && avgFill>=0.65){
+      parts.push('The combination of strong demand and premium-tier monetization translated into one of the venue\'s strongest ROI weeks of the year.');
+    } else if(isRooftop && beat.length===0){
+      parts.push('Given the recent location change, the early trend suggests strong spending from guests who are converting, but insufficient table volume to fully monetize the Rooftop and consistently achieve ROI.');
+    } else if(beat.length>0 && beat.length<n && /Beach Club/i.test(d.venue)){
+      parts.push('The results reinforce that '+_venueShortName(d.venue)+' continues to generate exceptional ROI when table demand materializes, but even strong pricing cannot offset extremely weak volume.');
+    } else if(beatPct>=50 && beat.length<n){
+      parts.push('The week reinforces the same underlying trend: when '+name+' generates table volume, pricing is capable of supporting ROI, but inconsistent demand continues to prevent repeatable performance.');
+    } else if(beatPct<50 && beat.length>0){
+      parts.push('The results reinforce that '+name+' delivers strong ROI when demand materializes, but inconsistent table volume prevented repeatable performance this week.');
+    } else if(/MILA/i.test(d.venue) && beatPct<60){
+      parts.push('Volume remains '+name+'\'s critical challenge; pricing held on stronger nights but could not offset weak sell-through.');
+    } else if(beat.length===0){
+      var anyTier=_flashTierAggregate(shows,'anyBeat');
+      if(anyTier.length) parts.push('While '+anyTier.slice(0,4).join(', ')+' pricing was healthy in places, low table volume prevented meaningful bottle service conversion throughout the week.');
+      else parts.push('Low table volume and insufficient bottle service conversion drove the weak ROI results.');
+    }
+  } else {
+    parts.push(ptdBit);
+  }
+
+  if(cancelBit) parts.push(cancelBit.replace(/^\s+/,''));
+
+  return parts.join(' ').replace(/\s+/g,' ').trim();
 }
 function _generateWeekFlashNarrative(venues){
   var list=(venues||[]).filter(function(v){return v&&v.shows&&v.shows.length;});
@@ -1894,7 +2178,9 @@ function _generateWeekFlashNarrative(venues){
   });
   var paras=list.map(_generateVenueFlashParagraph).filter(Boolean);
   if(!paras.length) return '';
-  return '<div class="vip-week-narrative"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:8px">Week Narrative</div>'
+  var weekNum=(list[0]&&list[0].weekKey)?((String(list[0].weekKey).match(/W(\d+)/)||[])[1]||''):'';
+  var title=weekNum?('Week '+weekNum+' Narrative'):'Week Narrative';
+  return '<div class="vip-week-narrative"><div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:8px">'+title+'</div>'
     +paras.map(function(p){return '<p>'+p+'</p>';}).join('')
     +'</div>';
 }
@@ -4002,6 +4288,7 @@ function buildVipFromSched(mon, sun) {
     var feeN = e.fee || e.cost || (baked && baked.fee) || 0;
     var tgtRow = (typeof showTargets==='function') ? showTargets(e) : null;
     var bsMinN = e.bs_m || (tgtRow && tgtRow.bs_m) || (baked && baked.bsMin) || 0;
+    var roiTN = e.roi_t || (tgtRow && tgtRow.roi_t) || (baked && baked.roiTarget) || 0;
     venueMap[vn].shows.push({
       date:         e.d,
       label:        new Date(e.d+'T12:00:00Z').toLocaleDateString('en-US', dateOpts),
@@ -4015,7 +4302,8 @@ function buildVipFromSched(mon, sun) {
       tableDetail:  (baked && baked.tableDetail) || null,
       _tierDataAvailable: hasTierActual,
       roiActual:    e.roi_a || (feeN > 0 ? Math.round(bsAct/feeN*100)/100 : 0),
-      roiTarget:    e.roi_t || 0
+      roiTarget:    roiTN || (feeN > 0 && bsMinN > 0 ? Math.round(bsMinN/feeN*100)/100 : 0),
+      note:         e.note || null
     });
   });
   var order = ['Casa Neos Beach Club','MILA Lounge','Casa Neos Lounge'];
