@@ -2026,18 +2026,45 @@ function _daysTo(dateStr){
   var d = new Date(dateStr+'T12:00:00'); d.setHours(0,0,0,0);
   return Math.round((d-now)/86400000);
 }
-/* Forecast row filters: chart = next N from today; details/pickup = through end of next calendar month */
+/* Forecast row filters: chart = next N from today (any date); details/pickup = today through +1 month */
 function _fcastFromToday(events){
   return (events||[]).filter(function(e){ return _daysTo(e.date) >= 0; });
 }
-function _fcastWithinOneMonth(events){
+function _fcastMonthEndDate(){
   var now = new Date(); now.setHours(0,0,0,0);
   var end = new Date(now);
   end.setMonth(end.getMonth()+1);
+  return end;
+}
+function _fcastWithinOneMonth(events){
+  var now = new Date(); now.setHours(0,0,0,0);
+  var end = _fcastMonthEndDate();
   return (events||[]).filter(function(e){
     var d = new Date(e.date+'T12:00:00'); d.setHours(0,0,0,0);
     return d >= now && d <= end;
   });
+}
+/* Merge baked FORECAST_DATA with live SCHED so chart can show next 4/8 even when bake is stale. */
+function _fcastVenueEvents(vname){
+  var byDate = {};
+  (FORECAST_DATA||[]).forEach(function(e){
+    if(!e||e.venue!==vname) return;
+    byDate[e.date]=e;
+  });
+  if(typeof SCHED!=='undefined'){
+    SCHED.forEach(function(r){
+      if(!r||!r.d||r._s==='empty') return;
+      if((r.v||r.venue)!==vname) return;
+      if(_daysTo(r.d)<0) return;
+      if(byDate[r.d]) return;
+      byDate[r.d]={
+        venue:vname, date:r.d, dj:r.dj||'',
+        bookedTables:0, totalTables:0, totalRevenue:0,
+        tierSummary:{}, hasData:false, _fromSched:true
+      };
+    });
+  }
+  return Object.keys(byDate).sort().map(function(d){ return byDate[d]; });
 }
 
 /* For a forecast event, get fee + dj name from SCHED and compute bsTarget via ROI rules */
@@ -3474,8 +3501,7 @@ function renderForecast(venueIdx, view){
   } else {
     // -- SINGLE VENUE VIEW ? follows global venue selector (curV) ---
     var vname = curV;
-    var events = FORECAST_DATA.filter(function(e){ return e.venue===vname; })
-      .sort(function(a,b){ return a.date<b.date?-1:a.date>b.date?1:0; });
+    var events = _fcastVenueEvents(vname);
 
     // KPI strip ? compute targets live from VENUE_ROI_RULES
     var totalRev = events.reduce(function(s,e){return s+e.totalRevenue;},0);
@@ -3502,16 +3528,12 @@ function renderForecast(venueIdx, view){
     var upcomingMonth = _fcastWithinOneMonth(events);
     var chartLimit = (curV==='Casa Neos Beach Club') ? 4 : 8;
     var viewRows = upcomingToday.slice(0, chartLimit);
-    var monthEnd = (function(){
-      var now = new Date(); now.setHours(0,0,0,0);
-      var end = new Date(now); end.setMonth(end.getMonth()+1);
-      return end.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    })();
+    var monthEnd = _fcastMonthEndDate().toLocaleDateString('en-US',{month:'short',day:'numeric'});
     var venueShort = (curV==='Casa Neos Beach Club') ? 'CASA NEOS BC'
       : (curV==='Casa Neos Lounge') ? 'CASA NEOS LOUNGE'
       : (curV==='MILA Lounge') ? 'MILA LOUNGE'
       : String(curV||'VENUE').toUpperCase();
-    h += '<div style="font-size:10px;color:var(--ink3);margin:-2px 0 10px">Chart: next <b>'+chartLimit+'</b> from today &middot; Details &amp; pick up pace: through <b>'+monthEnd+'</b> ('+upcomingMonth.length+' show'+(upcomingMonth.length===1?'':'s')+')</div>';
+    h += '<div style="font-size:10px;color:var(--ink3);margin:-2px 0 10px">Chart: next <b>'+chartLimit+'</b> performances (any date) &middot; Details &amp; pick up pace: <b>today – '+monthEnd+'</b> ('+upcomingMonth.length+' show'+(upcomingMonth.length===1?'':'s')+')</div>';
 
     // ============================================================
     // 1) RESULTS ? booking performance snapshot (PDF page 1)
