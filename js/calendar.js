@@ -2044,7 +2044,30 @@ function _fcastWithinOneMonth(events){
     return d >= now && d <= end;
   });
 }
-/* Merge baked FORECAST_DATA with live SCHED so chart can show next 4/8 even when bake is stale. */
+function _fcastSchedRows(venue, date){
+  if(typeof SCHED==='undefined') return [];
+  return SCHED.filter(function(r){
+    if(!r||!r.d||r._s==='empty') return false;
+    return (r.v||r.venue)===venue && r.d===date;
+  });
+}
+function _fcastApplyLiveRow(e){
+  if(!e) return e;
+  var live = window._forecastLive;
+  if(!live || !live.events) return e;
+  var key = (e.venue + '_' + e.date).replace(/[^a-zA-Z0-9_-]/g, '_');
+  var row = live.events[key];
+  if(!row) return e;
+  if(row.totalRevenue != null && (row.hasData || row.totalRevenue>0 || e.totalRevenue==null)) e.totalRevenue = row.totalRevenue;
+  if(row.bookedTables != null && (row.hasData || row.bookedTables>0 || !e.bookedTables)) e.bookedTables = row.bookedTables;
+  if(row.totalTables != null && (row.hasData || row.totalTables>0 || !e.totalTables)) e.totalTables = row.totalTables;
+  if(row.dj != null && row.dj !== '') e.dj = row.dj;
+  if(row.tierSummary) e.tierSummary = row.tierSummary;
+  if(row.hasData != null) e.hasData = row.hasData;
+  if(row._source) e._source = row._source;
+  return e;
+}
+/* Merge baked FORECAST_DATA with live SCHED so chart/details include all upcoming shows. */
 function _fcastVenueEvents(vname){
   var byDate = {};
   (FORECAST_DATA||[]).forEach(function(e){
@@ -2056,30 +2079,43 @@ function _fcastVenueEvents(vname){
       if(!r||!r.d||r._s==='empty') return;
       if((r.v||r.venue)!==vname) return;
       if(_daysTo(r.d)<0) return;
-      if(byDate[r.d]) return;
-      byDate[r.d]={
-        venue:vname, date:r.d, dj:r.dj||'',
-        bookedTables:0, totalTables:0, totalRevenue:0,
-        tierSummary:{}, hasData:false, _fromSched:true
-      };
+      var entry = byDate[r.d];
+      if(!entry){
+        entry = {
+          venue:vname, date:r.d, dj:r.dj||'',
+          bookedTables:0, totalTables:0, totalRevenue:0,
+          tierSummary:{}, hasData:false, _fromSched:true
+        };
+        byDate[r.d]=entry;
+      } else if(r.dj && (!entry.dj || /^\?+$/.test(entry.dj) || entry.dj==='TBD' || entry.dj==='TBA')){
+        entry.dj = r.dj;
+      }
     });
   }
-  return Object.keys(byDate).sort().map(function(d){ return byDate[d]; });
+  return Object.keys(byDate).sort().map(function(d){
+    return _fcastEnrich(_fcastApplyLiveRow(byDate[d]), true);
+  });
 }
 
 /* For a forecast event, get fee + dj name from SCHED and compute bsTarget via ROI rules */
 function _fcastEnrich(e, force){
   if(!e) return e;
   if(!force && e._enriched) return e;
-  var matches = SCHED.filter(function(r){ return r.v===e.venue && r.d===e.date; });
+  _fcastApplyLiveRow(e);
+  var matches = _fcastSchedRows(e.venue, e.date);
   var match = matches[0];
+  if(matches.length > 1 && e.dj){
+    var djUp = String(e.dj).toUpperCase();
+    var byDj = matches.find(function(r){ return String(r.dj||'').toUpperCase()===djUp; });
+    if(byDj) match = byDj;
+  }
   var fee = (match && (match.fee||match.cost)) || e.djCost || 0;
   e.djCost = fee;
   if(match && match.dj && (!e.dj || /^\?+$/.test(e.dj) || e.dj==='TBD' || e.dj==='TBA')){
     e.dj = match.dj;
   }
   var roi = (typeof venueRoiLookup==='function') ? venueRoiLookup(e.venue, e.date, fee) : null;
-  e.bsTarget = (roi && roi.bsTarget) ? roi.bsTarget : null;
+  e.bsTarget = (roi && roi.bsTarget) ? roi.bsTarget : ((match && match.bs_m != null) ? +match.bs_m : null);
   if(match && match.bs_a != null) e._toastActual = match.bs_a;
   e._enriched = true;
   return e;
@@ -3229,6 +3265,7 @@ function _fcastDetailsTableHtml(events, venueShort){
     h += '<tr><td colspan="10" style="padding:14px;color:var(--ink3)">No upcoming shows</td></tr>';
   }
   rows.forEach(function(e){
+    _fcastEnrich(e, true);
     var fee = e.djCost || 0;
     var act = e.totalRevenue || 0;
     var tgt = e.bsTarget || (function(){ var r=venueRoiLookup(e.venue,e.date,fee); return r?r.bsTarget:0; })() || 0;
@@ -3543,6 +3580,7 @@ function renderForecast(venueIdx, view){
       h += '<div style="padding:16px;color:var(--ink3)">No upcoming shows.</div>';
     } else {
       var chartRows = viewRows.map(function(e){
+        _fcastEnrich(e, true);
         var act = e.totalRevenue||0;
         var tgt = e.bsTarget || (function(){ var r=venueRoiLookup(e.venue,e.date,e.djCost||0); return r?r.bsTarget:0; })();
         var dateObj = new Date(e.date+'T12:00:00');
@@ -3589,6 +3627,7 @@ function renderForecast(venueIdx, view){
       h += '<tr><td colspan="10" style="padding:14px 16px;color:var(--ink3)">No upcoming shows</td></tr>';
     }
     paceFocus.forEach(function(e){
+      _fcastEnrich(e, true);
       var tgt = e.bsTarget || (function(){ var r=venueRoiLookup(e.venue,e.date,e.djCost||0); return r?r.bsTarget:0; })();
       var dlt = _fcastDayDelta(e.venue, e.date, e.totalRevenue||0, e.bookedTables||0);
       var pct = _fcastPickupPct(dlt, tgt);
