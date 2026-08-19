@@ -2163,7 +2163,7 @@ function renderVenueRulesPanel(){
     };
     return rank(a)-rank(b) || a.localeCompare(b);
   });
-  var tabsHtml='<div class="vr-tabs">';
+  var tabsHtml='<div class="vr-tabs vr-tabs--page">';
   venues.forEach(function(v){
     var label=v===CNBC_SUMMER_ROOF_KEY ? 'CNBC Summer Roof' : v;
     tabsHtml+='<button class="vr-tab'+(v===_vrEditVenue?' on':'')+'" data-vv="'+v+'" title="'+(v===CNBC_SUMMER_ROOF_KEY?'Sunset Rituals · Aug–Sep only':v)+'">'+label+'</button>';
@@ -2205,15 +2205,22 @@ function renderVenueRulesPanel(){
   });
   h+='</div></div>';
 
-  h+='<div class="vr-tiers">';
+  h+='<div class="vr-tiers vr-tiers--page">';
   rules.tiers.forEach(function(tier, ti){
-    h+='<div class="vr-tier-block">';
+    h+='<div class="vr-tier-block vr-tier-block--page">';
     h+='<div class="vr-tier-hd">';
-    h+='<span>DJ Fee</span><input type="number" class="vr-fee-inp" value="'+tier.fee+'" data-action="fee" data-ti="'+ti+'">';
+    h+='<span class="vr-tier-fee-lbl">DJ Fee</span>';
+    if(typeof _vrFeeInputHtml==='function'){
+      h+=_vrFeeInputHtml(tier.fee, 'vr-fee-inp', 'data-action="fee" data-ti="'+ti+'"');
+    }else{
+      h+='<input type="number" class="vr-fee-inp" value="'+tier.fee+'" data-action="fee" data-ti="'+ti+'">';
+    }
     h+='<button class="rules-del" data-action="remove-tier" data-ti="'+ti+'" title="Remove tier">&#10005;</button>';
     h+='</div>';
-    h+='<table class="vr-tier-tbl"><thead><tr><th>Season</th><th>Day</th><th>ROI</th><th>BS Target</th>';
-    (rules.tableCats||[]).forEach(function(c){ h+='<th>'+c+'</th>'; });
+    h+='<div class="vr-tier-scroll"><table class="vr-tier-tbl vr-tier-tbl--page"><thead><tr><th>Season</th><th>Day</th><th>ROI</th><th>BS Target</th>';
+    (rules.tableCats||[]).forEach(function(c){
+      h+='<th class="vr-th-tier">'+c+'<span class="vr-th-sub">min $</span></th>';
+    });
     h+='</tr></thead><tbody>';
     ['High','Low'].forEach(function(season){
       rules.days.forEach(function(day, di){
@@ -2221,16 +2228,24 @@ function renderVenueRulesPanel(){
         h+='<tr>';
         if(di===0) h+='<td rowspan="'+rules.days.length+'" class="vr-season-cell vr-season-'+season.toLowerCase()+'">'+season+'</td>';
         h+='<td class="vr-day-cell">'+day.slice(0,3)+'</td>';
-        h+='<td><input type="number" step="0.1" class="vr-cell-inp" value="'+dayData.roi+'" data-action="day-field" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-field="roi"></td>';
-        h+='<td><input type="number" class="vr-cell-inp" value="'+dayData.sales+'" data-action="day-field" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-field="sales"></td>';
-        (rules.tableCats||[]).forEach(function(c){
-          var tv=(dayData.tables||{})[c]||0;
-          h+='<td><input type="number" class="vr-cell-inp vr-cell-sm" value="'+tv+'" data-action="table-field" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-cat="'+c+'"></td>';
-        });
+        h+='<td><input type="number" step="0.1" class="vr-cell-inp vr-roi-inp" value="'+dayData.roi+'" data-action="day-field" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-field="roi"></td>';
+        if(typeof _vrMoneyInputHtml==='function'){
+          h+='<td>'+_vrMoneyInputHtml(dayData.sales, 'vr-cell-inp vr-target-inp', 'data-action="day-field" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-field="sales"')+'</td>';
+          (rules.tableCats||[]).forEach(function(c){
+            var tv=(dayData.tables||{})[c]||0;
+            h+='<td>'+_vrMoneyInputHtml(tv, 'vr-cell-inp vr-cell-sm', 'data-action="table-field" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-cat="'+c+'"')+'</td>';
+          });
+        }else{
+          h+='<td><input type="number" class="vr-cell-inp" value="'+dayData.sales+'" data-action="day-field" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-field="sales"></td>';
+          (rules.tableCats||[]).forEach(function(c){
+            var tv=(dayData.tables||{})[c]||0;
+            h+='<td><input type="number" class="vr-cell-inp vr-cell-sm" value="'+tv+'" data-action="table-field" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-cat="'+c+'"></td>';
+          });
+        }
         h+='</tr>';
       });
     });
-    h+='</tbody></table></div>';
+    h+='</tbody></table></div></div>';
   });
   h+='</div>';
   h+='<button class="btn-add" id="vrAddTierBtn">+ Add DJ fee tier</button>';
@@ -2238,6 +2253,7 @@ function renderVenueRulesPanel(){
   document.getElementById('vrBody').innerHTML=h;
   var vrBodyEl=document.getElementById('vrBody');
   if(vrBodyEl) vrBodyEl.style.maxHeight=document.getElementById('view-roi-rules')?'none':'50vh';
+  if(typeof wireVenueRulesMoneyInputs==='function') wireVenueRulesMoneyInputs(document.getElementById('vrBody'));
   wireVenueRulesEvents();
 }
 
@@ -2249,19 +2265,24 @@ function wireVenueRulesEvents(){
     btn.addEventListener('click',function(){ toggleOperatingDay(_vrEditVenue, btn.dataset.day); });
   });
   document.querySelectorAll('[data-action="fee"]').forEach(function(inp){
-    inp.addEventListener('change',function(){ updateTierFee(_vrEditVenue, parseInt(inp.dataset.ti,10), inp.value); });
+    inp.addEventListener('change',function(){
+      var val=(typeof _vrParseMoney==='function')?_vrParseMoney(inp.value):(parseFloat(inp.value)||0);
+      updateTierFee(_vrEditVenue, parseInt(inp.dataset.ti,10), val);
+    });
   });
   document.querySelectorAll('[data-action="remove-tier"]').forEach(function(btn){
     btn.addEventListener('click',function(){ removeTier(_vrEditVenue, parseInt(btn.dataset.ti,10)); });
   });
   document.querySelectorAll('[data-action="day-field"]').forEach(function(inp){
     inp.addEventListener('change',function(){
-      updateTierDay(_vrEditVenue, parseInt(inp.dataset.ti,10), inp.dataset.season, inp.dataset.day, inp.dataset.field, inp.value);
+      var val=inp.dataset.field==='roi'?(parseFloat(inp.value)||0):((typeof _vrParseMoney==='function')?_vrParseMoney(inp.value):(parseFloat(inp.value)||0));
+      updateTierDay(_vrEditVenue, parseInt(inp.dataset.ti,10), inp.dataset.season, inp.dataset.day, inp.dataset.field, val);
     });
   });
   document.querySelectorAll('[data-action="table-field"]').forEach(function(inp){
     inp.addEventListener('change',function(){
-      updateTierTable(_vrEditVenue, parseInt(inp.dataset.ti,10), inp.dataset.season, inp.dataset.day, inp.dataset.cat, inp.value);
+      var val=(typeof _vrParseMoney==='function')?_vrParseMoney(inp.value):(parseFloat(inp.value)||0);
+      updateTierTable(_vrEditVenue, parseInt(inp.dataset.ti,10), inp.dataset.season, inp.dataset.day, inp.dataset.cat, val);
     });
   });
   var addBtn=document.getElementById('vrAddTierBtn');
