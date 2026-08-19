@@ -704,8 +704,9 @@ function persistSchedShow(rec){
   _fbEraseNightCopies(payload.v||payload.venue||'', rec.d, uid);
 }
 /* DJ Status only — write djStatus on this show's uid path ONLY.
-   If no edit node exists yet, seed identity from the local row so a later
-   rebuild cannot snap the DJ name back to bake. Never touch other nights. */
+   Never bundle DJ name / fee (that made status look like it changed price).
+   If no Firebase node exists yet, seed date + venue + status only — use Edit Show
+   to persist DJ name and fee. Never touch other nights. */
 function persistShowDjStatusOnly(rec){
   if(!rec||!rec.d) return;
   ensureShowUid(rec);
@@ -714,7 +715,14 @@ function persistShowDjStatusOnly(rec){
   var uid=ensureShowUid(rec);
   var nextStatus=rec.djStatus==null ? null : rec.djStatus;
   if(typeof window._guardSchedWrite==='function'){
-    window._guardSchedWrite(Object.assign({}, rec, {djStatus: nextStatus, _writeKind: 'statusMerge'}));
+    window._guardSchedWrite({
+      d: rec.d,
+      v: rec.v||rec.venue||'',
+      venue: rec.venue||rec.v||'',
+      _uid: uid,
+      djStatus: nextStatus,
+      _writeKind: 'statusMerge'
+    });
   }
   var isBaked=_alignRecToBakedShow(rec);
   if(!isBaked) rec._added=1;
@@ -725,14 +733,14 @@ function persistShowDjStatusOnly(rec){
       var next=Object.assign({}, cur);
       next.djStatus=nextStatus;
       next.updatedAt=new Date().toISOString();
-      next._writeKind='statusMerge';
+      /* Keep modal/evClear — downgrading to statusMerge hid saved fee/DJ on reload. */
+      if(cur._writeKind!=='modal' && cur._writeKind!=='evClear'){
+        next._writeKind='statusMerge';
+      }
       map[uid]=next;
       return map;
     }
     map[uid]=_fbSanitize({
-      dj: rec.dj||'',
-      fee: rec.fee!=null?rec.fee:null,
-      cost: rec.cost!=null?rec.cost:(rec.fee!=null?rec.fee:null),
       d: rec.d,
       v: rec.v||rec.venue||'',
       venue: rec.venue||rec.v||'',
@@ -740,7 +748,7 @@ function persistShowDjStatusOnly(rec){
       djStatus: nextStatus,
       _writeKind: 'statusMerge',
       _added: isBaked?0:1,
-      updatedAt: new Date().toISOString()
+      updatedAt:new Date().toISOString()
     });
     return map;
   }, _fbOnSchedWrite);

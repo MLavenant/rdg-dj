@@ -617,10 +617,18 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       if(Object.prototype.hasOwnProperty.call(edit,'agency')){
         target.agency = edit.agency==null ? null : edit.agency;
       }
-      if((!target.dj || String(target.dj).toUpperCase()==='TBD') && edit.dj) target.dj=edit.dj;
-      if((target.fee==null && target.cost==null) && (edit.fee!=null || edit.cost!=null)){
+      /* Legacy status seeds wrongly bundled DJ + fee — honor them so saved fees stick. */
+      var legacyBundled=(edit.fee!=null||edit.cost!=null) && edit.dj && String(edit.dj).trim()!=='';
+      if(legacyBundled){
+        target.dj=edit.dj;
         target.fee=edit.fee!=null?edit.fee:edit.cost;
         target.cost=edit.cost!=null?edit.cost:edit.fee;
+      } else {
+        if((!target.dj || String(target.dj).toUpperCase()==='TBD') && edit.dj) target.dj=edit.dj;
+        if((target.fee==null && target.cost==null) && (edit.fee!=null || edit.cost!=null)){
+          target.fee=edit.fee!=null?edit.fee:edit.cost;
+          target.cost=edit.cost!=null?edit.cost:edit.fee;
+        }
       }
       return;
     }

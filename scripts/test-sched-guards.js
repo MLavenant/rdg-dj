@@ -190,4 +190,15 @@ assert(dupNight.length===1, 'duplicate same-night shows collapse to one');
 assert(dupNight[0]._uid==='bake', 'baked row wins over shadow add');
 assert(dupNight[0].djStatus==='Confirmed', 'Confirmed status kept when folding');
 
+/* 11) Status on modal-saved show must not downgrade write kind (fee stuck at bake) */
+function statusTxnPatch(cur, nextStatus){
+  var next=Object.assign({}, cur);
+  next.djStatus=nextStatus;
+  if(cur._writeKind!=='modal' && cur._writeKind!=='evClear') next._writeKind='statusMerge';
+  return next;
+}
+var modalSaved={fee:20000,dj:'CEDRIC GERVAIS',_writeKind:'modal'};
+var afterStatus=statusTxnPatch(modalSaved,'Confirmed');
+assert(afterStatus.fee===20000 && afterStatus._writeKind==='modal', 'status keeps modal fee/write kind');
+
 console.log('\nAll sched guard tests passed.');
