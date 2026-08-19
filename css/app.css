@@ -1090,6 +1090,7 @@ model-viewer{--min-hotspot-opacity:0}
 .roi-alert-row:focus{outline:2px solid #fca5a5;outline-offset:-2px}
 .roi-alert-cta{color:#dc2626;font-weight:800;font-size:10px;white-space:nowrap}
 .roi-alert-row:hover .roi-alert-cta{text-decoration:underline}
+.roi-tier-match-note{font-size:10px;font-weight:700;color:#0f766e;margin-left:6px}
 
 .import-preview-tbl{width:100%;border-collapse:collapse;font-size:10px}
 .import-preview-tbl th{background:var(--card2);padding:4px 6px;text-align:left;font-size:8px;font-weight:700;text-transform:uppercase;color:var(--ink3)}

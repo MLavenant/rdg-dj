@@ -1023,11 +1023,7 @@ function saveVenueRules(){
   ensureCnbcSummerRoofRules();
   try{ localStorage.setItem('rdg_venue_roi_rules', JSON.stringify(VENUE_ROI_RULES)); }catch(e){}
   if(window._fbSave) window._fbSave('venueRoiRules', VENUE_ROI_RULES);
-  recalcAllSchedTargets();
-  go();
-  if(curView==='accounting') renderAccounting();
-  if(curView==='budget'&&_budgetInited) renderBudget();
-  if(curView==='roi-rules'&&typeof renderRoiRulesPage==='function') renderRoiRulesPage();
+  refreshAllRoiDerivedData();
 }
 
 /* Special-day / holiday performances — override standard venue rules for date ranges
@@ -1045,12 +1041,7 @@ function loadSavedRoiSpecialEvents(){
 function saveRoiSpecialEvents(){
   try{ localStorage.setItem('rdg_roi_special_events', JSON.stringify(ROI_SPECIAL_EVENTS)); }catch(e){}
   if(window._fbSave) window._fbSave('roiSpecialEvents', ROI_SPECIAL_EVENTS);
-  recalcAllSchedTargets();
-  go();
-  if(curView==='accounting') renderAccounting();
-  if(curView==='budget'&&_budgetInited) renderBudget();
-  if(curView==='forecast') renderForecast();
-  if(curView==='roi-rules'&&typeof renderRoiRulesPage==='function') renderRoiRulesPage();
+  refreshAllRoiDerivedData();
 }
 function roiSpecialEventFor(venue, dateStr){
   if(!venue||!dateStr||!ROI_SPECIAL_EVENTS) return null;
@@ -1181,6 +1172,17 @@ function recalcAllSchedTargets(){
     if(!(r.fee||r.cost)) return;
     applyShowTargets(r);
   });
+}
+/* Recompute ROI-derived targets everywhere (calendar SCHED, forecast cache, open views). */
+function refreshAllRoiDerivedData(){
+  recalcAllSchedTargets();
+  if(typeof refreshForecastRoiCache==='function') refreshForecastRoiCache();
+  if(typeof go==='function') go();
+  if(curView==='forecast'&&typeof renderForecast==='function') renderForecast();
+  if(curView==='vip'&&typeof renderVIP==='function') renderVIP();
+  if(curView==='accounting'&&typeof renderAccounting==='function') renderAccounting();
+  if(curView==='budget'&&_budgetInited&&typeof renderBudget==='function') renderBudget();
+  if(curView==='roi-rules'&&typeof renderRoiRulesPage==='function') renderRoiRulesPage();
 }
 
 function tierFor(fee){

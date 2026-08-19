@@ -2041,26 +2041,30 @@ function _fcastWithinOneMonth(events){
 }
 
 /* For a forecast event, get fee + dj name from SCHED and compute bsTarget via ROI rules */
-function _fcastEnrich(e){
-  if(e._enriched) return e;
-  // Look up matching SCHED entry for fee and DJ name
+function _fcastEnrich(e, force){
+  if(!e) return e;
+  if(!force && e._enriched) return e;
   var matches = SCHED.filter(function(r){ return r.v===e.venue && r.d===e.date; });
   var match = matches[0];
   var fee = (match && (match.fee||match.cost)) || e.djCost || 0;
   e.djCost = fee;
-  // Prefer SCHED DJ name over FourVenues (which can be blank/garbled)
   if(match && match.dj && (!e.dj || /^\?+$/.test(e.dj) || e.dj==='TBD' || e.dj==='TBA')){
     e.dj = match.dj;
   }
-  // Compute bsTarget from ROI rules using actual fee
-  if(!e.bsTarget){
-    var roi = venueRoiLookup(e.venue, e.date, fee);
-    if(roi && roi.bsTarget) e.bsTarget = roi.bsTarget;
-  }
-  // For past shows, prefer Toast bs_a if available
+  var roi = (typeof venueRoiLookup==='function') ? venueRoiLookup(e.venue, e.date, fee) : null;
+  e.bsTarget = (roi && roi.bsTarget) ? roi.bsTarget : null;
   if(match && match.bs_a != null) e._toastActual = match.bs_a;
   e._enriched = true;
   return e;
+}
+function refreshForecastRoiCache(){
+  if(typeof FORECAST_DATA==='undefined'||!Array.isArray(FORECAST_DATA)) return;
+  FORECAST_DATA.forEach(function(e){
+    if(!e) return;
+    e._enriched=false;
+    e.bsTarget=null;
+    _fcastEnrich(e, true);
+  });
 }
 
 /* ?? Pacing sparkline ??????????????????????????????????????????????????????
@@ -3384,7 +3388,7 @@ function renderForecast(venueIdx, view){
   if(venueIdx!==undefined) _fcastActiveVenue = venueIdx;
   if(view!==undefined) _fcastActiveView = view;
   // Enrich all forecast events with fee + bsTarget
-  FORECAST_DATA.forEach(_fcastEnrich);
+  FORECAST_DATA.forEach(function(e){ _fcastEnrich(e, true); });
 
   var TCOL = {DIAMOND:'#b9f2ff',PRESTIGE:'#c8b4e8',PLATINUM:'#e8e8e8',GOLD:'#ffe082',RIVERWALK:'#b2dfdb',SLIP:'#ffccbc',LOUNGE:'#c8e6c9',BOOTHS:'#fff9c4',SEATING:'#f0f4c3',Other:'#eeeeee'};
   var TTXT = {DIAMOND:'#0a4a6e',PRESTIGE:'#4a1a7a',PLATINUM:'#2d2d2d',GOLD:'#7d5a00',RIVERWALK:'#00574b',SLIP:'#7d3000',LOUNGE:'#155724',BOOTHS:'#666000',SEATING:'#4a5400',Other:'#555'};
@@ -3496,13 +3500,18 @@ function renderForecast(venueIdx, view){
 
     var upcomingToday = _fcastFromToday(events);
     var upcomingMonth = _fcastWithinOneMonth(events);
-    // Horizontal booking chart: BC = next 4, Lounge & MILA = next 8 (includes today)
     var chartLimit = (curV==='Casa Neos Beach Club') ? 4 : 8;
     var viewRows = upcomingToday.slice(0, chartLimit);
+    var monthEnd = (function(){
+      var now = new Date(); now.setHours(0,0,0,0);
+      var end = new Date(now); end.setMonth(end.getMonth()+1);
+      return end.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    })();
     var venueShort = (curV==='Casa Neos Beach Club') ? 'CASA NEOS BC'
       : (curV==='Casa Neos Lounge') ? 'CASA NEOS LOUNGE'
       : (curV==='MILA Lounge') ? 'MILA LOUNGE'
       : String(curV||'VENUE').toUpperCase();
+    h += '<div style="font-size:10px;color:var(--ink3);margin:-2px 0 10px">Chart: next <b>'+chartLimit+'</b> from today &middot; Details &amp; pick up pace: through <b>'+monthEnd+'</b> ('+upcomingMonth.length+' show'+(upcomingMonth.length===1?'':'s')+')</div>';
 
     // ============================================================
     // 1) RESULTS ? booking performance snapshot (PDF page 1)

@@ -997,6 +997,13 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     if(data.venueRoiRules) VENUE_ROI_RULES = data.venueRoiRules;
     if(typeof ensureCnbcSummerRoofRules==='function') ensureCnbcSummerRoofRules();
     if(data.roiSpecialEvents) ROI_SPECIAL_EVENTS = data.roiSpecialEvents;
+    var roiSig=JSON.stringify({v:data.venueRoiRules||null,s:data.roiSpecialEvents||null});
+    var roiChanged=(roiSig!==window._lastRoiSig);
+    if(roiChanged) window._lastRoiSig=roiSig;
+    if(roiChanged&&window._fbReady){
+      if(typeof recalcAllSchedTargets==='function') recalcAllSchedTargets();
+      if(typeof refreshForecastRoiCache==='function') refreshForecastRoiCache();
+    }
     /* CRITICAL: the live listener is on the whole `rdg` tree. Writing acctData /
        budget / toast must NOT rebuild SCHED from bake — that wiped in-flight
        DJ renames when status changed (name snapped back to TBD). */

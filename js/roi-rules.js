@@ -5,6 +5,35 @@ var _roiEditSpecialUid = null;
 var _roiSpForceCustom = false;
 var _roiSpPrefill = null;
 
+function _roiSpResolveFee(ev){
+  if(ev&&ev.djFee>0) return ev.djFee;
+  if(ev&&ev.start&&ev.venue&&typeof SCHED!=='undefined'){
+    var fee=0;
+    SCHED.forEach(function(r){
+      if(!r||r.d!==ev.start) return;
+      if((r.v||r.venue)!==ev.venue) return;
+      fee=r.fee||r.cost||0;
+    });
+    if(fee>0) return fee;
+  }
+  if(_roiSpPrefill&&_roiSpPrefill.djFee>0) return _roiSpPrefill.djFee;
+  return 0;
+}
+function _roiSpFilterRulesForShow(rules, fee, dateStr, showDays){
+  if(!rules||!fee||!rules.tiers||!rules.tiers.length) return rules;
+  var tier=nearestTier(rules, fee);
+  if(!tier) return rules;
+  var out=JSON.parse(JSON.stringify(rules));
+  out.tiers=[JSON.parse(JSON.stringify(tier))];
+  if(showDays&&showDays.length){
+    out.days=showDays.slice();
+    out.days.sort(function(a,b){ return DOW_NAMES.indexOf(a)-DOW_NAMES.indexOf(b); });
+  }
+  out._matchedFee=fee;
+  out._matchedTierFee=tier.fee;
+  return out;
+}
+
 function _vrFmtMoney(n){
   if(n==null||n===''||isNaN(+n)) return '';
   return Math.round(+n).toLocaleString('en-US');
@@ -244,7 +273,7 @@ function openRoiSpecialFormForShow(venue, dateStr, djName){
     label:(String(djName||'Special').trim()||'Special')+' · '+dateLbl,
     venue:venue, start:dateStr, end:dateStr,
     rulesVenue:null, rules:rules, floorPlan:fp,
-    extraDays:[day], dayTemplate:'Sunday', days:[day]
+    extraDays:[day], dayTemplate:'Sunday', days:[day], djFee:fee
   };
   renderRoiRulesPage();
   setTimeout(function(){
@@ -317,7 +346,7 @@ function renderRoiSpecialForm(uid){
 
   h+='<div id="roiSpCustomWrap" class="roi-tier-editor-wrap"'+(templateSel!=='__custom__'?' style="display:none"':'')+'>';
   h+='<div class="roi-tier-editor-hd"><span class="vr-season-lbl">ROI, BS Target &amp; table minimums</span>';
-  h+='<span class="roi-page-hint">All dollar fields include $ — edit Target, ROI, and tier mins for this performance.</span></div>';
+  h+='<span class="roi-page-hint" id="roiSpTierHint">Shows only the fee tier this DJ falls into.</span></div>';
   h+='<div id="roiSpCustomBody"></div>';
   h+='</div>';
 
@@ -363,21 +392,37 @@ function renderRoiSpCustomEditor(ev){
     rules=_cloneVenueRules(key);
   }
   if(!rules){ body.innerHTML='<div class="roi-empty">Pick a template first.</div>'; return; }
+  var fee=_roiSpResolveFee(ev);
+  var dateStr=ev.start||(_roiSpPrefill&&_roiSpPrefill.start)||'';
+  var days=rules.days||DOW_NAMES;
+  var showDays=days;
+  if(_roiSpPrefill&&_roiSpPrefill.days&&_roiSpPrefill.days.length) showDays=_roiSpPrefill.days;
+  else if(ev.days&&ev.days.length) showDays=ev.days;
+  if(fee>0){
+    rules=_roiSpFilterRulesForShow(rules, fee, dateStr, showDays);
+    var hint=document.getElementById('roiSpTierHint');
+    if(hint){
+      hint.textContent='DJ fee $'+fee.toLocaleString()+' → nearest tier $'+(rules._matchedTierFee||fee).toLocaleString()+'. Edit Target, ROI, and table mins for this performance only.';
+    }
+  }
+  var seasons=['High','Low'];
+  if(dateStr&&typeof seasonFor==='function') seasons=[seasonFor(rules, dateStr)];
   var h='';
   h+='<div class="vr-tiers vr-tiers--page">';
   rules.tiers.forEach(function(tier, ti){
-    h+='<div class="vr-tier-block vr-tier-block--page"><div class="vr-tier-hd"><span class="vr-tier-fee-lbl">DJ Fee</span>';
-    h+=_vrFeeInputHtml(tier.fee, 'vr-fee-inp roi-sp-fee', 'data-ti="'+ti+'"');
+    h+='<div class="vr-tier-block vr-tier-block--page"><div class="vr-tier-hd"><span class="vr-tier-fee-lbl">DJ Fee tier</span>';
+    h+=_vrFeeInputHtml(tier.fee, 'vr-fee-inp roi-sp-fee', 'data-ti="'+ti+'" readonly title="Anchor fee for this tier"');
+    if(fee>0&&tier.fee!==fee){
+      h+='<span class="roi-tier-match-note">Show DJ: $'+fee.toLocaleString()+'</span>';
+    }
     h+='</div>';
     h+='<div class="vr-tier-scroll"><table class="vr-tier-tbl vr-tier-tbl--page"><thead><tr><th>Season</th><th>Day</th><th>ROI</th><th>BS Target</th>';
     (rules.tableCats||[]).forEach(function(c){
       h+='<th class="vr-th-tier">'+c+'<span class="vr-th-sub">min $</span></th>';
     });
     h+='</tr></thead><tbody>';
-    var days=rules.days||DOW_NAMES;
-    var showDays=days;
-    if(_roiSpPrefill&&_roiSpPrefill.days&&_roiSpPrefill.days.length===1) showDays=_roiSpPrefill.days;
-    ['High','Low'].forEach(function(season){
+    showDays=rules.days||showDays;
+    seasons.forEach(function(season){
       showDays.forEach(function(day, di){
         var dayData=(tier[season]||{})[day]||{roi:0,sales:0,tables:{}};
         h+='<tr>';
@@ -454,7 +499,8 @@ function saveRoiSpecialForm(uid){
   var rec={
     label:label.trim(), venue:venue, start:start, end:end,
     floorPlan:floorPlan, extraDays:extraDays, dayTemplate:dayTemplate,
-    updatedAt:new Date().toISOString()
+    updatedAt:new Date().toISOString(),
+    djFee:_roiSpResolveFee({venue:venue,start:start,end:end,djFee:0})
   };
   if(days.length) rec.days=days;
 
