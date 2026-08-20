@@ -1,5 +1,11 @@
 'use strict';
-var XLSX=require('xlsx');
+var fs=require('fs');
+var path=require('path');
+var XLSX=require('../js/vendor/xlsx.js');
+function readWb(rel){
+  var p=path.resolve(__dirname, '..', rel);
+  return XLSX.read(fs.readFileSync(p), {type:'buffer'});
+}
 var FISCAL_WEEKS_445=[4,4,5,4,4,5,4,4,5,4,4,5];
 function flashWeekToPeriodNum(weekNum){
   var w=+weekNum, start=1, p, end;
@@ -20,62 +26,140 @@ function assert(cond, msg){
   if(!cond) throw new Error('FAIL: '+msg);
   console.log('ok — '+msg);
 }
+function sheetRows(wb, name){
+  return XLSX.utils.sheet_to_json(wb.Sheets[name], {header:1, defval:null, raw:true});
+}
+function parsePeriod(v){
+  if(v==null||v==='') return null;
+  var m=String(v).trim().toUpperCase().match(/^P\s*(\d+)$/);
+  return m?+m[1]:null;
+}
+function parseWeek(v){
+  if(v==null||v==='') return null;
+  if(typeof v==='number' && v>=1 && v<=53) return v;
+  var m=String(v).match(/Week\s*(\d+)/i);
+  return m?+m[1]:null;
+}
+var matchers=[
+  { venue:'Casa Neos Lounge', re:/CASA\s*NEOS\s*LOUNGE/i },
+  { venue:'Casa Neos Beach Club', re:/CASA\s*NEOS(?!\s*LOUNGE)/i },
+  { venue:'MILA Lounge', re:/MILA\s*2F/i }
+];
+function findCols(rows, allowSumParts, year){
+  var headerRow=-1, i, c, label, hits;
+  var yearRe=year?new RegExp(String(year)):null;
+  for(i=0;i<Math.min(rows.length,8);i++){
+    hits=0;
+    for(c=0;c<(rows[i]||[]).length;c++){
+      label=rows[i][c]==null?'':String(rows[i][c]);
+      if(/MILA\s*2F|CASA\s*NEOS/i.test(label)) hits++;
+    }
+    if(hits>=2){ headerRow=i; break; }
+  }
+  var r2=rows[headerRow]||[], r3=rows[headerRow+1]||[], r4=rows[headerRow+2]||[];
+  var maxC=Math.max(r2.length,r3.length,r4.length), out={};
+  matchers.forEach(function(m){
+    var total=[], parts=[], seg, metric;
+    for(c=0;c<maxC;c++){
+      label=r2[c]==null?'':String(r2[c]);
+      if(!m.re.test(label)) continue;
+      if(yearRe && !yearRe.test(label)) continue;
+      seg=r3[c]==null?'':String(r3[c]).trim();
+      metric=r4[c]==null?'':String(r4[c]).trim();
+      if(!/sales/i.test(metric)) continue;
+      if(/^total$/i.test(seg) || /total\s*sales/i.test(metric)) total.push(c);
+      else if(allowSumParts) parts.push(c);
+    }
+    out[m.venue]=total.length?total:(allowSumParts?parts:[]);
+  });
+  return { cols:out, dataStart:headerRow+3 };
+}
+function sumPeriod(rows, cols, periodCol, periodNum, dataStart){
+  var mtd=0,ytd=0,sawM=false,sawY=false,i,r,pn,c,v,rowSum,has;
+  for(i=dataStart;i<rows.length;i++){
+    r=rows[i]||[];
+    pn=parsePeriod(r[periodCol]);
+    if(!pn) continue;
+    rowSum=0; has=false;
+    for(c=0;c<cols.length;c++){
+      v=flashNum(r[cols[c]]);
+      if(v!=null){ rowSum+=v; has=true; }
+    }
+    if(!has) continue;
+    if(pn===periodNum){ mtd+=rowSum; sawM=true; }
+    if(pn<=periodNum){ ytd+=rowSum; sawY=true; }
+  }
+  return { mtd:sawM?mtd:null, ytd:sawY?ytd:null };
+}
 
 assert(flashWeekToPeriodNum(26)===6, 'Week 26 → P6');
 assert(flashWeekToPeriodNum(31)===8, 'Week 31 → P8');
 assert(flashWeekToPeriodNum(33)===8, 'Week 33 → P8');
 
-var salesMap={
-  'CASA NEOS Sales':'Casa Neos Beach Club',
-  'CN Lounge Sales':'Casa Neos Lounge',
-  'MILA Sales - 2F':'MILA Lounge'
-};
+var wb=readWb('_tmp_sales.xlsx');
+assert(!!wb.Sheets['Actual - 2026'], 'has Actual - 2026');
+assert(!!wb.Sheets['Budget - 2026'], 'has Budget - 2026');
+
+var actual=sheetRows(wb, 'Actual - 2026');
+var aMeta=findCols(actual, false, 2026);
+var aCols=aMeta.cols;
+assert(aCols['Casa Neos Beach Club'].length===1, 'Actual finds CASA NEOS Total');
+assert(aCols['Casa Neos Lounge'].length===1, 'Actual finds LOUNGE Total');
+assert(aCols['MILA Lounge'].length===1, 'Actual finds MILA 2F Total');
+
+var maxP=0, maxW=0, i, r, pn, wk, hasSales, c, v;
+var allCols=[].concat(aCols['Casa Neos Beach Club'], aCols['Casa Neos Lounge'], aCols['MILA Lounge']);
+for(i=aMeta.dataStart;i<actual.length;i++){
+  r=actual[i]||[];
+  pn=parsePeriod(r[1]);
+  if(!pn) continue;
+  hasSales=false;
+  for(c=0;c<allCols.length;c++){
+    v=flashNum(r[allCols[c]]);
+    if(v!=null && v!==0){ hasSales=true; break; }
+  }
+  if(hasSales) maxP=Math.max(maxP, pn);
+}
+for(i=aMeta.dataStart;i<actual.length;i++){
+  r=actual[i]||[];
+  if(parsePeriod(r[1])!==maxP) continue;
+  wk=parseWeek(r[0]);
+  if(wk) maxW=Math.max(maxW, wk);
+}
+assert(maxP===8, 'current period is P8 (not empty P9+)');
+assert(maxW===34, 'current week in P8 is 34');
+
+var neos=sumPeriod(actual, aCols['Casa Neos Beach Club'], 1, 8, aMeta.dataStart);
+var lounge=sumPeriod(actual, aCols['Casa Neos Lounge'], 1, 8, aMeta.dataStart);
+var mila=sumPeriod(actual, aCols['MILA Lounge'], 1, 8, aMeta.dataStart);
+console.log('Actual P8 MTD', Math.round(neos.mtd), Math.round(lounge.mtd), Math.round(mila.mtd));
+assert(Math.round(neos.mtd)===1268214, 'CASA NEOS P8 MTD ~1.268M');
+assert(Math.round(lounge.mtd)===314770, 'LOUNGE P8 MTD ~315K');
+assert(Math.round(mila.mtd)===519556, 'MILA P8 MTD ~520K');
+
+var budget=sheetRows(wb, 'Budget - 2026');
+var bMeta=findCols(budget, true, 2026);
+var bCols=bMeta.cols;
+assert(bCols['Casa Neos Beach Club'].length>=1, 'Budget finds CASA NEOS');
+assert(bCols['Casa Neos Lounge'].length>=1, 'Budget finds LOUNGE');
+assert(bCols['MILA Lounge'].length>=3, 'Budget MILA sums Omakase+MM+Lounge');
+var bNeos=sumPeriod(budget, bCols['Casa Neos Beach Club'], 1, 8, bMeta.dataStart);
+var bLounge=sumPeriod(budget, bCols['Casa Neos Lounge'], 1, 8, bMeta.dataStart);
+var bMila=sumPeriod(budget, bCols['MILA Lounge'], 1, 8, bMeta.dataStart);
+console.log('Budget P8 MTD', Math.round(bNeos.mtd), Math.round(bLounge.mtd), Math.round(bMila.mtd));
+assert(Math.round(bNeos.mtd)===1862024, 'CASA NEOS P8 budget');
+assert(Math.round(bLounge.mtd)===971234, 'LOUNGE P8 budget');
+assert(Math.round(bMila.mtd)===1068950, 'MILA P8 budget');
+
 var liveMap={
   '4 - Casa Neos':'Casa Neos Beach Club',
   '11 - CN Lounge Rooftop':'Casa Neos Lounge',
   '10 - Mila II MM Club':'MILA Lounge'
 };
-
-var wb=XLSX.readFile('_tmp_sales.xlsx');
-Object.keys(salesMap).forEach(function(sheet){
-  var rows=XLSX.utils.sheet_to_json(wb.Sheets[sheet],{header:1,defval:null,raw:true});
-  var mtdCol=9, ytdCol=13, period=null, week=null, totalIdx=-1, budgetIdx=-1, i, c, r, cell;
-  for(i=0;i<12;i++){
-    r=rows[i]||[];
-    for(c=0;c<r.length;c++){
-      cell=r[c]==null?'':String(r[c]);
-      if(/^P\d+$/i.test(cell.trim()) && !period) period=cell.trim().toUpperCase();
-      if(/MTD/i.test(cell) && mtdCol===9) mtdCol=c;
-      if(/^YTD$/i.test(cell.trim())) ytdCol=c;
-      if(typeof r[c]==='number' && r[c]>=1 && r[c]<=53 && week==null && i<=2) week=r[c];
-    }
-  }
-  for(i=0;i<rows.length;i++){
-    r=rows[i]||[];
-    for(c=0;c<6;c++){
-      if(r[c]!=null && String(r[c]).trim().toUpperCase()==='TOTAL'){ totalIdx=i; break; }
-    }
-    if(totalIdx>=0) break;
-  }
-  for(i=totalIdx+1;i<totalIdx+4;i++){
-    r=rows[i]||[];
-    for(c=0;c<6;c++){
-      if(r[c]!=null && String(r[c]).trim().toUpperCase()==='BUDGET'){ budgetIdx=i; break; }
-    }
-    if(budgetIdx>=0) break;
-  }
-  var mtdA=flashNum(rows[totalIdx][mtdCol]);
-  var mtdB=flashNum(rows[budgetIdx][mtdCol]);
-  console.log(salesMap[sheet], period, 'wk', week, 'MTD', Math.round(mtdA), 'vs', Math.round(mtdB));
-  assert(period==='P8', salesMap[sheet]+' period P8');
-  assert(mtdA!=null && mtdA>0, salesMap[sheet]+' has MTD sales');
-  assert(mtdB!=null && mtdB>0, salesMap[sheet]+' has MTD budget');
-});
-
-var wbl=XLSX.readFile('_tmp_live.xlsx');
+var wbl=readWb('_tmp_live.xlsx');
 Object.keys(liveMap).forEach(function(sheet){
-  var rows=XLSX.utils.sheet_to_json(wbl.Sheets[sheet],{header:1,defval:null,raw:true});
-  var weekCols={}, liveRow=-1, i, c, r, m, a;
+  var rows=sheetRows(wbl, sheet);
+  var weekCols={}, liveRow=-1, m, a;
   for(i=0;i<10;i++){
     r=rows[i]||[];
     for(c=0;c<r.length;c++){
@@ -88,12 +172,12 @@ Object.keys(liveMap).forEach(function(sheet){
     if(a!=null && /6750/.test(String(a)) && /Live\s*Entertain/i.test(String(a))){ liveRow=i; break; }
   }
   var mtd=0, n=0;
-  Object.keys(weekCols).forEach(function(wk){
-    var p=flashWeekToPeriodNum(+wk);
-    var v=flashNum(rows[liveRow][weekCols[wk]]);
-    if(p===8 && v!=null){ mtd+=v; n++; }
+  Object.keys(weekCols).forEach(function(w){
+    var p=flashWeekToPeriodNum(+w);
+    var val=flashNum(rows[liveRow][weekCols[w]]);
+    if(p===8 && val!=null){ mtd+=val; n++; }
   });
-  console.log(liveMap[sheet], 'liveRow', liveRow, 'P8 weeks', n, 'P8 live MTD', Math.round(mtd));
+  console.log(liveMap[sheet], 'P8 live MTD', Math.round(mtd));
   assert(liveRow>=0, liveMap[sheet]+' finds GL 6750');
   assert(n>=1 && mtd>0, liveMap[sheet]+' has P8 live MTD');
 });

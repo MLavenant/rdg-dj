@@ -788,6 +788,12 @@ var _FLASH_PL_VENUE_MAP = {
     'CN Lounge Sales': 'Casa Neos Lounge',
     'MILA Sales - 2F': 'MILA Lounge'
   },
+  /* Weekly Actual / Budget sheet column matchers (header rows 2–4). */
+  actualVenueMatchers: [
+    { venue:'Casa Neos Lounge', re:/CASA\s*NEOS\s*LOUNGE/i },
+    { venue:'Casa Neos Beach Club', re:/CASA\s*NEOS(?!\s*LOUNGE)/i },
+    { venue:'MILA Lounge', re:/MILA\s*2F/i }
+  ],
   liveSheets: {
     '4 - Casa Neos': 'Casa Neos Beach Club',
     '11 - CN Lounge Rooftop': 'Casa Neos Lounge',
@@ -853,7 +859,184 @@ function _flashSheetRows(wb, name){
   return XLSX.utils.sheet_to_json(wb.Sheets[name], {header:1, defval:null, raw:true});
 }
 
-function _flashParseSalesWorkbook(wb, fileName){
+function _flashFindSheetName(wb, re){
+  if(!wb || !wb.SheetNames) return null;
+  for(var i=0;i<wb.SheetNames.length;i++){
+    if(re.test(wb.SheetNames[i])) return wb.SheetNames[i];
+  }
+  return null;
+}
+function _flashParsePeriodCell(v){
+  if(v==null || v==='') return null;
+  var s=String(v).trim().toUpperCase();
+  var m=s.match(/^P\s*(\d+)$/);
+  return m?+m[1]:null;
+}
+function _flashParseWeekCell(v){
+  if(v==null || v==='') return null;
+  if(typeof v==='number' && v>=1 && v<=53) return v;
+  var m=String(v).match(/Week\s*(\d+)/i);
+  return m?+m[1]:null;
+}
+/** Locate Total Sales columns on Actual / Budget weekly sheets. */
+function _flashFindWeeklySalesCols(rows, opts){
+  opts=opts||{};
+  var allowSumParts=!!opts.allowSumParts;
+  var year=opts.year||null;
+  var yearRe=year?new RegExp(String(year)):/20\d{2}/;
+  var headerRow=-1, i, c, label, hits;
+  for(i=0;i<Math.min(rows.length,8);i++){
+    hits=0;
+    for(c=0;c<(rows[i]||[]).length;c++){
+      label=rows[i][c]==null?'':String(rows[i][c]);
+      if(/MILA\s*2F|CASA\s*NEOS/i.test(label)) hits++;
+    }
+    if(hits>=2){ headerRow=i; break; }
+  }
+  if(headerRow<0) return { cols:{}, headerRow:-1, dataStart:-1 };
+  var r2=rows[headerRow]||[];
+  var r3=rows[headerRow+1]||[];
+  var r4=rows[headerRow+2]||[];
+  var maxC=Math.max(r2.length, r3.length, r4.length);
+  var out={};
+  (_FLASH_PL_VENUE_MAP.actualVenueMatchers||[]).forEach(function(m){
+    var totalCols=[], partCols=[], seg, metric;
+    for(c=0;c<maxC;c++){
+      label=r2[c]==null?'':String(r2[c]);
+      if(!m.re.test(label)) continue;
+      if(year && !yearRe.test(label)) continue;
+      seg=r3[c]==null?'':String(r3[c]).trim();
+      metric=r4[c]==null?'':String(r4[c]).trim();
+      if(!/sales/i.test(metric)) continue;
+      if(/^total$/i.test(seg) || /total\s*sales/i.test(metric)) totalCols.push(c);
+      else if(allowSumParts) partCols.push(c);
+    }
+    if(totalCols.length) out[m.venue]=totalCols;
+    else if(allowSumParts && partCols.length) out[m.venue]=partCols;
+  });
+  return { cols:out, headerRow:headerRow, dataStart:headerRow+3 };
+}
+function _flashSumColsForPeriod(rows, colIdxs, periodCol, weekCol, targetPeriod, ytdThrough, dataStart){
+  var mtd=0, ytd=0, maxWeek=0, sawMtd=false, sawYtd=false;
+  var i, r, pn, wk, c, v;
+  var start=(dataStart!=null && dataStart>=0)?dataStart:4;
+  for(i=start;i<rows.length;i++){
+    r=rows[i]||[];
+    pn=_flashParsePeriodCell(r[periodCol]);
+    if(!pn) continue;
+    wk=_flashParseWeekCell(r[weekCol]);
+    var rowSum=0, has=false;
+    for(c=0;c<colIdxs.length;c++){
+      v=_flashNum(r[colIdxs[c]]);
+      if(v!=null){ rowSum+=v; has=true; }
+    }
+    if(!has) continue;
+    if(pn===targetPeriod){
+      mtd+=rowSum; sawMtd=true;
+      if(wk) maxWeek=Math.max(maxWeek, wk);
+    }
+    if(pn<=ytdThrough){
+      ytd+=rowSum; sawYtd=true;
+    }
+  }
+  return {
+    mtd:sawMtd?mtd:null,
+    ytd:sawYtd?ytd:null,
+    week:maxWeek||null
+  };
+}
+function _flashDetectCurrentPeriod(rows, periodCol, weekCol, salesColLists, dataStart){
+  var maxPWithSales=0, maxWInPeriod=0, i, r, pn, wk, c, j, v, rowHasSales;
+  var start=(dataStart!=null && dataStart>=0)?dataStart:4;
+  var allCols=[];
+  (salesColLists||[]).forEach(function(cols){
+    for(j=0;j<cols.length;j++) allCols.push(cols[j]);
+  });
+  for(i=start;i<rows.length;i++){
+    r=rows[i]||[];
+    pn=_flashParsePeriodCell(r[periodCol]);
+    if(!pn) continue;
+    rowHasSales=false;
+    for(c=0;c<allCols.length;c++){
+      v=_flashNum(r[allCols[c]]);
+      if(v!=null && v!==0){ rowHasSales=true; break; }
+    }
+    if(rowHasSales) maxPWithSales=Math.max(maxPWithSales, pn);
+  }
+  if(!maxPWithSales){
+    for(i=start;i<rows.length;i++){
+      r=rows[i]||[];
+      pn=_flashParsePeriodCell(r[periodCol]);
+      wk=_flashParseWeekCell(r[weekCol]);
+      if(pn) maxPWithSales=Math.max(maxPWithSales, pn);
+      if(wk) maxWInPeriod=Math.max(maxWInPeriod, wk);
+    }
+    return { periodNum:maxPWithSales||null, week:maxWInPeriod||null };
+  }
+  for(i=start;i<rows.length;i++){
+    r=rows[i]||[];
+    pn=_flashParsePeriodCell(r[periodCol]);
+    if(pn!==maxPWithSales) continue;
+    wk=_flashParseWeekCell(r[weekCol]);
+    if(wk) maxWInPeriod=Math.max(maxWInPeriod, wk);
+  }
+  return { periodNum:maxPWithSales, week:maxWInPeriod||null };
+}
+function _flashParseSalesFromWeeklySheets(wb, fileName){
+  var actualName=_flashFindSheetName(wb, /^Actual\s*-\s*(\d{4})$/i);
+  if(!actualName) return null;
+  var yearM=actualName.match(/(\d{4})/);
+  var year=yearM?+yearM[1]:2026;
+  var actualRows=_flashSheetRows(wb, actualName);
+  if(!actualRows || actualRows.length<5) return null;
+  var actualMeta=_flashFindWeeklySalesCols(actualRows, {allowSumParts:false, year:year});
+  var actualCols=actualMeta.cols||{};
+  if(!Object.keys(actualCols).length) return null;
+
+  var colLists=Object.keys(actualCols).map(function(v){ return actualCols[v]; });
+  var cur=_flashDetectCurrentPeriod(actualRows, 1, 0, colLists, actualMeta.dataStart);
+  var periodNum=cur.periodNum;
+  var week=cur.week;
+  if(!periodNum) return null;
+
+  var venues={};
+  Object.keys(actualCols).forEach(function(venue){
+    var s=_flashSumColsForPeriod(actualRows, actualCols[venue], 1, 0, periodNum, periodNum, actualMeta.dataStart);
+    venues[venue]={
+      salesMtdA:s.mtd, salesYtdA:s.ytd,
+      salesMtdB:null, salesYtdB:null
+    };
+  });
+
+  var budgetName=_flashFindSheetName(wb, new RegExp('^Budget\\s*-\\s*'+year+'$','i'))
+    || _flashFindSheetName(wb, /^Budget\s*-\s*\d{4}$/i);
+  if(budgetName){
+    var budgetRows=_flashSheetRows(wb, budgetName);
+    if(budgetRows && budgetRows.length>=4){
+      var budgetMeta=_flashFindWeeklySalesCols(budgetRows, {allowSumParts:true, year:year});
+      var budgetCols=budgetMeta.cols||{};
+      /* Actual + Budget: Week in col A, period (P8) in col B. */
+      Object.keys(budgetCols).forEach(function(venue){
+        if(!venues[venue]) venues[venue]={ salesMtdA:null, salesYtdA:null, salesMtdB:null, salesYtdB:null };
+        var b=_flashSumColsForPeriod(budgetRows, budgetCols[venue], 1, 0, periodNum, periodNum, budgetMeta.dataStart);
+        venues[venue].salesMtdB=b.mtd;
+        venues[venue].salesYtdB=b.ytd;
+      });
+    }
+  }
+
+  return {
+    uploadedAt:new Date().toISOString(),
+    fileName:fileName||'',
+    year:year,
+    period:_flashPeriodLabel(periodNum),
+    periodNum:periodNum,
+    week:week,
+    source:'weekly',
+    venues:venues
+  };
+}
+function _flashParseSalesFromLocationSheets(wb, fileName){
   var venues={};
   var period=null, week=null, year=2026;
   Object.keys(_FLASH_PL_VENUE_MAP.salesSheets).forEach(function(sheetName){
@@ -869,8 +1052,6 @@ function _flashParseSalesWorkbook(wb, fileName){
         if(/^P\d+$/i.test(cell.trim()) && !period) period=cell.trim().toUpperCase();
         if(/^Week\s+(\d+)$/i.test(cell.trim()) && week==null){
           week=+RegExp.$1;
-        } else if(week==null && typeof r[c]==='number' && r[c]>0 && r[c]<60 && i<=2){
-          /* week number often in adjacent cell */
         }
         if(/MTD/i.test(cell) && mtdCol<0) mtdCol=c;
         if(/^YTD$/i.test(cell.trim()) && ytdCol<0) ytdCol=c;
@@ -900,17 +1081,16 @@ function _flashParseSalesWorkbook(wb, fileName){
       }
       if(budgetIdx>=0) break;
     }
-    var salesMtdA=_flashNum(rows[totalIdx][mtdCol]);
-    var salesYtdA=_flashNum(rows[totalIdx][ytdCol]);
-    var salesMtdB=budgetIdx>=0?_flashNum(rows[budgetIdx][mtdCol]):null;
-    var salesYtdB=budgetIdx>=0?_flashNum(rows[budgetIdx][ytdCol]):null;
     venues[venue]={
-      salesMtdA:salesMtdA, salesMtdB:salesMtdB,
-      salesYtdA:salesYtdA, salesYtdB:salesYtdB
+      salesMtdA:_flashNum(rows[totalIdx][mtdCol]),
+      salesMtdB:budgetIdx>=0?_flashNum(rows[budgetIdx][mtdCol]):null,
+      salesYtdA:_flashNum(rows[totalIdx][ytdCol]),
+      salesYtdB:budgetIdx>=0?_flashNum(rows[budgetIdx][ytdCol]):null
     };
   });
   var periodNum=period?parseInt(String(period).replace(/\D/g,''),10):null;
   if(!periodNum && week) periodNum=_flashWeekToPeriodNum(week);
+  if(!Object.keys(venues).length) return null;
   return {
     uploadedAt:new Date().toISOString(),
     fileName:fileName||'',
@@ -918,8 +1098,15 @@ function _flashParseSalesWorkbook(wb, fileName){
     period:_flashPeriodLabel(periodNum)||period||'',
     periodNum:periodNum,
     week:week,
+    source:'location',
     venues:venues
   };
+}
+function _flashParseSalesWorkbook(wb, fileName){
+  /* Prefer weekly Actual / Budget sheets (period labels in col B). */
+  return _flashParseSalesFromWeeklySheets(wb, fileName)
+    || _flashParseSalesFromLocationSheets(wb, fileName)
+    || { uploadedAt:new Date().toISOString(), fileName:fileName||'', year:2026, period:'', periodNum:null, week:null, venues:{} };
 }
 
 function _flashParseLiveWorkbook(wb, fileName){
@@ -990,6 +1177,17 @@ function _flashLiveBudgetSum(venue, year, fromMi, toMi){
   for(var mi=fromMi; mi<=toMi; mi++){
     var mm=(typeof fiscalMm==='function')?fiscalMm(mi):((mi+1)<10?'0'+(mi+1):String(mi+1));
     var v=getBgtPlan(venue, String(year), mm, 'live');
+    if(v!=null){ sum+=+v; n++; }
+  }
+  return n?sum:null;
+}
+/** Sales / live $ budgets from the Budget page (BGT_PLAN) — not from Excel. */
+function _flashSalesBudgetSum(venue, year, fromMi, toMi){
+  if(typeof getBgtPlan!=='function') return null;
+  var sum=0, n=0;
+  for(var mi=fromMi; mi<=toMi; mi++){
+    var mm=(typeof fiscalMm==='function')?fiscalMm(mi):((mi+1)<10?'0'+(mi+1):String(mi+1));
+    var v=getBgtPlan(venue, String(year), mm, 'sales');
     if(v!=null){ sum+=+v; n++; }
   }
   return n?sum:null;
@@ -1111,12 +1309,15 @@ function _vipRenderFlashPlForVenue(venue, asOfDate){
   var lv=(live&&live.venues&&live.venues[venue])||{};
   var liveMtd=_flashSumLiveForPeriods(lv.byWeek, periodListMtd);
   var liveYtd=_flashSumLiveForPeriods(lv.byWeek, periodListYtd);
+  /* Budget $ and Live E Margin target always come from Budget page (getBgtPlan). */
+  var salesMtdB=_flashSalesBudgetSum(venue, year, periodNum-1, periodNum-1);
+  var salesYtdB=_flashSalesBudgetSum(venue, year, 0, periodNum-1);
   var liveMtdB=_flashLiveBudgetSum(venue, year, periodNum-1, periodNum-1);
   var liveYtdB=_flashLiveBudgetSum(venue, year, 0, periodNum-1);
   var marginMtdA=(typeof pctLive==='function')?pctLive(sv.salesMtdA, liveMtd):null;
-  var marginMtdB=(typeof pctLive==='function')?pctLive(sv.salesMtdB, liveMtdB):null;
+  var marginMtdB=(typeof pctLive==='function')?pctLive(salesMtdB, liveMtdB):null;
   var marginYtdA=(typeof pctLive==='function')?pctLive(sv.salesYtdA, liveYtd):null;
-  var marginYtdB=(typeof pctLive==='function')?pctLive(sv.salesYtdB, liveYtdB):null;
+  var marginYtdB=(typeof pctLive==='function')?pctLive(salesYtdB, liveYtdB):null;
 
   var cutDate=asOfDate||String(TODAY||'');
   var monthRoi=(typeof _vipRoiCompletionStats==='function')
@@ -1148,15 +1349,15 @@ function _vipRenderFlashPlForVenue(venue, asOfDate){
   h+='<div class="bgt-monthly-cell bgt-monthly-month">MTD</div>';
   h+='<div class="bgt-monthly-cell bgt-monthly-month bgt-monthly-ytd">YTD</div>';
 
-  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Total Sales</b><span>Actual vs budget</span></div>';
-  h+=_vipFlashPlMoneyCell(sv.salesMtdA, sv.salesMtdB, 'sales');
-  h+=_vipFlashPlMoneyCell(sv.salesYtdA, sv.salesYtdB, 'sales');
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Total Sales</b><span>Excel actual vs Budget page</span></div>';
+  h+=_vipFlashPlMoneyCell(sv.salesMtdA, salesMtdB, 'sales');
+  h+=_vipFlashPlMoneyCell(sv.salesYtdA, salesYtdB, 'sales');
 
-  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live Entertainment</b><span>GL 6750 vs budget</span></div>';
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live Entertainment</b><span>GL 6750 vs Budget page</span></div>';
   h+=_vipFlashPlMoneyCell(liveMtd, liveMtdB, 'live');
   h+=_vipFlashPlMoneyCell(liveYtd, liveYtdB, 'live');
 
-  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live E Margin</b><span>Actual vs budget</span></div>';
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live E Margin</b><span>Actual vs Budget target %</span></div>';
   h+=_vipFlashPlPctCell(marginMtdA, marginMtdB);
   h+=_vipFlashPlPctCell(marginYtdA, marginYtdB);
 
