@@ -1,0 +1,13 @@
+---
+description: After meaningful app changes, bump version, commit, and push to main
+alwaysApply: true
+---
+
+# Commit and push always
+
+After completing meaningful application changes in this repo:
+
+1. Bump the app version in `index.html` (title, `RDG_APP_VERSION`, sidebar `vX.Y`, and all `?v=` cache-bust query strings).
+2. Commit with a message matching the repo style: `Flash vX.Y: <short why>`.
+3. Push to `origin/main` without waiting to be asked.
+4. Do not commit temp/local-only files (e.g. `_tmp_*.xlsx`, secrets, `.env`).
