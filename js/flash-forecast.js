@@ -1247,33 +1247,71 @@ function _flashPlStatusChipHtml(){
   return '<span id="flashPlStatus" class="flash-pl-status" title="'+(sales&&sales.fileName?sales.fileName:'')+' / '+(live&&live.fileName?live.fileName:'')+'">'+parts.join(' · ')+'</span>';
 }
 
-function _vipFlashPlMoneyCell(actual, budget, mode){
-  /* mode: 'sales' (higher actual good) | 'live' (under budget good) */
-  var varS=null;
-  if(actual!=null && budget!=null){
-    varS = mode==='live' ? (budget-actual) : (actual-budget);
-  }
-  var fav = varS==null ? null : (mode==='live' ? varS>=0 : varS>=0);
-  var status=varS==null?' bgt-status-neutral':(fav?' bgt-status-good':' bgt-status-bad');
-  var varText='-';
-  if(varS!=null){
-    if(mode==='live') varText=(varS>=0?'Under ':'Over ')+(typeof $k==='function'?$k(Math.abs(varS)):Math.abs(varS));
-    else varText=(typeof $mv==='function'?$mv(varS):((varS>0?'+':'')+varS));
-  }
-  return '<div class="bgt-monthly-cell flash-pl-cell'+status+'">'
-    +'<div class="bgt-monthly-value">'+(actual!=null?(typeof $k==='function'?$k(actual):actual):'\u2014')+'</div>'
-    +'<div class="bgt-monthly-vs">vs '+(budget!=null?(typeof $k==='function'?$k(budget):budget):'\u2014')+'</div>'
-    +'<div class="bgt-monthly-var '+(varS==null?'':(fav?'pos':'neg'))+'">'+varText+'</div></div>';
+function _flashMoneyTxt(v){
+  if(v==null) return '\u2014';
+  return (typeof $k==='function')?$k(v):String(Math.round(v));
 }
-function _vipFlashPlPctCell(actual, budget){
-  var vP=(actual!=null&&budget!=null)?Math.round((actual-budget)*10)/10:null;
-  var fav=vP==null?null:vP<=0;
-  var status=vP==null?' bgt-status-neutral':(fav?' bgt-status-good':' bgt-status-bad');
-  var varText=vP==null?'-':((vP>0?'+':'')+vP+' pp');
-  return '<div class="bgt-monthly-cell flash-pl-cell'+status+'">'
-    +'<div class="bgt-monthly-value">'+(actual!=null?actual+'%':'\u2014')+'</div>'
-    +'<div class="bgt-monthly-vs">vs '+(budget!=null?budget+'%':'\u2014')+'</div>'
-    +'<div class="bgt-monthly-var '+(vP==null?'':(fav?'pos':'neg'))+'">'+varText+'</div></div>';
+function _flashPctTxt(v){
+  return v!=null?(v+'%'):'\u2014';
+}
+function _flashPyMonthVals(venue, year, monthIndex0){
+  var mm=(typeof fiscalMm==='function')?fiscalMm(monthIndex0):((monthIndex0+1)<10?'0'+(monthIndex0+1):String(monthIndex0+1));
+  var pyYear=String((+year||2026)-1);
+  var sales=(typeof getBgtActual==='function')?getBgtActual(venue, pyYear, mm, 'sales'):null;
+  var live=(typeof getBgtActual==='function')?getBgtActual(venue, pyYear, mm, 'live'):null;
+  var fee=null;
+  if(typeof monthPerf==='function'){
+    var mp=monthPerf(venue, pyYear, mm);
+    fee=mp&&mp.tFee!=null?mp.tFee:null;
+  }
+  var ov=window.FLASH_PL_OVERLAY||{};
+  /* Prefer weekly PY overlay when user uploads prior-year weekly Sales / Live files. */
+  var pyV=ov.py&&ov.py.venues&&ov.py.venues[venue];
+  if(pyV){
+    if(pyV.salesMtdA!=null) sales=pyV.salesMtdA;
+    if(pyV.liveMtdA!=null) live=pyV.liveMtdA;
+  }
+  return {
+    year:pyYear,
+    sales:sales,
+    live:live,
+    margin:(typeof pctLive==='function')?pctLive(sales, live):null,
+    fee:fee,
+    source:(pyV&&(pyV.salesMtdA!=null||pyV.liveMtdA!=null))?'weekly':'month'
+  };
+}
+/**
+ * Clear Actual vs Target (yellow) vs Prior Year (grey).
+ * mode: sales (higher good) | live|fee (under good) | margin (lower % good)
+ */
+function _vipFlashPlCompareCell(actual, target, py, mode, pyYear){
+  var isPct=mode==='margin';
+  var underGood=(mode==='live'||mode==='fee'||mode==='margin');
+  var vsT=null, vsP=null;
+  if(actual!=null && target!=null) vsT=actual-target;
+  if(actual!=null && py!=null) vsP=actual-py;
+  var favT=vsT==null?null:(underGood?vsT<=0:vsT>=0);
+  var favP=vsP==null?null:(underGood?vsP<=0:vsP>=0);
+  var status=favT==null?' bgt-status-neutral':(favT?' bgt-status-good':' bgt-status-bad');
+  function varLine(delta, fav, label){
+    if(delta==null) return '<div class="flash-pl-cmp-var muted">'+label+' \u2014</div>';
+    var txt;
+    if(isPct) txt=(delta>0?'+':'')+Math.round(delta*10)/10+' pp';
+    else if(underGood) txt=(delta<=0?'Under ':'Over ')+_flashMoneyTxt(Math.abs(delta));
+    else txt=(typeof $mv==='function'?$mv(delta):((delta>0?'+':'')+delta));
+    return '<div class="flash-pl-cmp-var '+(fav?'pos':'neg')+'">'+label+' '+txt+'</div>';
+  }
+  var actTxt=isPct?_flashPctTxt(actual):_flashMoneyTxt(actual);
+  var tgtTxt=isPct?_flashPctTxt(target):_flashMoneyTxt(target);
+  var pyTxt=isPct?_flashPctTxt(py):_flashMoneyTxt(py);
+  var pyLbl='PY '+(pyYear||'');
+  return '<div class="bgt-monthly-cell flash-pl-cell flash-pl-cmp'+status+'">'
+    +'<div class="bgt-monthly-value">'+actTxt+'</div>'
+    +'<div class="flash-pl-cmp-row flash-pl-cmp-target"><span>Target</span><b>'+tgtTxt+'</b></div>'
+    +varLine(vsT, favT, 'vs Target')
+    +'<div class="flash-pl-cmp-row flash-pl-cmp-py"><span>'+pyLbl+'</span><b>'+pyTxt+'</b></div>'
+    +varLine(vsP, favP, 'vs PY')
+    +'</div>';
 }
 function _vipFlashPlRoiCell(roi){
   var measured=roi&&roi.measured;
@@ -1309,14 +1347,12 @@ function _flashWeeksLeftInPeriod(year, monthIndex0, afterDate){
   var range=fiscalPeriodRange(year, monthIndex0);
   if(!range||!range.to) return 1;
   var start=afterDate||range.from;
-  /* Count remaining Mon–Sun weeks that still touch the period after afterDate. */
-  var weeks=0, d, cur;
   try{
-    cur=new Date(start+'T12:00:00');
+    var cur=new Date(start+'T12:00:00');
     var end=new Date(range.to+'T12:00:00');
     if(!(end>cur)) return 0;
-    /* advance to next day after cut */
     cur.setDate(cur.getDate()+1);
+    var weeks=0;
     while(cur<=end){
       weeks++;
       cur.setDate(cur.getDate()+7);
@@ -1324,27 +1360,9 @@ function _flashWeeksLeftInPeriod(year, monthIndex0, afterDate){
     return weeks>0?weeks:0;
   }catch(e){ return 1; }
 }
-function _vipFlashPlFeeCell(feeDone, feeRemain, feeProj, budget){
-  var varS=(feeProj!=null && budget!=null)?(budget-feeProj):null;
-  var fav=varS==null?null:varS>=0;
-  var status=varS==null?' bgt-status-neutral':(fav?' bgt-status-good':' bgt-status-bad');
-  var varText='-';
-  if(varS!=null){
-    varText=(varS>=0?'Under ':'Over ')+(typeof $k==='function'?$k(Math.abs(varS)):Math.abs(varS));
-  }
-  var sub=(typeof $k==='function')
-    ?($k(feeDone||0)+' actual + '+$k(feeRemain||0)+' forecast')
-    :((feeDone||0)+' + '+(feeRemain||0));
-  return '<div class="bgt-monthly-cell flash-pl-cell'+status+'">'
-    +'<div class="bgt-monthly-value">'+(feeProj!=null?(typeof $k==='function'?$k(feeProj):feeProj):'\u2014')+'</div>'
-    +'<div class="bgt-monthly-vs">vs '+(budget!=null?(typeof $k==='function'?$k(budget):budget):'\u2014')+'</div>'
-    +'<div class="bgt-monthly-var '+(varS==null?'':(fav?'pos':'neg'))+'">'+varText+'</div>'
-    +'<div class="flash-pl-fee-sub">'+sub+'</div></div>';
-}
 /**
  * Sales still needed so Live÷Sales hits Budget Live E % using full-month Live A+F
  * (actual Live MTD, floored at Budget Live so remaining budget spend is assumed).
- * Also shows weekly pace for weeks left in the period.
  */
 function _vipFlashPlWeeklySalesNeededCell(salesMtdA, liveMtd, liveMtdB, marginTargetPct, weeksLeft){
   var liveAF=null;
@@ -1361,16 +1379,17 @@ function _vipFlashPlWeeklySalesNeededCell(salesMtdA, liveMtd, liveMtdB, marginTa
   var fav=gap<=0;
   var status=fav?' bgt-status-good':' bgt-status-bad';
   var gapAbs=Math.abs(gap);
-  var gapTxt=(typeof $k==='function'?$k(gapAbs):Math.round(gapAbs));
+  var gapTxt=_flashMoneyTxt(gapAbs);
   var weekly=(!fav && weeksLeft>0)?(gap/weeksLeft):null;
-  var weeklyTxt=weekly!=null?(typeof $k==='function'?$k(weekly):Math.round(weekly)):null;
+  var weeklyTxt=weekly!=null?_flashMoneyTxt(weekly):null;
   return '<div class="bgt-monthly-cell flash-pl-cell'+status+'">'
     +'<div class="bgt-monthly-value">'+(fav?'On track':('Need '+gapTxt))+'</div>'
+    +'<div class="flash-pl-cmp-row flash-pl-cmp-target"><span>Target margin</span><b>'+_flashPctTxt(marginTargetPct)+'</b></div>'
     +'<div class="bgt-monthly-vs">'+(fav
-      ?('Surplus '+gapTxt+' at '+marginTargetPct+'% Live E')
-      :('more sales to hit '+marginTargetPct+'% (Live A+F)'))+'</div>'
+      ?('Surplus '+gapTxt+' vs target Live E %')
+      :('more sales to hit target Live E %'))+'</div>'
     +'<div class="bgt-monthly-var '+(fav?'pos':'neg')+'">'
-    +(weeklyTxt!=null?(weeklyTxt+'/wk · '+weeksLeft+' wk left'):('Req '+(typeof $k==='function'?$k(required):Math.round(required))))
+    +(weeklyTxt!=null?(weeklyTxt+'/wk · '+weeksLeft+' wk left'):('Req '+_flashMoneyTxt(required)))
     +'</div></div>';
 }
 function _vipFlashPlUpcomingListHtml(upcoming){
@@ -1384,7 +1403,7 @@ function _vipFlashPlUpcomingListHtml(upcoming){
     h+='<tr>'
       +'<td class="l">'+String(u.date||'')+'</td>'
       +'<td class="l"><b>'+(u.dj||'TBD')+'</b></td>'
-      +'<td class="vip-cost">'+(u.fee?(typeof $k==='function'?$k(u.fee):u.fee):'\u2014')+'</td>'
+      +'<td class="vip-cost">'+(u.fee?_flashMoneyTxt(u.fee):'\u2014')+'</td>'
       +'</tr>';
   });
   h+='</tbody></table></div>';
@@ -1410,6 +1429,7 @@ function _vipRenderFlashPlForVenue(venue, asOfDate){
   var liveMtdB=_flashLiveBudgetSum(venue, year, monthIndex0, monthIndex0);
   var marginMtdA=(typeof pctLive==='function')?pctLive(sv.salesMtdA, liveMtd):null;
   var marginMtdB=(typeof pctLive==='function')?pctLive(salesMtdB, liveMtdB):null;
+  var py=_flashPyMonthVals(venue, year, monthIndex0);
 
   var cutDate=asOfDate||String(TODAY||'');
   var monthRoi=(typeof _vipRoiCompletionStats==='function')
@@ -1428,6 +1448,9 @@ function _vipRenderFlashPlForVenue(venue, asOfDate){
   var needSales=!sales;
   var needLive=!live;
   var periodLbl=_flashPeriodLabel(periodNum);
+  var pyNote=py.source==='weekly'
+    ?('PY '+py.year+' weekly')
+    :('PY '+py.year+' full month \u2014 weekly PY pending');
   var h='<div class="flash-pl-venue flash-pl-under-perf">';
   if(needSales || needLive){
     h+='<div class="flash-pl-need-upload">Budget targets are from the Budget page. Upload '
@@ -1438,32 +1461,33 @@ function _vipRenderFlashPlForVenue(venue, asOfDate){
   }
   h+='<div class="flash-pl-split">';
 
-  /* ---- Left: MTD only ---- */
+  /* ---- Left: MTD Actual vs Target vs PY ---- */
   h+='<div class="bgt-monthly flash-pl-monthly flash-pl-mtd-panel">';
   h+='<div class="bgt-monthly-hd">Sales &amp; Live Entertainment<span>'+periodLbl+' MTD'
-    +(sales&&sales.week?(' · Week '+sales.week):'')+'</span></div>';
+    +(sales&&sales.week?(' · Week '+sales.week):'')
+    +' · '+pyNote+'</span></div>';
   h+='<div class="bgt-monthly-grid flash-pl-grid flash-pl-grid-mtd">';
   h+='<div class="bgt-monthly-cell bgt-monthly-month"></div>';
-  h+='<div class="bgt-monthly-cell bgt-monthly-month">MTD</div>';
-  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Total Sales</b><span>Excel actual vs Budget page</span></div>';
-  h+=_vipFlashPlMoneyCell(sv.salesMtdA, salesMtdB, 'sales');
-  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live Entertainment</b><span>GL 6750 vs Budget page</span></div>';
-  h+=_vipFlashPlMoneyCell(liveMtd, liveMtdB, 'live');
-  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live E Margin</b><span>Actual vs Budget target %</span></div>';
-  h+=_vipFlashPlPctCell(marginMtdA, marginMtdB);
+  h+='<div class="bgt-monthly-cell bgt-monthly-month">Actual vs Target vs PY</div>';
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Total Sales</b><span>Actual · Target · Prior year</span></div>';
+  h+=_vipFlashPlCompareCell(sv.salesMtdA, salesMtdB, py.sales, 'sales', py.year);
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live Entertainment</b><span>GL 6750 · Target · Prior year</span></div>';
+  h+=_vipFlashPlCompareCell(liveMtd, liveMtdB, py.live, 'live', py.year);
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live E Margin</b><span>Live \u00f7 Sales % · Target · PY</span></div>';
+  h+=_vipFlashPlCompareCell(marginMtdA, marginMtdB, py.margin, 'margin', py.year);
   h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>ROI Beat &amp; Miss</b><span>Same rule as Calendar</span></div>';
   h+=_vipFlashPlRoiCell(monthRoi);
   h+='</div></div>';
 
-  /* ---- Right: fees, sales needed, upcoming ---- */
+  /* ---- Right: month DJ fees + sales needed + upcoming ---- */
   h+='<div class="bgt-monthly flash-pl-monthly flash-pl-side-panel">';
-  h+='<div class="bgt-monthly-hd">Fees &amp; Outlook<span>Rest of '+periodLbl+'</span></div>';
+  h+='<div class="bgt-monthly-hd">Fees &amp; Outlook<span>'+periodLbl+' month · '+pyNote+'</span></div>';
   h+='<div class="bgt-monthly-grid flash-pl-grid flash-pl-grid-side">';
   h+='<div class="bgt-monthly-cell bgt-monthly-month"></div>';
-  h+='<div class="bgt-monthly-cell bgt-monthly-month">Month</div>';
-  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>DJ Fees A+F</b><span>Actual + forecast vs fee budget</span></div>';
-  h+=_vipFlashPlFeeCell(feeSt.feeDone, feeSt.feeRemain, feeSt.feeProj, feeSt.monthBgt);
-  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Weekly Sales Needed</b><span>To hit Live E margin on Live A+F</span></div>';
+  h+='<div class="bgt-monthly-cell bgt-monthly-month">Actual vs Target vs PY</div>';
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>DJ Fees</b><span>Full month A+F · Target · Prior year</span></div>';
+  h+=_vipFlashPlCompareCell(feeSt.feeProj, feeSt.monthBgt, py.fee, 'fee', py.year);
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Weekly Sales Needed</b><span>To hit Live E margin target</span></div>';
   h+=_vipFlashPlWeeklySalesNeededCell(sv.salesMtdA, liveMtd, liveMtdB, marginMtdB, weeksLeft);
   h+='</div>';
   h+='<div class="flash-pl-up-wrap"><div class="flash-pl-up-hd">Upcoming performances</div>';
