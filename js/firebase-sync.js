@@ -1087,6 +1087,10 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       try{ localStorage.setItem('rdg_bgt_custom_cats_v1', JSON.stringify(BGT_CUSTOM_CATS)); }catch(e){}
     }
     applyOfficialH2Budgets();
+    if(data.flashPlOverlay){
+      if(typeof _flashPlApplyRemote==='function') _flashPlApplyRemote(data.flashPlOverlay);
+      else window.FLASH_PL_OVERLAY = data.flashPlOverlay;
+    }
     // Accounting status + history
     var acctSig = data.acctData ? JSON.stringify(data.acctData) : '';
     var acctChanged = (acctSig !== window._lastAcctDataSig);
@@ -1194,7 +1198,8 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     'monthlyDjBudget',
     'bgtPlan',
     'bgtCatSpend',
-    'bgtCustomCats'
+    'bgtCustomCats',
+    'flashPlOverlay'
   ].forEach(function(key){
     window._fbDb.ref('rdg/'+key).on('value', function(snap){
       _fbIngest(key, snap.val());

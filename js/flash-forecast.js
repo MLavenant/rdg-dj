@@ -33,6 +33,10 @@ function renderVIP(venueIdx){
   });
   h += '</div>';
 
+  h += '<div class="vip-print-page vip-print-page-pl vip-stack-sec">';
+  h += _vipRenderFlashPlSection(venues, range.sun);
+  h += '</div>';
+
   h += '<div class="vip-print-page vip-print-page3 vip-stack-sec">';
   h += _vipSectionTitle('TIER BREAKDOWN', 'This week · All locations');
   venues.forEach(function(d){
@@ -98,6 +102,10 @@ function renderVIP(venueIdx){
   }
 
   document.getElementById('vipBody').innerHTML = h;
+  try{
+    var stHost=document.getElementById('flashPlStatusHost');
+    if(stHost && typeof _flashPlStatusChipHtml==='function') stHost.innerHTML=_flashPlStatusChipHtml();
+  }catch(eSt){}
 }
 
 function _vipExcludedTiers(venue){
@@ -771,5 +779,400 @@ function launchFireworks(){
     if(alive) requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
+}
+
+/* ========== Weekly Flash — Sales & Live Entertainment MTD (Flash-only) ========== */
+window.FLASH_PL_OVERLAY = window.FLASH_PL_OVERLAY || { sales:null, live:null };
+var _FLASH_PL_VENUE_MAP = {
+  salesSheets: {
+    'CASA NEOS Sales': 'Casa Neos Beach Club',
+    'CN Lounge Sales': 'Casa Neos Lounge',
+    'MILA Sales - 2F': 'MILA Lounge'
+  },
+  liveSheets: {
+    '4 - Casa Neos': 'Casa Neos Beach Club',
+    '11 - CN Lounge Rooftop': 'Casa Neos Lounge',
+    '10 - Mila II MM Club': 'MILA Lounge'
+  }
+};
+var _FLASH_PL_ORDER = ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'];
+
+function _flashPlLoadLocal(){
+  try{
+    var raw=localStorage.getItem('rdg_flash_pl_overlay_v1');
+    if(!raw) return;
+    var parsed=JSON.parse(raw);
+    if(parsed && typeof parsed==='object'){
+      window.FLASH_PL_OVERLAY = {
+        sales: parsed.sales||null,
+        live: parsed.live||null
+      };
+    }
+  }catch(e){}
+}
+function _flashPlSaveLocal(){
+  try{ localStorage.setItem('rdg_flash_pl_overlay_v1', JSON.stringify(window.FLASH_PL_OVERLAY||{})); }catch(e){}
+}
+function _flashPlPersist(){
+  _flashPlSaveLocal();
+  if(typeof window._fbSave==='function'){
+    try{ window._fbSave('flashPlOverlay', window.FLASH_PL_OVERLAY); }catch(eFb){}
+  }
+}
+function _flashPlApplyRemote(val){
+  if(!val || typeof val!=='object') return;
+  window.FLASH_PL_OVERLAY = {
+    sales: val.sales||null,
+    live: val.live||null
+  };
+  _flashPlSaveLocal();
+}
+_flashPlLoadLocal();
+
+function _flashWeekToPeriodNum(weekNum){
+  var w=+weekNum;
+  if(!(w>0)) return null;
+  var start=1;
+  var weeks=(typeof FISCAL_WEEKS_445!=='undefined')?FISCAL_WEEKS_445:[4,4,5,4,4,5,4,4,5,4,4,5];
+  for(var p=0;p<12;p++){
+    var end=start+weeks[p]-1;
+    if(w>=start && w<=end) return p+1;
+    start=end+1;
+  }
+  return null;
+}
+function _flashPeriodLabel(n){ return n?('P'+n):''; }
+function _flashNum(v){
+  if(v==null || v==='') return null;
+  if(typeof v==='number' && isFinite(v)) return v;
+  var s=String(v).replace(/[$,\s]/g,'').replace(/\((.*)\)/,'-$1');
+  var n=parseFloat(s);
+  return isFinite(n)?n:null;
+}
+function _flashSheetRows(wb, name){
+  if(!wb || !wb.Sheets || !wb.Sheets[name]) return null;
+  return XLSX.utils.sheet_to_json(wb.Sheets[name], {header:1, defval:null, raw:true});
+}
+
+function _flashParseSalesWorkbook(wb, fileName){
+  var venues={};
+  var period=null, week=null, year=2026;
+  Object.keys(_FLASH_PL_VENUE_MAP.salesSheets).forEach(function(sheetName){
+    var venue=_FLASH_PL_VENUE_MAP.salesSheets[sheetName];
+    var rows=_flashSheetRows(wb, sheetName);
+    if(!rows || !rows.length) return;
+    var mtdCol=-1, ytdCol=-1;
+    var i, r, c;
+    for(i=0;i<Math.min(rows.length,12);i++){
+      r=rows[i]||[];
+      for(c=0;c<r.length;c++){
+        var cell=r[c]==null?'':String(r[c]);
+        if(/^P\d+$/i.test(cell.trim()) && !period) period=cell.trim().toUpperCase();
+        if(/^Week\s+(\d+)$/i.test(cell.trim()) && week==null){
+          week=+RegExp.$1;
+        } else if(week==null && typeof r[c]==='number' && r[c]>0 && r[c]<60 && i<=2){
+          /* week number often in adjacent cell */
+        }
+        if(/MTD/i.test(cell) && mtdCol<0) mtdCol=c;
+        if(/^YTD$/i.test(cell.trim()) && ytdCol<0) ytdCol=c;
+      }
+      if(week==null){
+        for(c=0;c<r.length;c++){
+          if(typeof r[c]==='number' && r[c]>=1 && r[c]<=53){ week=r[c]; break; }
+        }
+      }
+    }
+    if(mtdCol<0) mtdCol=9;
+    if(ytdCol<0) ytdCol=13;
+    var totalIdx=-1;
+    for(i=0;i<rows.length;i++){
+      r=rows[i]||[];
+      for(c=0;c<Math.min(r.length,6);c++){
+        if(r[c]!=null && String(r[c]).trim().toUpperCase()==='TOTAL'){ totalIdx=i; break; }
+      }
+      if(totalIdx>=0) break;
+    }
+    if(totalIdx<0) return;
+    var budgetIdx=-1;
+    for(i=totalIdx+1;i<Math.min(rows.length, totalIdx+4);i++){
+      r=rows[i]||[];
+      for(c=0;c<Math.min(r.length,6);c++){
+        if(r[c]!=null && String(r[c]).trim().toUpperCase()==='BUDGET'){ budgetIdx=i; break; }
+      }
+      if(budgetIdx>=0) break;
+    }
+    var salesMtdA=_flashNum(rows[totalIdx][mtdCol]);
+    var salesYtdA=_flashNum(rows[totalIdx][ytdCol]);
+    var salesMtdB=budgetIdx>=0?_flashNum(rows[budgetIdx][mtdCol]):null;
+    var salesYtdB=budgetIdx>=0?_flashNum(rows[budgetIdx][ytdCol]):null;
+    venues[venue]={
+      salesMtdA:salesMtdA, salesMtdB:salesMtdB,
+      salesYtdA:salesYtdA, salesYtdB:salesYtdB
+    };
+  });
+  var periodNum=period?parseInt(String(period).replace(/\D/g,''),10):null;
+  if(!periodNum && week) periodNum=_flashWeekToPeriodNum(week);
+  return {
+    uploadedAt:new Date().toISOString(),
+    fileName:fileName||'',
+    year:year,
+    period:_flashPeriodLabel(periodNum)||period||'',
+    periodNum:periodNum,
+    week:week,
+    venues:venues
+  };
+}
+
+function _flashParseLiveWorkbook(wb, fileName){
+  var venues={};
+  var weeksFound=[];
+  var dateRange='';
+  Object.keys(_FLASH_PL_VENUE_MAP.liveSheets).forEach(function(sheetName){
+    var venue=_FLASH_PL_VENUE_MAP.liveSheets[sheetName];
+    var rows=_flashSheetRows(wb, sheetName);
+    if(!rows || !rows.length) return;
+    if(!dateRange && rows[1] && rows[1][0]) dateRange=String(rows[1][0]);
+    var headerRow=-1, weekCols={};
+    var i, c, r;
+    for(i=0;i<Math.min(rows.length,10);i++){
+      r=rows[i]||[];
+      var hits=0;
+      for(c=0;c<r.length;c++){
+        var m=r[c]!=null && String(r[c]).match(/Week\s+(\d+)/i);
+        if(m){
+          weekCols[+m[1]]=c;
+          hits++;
+          if(weeksFound.indexOf(+m[1])<0) weeksFound.push(+m[1]);
+        }
+      }
+      if(hits>=2){ headerRow=i; break; }
+    }
+    if(headerRow<0) return;
+    var liveRow=-1;
+    for(i=0;i<rows.length;i++){
+      var a=rows[i]&&rows[i][0];
+      if(a!=null && /6750/.test(String(a)) && /Live\s*Entertain/i.test(String(a))){
+        liveRow=i; break;
+      }
+    }
+    if(liveRow<0) return;
+    var byWeek={};
+    Object.keys(weekCols).forEach(function(wk){
+      var col=weekCols[wk];
+      var val=_flashNum(rows[liveRow][col]);
+      if(val!=null) byWeek[String(wk)]=val;
+    });
+    venues[venue]={ byWeek:byWeek };
+  });
+  weeksFound.sort(function(a,b){ return a-b; });
+  return {
+    uploadedAt:new Date().toISOString(),
+    fileName:fileName||'',
+    dateRange:dateRange,
+    weeks:weeksFound,
+    venues:venues
+  };
+}
+
+function _flashSumLiveForPeriods(byWeek, periodNums){
+  if(!byWeek) return null;
+  var set={};
+  (periodNums||[]).forEach(function(p){ set[p]=1; });
+  var sum=0, n=0;
+  Object.keys(byWeek).forEach(function(wk){
+    var p=_flashWeekToPeriodNum(+wk);
+    if(p && set[p]){ sum+=(+byWeek[wk]||0); n++; }
+  });
+  return n?sum:null;
+}
+function _flashLiveBudgetSum(venue, year, fromMi, toMi){
+  if(typeof getBgtPlan!=='function') return null;
+  var sum=0, n=0;
+  for(var mi=fromMi; mi<=toMi; mi++){
+    var mm=(typeof fiscalMm==='function')?fiscalMm(mi):((mi+1)<10?'0'+(mi+1):String(mi+1));
+    var v=getBgtPlan(venue, String(year), mm, 'live');
+    if(v!=null){ sum+=+v; n++; }
+  }
+  return n?sum:null;
+}
+
+function handleFlashPlUpload(kind, inputEl){
+  var file=inputEl && inputEl.files && inputEl.files[0];
+  if(!file) return;
+  if(typeof XLSX==='undefined'){
+    alert('Excel reader not loaded. Refresh and try again.');
+    inputEl.value='';
+    return;
+  }
+  var reader=new FileReader();
+  reader.onload=function(ev){
+    try{
+      var data=new Uint8Array(ev.target.result);
+      var wb=XLSX.read(data, {type:'array'});
+      if(kind==='sales'){
+        var sales=_flashParseSalesWorkbook(wb, file.name);
+        if(!sales || !Object.keys(sales.venues||{}).length){
+          alert('Could not find Sales totals for Casa Neos / Lounge / MILA 2F in that file.');
+          return;
+        }
+        window.FLASH_PL_OVERLAY.sales=sales;
+      } else {
+        var live=_flashParseLiveWorkbook(wb, file.name);
+        if(!live || !Object.keys(live.venues||{}).length){
+          alert('Could not find Live Entertainment (GL 6750) for those venues in that file.');
+          return;
+        }
+        window.FLASH_PL_OVERLAY.live=live;
+      }
+      _flashPlPersist();
+      if(typeof renderVIP==='function') renderVIP();
+    }catch(err){
+      console.error('Flash PL upload failed', err);
+      alert('Could not read that Excel file.');
+    } finally {
+      try{ inputEl.value=''; }catch(e2){}
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function _flashPlStatusChipHtml(){
+  var ov=window.FLASH_PL_OVERLAY||{};
+  var sales=ov.sales, live=ov.live;
+  var parts=[];
+  if(sales) parts.push('Sales · Wk '+(sales.week||'?')+' '+(sales.period||''));
+  else parts.push('Sales · missing');
+  if(live){
+    var lastWk=(live.weeks&&live.weeks.length)?live.weeks[live.weeks.length-1]:'?';
+    parts.push('Live Ent · through Wk '+lastWk);
+  } else parts.push('Live Ent · missing');
+  return '<span id="flashPlStatus" class="flash-pl-status" title="'+(sales&&sales.fileName?sales.fileName:'')+' / '+(live&&live.fileName?live.fileName:'')+'">'+parts.join(' · ')+'</span>';
+}
+
+function _vipFlashPlMoneyCell(actual, budget, mode){
+  /* mode: 'sales' (higher actual good) | 'live' (under budget good) */
+  var varS=null;
+  if(actual!=null && budget!=null){
+    varS = mode==='live' ? (budget-actual) : (actual-budget);
+  }
+  var fav = varS==null ? null : (mode==='live' ? varS>=0 : varS>=0);
+  var status=varS==null?' bgt-status-neutral':(fav?' bgt-status-good':' bgt-status-bad');
+  var varText='-';
+  if(varS!=null){
+    if(mode==='live') varText=(varS>=0?'Under ':'Over ')+(typeof $k==='function'?$k(Math.abs(varS)):Math.abs(varS));
+    else varText=(typeof $mv==='function'?$mv(varS):((varS>0?'+':'')+varS));
+  }
+  return '<div class="bgt-monthly-cell flash-pl-cell'+status+'">'
+    +'<div class="bgt-monthly-value">'+(actual!=null?(typeof $k==='function'?$k(actual):actual):'\u2014')+'</div>'
+    +'<div class="bgt-monthly-vs">vs '+(budget!=null?(typeof $k==='function'?$k(budget):budget):'\u2014')+'</div>'
+    +'<div class="bgt-monthly-var '+(varS==null?'':(fav?'pos':'neg'))+'">'+varText+'</div></div>';
+}
+function _vipFlashPlPctCell(actual, budget){
+  var vP=(actual!=null&&budget!=null)?Math.round((actual-budget)*10)/10:null;
+  var fav=vP==null?null:vP<=0;
+  var status=vP==null?' bgt-status-neutral':(fav?' bgt-status-good':' bgt-status-bad');
+  var varText=vP==null?'-':((vP>0?'+':'')+vP+' pp');
+  return '<div class="bgt-monthly-cell flash-pl-cell'+status+'">'
+    +'<div class="bgt-monthly-value">'+(actual!=null?actual+'%':'\u2014')+'</div>'
+    +'<div class="bgt-monthly-vs">vs '+(budget!=null?budget+'%':'\u2014')+'</div>'
+    +'<div class="bgt-monthly-var '+(vP==null?'':(fav?'pos':'neg'))+'">'+varText+'</div></div>';
+}
+function _vipFlashPlRoiCell(roi){
+  var measured=roi&&roi.measured;
+  var good=measured && roi.misses===0;
+  var status=!measured?' bgt-status-neutral':(good?' bgt-status-good':' bgt-status-bad');
+  var misses=measured?(roi.measured-roi.beats):0;
+  if(roi && roi.misses!=null) misses=roi.misses;
+  else if(measured) misses=roi.measured-roi.beats;
+  return '<div class="bgt-monthly-cell flash-pl-cell'+status+'">'
+    +'<div class="bgt-monthly-value">'+(measured?(roi.beats+' / '+misses):'\u2014')+'</div>'
+    +'<div class="bgt-monthly-vs">beat / miss</div>'
+    +'<div class="bgt-monthly-var '+(!measured?'':(good?'pos':'neg'))+'">'+(measured&&roi.pct!=null?(roi.pct+'% beat rate'):'\u2014')+'</div></div>';
+}
+
+function _vipRenderFlashPlSection(venues, asOfDate){
+  var ov=window.FLASH_PL_OVERLAY||{};
+  var sales=ov.sales, live=ov.live;
+  var info=(typeof fiscalInfoForDate==='function')
+    ? fiscalInfoForDate(asOfDate||(typeof TODAY!=='undefined'?TODAY:''))
+    : {year:2026, monthIndex:7};
+  var periodNum=(sales&&sales.periodNum)||(info.monthIndex+1);
+  var year=(sales&&sales.year)||info.year||2026;
+  var mmLbl=(typeof MN_SH!=='undefined'?MN_SH[periodNum-1]:('M'+periodNum));
+  var sub='MTD '+_flashPeriodLabel(periodNum)+' / '+mmLbl+' '+year
+    +(sales&&sales.week?(' · Week '+sales.week):'')
+    +((!sales||!live)?' · upload both Excels for full standing':'');
+
+  var h='';
+  h+=_vipSectionTitle('SALES & LIVE ENTERTAINMENT', sub);
+  if(!sales && !live){
+    h+='<div class="flash-pl-empty">Upload this week\u2019s <b>Sales</b> and <b>Live Entertainment</b> Excel files (buttons above) to show MTD standing for Casa Neos, Lounge, and MILA.</div>';
+    return h;
+  }
+
+  var periodListMtd=[periodNum];
+  var periodListYtd=[];
+  for(var p=1;p<=periodNum;p++) periodListYtd.push(p);
+
+  _FLASH_PL_ORDER.forEach(function(venue){
+    var sv=(sales&&sales.venues&&sales.venues[venue])||{};
+    var lv=(live&&live.venues&&live.venues[venue])||{};
+    var liveMtd=_flashSumLiveForPeriods(lv.byWeek, periodListMtd);
+    var liveYtd=_flashSumLiveForPeriods(lv.byWeek, periodListYtd);
+    var liveMtdB=_flashLiveBudgetSum(venue, year, periodNum-1, periodNum-1);
+    var liveYtdB=_flashLiveBudgetSum(venue, year, 0, periodNum-1);
+    var marginMtdA=(typeof pctLive==='function')?pctLive(sv.salesMtdA, liveMtd):null;
+    var marginMtdB=(typeof pctLive==='function')?pctLive(sv.salesMtdB, liveMtdB):null;
+    var marginYtdA=(typeof pctLive==='function')?pctLive(sv.salesYtdA, liveYtd):null;
+    var marginYtdB=(typeof pctLive==='function')?pctLive(sv.salesYtdB, liveYtdB):null;
+
+    var cutDate=asOfDate||String(TODAY||'');
+    var monthRoi=(typeof _vipRoiCompletionStats==='function')
+      ? _vipRoiCompletionStats(venue, year, periodNum-1, cutDate)
+      : {beats:0,measured:0,pct:null};
+    var yRoiBeats=0,yRoiMeasured=0;
+    for(var mi=0;mi<periodNum;mi++){
+      var pEnd=(typeof fiscalPeriodRange==='function')?fiscalPeriodRange(year, mi).to:cutDate;
+      var mCut=(mi<periodNum-1)?pEnd:cutDate;
+      var rc=(typeof _vipRoiCompletionStats==='function')?_vipRoiCompletionStats(venue, year, mi, mCut):null;
+      if(rc){ yRoiBeats+=rc.beats; yRoiMeasured+=rc.measured; }
+    }
+    var yRoi={
+      beats:yRoiBeats,
+      measured:yRoiMeasured,
+      misses:yRoiMeasured?Math.max(0,yRoiMeasured-yRoiBeats):0,
+      pct:yRoiMeasured?Math.round(yRoiBeats/yRoiMeasured*100):null
+    };
+    if(monthRoi && monthRoi.measured!=null){
+      monthRoi.misses=Math.max(0,(monthRoi.measured||0)-(monthRoi.beats||0));
+    }
+
+    h+='<div class="vip-email-snap flash-pl-venue">';
+    h+='<div class="bgt-monthly flash-pl-monthly"><div class="bgt-monthly-hd">'+venue
+      +'<span>'+_flashPeriodLabel(periodNum)+' MTD + YTD</span></div>';
+    h+='<div class="bgt-monthly-grid flash-pl-grid">';
+    h+='<div class="bgt-monthly-cell bgt-monthly-month"></div>';
+    h+='<div class="bgt-monthly-cell bgt-monthly-month">MTD</div>';
+    h+='<div class="bgt-monthly-cell bgt-monthly-month bgt-monthly-ytd">YTD</div>';
+
+    h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Total Sales</b><span>Actual vs budget</span></div>';
+    h+=_vipFlashPlMoneyCell(sv.salesMtdA, sv.salesMtdB, 'sales');
+    h+=_vipFlashPlMoneyCell(sv.salesYtdA, sv.salesYtdB, 'sales');
+
+    h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live Entertainment</b><span>GL 6750 vs budget</span></div>';
+    h+=_vipFlashPlMoneyCell(liveMtd, liveMtdB, 'live');
+    h+=_vipFlashPlMoneyCell(liveYtd, liveYtdB, 'live');
+
+    h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live E Margin</b><span>Actual vs budget</span></div>';
+    h+=_vipFlashPlPctCell(marginMtdA, marginMtdB);
+    h+=_vipFlashPlPctCell(marginYtdA, marginYtdB);
+
+    h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>ROI Beat &amp; Miss</b><span>Same rule as Calendar</span></div>';
+    h+=_vipFlashPlRoiCell(monthRoi);
+    h+=_vipFlashPlRoiCell(yRoi);
+
+    h+='</div></div></div>';
+  });
+  return h;
 }
 

@@ -597,6 +597,20 @@ body.session-locked .shell{pointer-events:none;user-select:none}
 .vip-stack-title-main{font-size:26px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);line-height:1.15}
 .vip-stack-title-sub{font-size:11px;font-weight:600;color:var(--ink3);margin-top:6px;letter-spacing:.02em}
 .vip-stack-sec .vip-perf-block{margin:0}
+.flash-pl-upload{position:relative;overflow:hidden;display:inline-flex;align-items:center}
+.flash-pl-upload .flash-pl-file{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.flash-pl-status{font-size:10px;font-weight:700;color:var(--ink3);padding:4px 8px;border-radius:8px;background:var(--card2);border:0.5px solid var(--hair);white-space:nowrap;max-width:280px;overflow:hidden;text-overflow:ellipsis}
+.flash-pl-empty{padding:14px 16px;font-size:12px;color:var(--ink3);background:var(--card);border-radius:12px;border:0.5px dashed var(--rule)}
+.flash-pl-venue{margin-bottom:10px}
+.flash-pl-monthly{margin:0}
+.flash-pl-grid{grid-template-columns:148px minmax(110px,1fr) minmax(110px,1fr)!important;min-width:0!important}
+.flash-pl-grid .bgt-monthly-cell:nth-child(14n){border-right:0.5px solid var(--hair)}
+.flash-pl-grid .bgt-monthly-cell:nth-child(3n){border-right:none}
+.flash-pl-cell .bgt-monthly-value{font-size:16px}
+@media print{
+  .flash-pl-upload,.flash-pl-status{display:none!important}
+  .flash-pl-grid{break-inside:avoid}
+}
 .vip-print-page,.vip-print-page1,.vip-print-page2,.vip-print-page3,.vip-print-app{display:flex;flex-direction:column;gap:12px}
 @media print{
   .vip-print-page,.vip-print-page1,.vip-print-page2,.vip-print-page3,.vip-print-app{page-break-after:always;break-after:page}
