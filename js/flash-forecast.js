@@ -1291,11 +1291,6 @@ function _vipRenderFlashPlForVenue(venue, asOfDate){
   if(_FLASH_PL_ORDER.indexOf(venue)<0) return '';
   var ov=window.FLASH_PL_OVERLAY||{};
   var sales=ov.sales, live=ov.live;
-  if(!sales && !live){
-    if(window._flashPlEmptyShown) return '';
-    window._flashPlEmptyShown=true;
-    return '<div class="flash-pl-empty flash-pl-under-perf">Upload <b>Sales Excel</b> and <b>Live Ent Excel</b> (green buttons at top of Weekly Flash) to show Total Sales MTD under each venue.</div>';
-  }
   var info=(typeof fiscalInfoForDate==='function')
     ? fiscalInfoForDate(asOfDate||(typeof TODAY!=='undefined'?TODAY:''))
     : {year:2026, monthIndex:7};
@@ -1340,10 +1335,19 @@ function _vipRenderFlashPlForVenue(venue, asOfDate){
     monthRoi.misses=Math.max(0,(monthRoi.measured||0)-(monthRoi.beats||0));
   }
 
+  var needSales=!sales;
+  var needLive=!live;
   var h='<div class="flash-pl-venue flash-pl-under-perf">';
   h+='<div class="bgt-monthly flash-pl-monthly"><div class="bgt-monthly-hd">Sales &amp; Live Entertainment'
     +'<span>'+_flashPeriodLabel(periodNum)+' MTD + YTD'
     +(sales&&sales.week?(' · Week '+sales.week):'')+'</span></div>';
+  if(needSales || needLive){
+    h+='<div class="flash-pl-need-upload">Budget targets below are from the Budget page. Upload '
+      +(needSales?'<b>Sales Excel</b>':'')
+      +(needSales&&needLive?' and ':'')
+      +(needLive?'<b>Live Ent Excel</b>':'')
+      +' (green buttons above) to fill actuals.</div>';
+  }
   h+='<div class="bgt-monthly-grid flash-pl-grid">';
   h+='<div class="bgt-monthly-cell bgt-monthly-month"></div>';
   h+='<div class="bgt-monthly-cell bgt-monthly-month">MTD</div>';

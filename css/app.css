@@ -603,6 +603,7 @@ body.session-locked .shell{pointer-events:none;user-select:none}
 .flash-pl-under-perf{margin:8px 0 16px}
 .flash-pl-under-perf .flash-pl-empty{margin:0}
 .flash-pl-empty{padding:10px 12px;font-size:11px;color:var(--ink3);background:var(--card2);border-radius:10px;border:0.5px dashed var(--rule)}
+.flash-pl-need-upload{margin:0 0 8px;padding:8px 10px;font-size:11px;line-height:1.4;color:var(--ink3);background:#ecfdf5;border-radius:8px;border:0.5px solid #a7f3d0}
 .flash-pl-monthly{margin:0}
 .flash-pl-grid{grid-template-columns:148px minmax(110px,1fr) minmax(110px,1fr)!important;min-width:0!important}
 .flash-pl-grid .bgt-monthly-cell:nth-child(14n){border-right:0.5px solid var(--hair)}

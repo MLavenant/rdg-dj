@@ -2017,8 +2017,9 @@ function _generateVenueFlashParagraph(d){
     }
   } else if(beat.length===0){
     if(isRooftop && roofWk>=2 && n<=3){
-      var ord=['','first','second','third','fourth','fifth'];
-      parts.push('The '+ord[roofWk]+' weekend since transitioning from the Beach Club to the Rooftop remained below ROI expectations, with all '+n+' performance'+(n===1?'':'s')+' missing their DJ Bottle Service Ratio targets, resulting in 0% ROI completion.');
+      var ord=['','first','second','third','fourth','fifth','sixth','seventh','eighth','ninth','tenth'];
+      var roofOrd=(roofWk>0 && roofWk<ord.length)?ord[roofWk]:(roofWk+'th');
+      parts.push('The '+roofOrd+' weekend since transitioning from the Beach Club to the Rooftop remained below ROI expectations, with all '+n+' performance'+(n===1?'':'s')+' missing their DJ Bottle Service Ratio targets, resulting in 0% ROI completion.');
     } else if(minTbl<=2 || avgFill<0.35){
       parts.push(name+' delivered a very challenging week, with all '+n+' performance'+(n===1?'':'s')+' missing their DJ Bottle Service Ratio targets, resulting in 0% ROI completion.');
     } else {
