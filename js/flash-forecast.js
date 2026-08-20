@@ -13,6 +13,7 @@ function renderVIP(venueIdx){
 
   var weekOf = (venues[0]&&venues[0].weekOf) || _fmtVipWeekLabel(_vipWeekOffset);
   document.getElementById('vipMeta').textContent = weekOf + ' \u2014 All locations';
+  window._flashPlEmptyShown=false;
 
   var h = '';
 
@@ -29,12 +30,10 @@ function renderVIP(venueIdx){
     h += _vipRenderPerfSummary(d);
     var para=_generateVenueFlashParagraph(d);
     if(para) h += '<div class="vip-venue-narrative"><span class="vip-venue-narrative-bullet">\u2022</span> '+para+'</div>';
+    /* MTD Sales / Live Ent sits under this venue's performance block — not its own section. */
+    h += _vipRenderFlashPlForVenue(d.venue, range.sun);
     h += '</div>';
   });
-  h += '</div>';
-
-  h += '<div class="vip-print-page vip-print-page-pl vip-stack-sec">';
-  h += _vipRenderFlashPlSection(venues, range.sun);
   h += '</div>';
 
   h += '<div class="vip-print-page vip-print-page3 vip-stack-sec">';
@@ -1090,89 +1089,82 @@ function _vipFlashPlRoiCell(roi){
     +'<div class="bgt-monthly-var '+(!measured?'':(good?'pos':'neg'))+'">'+(measured&&roi.pct!=null?(roi.pct+'% beat rate'):'\u2014')+'</div></div>';
 }
 
-function _vipRenderFlashPlSection(venues, asOfDate){
+function _vipRenderFlashPlForVenue(venue, asOfDate){
+  if(_FLASH_PL_ORDER.indexOf(venue)<0) return '';
   var ov=window.FLASH_PL_OVERLAY||{};
   var sales=ov.sales, live=ov.live;
+  if(!sales && !live){
+    if(window._flashPlEmptyShown) return '';
+    window._flashPlEmptyShown=true;
+    return '<div class="flash-pl-empty flash-pl-under-perf">Upload <b>Sales Excel</b> and <b>Live Ent Excel</b> (green buttons at top of Weekly Flash) to show Total Sales MTD under each venue.</div>';
+  }
   var info=(typeof fiscalInfoForDate==='function')
     ? fiscalInfoForDate(asOfDate||(typeof TODAY!=='undefined'?TODAY:''))
     : {year:2026, monthIndex:7};
   var periodNum=(sales&&sales.periodNum)||(info.monthIndex+1);
   var year=(sales&&sales.year)||info.year||2026;
-  var mmLbl=(typeof MN_SH!=='undefined'?MN_SH[periodNum-1]:('M'+periodNum));
-  var sub='MTD '+_flashPeriodLabel(periodNum)+' / '+mmLbl+' '+year
-    +(sales&&sales.week?(' · Week '+sales.week):'')
-    +((!sales||!live)?' · upload both Excels for full standing':'');
-
-  var h='';
-  h+=_vipSectionTitle('SALES & LIVE ENTERTAINMENT', sub);
-  if(!sales && !live){
-    h+='<div class="flash-pl-empty">Upload this week\u2019s <b>Sales</b> and <b>Live Entertainment</b> Excel files (buttons above) to show MTD standing for Casa Neos, Lounge, and MILA.</div>';
-    return h;
-  }
-
   var periodListMtd=[periodNum];
   var periodListYtd=[];
   for(var p=1;p<=periodNum;p++) periodListYtd.push(p);
 
-  _FLASH_PL_ORDER.forEach(function(venue){
-    var sv=(sales&&sales.venues&&sales.venues[venue])||{};
-    var lv=(live&&live.venues&&live.venues[venue])||{};
-    var liveMtd=_flashSumLiveForPeriods(lv.byWeek, periodListMtd);
-    var liveYtd=_flashSumLiveForPeriods(lv.byWeek, periodListYtd);
-    var liveMtdB=_flashLiveBudgetSum(venue, year, periodNum-1, periodNum-1);
-    var liveYtdB=_flashLiveBudgetSum(venue, year, 0, periodNum-1);
-    var marginMtdA=(typeof pctLive==='function')?pctLive(sv.salesMtdA, liveMtd):null;
-    var marginMtdB=(typeof pctLive==='function')?pctLive(sv.salesMtdB, liveMtdB):null;
-    var marginYtdA=(typeof pctLive==='function')?pctLive(sv.salesYtdA, liveYtd):null;
-    var marginYtdB=(typeof pctLive==='function')?pctLive(sv.salesYtdB, liveYtdB):null;
+  var sv=(sales&&sales.venues&&sales.venues[venue])||{};
+  var lv=(live&&live.venues&&live.venues[venue])||{};
+  var liveMtd=_flashSumLiveForPeriods(lv.byWeek, periodListMtd);
+  var liveYtd=_flashSumLiveForPeriods(lv.byWeek, periodListYtd);
+  var liveMtdB=_flashLiveBudgetSum(venue, year, periodNum-1, periodNum-1);
+  var liveYtdB=_flashLiveBudgetSum(venue, year, 0, periodNum-1);
+  var marginMtdA=(typeof pctLive==='function')?pctLive(sv.salesMtdA, liveMtd):null;
+  var marginMtdB=(typeof pctLive==='function')?pctLive(sv.salesMtdB, liveMtdB):null;
+  var marginYtdA=(typeof pctLive==='function')?pctLive(sv.salesYtdA, liveYtd):null;
+  var marginYtdB=(typeof pctLive==='function')?pctLive(sv.salesYtdB, liveYtdB):null;
 
-    var cutDate=asOfDate||String(TODAY||'');
-    var monthRoi=(typeof _vipRoiCompletionStats==='function')
-      ? _vipRoiCompletionStats(venue, year, periodNum-1, cutDate)
-      : {beats:0,measured:0,pct:null};
-    var yRoiBeats=0,yRoiMeasured=0;
-    for(var mi=0;mi<periodNum;mi++){
-      var pEnd=(typeof fiscalPeriodRange==='function')?fiscalPeriodRange(year, mi).to:cutDate;
-      var mCut=(mi<periodNum-1)?pEnd:cutDate;
-      var rc=(typeof _vipRoiCompletionStats==='function')?_vipRoiCompletionStats(venue, year, mi, mCut):null;
-      if(rc){ yRoiBeats+=rc.beats; yRoiMeasured+=rc.measured; }
-    }
-    var yRoi={
-      beats:yRoiBeats,
-      measured:yRoiMeasured,
-      misses:yRoiMeasured?Math.max(0,yRoiMeasured-yRoiBeats):0,
-      pct:yRoiMeasured?Math.round(yRoiBeats/yRoiMeasured*100):null
-    };
-    if(monthRoi && monthRoi.measured!=null){
-      monthRoi.misses=Math.max(0,(monthRoi.measured||0)-(monthRoi.beats||0));
-    }
+  var cutDate=asOfDate||String(TODAY||'');
+  var monthRoi=(typeof _vipRoiCompletionStats==='function')
+    ? _vipRoiCompletionStats(venue, year, periodNum-1, cutDate)
+    : {beats:0,measured:0,pct:null};
+  var yRoiBeats=0,yRoiMeasured=0;
+  for(var mi=0;mi<periodNum;mi++){
+    var pEnd=(typeof fiscalPeriodRange==='function')?fiscalPeriodRange(year, mi).to:cutDate;
+    var mCut=(mi<periodNum-1)?pEnd:cutDate;
+    var rc=(typeof _vipRoiCompletionStats==='function')?_vipRoiCompletionStats(venue, year, mi, mCut):null;
+    if(rc){ yRoiBeats+=rc.beats; yRoiMeasured+=rc.measured; }
+  }
+  var yRoi={
+    beats:yRoiBeats,
+    measured:yRoiMeasured,
+    misses:yRoiMeasured?Math.max(0,yRoiMeasured-yRoiBeats):0,
+    pct:yRoiMeasured?Math.round(yRoiBeats/yRoiMeasured*100):null
+  };
+  if(monthRoi && monthRoi.measured!=null){
+    monthRoi.misses=Math.max(0,(monthRoi.measured||0)-(monthRoi.beats||0));
+  }
 
-    h+='<div class="vip-email-snap flash-pl-venue">';
-    h+='<div class="bgt-monthly flash-pl-monthly"><div class="bgt-monthly-hd">'+venue
-      +'<span>'+_flashPeriodLabel(periodNum)+' MTD + YTD</span></div>';
-    h+='<div class="bgt-monthly-grid flash-pl-grid">';
-    h+='<div class="bgt-monthly-cell bgt-monthly-month"></div>';
-    h+='<div class="bgt-monthly-cell bgt-monthly-month">MTD</div>';
-    h+='<div class="bgt-monthly-cell bgt-monthly-month bgt-monthly-ytd">YTD</div>';
+  var h='<div class="flash-pl-venue flash-pl-under-perf">';
+  h+='<div class="bgt-monthly flash-pl-monthly"><div class="bgt-monthly-hd">Sales &amp; Live Entertainment'
+    +'<span>'+_flashPeriodLabel(periodNum)+' MTD + YTD'
+    +(sales&&sales.week?(' · Week '+sales.week):'')+'</span></div>';
+  h+='<div class="bgt-monthly-grid flash-pl-grid">';
+  h+='<div class="bgt-monthly-cell bgt-monthly-month"></div>';
+  h+='<div class="bgt-monthly-cell bgt-monthly-month">MTD</div>';
+  h+='<div class="bgt-monthly-cell bgt-monthly-month bgt-monthly-ytd">YTD</div>';
 
-    h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Total Sales</b><span>Actual vs budget</span></div>';
-    h+=_vipFlashPlMoneyCell(sv.salesMtdA, sv.salesMtdB, 'sales');
-    h+=_vipFlashPlMoneyCell(sv.salesYtdA, sv.salesYtdB, 'sales');
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Total Sales</b><span>Actual vs budget</span></div>';
+  h+=_vipFlashPlMoneyCell(sv.salesMtdA, sv.salesMtdB, 'sales');
+  h+=_vipFlashPlMoneyCell(sv.salesYtdA, sv.salesYtdB, 'sales');
 
-    h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live Entertainment</b><span>GL 6750 vs budget</span></div>';
-    h+=_vipFlashPlMoneyCell(liveMtd, liveMtdB, 'live');
-    h+=_vipFlashPlMoneyCell(liveYtd, liveYtdB, 'live');
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live Entertainment</b><span>GL 6750 vs budget</span></div>';
+  h+=_vipFlashPlMoneyCell(liveMtd, liveMtdB, 'live');
+  h+=_vipFlashPlMoneyCell(liveYtd, liveYtdB, 'live');
 
-    h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live E Margin</b><span>Actual vs budget</span></div>';
-    h+=_vipFlashPlPctCell(marginMtdA, marginMtdB);
-    h+=_vipFlashPlPctCell(marginYtdA, marginYtdB);
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live E Margin</b><span>Actual vs budget</span></div>';
+  h+=_vipFlashPlPctCell(marginMtdA, marginMtdB);
+  h+=_vipFlashPlPctCell(marginYtdA, marginYtdB);
 
-    h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>ROI Beat &amp; Miss</b><span>Same rule as Calendar</span></div>';
-    h+=_vipFlashPlRoiCell(monthRoi);
-    h+=_vipFlashPlRoiCell(yRoi);
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>ROI Beat &amp; Miss</b><span>Same rule as Calendar</span></div>';
+  h+=_vipFlashPlRoiCell(monthRoi);
+  h+=_vipFlashPlRoiCell(yRoi);
 
-    h+='</div></div></div>';
-  });
+  h+='</div></div></div>';
   return h;
 }
 

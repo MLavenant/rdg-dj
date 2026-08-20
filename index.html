@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RDG DJ Dashboard v4.50</title>
+<title>RDG DJ Dashboard v4.51</title>
 <!-- Firebase Realtime Database SDK -->
-  <link rel="stylesheet" href="css/app.css?v=4.50">
-<script>window.RDG_APP_VERSION='4.50';</script>
+  <link rel="stylesheet" href="css/app.css?v=4.51">
+<script>window.RDG_APP_VERSION='4.51';</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
@@ -28,9 +28,9 @@
 <div class="shell">
 <aside class="sidebar">
   <div class="sb-logo">
-    <img src="assets/rdg-logo.png?v=4.50" alt="RDG" class="sb-logo-img">
+    <img src="assets/rdg-logo.png?v=4.51" alt="RDG" class="sb-logo-img">
     <div class="sb-logo-title">DJ Dashboard</div>
-    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v4.50 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
+    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v4.51 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
   </div>
   <div id="sidebar"></div>
   <div class="sb-tools-section">
@@ -217,8 +217,8 @@
         <button id="vipPrevBtn" onclick="vipWeekNav(1)" style="padding:5px 12px;border-radius:8px;border:0.5px solid var(--rule);background:var(--card2);color:var(--ink2);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">&#8592; Prev</button>
         <span id="vipWeekLabel" style="font-size:11px;font-weight:700;color:var(--ink2);white-space:nowrap;min-width:80px;text-align:center">Last Week</span>
         <button id="vipNextBtn" onclick="vipWeekNav(-1)" style="padding:5px 12px;border-radius:8px;border:0.5px solid var(--rule);background:var(--card2);color:var(--ink2);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;opacity:0.3" disabled>Next &#8594;</button>
-        <label class="flash-pl-upload btn-pdf" style="margin:0;cursor:pointer">Sales Excel<input type="file" accept=".xlsx,.xls" class="flash-pl-file" onchange="handleFlashPlUpload('sales',this)"></label>
-        <label class="flash-pl-upload btn-pdf" style="margin:0;cursor:pointer">Live Ent Excel<input type="file" accept=".xlsx,.xls" class="flash-pl-file" onchange="handleFlashPlUpload('live',this)"></label>
+        <label class="flash-pl-upload btn-pdf" style="margin:0;cursor:pointer;background:#0f766e;color:#fff;border-color:#0f766e">Upload Sales<input type="file" accept=".xlsx,.xls" class="flash-pl-file" onchange="handleFlashPlUpload('sales',this)"></label>
+        <label class="flash-pl-upload btn-pdf" style="margin:0;cursor:pointer;background:#0f766e;color:#fff;border-color:#0f766e">Upload Live Ent<input type="file" accept=".xlsx,.xls" class="flash-pl-file" onchange="handleFlashPlUpload('live',this)"></label>
         <span id="flashPlStatusHost"></span>
         <button type="button" class="btn-pdf" onclick="prepareVipFlashEmail()" id="vipEmailBtn">Send all emails</button>
         <button type="button" class="btn-pdf" onclick="exportViewPdf('vip')">Export PDF</button>
@@ -439,20 +439,20 @@
     </div>
   </div>
 </div>
-<script src="js/vendor/xlsx.js?v=4.50"></script>
-<script src="data/sched-baked.js?v=4.50"></script>
-<script src="js/state-prelude.js?v=4.50"></script>
-<script src="js/logos.js?v=4.50"></script>
-<script src="js/state.js?v=4.50"></script>
-<script src="js/fiscal.js?v=4.50"></script>
-<script src="js/core.js?v=4.50"></script>
-<script src="js/budget.js?v=4.50"></script>
-<script src="js/firebase-sync.js?v=4.50"></script>
-<script src="js/calendar.js?v=4.50"></script>
-<script src="js/flash-forecast.js?v=4.50"></script>
-<script src="js/accounting.js?v=4.50"></script>
-<script src="js/modals.js?v=4.50"></script>
-<script src="js/roi-rules.js?v=4.50"></script>
+<script src="js/vendor/xlsx.js?v=4.51"></script>
+<script src="data/sched-baked.js?v=4.51"></script>
+<script src="js/state-prelude.js?v=4.51"></script>
+<script src="js/logos.js?v=4.51"></script>
+<script src="js/state.js?v=4.51"></script>
+<script src="js/fiscal.js?v=4.51"></script>
+<script src="js/core.js?v=4.51"></script>
+<script src="js/budget.js?v=4.51"></script>
+<script src="js/firebase-sync.js?v=4.51"></script>
+<script src="js/calendar.js?v=4.51"></script>
+<script src="js/flash-forecast.js?v=4.51"></script>
+<script src="js/accounting.js?v=4.51"></script>
+<script src="js/modals.js?v=4.51"></script>
+<script src="js/roi-rules.js?v=4.51"></script>
 </body>
 </html>
 
