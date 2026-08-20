@@ -1254,30 +1254,77 @@ function _flashMoneyTxt(v){
 function _flashPctTxt(v){
   return v!=null?(v+'%'):'\u2014';
 }
-function _flashPyMonthVals(venue, year, monthIndex0){
+function _flashWeeksElapsedInPeriod(periodNum, throughWeek){
+  var weeks=(typeof FISCAL_WEEKS_445!=='undefined')?FISCAL_WEEKS_445:[4,4,5,4,4,5,4,4,5,4,4,5];
+  var start=1, p;
+  for(p=1;p<=12;p++){
+    var end=start+weeks[p-1]-1;
+    if(p===periodNum){
+      if(throughWeek==null) return weeks[p-1];
+      if(throughWeek<start) return 0;
+      return Math.max(0, Math.min(throughWeek, end)-start+1);
+    }
+    start=end+1;
+  }
+  return 0;
+}
+function _flashSumByWeekMap(byWeek, periodNum, throughWeek){
+  if(!byWeek) return null;
+  var sum=0, n=0;
+  Object.keys(byWeek).forEach(function(wk){
+    var w=+wk;
+    var p=_flashWeekToPeriodNum(w);
+    if(p!==periodNum) return;
+    if(throughWeek!=null && w>throughWeek) return;
+    var v=+byWeek[wk];
+    if(isFinite(v)){ sum+=v; n++; }
+  });
+  return n?sum:null;
+}
+function _flashPyMonthVals(venue, year, monthIndex0, throughWeek){
   var mm=(typeof fiscalMm==='function')?fiscalMm(monthIndex0):((monthIndex0+1)<10?'0'+(monthIndex0+1):String(monthIndex0+1));
   var pyYear=String((+year||2026)-1);
-  var sales=(typeof getBgtActual==='function')?getBgtActual(venue, pyYear, mm, 'sales'):null;
-  var live=(typeof getBgtActual==='function')?getBgtActual(venue, pyYear, mm, 'live'):null;
+  var periodNum=monthIndex0+1;
+  var sales=null, live=null, source='month';
+
+  /* 1) Baked / uploaded weekly PY (preferred — same week numbers, 4-4-5). */
+  var baked=(typeof window.FLASH_PY_2025!=='undefined' && window.FLASH_PY_2025)||null;
+  var bakedV=baked&&baked.venues&&baked.venues[venue];
+  var ov=window.FLASH_PL_OVERLAY||{};
+  var pyV=ov.py&&ov.py.venues&&ov.py.venues[venue];
+  var weekMapSales=(pyV&&pyV.salesByWeek)||(bakedV&&bakedV.salesByWeek);
+  var weekMapLive=(pyV&&pyV.liveByWeek)||(bakedV&&bakedV.liveByWeek);
+  if(weekMapSales||weekMapLive){
+    sales=_flashSumByWeekMap(weekMapSales, periodNum, throughWeek);
+    live=_flashSumByWeekMap(weekMapLive, periodNum, throughWeek);
+    source='weekly';
+  }
+
+  /* 2) Fall back to Budget-page full-month P&L actuals. */
+  if(sales==null && typeof getBgtActual==='function') sales=getBgtActual(venue, pyYear, mm, 'sales');
+  if(live==null && typeof getBgtActual==='function') live=getBgtActual(venue, pyYear, mm, 'live');
+
   var fee=null;
   if(typeof monthPerf==='function'){
     var mp=monthPerf(venue, pyYear, mm);
     fee=mp&&mp.tFee!=null?mp.tFee:null;
   }
-  var ov=window.FLASH_PL_OVERLAY||{};
-  /* Prefer weekly PY overlay when user uploads prior-year weekly Sales / Live files. */
-  var pyV=ov.py&&ov.py.venues&&ov.py.venues[venue];
-  if(pyV){
-    if(pyV.salesMtdA!=null) sales=pyV.salesMtdA;
-    if(pyV.liveMtdA!=null) live=pyV.liveMtdA;
+
+  /* MILA 2025 period budget (sales/live ÷ weeks; margin fixed %) — available for Target overrides. */
+  var bgtPeriod=null;
+  var bgtRoot=(ov.budget2025&&ov.budget2025[venue])||(baked&&baked.budget2025&&baked.budget2025[venue]);
+  if(bgtRoot&&bgtRoot.byPeriod&&bgtRoot.byPeriod[String(periodNum)]){
+    bgtPeriod=bgtRoot.byPeriod[String(periodNum)];
   }
+
   return {
     year:pyYear,
     sales:sales,
     live:live,
     margin:(typeof pctLive==='function')?pctLive(sales, live):null,
     fee:fee,
-    source:(pyV&&(pyV.salesMtdA!=null||pyV.liveMtdA!=null))?'weekly':'month'
+    source:source,
+    bgtPeriod:bgtPeriod
   };
 }
 /**
@@ -1425,11 +1472,25 @@ function _vipRenderFlashPlForVenue(venue, asOfDate){
   var sv=(sales&&sales.venues&&sales.venues[venue])||{};
   var lv=(live&&live.venues&&live.venues[venue])||{};
   var liveMtd=_flashSumLiveForPeriods(lv.byWeek, periodListMtd);
-  var salesMtdB=_flashSalesBudgetSum(venue, year, monthIndex0, monthIndex0);
-  var liveMtdB=_flashLiveBudgetSum(venue, year, monthIndex0, monthIndex0);
+  var throughWeek=(sales&&sales.week)||null;
+  var salesFullB=_flashSalesBudgetSum(venue, year, monthIndex0, monthIndex0);
+  var liveFullB=_flashLiveBudgetSum(venue, year, monthIndex0, monthIndex0);
+  var py=_flashPyMonthVals(venue, year, monthIndex0, throughWeek);
+
+  /* Target $ = period budget ÷ weeks × weeks elapsed (4-4-5). Margin % stays the full-period target. */
+  var elapsed=_flashWeeksElapsedInPeriod(periodNum, throughWeek);
+  var weeksInP=((typeof FISCAL_WEEKS_445!=='undefined')?FISCAL_WEEKS_445:[4,4,5,4,4,5,4,4,5,4,4,5])[monthIndex0]||4;
+  var salesMtdB=salesFullB;
+  var liveMtdB=liveFullB;
+  if(elapsed>0 && weeksInP>0){
+    if(salesFullB!=null) salesMtdB=salesFullB*(elapsed/weeksInP);
+    if(liveFullB!=null) liveMtdB=liveFullB*(elapsed/weeksInP);
+  }
+  /* MILA 2025 budget file: fixed margin % by period (pattern for other venues later). Prefer when present. */
   var marginMtdA=(typeof pctLive==='function')?pctLive(sv.salesMtdA, liveMtd):null;
-  var marginMtdB=(typeof pctLive==='function')?pctLive(salesMtdB, liveMtdB):null;
-  var py=_flashPyMonthVals(venue, year, monthIndex0);
+  var marginMtdB=(py.bgtPeriod&&py.bgtPeriod.marginPct!=null)
+    ? py.bgtPeriod.marginPct
+    : ((typeof pctLive==='function')?pctLive(salesFullB, liveFullB):null);
 
   var cutDate=asOfDate||String(TODAY||'');
   var monthRoi=(typeof _vipRoiCompletionStats==='function')

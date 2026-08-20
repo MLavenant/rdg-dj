@@ -3409,6 +3409,31 @@ function renderSystem(){
     + '</div>';
   h += card('Toast LIVE (on-demand only)', 'Only when someone presses Refresh ? no night schedule', toastLive, 36, liveExtra);
 
+  /* Excel source files used by Weekly Flash — click to download */
+  var excelCats=(typeof window.FLASH_EXCEL_CATALOG!=='undefined' && window.FLASH_EXCEL_CATALOG)||[];
+  h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid #0f766e">'
+    + '<div style="font-size:13px;font-weight:800;margin-bottom:4px">Weekly Flash Excel files</div>'
+    + '<div style="font-size:10px;color:var(--ink3);margin-bottom:10px;line-height:1.45">Source workbooks dropped for Sales, Live Ent, Prior Year, and Budget. Click a name to download.</div>';
+  if(!excelCats.length){
+    h += '<div style="font-size:11px;color:var(--ink3)">No catalog loaded.</div>';
+  } else {
+    excelCats.forEach(function(cat){
+      h += '<div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--hair)">'
+        + '<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);margin-bottom:6px">'+cat.category+'</div>';
+      (cat.files||[]).forEach(function(f){
+        h += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:6px 0">'
+          + '<div style="min-width:0">'
+          + '<a href="'+f.path+'" download style="font-size:12px;font-weight:700;color:#0f766e;text-decoration:underline">'+(f.name||f.path)+'</a>'
+          + (f.note?'<div style="font-size:10px;color:var(--ink3);margin-top:2px;line-height:1.4">'+f.note+'</div>':'')
+          + '</div>'
+          + '<a href="'+f.path+'" download style="flex-shrink:0;font-size:10px;font-weight:800;padding:4px 10px;border-radius:8px;border:0.5px solid #99f6e4;background:#ecfdf5;color:#0f766e;text-decoration:none">Download</a>'
+          + '</div>';
+      });
+      h += '</div>';
+    });
+  }
+  h += '</div>';
+
   h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px">'
     + '<div style="font-size:13px;font-weight:800;margin-bottom:6px">How the pieces fit</div>'
     + '<div style="font-size:11px;color:var(--ink3);line-height:1.6">'
