@@ -609,6 +609,41 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
   function _mergeSchedEdit(target, edit){
     if(!target || !edit) return;
     var kind=edit._writeKind||'';
+    /* Thin field locks — never touch fee / DJ guest name. */
+    if(kind==='vipNote' || kind==='vip'){
+      if(Object.prototype.hasOwnProperty.call(edit,'vipNote')){
+        target.vipNote = edit.vipNote==null ? null : edit.vipNote;
+      }
+      return;
+    }
+    if(kind==='agency'){
+      if(Object.prototype.hasOwnProperty.call(edit,'agency')){
+        target.agency = edit.agency==null ? null : edit.agency;
+      }
+      return;
+    }
+    /* Step 5: modal / Edit Show saves always beat bake for DJ name + fee on reload. */
+    if(kind==='modal' || kind==='evClear'){
+      if(Object.prototype.hasOwnProperty.call(edit,'dj')){
+        target.dj = edit.dj==null ? '' : edit.dj;
+      }
+      if(edit.fee!=null || edit.cost!=null){
+        target.fee=edit.fee!=null?edit.fee:edit.cost;
+        target.cost=edit.cost!=null?edit.cost:edit.fee;
+      }
+      Object.assign(target, edit);
+      if(Object.prototype.hasOwnProperty.call(edit,'dj')){
+        target.dj = edit.dj==null ? '' : edit.dj;
+      }
+      if(edit.fee!=null || edit.cost!=null){
+        target.fee=edit.fee!=null?edit.fee:edit.cost;
+        target.cost=edit.cost!=null?edit.cost:edit.fee;
+      }
+      if(target._writeKind==='djStatus') target._writeKind='modal';
+      if(target.v && !target.venue) target.venue=target.v;
+      if(target.venue && !target.v) target.v=target.venue;
+      return;
+    }
     /* Status seeds must not overwrite a live modal DJ name/fee. */
     if(kind==='statusMerge' || kind==='djStatus'){
       if(Object.prototype.hasOwnProperty.call(edit,'djStatus')){

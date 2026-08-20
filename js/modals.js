@@ -389,7 +389,8 @@ function editVipNote(idx){
   var next=prompt('VIP note:', cur);
   if(next===null) return;
   r.vipNote=next.trim()||null;
-  if(typeof persistSchedShow==='function') persistSchedShow(r);
+  /* VIP only — never full persistSchedShow (that could rewrite fee/DJ from stale local). */
+  if(typeof persistShowVipNoteOnly==='function') persistShowVipNoteOnly(r);
   if(typeof clearPyMapCache==='function') clearPyMapCache();
   go();
 }
@@ -690,11 +691,14 @@ function persistSchedShow(rec){
     if(prev && typeof prev==='object'){
       var prevAt=prev.updatedAt?Date.parse(prev.updatedAt):0;
       var newAt=payload.updatedAt?Date.parse(payload.updatedAt):0;
+      /* Edit Show must not wipe status / agency / VIP that live only on the remote row. */
       if(payload.djStatus==null && prev.djStatus!=null) payload.djStatus=prev.djStatus;
       if(payload.agency==null && prev.agency!=null) payload.agency=prev.agency;
+      if(payload.vipNote==null && prev.vipNote!=null) payload.vipNote=prev.vipNote;
       if(prevAt && newAt && prevAt>newAt){
         if(prev.djStatus!=null) payload.djStatus=prev.djStatus;
         if(prev.agency!=null) payload.agency=prev.agency;
+        if(prev.vipNote!=null) payload.vipNote=prev.vipNote;
       }
     }
     map[uid]=payload;
@@ -747,6 +751,98 @@ function persistShowDjStatusOnly(rec){
       _uid: uid,
       djStatus: nextStatus,
       _writeKind: 'statusMerge',
+      _added: isBaked?0:1,
+      updatedAt:new Date().toISOString()
+    });
+    return map;
+  }, _fbOnSchedWrite);
+}
+/* VIP note only — never bundle DJ name / fee. */
+function persistShowVipNoteOnly(rec){
+  if(!rec||!rec.d) return;
+  ensureShowUid(rec);
+  if(!window._fbRef) return;
+  _alignRecToBakedShow(rec);
+  var uid=ensureShowUid(rec);
+  var nextVip=rec.vipNote==null ? null : rec.vipNote;
+  if(typeof window._guardSchedWrite==='function'){
+    window._guardSchedWrite({
+      d: rec.d,
+      v: rec.v||rec.venue||'',
+      venue: rec.venue||rec.v||'',
+      _uid: uid,
+      vipNote: nextVip,
+      _writeKind: 'vipNote'
+    });
+  }
+  var isBaked=_alignRecToBakedShow(rec);
+  if(!isBaked) rec._added=1;
+  window._fbRef.child('schedOverrides/shows').transaction(function(map){
+    if(!map || typeof map!=='object') map={};
+    var cur=map[uid];
+    if(cur && typeof cur==='object'){
+      var next=Object.assign({}, cur);
+      next.vipNote=nextVip;
+      next.updatedAt=new Date().toISOString();
+      if(cur._writeKind!=='modal' && cur._writeKind!=='evClear'){
+        next._writeKind='vipNote';
+      }
+      map[uid]=next;
+      return map;
+    }
+    map[uid]=_fbSanitize({
+      d: rec.d,
+      v: rec.v||rec.venue||'',
+      venue: rec.venue||rec.v||'',
+      _uid: uid,
+      vipNote: nextVip,
+      _writeKind: 'vipNote',
+      _added: isBaked?0:1,
+      updatedAt:new Date().toISOString()
+    });
+    return map;
+  }, _fbOnSchedWrite);
+}
+/* Agency only — never bundle DJ name / fee. */
+function persistShowAgencyOnly(rec){
+  if(!rec||!rec.d) return;
+  ensureShowUid(rec);
+  if(!window._fbRef) return;
+  _alignRecToBakedShow(rec);
+  var uid=ensureShowUid(rec);
+  var nextAgency=rec.agency==null ? null : rec.agency;
+  if(typeof window._guardSchedWrite==='function'){
+    window._guardSchedWrite({
+      d: rec.d,
+      v: rec.v||rec.venue||'',
+      venue: rec.venue||rec.v||'',
+      _uid: uid,
+      agency: nextAgency,
+      _writeKind: 'agency'
+    });
+  }
+  var isBaked=_alignRecToBakedShow(rec);
+  if(!isBaked) rec._added=1;
+  window._fbRef.child('schedOverrides/shows').transaction(function(map){
+    if(!map || typeof map!=='object') map={};
+    var cur=map[uid];
+    if(cur && typeof cur==='object'){
+      var next=Object.assign({}, cur);
+      next.agency=nextAgency;
+      next.updatedAt=new Date().toISOString();
+      if(cur._writeKind!=='modal' && cur._writeKind!=='evClear'){
+        next._writeKind='agency';
+      }
+      map[uid]=next;
+      return map;
+    }
+    map[uid]=_fbSanitize({
+      d: rec.d,
+      v: rec.v||rec.venue||'',
+      venue: rec.venue||rec.v||'',
+      _uid: uid,
+      agency: nextAgency,
+      _writeKind: 'agency',
       _added: isBaked?0:1,
       updatedAt:new Date().toISOString()
     });
@@ -885,9 +981,10 @@ function saveEvent(){
       else if(_editUid) rec._uid=_editUid;
       if(prev._added) rec._added=prev._added;
       if(prev.bs_a&&prev._s!=='fut'&&prev._s!=='tbd') rec._s=prev._s;
-      /* Keep existing DJ Status on rename/fee edits — clearing it forced a second
-         status click and made the calendar look like the name only stuck after status. */
+      /* Keep status / agency / VIP on rename/fee edits — Edit Show owns identity only. */
       if(Object.prototype.hasOwnProperty.call(prev,'djStatus')) rec.djStatus=prev.djStatus;
+      if(Object.prototype.hasOwnProperty.call(prev,'agency')) rec.agency=prev.agency;
+      if(Object.prototype.hasOwnProperty.call(prev,'vipNote')) rec.vipNote=prev.vipNote;
     }
   } else {
     rec._added=1;

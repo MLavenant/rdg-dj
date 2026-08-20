@@ -201,4 +201,72 @@ var modalSaved={fee:20000,dj:'CEDRIC GERVAIS',_writeKind:'modal'};
 var afterStatus=statusTxnPatch(modalSaved,'Confirmed');
 assert(afterStatus.fee===20000 && afterStatus._writeKind==='modal', 'status keeps modal fee/write kind');
 
+/* 12) VIP / agency thin patches never carry fee or DJ */
+function vipTxnSeed(rec){
+  return { d:rec.d, v:rec.v, _uid:rec._uid, vipNote:rec.vipNote, _writeKind:'vipNote' };
+}
+function agencyTxnSeed(rec){
+  return { d:rec.d, v:rec.v, _uid:rec._uid, agency:rec.agency, _writeKind:'agency' };
+}
+var vipSeed=vipTxnSeed({d:'2026-10-23',v:'Casa Neos Lounge',_uid:'s1',vipNote:'JD',fee:20000,dj:'CEDRIC'});
+assert(!('fee' in vipSeed) && !('dj' in vipSeed) && vipSeed.vipNote==='JD', 'VIP seed is vipNote-only');
+var agSeed=agencyTxnSeed({d:'2026-10-23',v:'Casa Neos Lounge',_uid:'s1',agency:'X',fee:20000,dj:'CEDRIC'});
+assert(!('fee' in agSeed) && !('dj' in agSeed) && agSeed.agency==='X', 'agency seed is agency-only');
+
+/* 13) Merge: modal fee/DJ always beat bake (reload rule) */
+function mergeReload(target, edit){
+  var kind=edit._writeKind||'';
+  if(kind==='vipNote' || kind==='vip'){
+    if(Object.prototype.hasOwnProperty.call(edit,'vipNote')) target.vipNote=edit.vipNote;
+    return;
+  }
+  if(kind==='agency'){
+    if(Object.prototype.hasOwnProperty.call(edit,'agency')) target.agency=edit.agency;
+    return;
+  }
+  if(kind==='modal' || kind==='evClear'){
+    if(Object.prototype.hasOwnProperty.call(edit,'dj')) target.dj=edit.dj==null?'':edit.dj;
+    if(edit.fee!=null || edit.cost!=null){
+      target.fee=edit.fee!=null?edit.fee:edit.cost;
+      target.cost=edit.cost!=null?edit.cost:edit.fee;
+    }
+    Object.assign(target, edit);
+    if(Object.prototype.hasOwnProperty.call(edit,'dj')) target.dj=edit.dj==null?'':edit.dj;
+    if(edit.fee!=null || edit.cost!=null){
+      target.fee=edit.fee!=null?edit.fee:edit.cost;
+      target.cost=edit.cost!=null?edit.cost:edit.fee;
+    }
+    return;
+  }
+  if(kind==='statusMerge' || kind==='djStatus'){
+    if(Object.prototype.hasOwnProperty.call(edit,'djStatus')) target.djStatus=edit.djStatus;
+    var legacy=(edit.fee!=null||edit.cost!=null) && edit.dj && String(edit.dj).trim()!=='';
+    if(legacy){
+      target.dj=edit.dj;
+      target.fee=edit.fee!=null?edit.fee:edit.cost;
+    }
+    return;
+  }
+}
+var bakeRow={dj:'',fee:5000,vipNote:null,agency:null};
+mergeReload(bakeRow, {_writeKind:'modal', dj:'CEDRIC GERVAIS ?', fee:20000, cost:20000, djStatus:'Confirmed'});
+assert(bakeRow.fee===20000 && bakeRow.dj==='CEDRIC GERVAIS ?', 'modal reload beats bake fee/DJ');
+mergeReload(bakeRow, {_writeKind:'statusMerge', djStatus:'Hold 1'});
+assert(bakeRow.fee===20000 && bakeRow.dj==='CEDRIC GERVAIS ?' && bakeRow.djStatus==='Hold 1', 'status merge does not touch fee/DJ');
+mergeReload(bakeRow, {_writeKind:'vipNote', vipNote:'JD'});
+assert(bakeRow.fee===20000 && bakeRow.vipNote==='JD', 'VIP merge does not touch fee');
+mergeReload(bakeRow, {_writeKind:'agency', agency:'WME'});
+assert(bakeRow.fee===20000 && bakeRow.agency==='WME', 'agency merge does not touch fee');
+
+/* 14) Edit Show preserve status/agency/VIP when building payload */
+function editShowPreserve(prev, feeNext){
+  var rec={fee:feeNext, dj:prev.dj, djStatus:null, agency:null, vipNote:null};
+  if(Object.prototype.hasOwnProperty.call(prev,'djStatus')) rec.djStatus=prev.djStatus;
+  if(Object.prototype.hasOwnProperty.call(prev,'agency')) rec.agency=prev.agency;
+  if(Object.prototype.hasOwnProperty.call(prev,'vipNote')) rec.vipNote=prev.vipNote;
+  return rec;
+}
+var preserved=editShowPreserve({dj:'CEDRIC',djStatus:'Confirmed',agency:'WME',vipNote:'JD'}, 25000);
+assert(preserved.fee===25000 && preserved.djStatus==='Confirmed' && preserved.agency==='WME' && preserved.vipNote==='JD', 'Edit Show keeps status/agency/VIP');
+
 console.log('\nAll sched guard tests passed.');

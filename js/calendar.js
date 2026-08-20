@@ -1374,7 +1374,9 @@ function updateShowDjStatus(idx,val,sel,uid){
   r.djStatus=next||null;
   ensureShowUid(r);
   if(typeof persistShowDjStatusOnly==='function') persistShowDjStatusOnly(r);
-  else if(typeof persistSchedShow==='function') persistSchedShow(r);
+  else {
+    try{ console.warn('persistShowDjStatusOnly missing — refusing full persist to protect fee/DJ'); }catch(eMiss){}
+  }
   var sameDay=SCHED.filter(function(x){
     return x && x._s!=='empty' && (x.v||x.venue)===(r.v||r.venue) && x.d===r.d;
   });
@@ -1449,16 +1451,17 @@ function updateShowAgency(uid, idx, val, ds){
   if((prev||'')===(next||'')) return;
   r.agency=next;
   ensureShowUid(r);
-  if(typeof window._guardSchedWrite==='function'){
-    window._guardSchedWrite(Object.assign({}, r, {agency: next, _writeKind: 'agency'}));
-  }
-  if(window._fbRef){
-    try{
-      window._fbRef.child('schedOverrides/shows/'+ensureShowUid(r)+'/agency').set(next);
-    }catch(e){}
-  }
-  if(typeof persistSchedShow==='function' && r._added){
-    try{ persistSchedShow(r); }catch(e2){}
+  /* Agency only — never full persistSchedShow (that rewrote fee/DJ on adds). */
+  if(typeof persistShowAgencyOnly==='function') persistShowAgencyOnly(r);
+  else if(typeof window._guardSchedWrite==='function'){
+    window._guardSchedWrite({
+      d: r.d,
+      v: r.v||r.venue||'',
+      venue: r.venue||r.v||'',
+      _uid: ensureShowUid(r),
+      agency: next,
+      _writeKind: 'agency'
+    });
   }
 }
 function updateAcctStatus(ds,val){ /* legacy */ updateAcctDjStatus(ds,val); }
