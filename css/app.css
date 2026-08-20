@@ -596,6 +596,8 @@ body.session-locked .shell{pointer-events:none;user-select:none}
 .vip-email-snap{display:flex;flex-direction:column;gap:0}
 .vip-stack-title-main{font-size:26px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:var(--ink);line-height:1.15}
 .vip-stack-title-sub{font-size:11px;font-weight:600;color:var(--ink3);margin-top:6px;letter-spacing:.02em}
+.vip-band-hd{font-size:12px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);margin:14px 0 8px;padding:6px 0 4px;border-bottom:1.5px solid var(--rule)}
+.vip-email-snap > .vip-band-hd:first-child{margin-top:0}
 .vip-stack-sec .vip-perf-block{margin:0}
 .flash-pl-upload{position:relative;overflow:hidden;display:inline-flex;align-items:center}
 .flash-pl-upload .flash-pl-file{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}

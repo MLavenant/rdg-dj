@@ -24,13 +24,14 @@ function renderVIP(venueIdx){
   h += '</div>';
 
   h += '<div class="vip-print-page vip-print-page2 vip-stack-sec">';
-  h += _vipSectionTitle('PERFORMANCE SUMMARY', 'This week · All locations');
+  h += _vipSectionTitle('PERFORMANCE SUMMARY', 'Last week · All locations');
   venues.forEach(function(d){
     h += '<div class="vip-email-snap">';
+    h += '<div class="vip-band-hd">Last week</div>';
     h += _vipRenderPerfSummary(d);
     var para=_generateVenueFlashParagraph(d);
     if(para) h += '<div class="vip-venue-narrative"><span class="vip-venue-narrative-bullet">\u2022</span> '+para+'</div>';
-    /* MTD Sales / Live Ent sits under this venue's performance block — not its own section. */
+    h += '<div class="vip-band-hd">MTD</div>';
     h += _vipRenderFlashPlForVenue(d.venue, range.sun);
     h += '</div>';
   });
