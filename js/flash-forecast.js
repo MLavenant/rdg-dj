@@ -32,6 +32,7 @@ function renderVIP(venueIdx){
     h += _vipRenderPerfSummary(d);
     var para=_generateVenueFlashParagraph(d);
     if(para) h += '<div class="vip-venue-narrative"><span class="vip-venue-narrative-bullet">\u2022</span> '+para+'</div>';
+    h += _vipFlashPlEbitdaBlock(d.venue);
     h += '<div class="vip-band-hd">MTD</div>';
     h += _vipRenderFlashPlForVenue(d.venue, range.sun);
     h += '</div>';
@@ -427,10 +428,10 @@ function _vipRenderPerfSummary(d){
     h += '<tr>'
        + '<td class="l"><b>'+sh.dj+'</b><br><span style="font-size:9px;color:var(--ink3)">'+sh.label.replace(/,.*$/,'')+'</span></td>'
        + '<td class="vip-cost">'+$kv(sh.fee)+'</td>'
-       + _vipTdFill($kv(sh.bsActual), b?'beat':'miss')
+       + '<td class="'+(b?'beat':'miss')+'">'+$kv(sh.bsActual)+'</td>'
        + '<td style="'+_TARGET_BG+'">'+$kv(sh.bsMin)+'</td>'
-       + _vipTdFill(_vipVarPlain(vbs), _vipFillTone(vbs))
-       + _vipTdFill(roiA, vipRoiCls)
+       + '<td class="'+(_vipFillTone(vbs)||'')+'">'+_vipVarPlain(vbs)+'</td>'
+       + '<td class="'+(vipRoiCls||'')+'">'+roiA+'</td>'
        + '<td style="'+_TARGET_BG+'">'+roiT+'</td>'
        + '<td>'+(sh.tablesActual!=null?sh.tablesActual:'\u2014')+'</td>'
        + '<td style="'+_TARGET_BG+'">'+(sh.tablesBudget!=null?sh.tablesBudget:'\u2014')+'</td>'
@@ -445,10 +446,10 @@ function _vipRenderPerfSummary(d){
   h += '<tr>'
      + '<td class="l">Total</td>'
      + '<td class="vip-cost">'+$kv(totFee)+'</td>'
-     + _vipTdFill($kv(totBS), totVbs>=0?'beat':'miss')
+     + '<td class="'+(totVbs>=0?'beat':'miss')+'">'+$kv(totBS)+'</td>'
      + '<td style="'+_TARGET_BG+'">'+$kv(totMin)+'</td>'
-     + _vipTdFill(_vipVarPlain(totVbs), _vipFillTone(totVbs))
-     + _vipTdFill(totROIA, totVipRoi)
+     + '<td class="'+(_vipFillTone(totVbs)||'')+'">'+_vipVarPlain(totVbs)+'</td>'
+     + '<td class="'+(totVipRoi||'')+'">'+totROIA+'</td>'
      + '<td style="'+_TARGET_BG+'">'+totROIT+'</td>'
      + '<td>'+(totTbl||'\u2014')+'</td>'
      + '<td style="'+_TARGET_BG+'">'+(totBudget||'\u2014')+'</td>'
@@ -1347,8 +1348,8 @@ function _flashPyMonthVals(venue, year, monthIndex0, throughWeek){
   };
 }
 /**
- * Actual vs Target (yellow) vs Prior Year (grey).
- * Only vs Target is colored (pos/neg). PY stays muted grey.
+ * Actual vs Target (yellow chip) vs Prior Year (grey chip).
+ * Color only the vs Target / vs PY variance lines (pos/neg) — not the whole cell.
  * Money modes show $ and % of target; margin shows pp.
  * mode: sales (higher good) | live|fee (under good) | margin (lower % good)
  * opts.closedPriorYear → PY row shows "closed LY" (no Sales/Live last year).
@@ -1370,21 +1371,19 @@ function _vipFlashPlCompareCell(actual, target, py, mode, pyYear, opts){
   if(actual!=null && target!=null) vsT=actual-target;
   if(!closed && actual!=null && py!=null) vsP=actual-py;
   var favT=vsT==null?null:(underGood?vsT<=0:vsT>=0);
-  function targetVarLine(delta, fav){
-    if(delta==null) return '<div class="flash-pl-cmp-var muted">vs Target \u2014</div>';
-    var txt, pct=_flashPctOfBase(delta, target);
-    if(isPct) txt=(delta>0?'+':'')+Math.round(delta*10)/10+' pp';
-    else if(underGood) txt=(delta<=0?'Under ':'Over ')+_flashMoneyTxt(Math.abs(delta))+_flashPctSuffix(pct);
-    else txt=(typeof $mv==='function'?$mv(delta):((delta>0?'+':'')+delta))+_flashPctSuffix(pct);
-    return '<div class="flash-pl-cmp-var '+(fav?'pos':'neg')+'">vs Target '+txt+'</div>';
-  }
-  function pyVarLine(delta){
-    if(delta==null) return '<div class="flash-pl-cmp-var flash-pl-cmp-py-var">vs PY \u2014</div>';
+  var favP=vsP==null?null:(underGood?vsP<=0:vsP>=0);
+  function varLine(delta, fav, label, baseForPct){
+    if(delta==null) return '<div class="flash-pl-cmp-var muted">'+label+' \u2014</div>';
     var txt;
     if(isPct) txt=(delta>0?'+':'')+Math.round(delta*10)/10+' pp';
-    else if(underGood) txt=(delta<=0?'Under ':'Over ')+_flashMoneyTxt(Math.abs(delta));
-    else txt=(typeof $mv==='function'?$mv(delta):((delta>0?'+':'')+delta));
-    return '<div class="flash-pl-cmp-var flash-pl-cmp-py-var">vs PY '+txt+'</div>';
+    else if(underGood){
+      txt=(delta<=0?'Under ':'Over ')+_flashMoneyTxt(Math.abs(delta));
+      if(baseForPct!=null) txt+=_flashPctSuffix(_flashPctOfBase(delta, baseForPct));
+    } else {
+      txt=(typeof $mv==='function'?$mv(delta):((delta>0?'+':'')+delta));
+      if(baseForPct!=null) txt+=_flashPctSuffix(_flashPctOfBase(delta, baseForPct));
+    }
+    return '<div class="flash-pl-cmp-var '+(fav?'pos':'neg')+'">'+label+' '+txt+'</div>';
   }
   var actTxt=isPct?_flashPctTxt(actual):_flashMoneyTxt(actual);
   var tgtTxt=isPct?_flashPctTxt(target):_flashMoneyTxt(target);
@@ -1393,9 +1392,9 @@ function _vipFlashPlCompareCell(actual, target, py, mode, pyYear, opts){
   return '<div class="bgt-monthly-cell flash-pl-cell flash-pl-cmp bgt-status-neutral">'
     +'<div class="bgt-monthly-value">'+actTxt+'</div>'
     +'<div class="flash-pl-cmp-row flash-pl-cmp-target"><span>Target</span><b>'+tgtTxt+'</b></div>'
-    +targetVarLine(vsT, favT)
+    +varLine(vsT, favT, 'vs Target', target)
     +'<div class="flash-pl-cmp-row flash-pl-cmp-py"><span>'+pyLbl+'</span><b>'+pyTxt+'</b></div>'
-    +pyVarLine(vsP)
+    +varLine(vsP, favP, 'vs PY', null)
     +'</div>';
 }
 function _vipFlashPlRoiCell(roi){
@@ -1410,13 +1409,16 @@ function _vipFlashPlRoiCell(roi){
     +'<div class="bgt-monthly-var '+(!measured?'':(good?'pos':'neg'))+'">'+(measured&&roi.pct!=null?(roi.pct+'% beat rate'):'\u2014')+'</div></div>';
 }
 /** Placeholder EBITDA until real P&L feed is wired. Green if >= 0, red if negative. */
-function _vipFlashPlEbitdaCell(amount){
-  var v=(amount==null)?0:+amount;
+function _vipFlashPlEbitdaBlock(venue){
+  var amount=_FLASH_EBITDA_PLACEHOLDER[venue];
+  if(amount==null) amount=0;
+  var v=+amount;
   var fav=v>=0;
   var txt=(typeof $k==='function')?$k(v):('$'+Math.round(v).toLocaleString());
-  return '<div class="bgt-monthly-cell flash-pl-cell flash-pl-ebitda bgt-status-neutral">'
-    +'<div class="bgt-monthly-value '+(fav?'pos':'neg')+'">'+txt+'</div>'
-    +'<div class="bgt-monthly-vs">placeholder</div></div>';
+  return '<div class="flash-pl-ebitda-block">'
+    +'<div class="flash-pl-ebitda-hd">EBITDA<span>Placeholder · pending P&amp;L</span></div>'
+    +'<div class="flash-pl-ebitda-val '+(fav?'pos':'neg')+'">'+txt+'</div>'
+    +'</div>';
 }
 function _flashUpcomingInPeriod(venue, year, monthIndex0, afterDate){
   var list=[];
@@ -1540,11 +1542,6 @@ function _vipRenderFlashPlForVenue(venue, asOfDate){
   h+=_vipFlashPlCompareCell(marginMtdA, marginMtdB, py.margin, 'margin', py.year, cmpOpts);
   h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>ROI Beat &amp; Miss</b><span>Same rule as Calendar</span></div>';
   h+=_vipFlashPlRoiCell(monthRoi);
-  /* Placeholder until real EBITDA lands in flash Excel / R365 */
-  var ebitdaPlaceholder=_FLASH_EBITDA_PLACEHOLDER[venue];
-  if(ebitdaPlaceholder==null) ebitdaPlaceholder=0;
-  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>EBITDA</b><span>Placeholder · pending P&amp;L</span></div>';
-  h+=_vipFlashPlEbitdaCell(ebitdaPlaceholder);
   h+='</div></div>';
 
   /* ---- Right: DJ fees vs budget/PY + upcoming only ---- */

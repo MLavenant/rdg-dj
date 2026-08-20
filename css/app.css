@@ -624,9 +624,12 @@ body.session-locked .shell{pointer-events:none;user-select:none}
 .flash-pl-cmp-py{background:#f3f4f6;color:#4b5563}
 .flash-pl-cmp-var{font-size:10px;font-weight:800;margin-top:2px;padding-left:0;text-align:center}
 .flash-pl-cmp-var.muted{color:var(--ink3);font-weight:600}
-.flash-pl-cmp-py-var{color:#6b7280!important;font-weight:700}
-.flash-pl-ebitda .bgt-monthly-value.pos{color:#236b3b}
-.flash-pl-ebitda .bgt-monthly-value.neg{color:#9b3030}
+.flash-pl-ebitda-block{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0 4px;padding:10px 14px;border-radius:10px;background:var(--card2);border:0.5px solid var(--hair)}
+.flash-pl-ebitda-hd{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);display:flex;flex-direction:column;gap:2px}
+.flash-pl-ebitda-hd span{font-size:9px;font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink3)}
+.flash-pl-ebitda-val{font-size:18px;font-weight:900}
+.flash-pl-ebitda-val.pos{color:#236b3b}
+.flash-pl-ebitda-val.neg{color:#9b3030}
 .flash-pl-fee-sub{font-size:9px;color:var(--ink3);margin-top:3px;line-height:1.3}
 .flash-pl-up-wrap{border-top:0.5px solid var(--hair);padding:8px 10px 10px}
 .flash-pl-up-hd{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);margin-bottom:6px}
