@@ -3618,7 +3618,7 @@ function _fcastDetailsTableHtml(events, venueShort){
     if(tablesLeft!=null && totTables>0 && tgt>0){
       upside = Math.max(upside, Math.round(tablesLeft * (tgt / totTables)));
     }
-    var pct = tgt>0 ? Math.round(act/tgt*1000)/100 : null;
+    var pct = tgt>0 ? Math.round(act/tgt*10000)/100 : null;
     var pctBg = pct==null ? '' : (pct>=100 ? '#dcfce7' : pct>0 ? '#fce7f3' : '');
     var dateObj = new Date(e.date+'T12:00:00');
     var dateStr = (dateObj.getMonth()+1)+'/'+dateObj.getDate()+'/'+dateObj.getFullYear();
