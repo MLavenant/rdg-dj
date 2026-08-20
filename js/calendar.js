@@ -3878,18 +3878,19 @@ function renderForecast(venueIdx, view){
     // -- SINGLE VENUE VIEW ? follows global venue selector (curV) ---
     var vname = curV;
     var events = _fcastVenueEvents(vname);
+    var upcomingToday = _fcastFromToday(events);
+    var upcomingMonth = _fcastWithinOneMonth(events);
 
-    // KPI strip ? compute targets live from VENUE_ROI_RULES
-    var totalRev = events.reduce(function(s,e){return s+e.totalRevenue;},0);
-    var totalTarget = events.reduce(function(s,e){
+    /* KPI strip: same show set as Booking Details (today → +1 month) */
+    var totalRev = upcomingMonth.reduce(function(s,e){return s+(e.totalRevenue||0);},0);
+    var totalTarget = upcomingMonth.reduce(function(s,e){
       if(e.bsTarget) return s+e.bsTarget;
       var r=venueRoiLookup(e.venue,e.date,e.djCost||0); return s+(r?r.bsTarget:0);
     },0);
     var totalPct = totalTarget>0?Math.round(totalRev/totalTarget*100):0;
     h += '<div class="fcast-print-page1">';
     h += '<div class="fcast-print-kpis" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">';
-    [{lbl:'Upcoming Shows',val:events.length},
-     {lbl:'BS Actual (export)',val:'$'+totalRev.toLocaleString(),col:'#0f766e'},
+    [{lbl:'BS Actual (export)',val:'$'+totalRev.toLocaleString(),col:'#0f766e'},
      {lbl:'BS Target',val:'$'+totalTarget.toLocaleString(),col:'#7d5a00'},
      {lbl:'% of Target',val:totalPct+'%',col:totalPct>=50?'#22c55e':totalPct>=20?'#f59e0b':'#ef4444'}
     ].forEach(function(s){
@@ -3900,8 +3901,6 @@ function renderForecast(venueIdx, view){
     });
     h += '</div>';
 
-    var upcomingToday = _fcastFromToday(events);
-    var upcomingMonth = _fcastWithinOneMonth(events);
     var chartLimit = (curV==='Casa Neos Beach Club') ? 4 : 8;
     var viewRows = upcomingToday.slice(0, chartLimit);
     var monthEnd = _fcastMonthEndDate().toLocaleDateString('en-US',{month:'short',day:'numeric'});
@@ -3909,7 +3908,7 @@ function renderForecast(venueIdx, view){
       : (curV==='Casa Neos Lounge') ? 'CASA NEOS LOUNGE'
       : (curV==='MILA Lounge') ? 'MILA LOUNGE'
       : String(curV||'VENUE').toUpperCase();
-    h += '<div style="font-size:10px;color:var(--ink3);margin:-2px 0 10px">Chart: next <b>'+chartLimit+'</b> performances (any date) &middot; Details &amp; pick up pace: <b>today – '+monthEnd+'</b> ('+upcomingMonth.length+' show'+(upcomingMonth.length===1?'':'s')+')</div>';
+    h += '<div style="font-size:10px;color:var(--ink3);margin:-2px 0 10px">Chart: next <b>'+chartLimit+'</b> performances (any date) &middot; Details &amp; KPIs: <b>today – '+monthEnd+'</b> ('+upcomingMonth.length+' show'+(upcomingMonth.length===1?'':'s')+')</div>';
 
     // ============================================================
     // 1) RESULTS ? booking performance snapshot (PDF page 1)
@@ -4006,7 +4005,7 @@ function renderForecast(venueIdx, view){
       fvNote='FourVenues Actual = live sync '+when+(live.source?' ('+live.source+')':'')+' \u00b7 event dates today\u22127 \u2192 today+40';
     }catch(eL){}
   }
-  document.getElementById('fcastMeta').textContent = fvNote+' \u00b7 DJ Cost & Target = Calendar SCHED + ROI rules (all upcoming shows)';
+  document.getElementById('fcastMeta').textContent = fvNote+' \u00b7 KPIs = Booking Details window (today \u2192 +1 month) \u00b7 DJ Cost & Target = SCHED + ROI rules';
 }
 
 
