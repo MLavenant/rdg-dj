@@ -626,8 +626,6 @@ body.session-locked .shell{pointer-events:none;user-select:none}
 .flash-pl-cmp-var.muted{color:var(--ink3);font-weight:600;background:transparent}
 .flash-pl-var-good{background:#edf8f0;color:#236b3b}
 .flash-pl-var-bad{background:#fff0f0;color:#9b3030}
-.flash-pl-ebitda .bgt-monthly-value.pos{color:#236b3b}
-.flash-pl-ebitda .bgt-monthly-value.neg{color:#9b3030}
 .flash-pl-fee-sub{font-size:9px;color:var(--ink3);margin-top:3px;line-height:1.3}
 .flash-pl-up-wrap{border-top:0.5px solid var(--hair);padding:8px 10px 10px}
 .flash-pl-up-hd{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);margin-bottom:6px}

@@ -404,6 +404,10 @@ function _vipRenderPerfSummary(d){
     h += '<div style="padding:14px;font-size:11px;color:var(--ink3)">No shows this week.</div></div>';
     return h;
   }
+  var ebitdaAmt=_FLASH_EBITDA_PLACEHOLDER[d.venue];
+  if(ebitdaAmt==null) ebitdaAmt=0;
+  var ebitdaTxt=_vipEbitdaTxt(ebitdaAmt);
+  var ebitdaTone=ebitdaAmt>=0?'beat':'miss';
   h += '<div class="tbl-wrap" style="margin:0"><table class="vip-past-tbl"><thead><tr>'
      + '<th class="l" style="min-width:110px">Artist / Date</th>'
      + '<th>DJ Cost</th>'
@@ -411,6 +415,7 @@ function _vipRenderPerfSummary(d){
      + '<th>ROI</th><th style="'+_TARGET_BG+'">ROI Tgt</th>'
      + '<th>Tables</th><th style="'+_TARGET_BG+'">Bgt</th>'
      + '<th>Avg/Tbl</th>'
+     + '<th>EBITDA</th>'
      + '</tr></thead><tbody>';
 
   var totBS=0,totMin=0,totTbl=0,totBudget=0,totFee=0;
@@ -435,6 +440,7 @@ function _vipRenderPerfSummary(d){
        + '<td>'+(sh.tablesActual!=null?sh.tablesActual:'\u2014')+'</td>'
        + '<td style="'+_TARGET_BG+'">'+(sh.tablesBudget!=null?sh.tablesBudget:'\u2014')+'</td>'
        + '<td>'+(avg?$kv(avg):'\u2014')+'</td>'
+       + '<td class="vip-ebitda-empty">\u2014</td>'
        + '</tr>';
   });
   var totAvg=totTbl?Math.round(totBS/totTbl):0;
@@ -453,6 +459,7 @@ function _vipRenderPerfSummary(d){
      + '<td>'+(totTbl||'\u2014')+'</td>'
      + '<td style="'+_TARGET_BG+'">'+(totBudget||'\u2014')+'</td>'
      + '<td>'+$kv(totAvg)+'</td>'
+     + _vipTdFill(ebitdaTxt, ebitdaTone)
      + '</tr>';
   h += '</tbody></table></div></div>';
   return h;
@@ -1408,16 +1415,10 @@ function _vipFlashPlRoiCell(roi){
     +'<div class="bgt-monthly-vs">beat / miss</div>'
     +'<div class="bgt-monthly-var '+(!measured?'':(good?'pos':'neg'))+'">'+(measured&&roi.pct!=null?(roi.pct+'% beat rate'):'\u2014')+'</div></div>';
 }
-/** Placeholder EBITDA column until real P&L feed is wired. Green if >= 0, red if negative. */
-function _vipFlashPlEbitdaCell(venue){
-  var amount=_FLASH_EBITDA_PLACEHOLDER[venue];
-  if(amount==null) amount=0;
-  var v=+amount;
-  var fav=v>=0;
-  var txt=(typeof $k==='function')?$k(v):('$'+Math.round(v).toLocaleString());
-  return '<div class="bgt-monthly-cell flash-pl-cell flash-pl-ebitda bgt-status-neutral">'
-    +'<div class="bgt-monthly-value '+(fav?'pos':'neg')+'">'+txt+'</div>'
-    +'<div class="bgt-monthly-vs">placeholder</div></div>';
+/** Placeholder EBITDA until real P&L feed is wired. Green if >= 0, red if negative. */
+function _vipEbitdaTxt(amount){
+  var v=(amount==null)?0:+amount;
+  return (typeof $k==='function')?$k(v):('$'+Math.round(v).toLocaleString());
 }
 function _flashUpcomingInPeriod(venue, year, monthIndex0, afterDate){
   var list=[];
@@ -1541,8 +1542,6 @@ function _vipRenderFlashPlForVenue(venue, asOfDate){
   h+=_vipFlashPlCompareCell(marginMtdA, marginMtdB, py.margin, 'margin', py.year, cmpOpts);
   h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>ROI Beat &amp; Miss</b><span>Same rule as Calendar</span></div>';
   h+=_vipFlashPlRoiCell(monthRoi);
-  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>EBITDA</b><span>Placeholder · pending P&amp;L</span></div>';
-  h+=_vipFlashPlEbitdaCell(venue);
   h+='</div></div>';
 
   /* ---- Right: DJ fees vs budget/PY + upcoming only ---- */
