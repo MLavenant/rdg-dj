@@ -604,13 +604,24 @@ body.session-locked .shell{pointer-events:none;user-select:none}
 .flash-pl-under-perf .flash-pl-empty{margin:0}
 .flash-pl-empty{padding:10px 12px;font-size:11px;color:var(--ink3);background:var(--card2);border-radius:10px;border:0.5px dashed var(--rule)}
 .flash-pl-need-upload{margin:0 0 8px;padding:8px 10px;font-size:11px;line-height:1.4;color:var(--ink3);background:#ecfdf5;border-radius:8px;border:0.5px solid #a7f3d0}
+.flash-pl-split{display:grid;grid-template-columns:minmax(280px,1fr) minmax(280px,1fr);gap:10px;align-items:start}
+@media (max-width:900px){.flash-pl-split{grid-template-columns:1fr}}
 .flash-pl-monthly{margin:0}
-.flash-pl-grid{grid-template-columns:148px minmax(120px,1fr) minmax(140px,1.15fr)!important;min-width:0!important}
-.flash-pl-grid .bgt-monthly-cell:nth-child(14n){border-right:0.5px solid var(--hair)}
-.flash-pl-grid .bgt-monthly-cell:nth-child(3n){border-right:none}
+.flash-pl-grid{min-width:0!important}
+.flash-pl-grid-mtd{grid-template-columns:148px minmax(120px,1fr)!important}
+.flash-pl-grid-mtd .bgt-monthly-cell:nth-child(2n){border-right:none}
+.flash-pl-grid-side{grid-template-columns:148px minmax(120px,1fr)!important}
+.flash-pl-grid-side .bgt-monthly-cell:nth-child(2n){border-right:none}
 .flash-pl-cell .bgt-monthly-value{font-size:16px}
-.flash-pl-upcoming .bgt-monthly-vs{font-size:10px;line-height:1.35;white-space:normal;max-height:4.8em;overflow:hidden}
 .flash-pl-fee-sub{font-size:9px;color:var(--ink3);margin-top:3px;line-height:1.3}
+.flash-pl-up-wrap{border-top:0.5px solid var(--hair);padding:8px 10px 10px}
+.flash-pl-up-hd{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);margin-bottom:6px}
+.flash-pl-up-empty{font-size:11px;color:var(--ink3);padding:6px 0}
+.flash-pl-up-tbl{width:100%;border-collapse:collapse;font-size:11px}
+.flash-pl-up-tbl th{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);text-align:left;padding:4px 6px;border-bottom:0.5px solid var(--hair)}
+.flash-pl-up-tbl th:last-child,.flash-pl-up-tbl td:last-child{text-align:right}
+.flash-pl-up-tbl td{padding:5px 6px;border-bottom:0.5px solid var(--hair);vertical-align:top}
+.flash-pl-up-tbl tr:last-child td{border-bottom:none}
 @media print{
   .flash-pl-upload,.flash-pl-status{display:none!important}
   .flash-pl-grid{break-inside:avoid}
