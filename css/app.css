@@ -615,14 +615,14 @@ body.session-locked .shell{pointer-events:none;user-select:none}
 .flash-pl-grid-side{grid-template-columns:148px minmax(120px,1fr)!important}
 .flash-pl-grid-side .bgt-monthly-cell:nth-child(2n){border-right:none}
 .flash-pl-cell .bgt-monthly-value{font-size:16px}
-.flash-pl-cmp{text-align:left;padding:8px 10px!important}
-.flash-pl-cmp .bgt-monthly-value{text-align:left;margin-bottom:6px}
+.flash-pl-cmp{text-align:center;padding:8px 10px!important}
+.flash-pl-cmp .bgt-monthly-value{text-align:center;margin-bottom:6px}
 .flash-pl-cmp-row{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:10px;line-height:1.3;margin-top:3px;padding:3px 6px;border-radius:5px}
 .flash-pl-cmp-row span{font-weight:700;text-transform:uppercase;letter-spacing:.03em;opacity:.85}
 .flash-pl-cmp-row b{font-weight:800}
 .flash-pl-cmp-target{background:#FFF2CC;color:#7D5A00}
 .flash-pl-cmp-py{background:#f3f4f6;color:#4b5563}
-.flash-pl-cmp-var{font-size:10px;font-weight:800;margin-top:2px;padding-left:2px}
+.flash-pl-cmp-var{font-size:10px;font-weight:800;margin-top:2px;padding-left:0;text-align:center}
 .flash-pl-cmp-var.muted{color:var(--ink3);font-weight:600}
 .flash-pl-fee-sub{font-size:9px;color:var(--ink3);margin-top:3px;line-height:1.3}
 .flash-pl-up-wrap{border-top:0.5px solid var(--hair);padding:8px 10px 10px}
