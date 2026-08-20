@@ -36,7 +36,12 @@ window.FLASH_EXCEL_CATALOG = [
       {
         name: 'Budget Sales & Live E 2025 MILA 2F.xlsx',
         path: 'data/excel/budget-sales-live-e-2025-mila-2f.xlsx',
-        note: 'Period sales + live + fixed margin % · weekly = period ÷ 4-4-5 weeks · MILA first'
+        note: 'Period sales + live + fixed margin % · weekly = period ÷ 4-4-5 weeks · MILA'
+      },
+      {
+        name: '2025 Budget and Live Entertainment Casa Neos.xlsx',
+        path: 'data/excel/budget-sales-live-e-2025-casa-neos.xlsx',
+        note: 'Period sales + live + margin % · Casa Neos Beach Club · Lounge closed LY (no PY)'
       }
     ]
   }
