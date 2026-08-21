@@ -26,7 +26,7 @@ Layout (plain files, no build step):
 
 ## Automated refresh
 - **Cloud (laptop off):** GitHub Actions `RDG Daily Forecast + Toast` ~**8:30 AM ET**
-- **FourVenues** — daily Integrations API → Firebase `forecastLive` (accepted + not-completed bookings, **event dates today−7 through today+40**)
+- **FourVenues** — daily Integrations API → Firebase `forecastLive` (accepted + not-completed bookings, **event dates today−7 through today+21**)
   - **Toast BS** — Wed–Sun → GitHub Pages
 - **Local backup (this PC):** Task Scheduler at **8:30 / 8:35 AM** runs the same Integrations API + Toast path
 - Status is written to Firebase and shown on the dashboard **System** page
