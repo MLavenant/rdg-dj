@@ -3787,6 +3787,206 @@ function _fmtMoneyShort(n){
   return (n<0?'-':'')+'$'+Math.round(a);
 }
 
+/* ---- Forecast page-1: last-night recap (3 venues) ---- */
+var FCAST_NIGHT_VENUES = ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'];
+function _fcastSameVenue(a, b){
+  if(!a || !b) return false;
+  if(a === b) return true;
+  var A = String(a).toLowerCase(), B = String(b).toLowerCase();
+  if(A === B) return true;
+  var beach = /beach/.test(A), lounge = /lounge/.test(A) && !/mila|mm\s*club/.test(A), mila = /mila|mm\s*club/.test(A);
+  var beachB = /beach/.test(B), loungeB = /lounge/.test(B) && !/mila|mm\s*club/.test(B), milaB = /mila|mm\s*club/.test(B);
+  return (beach && beachB) || (lounge && loungeB) || (mila && milaB);
+}
+function _fcastLastNightBizDate(){
+  var p = (typeof _liveMiamiParts === 'function') ? _liveMiamiParts() : null;
+  if(p && p.hour < 5 && typeof _liveBizDate === 'function') return _liveBizDate();
+  var miami = (function(){
+    try{
+      return new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+    }catch(e){ return new Date().toISOString().slice(0,10); }
+  })();
+  var d = new Date(miami + 'T12:00:00');
+  d.setDate(d.getDate() - 1);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function _fcastDayBefore(dateStr){
+  var d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() - 1);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function _fcastNightVenueShort(venue){
+  if(/Beach/i.test(venue)) return 'Casa Neos BC';
+  if(/Lounge/i.test(venue) && !/MILA|MM/i.test(venue)) return 'Casa Neos Lounge';
+  if(/MILA|MM/i.test(venue)) return 'MILA Lounge';
+  return venue;
+}
+function _fcastSchedShowForNight(venue, dateStr){
+  if(typeof SCHED === 'undefined' || !SCHED) return null;
+  var hit = null;
+  SCHED.forEach(function(r){
+    if(!r || r._s === 'empty' || !r.d || r.d !== dateStr) return;
+    if(!_fcastSameVenue(r.v || r.venue, venue)) return;
+    if(!(r.dj || r.bs_a != null || r.fee || r.cost)) return;
+    hit = r;
+  });
+  return hit;
+}
+function _fcastVipShowForNight(venue, dateStr){
+  var hit = null;
+  (typeof VIP_VENUES !== 'undefined' ? VIP_VENUES : []).forEach(function(week){
+    if(!week || !_fcastSameVenue(week.venue, venue)) return;
+    (week.shows || []).forEach(function(sh){
+      if(sh && sh.date === dateStr) hit = sh;
+    });
+  });
+  return hit;
+}
+function _fcastFlashPullForNight(venue, dateStr){
+  var aliases = [venue];
+  if(/Beach/i.test(venue)) aliases.push('Casa Neos Beach Club');
+  if(/Lounge/i.test(venue) && !/MILA|MM/i.test(venue)) aliases.push('Casa Neos Lounge');
+  if(/MILA|MM/i.test(venue)) aliases.push('MILA Lounge','MM Club at Mila');
+  var hist = null;
+  for(var i = 0; i < aliases.length && !hist; i++){
+    var key = (aliases[i] + '_' + dateStr).replace(/[^a-zA-Z0-9_-]/g, '_');
+    if(window._pacingData && window._pacingData[key]) hist = window._pacingData[key];
+  }
+  if(hist){
+    var before = _fcastDayBefore(dateStr);
+    if(hist[before] && hist[before].revenue != null){
+      return {rev:+hist[before].revenue || 0, tbl:hist[before].tables != null ? +hist[before].tables : null, src:'day-before pull'};
+    }
+    if(hist[dateStr] && hist[dateStr].revenue != null){
+      return {rev:+hist[dateStr].revenue || 0, tbl:hist[dateStr].tables != null ? +hist[dateStr].tables : null, src:'BOD flash'};
+    }
+    var days = Object.keys(hist).sort(), best = null;
+    days.forEach(function(d){
+      if(d <= dateStr && hist[d] && hist[d].revenue != null) best = d;
+    });
+    if(best){
+      return {rev:+hist[best].revenue || 0, tbl:hist[best].tables != null ? +hist[best].tables : null, src:'prior flash'};
+    }
+  }
+  /* Fallback: FORECAST_DATA / forecastLive export for that venue+date */
+  if(typeof FORECAST_DATA !== 'undefined' && FORECAST_DATA){
+    for(var fi = 0; fi < FORECAST_DATA.length; fi++){
+      var e = FORECAST_DATA[fi];
+      if(!e || e.date !== dateStr || !_fcastSameVenue(e.venue, venue)) continue;
+      if(e.totalRevenue != null){
+        return {rev:+e.totalRevenue || 0, tbl:e.bookedTables != null ? +e.bookedTables : null, src:'forecast export'};
+      }
+    }
+  }
+  return {rev:null, tbl:null, src:null};
+}
+function _fcastTierAvgVsTarget(vipShow){
+  if(!vipShow || !vipShow.tiers) return null;
+  var sold = 0, sales = 0, minSum = 0, minN = 0;
+  Object.keys(vipShow.tiers).forEach(function(t){
+    var x = vipShow.tiers[t];
+    if(!x) return;
+    var n = +x.soldTables || 0;
+    if(n <= 0) return;
+    sold += n;
+    sales += (+x.totalSales || 0);
+    if(x.minPerTable != null){ minSum += (+x.minPerTable) * n; minN += n; }
+  });
+  if(!sold){
+    var tables = +vipShow.tablesActual || 0;
+    var bs = +vipShow.bsActual || 0;
+    if(!tables) return null;
+    return {avg:Math.round(bs / tables), target:null, delta:null, pct:null, tables:tables};
+  }
+  var avg = Math.round(sales / sold);
+  var target = minN ? Math.round(minSum / minN) : null;
+  var delta = (target != null) ? (avg - target) : null;
+  var pct = (target != null && target > 0) ? Math.round((avg - target) / target * 100) : null;
+  return {avg:avg, target:target, delta:delta, pct:pct, tables:sold};
+}
+function _fcastLastNightRecap(venue){
+  var dateStr = _fcastLastNightBizDate();
+  var sched = _fcastSchedShowForNight(venue, dateStr);
+  var vip = _fcastVipShowForNight(venue, dateStr);
+  if(!sched && !vip) return {venue:venue, date:dateStr, hasShow:false};
+  var dj = (sched && sched.dj) || (vip && vip.dj) || 'TBD';
+  var flash = _fcastFlashPullForNight(venue, dateStr);
+  var finalBs = null;
+  if(sched && sched.bs_a != null) finalBs = +sched.bs_a;
+  else if(vip && vip.bsActual != null) finalBs = +vip.bsActual;
+  if(finalBs == null && window._toastActuals && window._toastActuals.byVenueDate){
+    var byV = window._toastActuals.byVenueDate;
+    Object.keys(byV).forEach(function(vn){
+      if(!_fcastSameVenue(vn, venue)) return;
+      if(byV[vn] && byV[vn][dateStr] != null) finalBs = +byV[vn][dateStr];
+    });
+  }
+  var tables = null;
+  if(vip && vip.tablesActual != null) tables = +vip.tablesActual;
+  else if(flash.tbl != null && finalBs == null) tables = flash.tbl;
+  var tier = _fcastTierAvgVsTarget(vip);
+  if(tables == null && tier && tier.tables) tables = tier.tables;
+  var avg = tier ? tier.avg : (tables && finalBs != null ? Math.round(finalBs / tables) : null);
+  var target = tier ? tier.target : null;
+  var pct = tier ? tier.pct : null;
+  var delta = tier ? tier.delta : null;
+  if(avg != null && target != null && pct == null && target > 0){
+    delta = avg - target;
+    pct = Math.round(delta / target * 100);
+  }
+  return {
+    venue:venue, date:dateStr, hasShow:true, dj:dj,
+    flashRev:flash.rev, flashSrc:flash.src,
+    finalBs:finalBs, tables:tables,
+    avg:avg, target:target, delta:delta, pct:pct
+  };
+}
+function _fcastLastNightRecapHtml(){
+  var dateStr = _fcastLastNightBizDate();
+  var dateObj = new Date(dateStr + 'T12:00:00');
+  var dateLbl = dateObj.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  var money = (typeof _fmtMoneyShort === 'function') ? _fmtMoneyShort : function(n){
+    if(n == null || !isFinite(n)) return '\u2014';
+    var a = Math.abs(n);
+    if(a >= 1e6) return (n < 0 ? '-' : '') + '$' + (a / 1e6).toFixed(2) + 'M';
+    if(a >= 1000) return (n < 0 ? '-' : '') + '$' + (a / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    return (n < 0 ? '-' : '') + '$' + Math.round(a);
+  };
+  var h = '<div class="fcast-night-recap">';
+  h += '<div class="fcast-night-recap-hd">Last night recap <span>' + dateLbl + '</span></div>';
+  h += '<div class="fcast-night-recap-grid">';
+  FCAST_NIGHT_VENUES.forEach(function(venue){
+    var r = _fcastLastNightRecap(venue);
+    var short = _fcastNightVenueShort(venue);
+    h += '<div class="fcast-night-card' + (r.hasShow ? '' : ' is-empty') + '">';
+    h += '<div class="fcast-night-card-venue">' + short + '</div>';
+    if(!r.hasShow){
+      h += '<div class="fcast-night-empty">No show</div>';
+      h += '</div>';
+      return;
+    }
+    var djLabel = (typeof _fcastDjName === 'function') ? _fcastDjName(r.dj) : (r.dj || 'TBD');
+    h += '<div class="fcast-night-card-dj">' + djLabel + ' <span class="fcast-night-card-date">' + dateLbl + '</span></div>';
+    h += '<div class="fcast-night-metrics">';
+    h += '<div class="fcast-night-metric"><span>Flash / day-before</span><b>' + money(r.flashRev) + '</b></div>';
+    h += '<div class="fcast-night-metric"><span>Final BS Actual</span><b class="fcast-night-final">' + money(r.finalBs) + '</b></div>';
+    h += '<div class="fcast-night-metric"><span>Tables sold</span><b>' + (r.tables != null ? r.tables : '\u2014') + '</b></div>';
+    var rateTxt = '\u2014';
+    var rateCls = '';
+    if(r.avg != null && r.target != null){
+      var sign = (r.pct != null && r.pct > 0) ? '+' : '';
+      rateTxt = money(r.avg) + ' vs ' + money(r.target) + (r.pct != null ? (' \u00b7 ' + sign + r.pct + '%') : '');
+      rateCls = (r.pct != null && r.pct >= 0) ? ' pos' : ' neg';
+    } else if(r.avg != null){
+      rateTxt = money(r.avg) + '/tbl';
+    }
+    h += '<div class="fcast-night-metric fcast-night-rate"><span>Avg $/tbl vs tier target</span><b class="' + rateCls + '">' + rateTxt + '</b></div>';
+    h += '</div></div>';
+  });
+  h += '</div></div>';
+  return h;
+}
+
 function renderForecast(venueIdx, view){
   if(venueIdx!==undefined) _fcastActiveVenue = venueIdx;
   if(view!==undefined) _fcastActiveView = view;
@@ -3889,6 +4089,7 @@ function renderForecast(venueIdx, view){
     },0);
     var totalPct = totalTarget>0?Math.round(totalRev/totalTarget*100):0;
     h += '<div class="fcast-print-page1">';
+    h += _fcastLastNightRecapHtml();
     h += '<div class="fcast-print-kpis" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">';
     [{lbl:'BS Actual (export)',val:'$'+totalRev.toLocaleString(),col:'#0f766e'},
      {lbl:'BS Target',val:'$'+totalTarget.toLocaleString(),col:'#7d5a00'},

@@ -52,7 +52,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
   body.printing-forecast #view-forecast{display:block!important}
   body.printing-forecast .pg-section{display:none!important}
   body.printing-forecast .fcast-wrap{gap:8px!important;padding:0!important}
-  body.printing-forecast .fcast-print-page1{gap:8px!important;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid}
+  body.printing-forecast .fcast-print-page1{gap:6px!important;page-break-after:always;break-after:page;page-break-inside:avoid;break-inside:avoid}
+  body.printing-forecast .fcast-night-recap{gap:4px!important;margin:0!important}
+  body.printing-forecast .fcast-night-recap-hd{font-size:9px!important}
+  body.printing-forecast .fcast-night-recap-grid{gap:6px!important}
+  body.printing-forecast .fcast-night-card{padding:6px 8px!important;border-radius:8px!important}
+  body.printing-forecast .fcast-night-card-venue{font-size:8px!important}
+  body.printing-forecast .fcast-night-card-dj{font-size:10px!important;margin:0 0 4px!important}
+  body.printing-forecast .fcast-night-metric{font-size:9px!important;gap:4px!important}
+  body.printing-forecast .fcast-night-metric span{font-size:8px!important}
+  body.printing-forecast .fcast-night-rate b{font-size:8px!important}
+  body.printing-forecast .fcast-night-empty{font-size:10px!important;padding:6px 0 2px!important}
   body.printing-forecast .fcast-print-page2{gap:8px!important;page-break-inside:avoid;break-inside:avoid}
   body.printing-forecast .fcast-print-snap{page-break-after:auto;break-after:auto}
   body.printing-forecast .fcast-print-below{display:block!important}
@@ -320,6 +330,29 @@ body.session-locked .shell{pointer-events:none;user-select:none}
 /* FORECAST section */
 .fcast-wrap{padding:14px 16px;display:flex;flex-direction:column;gap:18px}
 .fcast-print-page1,.fcast-print-page2{display:flex;flex-direction:column;gap:18px}
+
+/* Forecast last-night recap (3 venue cards) */
+.fcast-night-recap{display:flex;flex-direction:column;gap:6px;margin-bottom:2px}
+.fcast-night-recap-hd{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}
+.fcast-night-recap-hd span{font-weight:700;text-transform:none;letter-spacing:0;margin-left:6px;color:var(--ink2)}
+.fcast-night-recap-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.fcast-night-card{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:8px 10px;min-width:0}
+.fcast-night-card.is-empty{opacity:.55}
+.fcast-night-card-venue{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3)}
+.fcast-night-card-dj{font-size:12px;font-weight:900;letter-spacing:-.2px;margin:1px 0 6px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fcast-night-card-date{font-size:10px;font-weight:700;color:var(--ink3);letter-spacing:0}
+.fcast-night-empty{font-size:12px;font-weight:700;color:var(--ink3);padding:10px 0 4px}
+.fcast-night-metrics{display:flex;flex-direction:column;gap:3px}
+.fcast-night-metric{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:11px}
+.fcast-night-metric span{color:var(--ink3);font-weight:600;font-size:9px;text-transform:uppercase;letter-spacing:.03em;flex-shrink:0}
+.fcast-night-metric b{font-weight:800;font-variant-numeric:tabular-nums;text-align:right}
+.fcast-night-metric b.pos{color:#15803d}
+.fcast-night-metric b.neg{color:#dc2626}
+.fcast-night-final{font-weight:900}
+.fcast-night-rate b{font-size:10px;line-height:1.25;white-space:normal}
+@media (max-width:900px){
+  .fcast-night-recap-grid{grid-template-columns:1fr}
+}
 .fcast-chart-wrap{background:var(--card);border-radius:12px;padding:16px;overflow-x:auto}
 .fcast-chart-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:12px}
 .fcast-bars{display:flex;flex-direction:column;gap:18px;padding:8px 20px 16px}
