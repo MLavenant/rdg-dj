@@ -3997,12 +3997,12 @@ function renderForecast(venueIdx, view){
   }
 
   document.getElementById('fcastBody').innerHTML = h;
-  var fvNote='FourVenues Actual = live Firebase (today\u22127 through today+21 days; $0 until a booking posts)';
+  var fvNote='FourVenues Actual = live Firebase (today\u22127 through today+30 days; $0 until a booking posts)';
   var live=window._forecastLive;
   if(live&&live.updatedAt){
     try{
       var when=new Date(live.updatedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
-      fvNote='FourVenues Actual = live sync '+when+(live.source?' ('+live.source+')':'')+' \u00b7 event dates today\u22127 \u2192 today+21';
+      fvNote='FourVenues Actual = live sync '+when+(live.source?' ('+live.source+')':'')+' \u00b7 event dates today\u22127 \u2192 today+30';
     }catch(eL){}
   }
   document.getElementById('fcastMeta').textContent = fvNote+' \u00b7 KPIs = Booking Details window (today \u2192 +1 month) \u00b7 DJ Cost & Target = SCHED + ROI rules';
