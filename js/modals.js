@@ -1275,6 +1275,15 @@ function _rebuildSpecialWeeksFromRecords(){
   if(typeof window._expandSwRecordsToMap!=='function') return;
   specialWeeks=window._expandSwRecordsToMap(window._swRecords||{});
 }
+/* Always mirror the derived month-band map so every session sees add/delete
+   even if it still listens to legacy specialWeeks. */
+function _mirrorSpecialWeeksToFirebase(){
+  if(!window._fbRef) return;
+  try{
+    if(window._fbSave) window._fbSave('specialWeeks', specialWeeks);
+    else window._fbRef.child('specialWeeks').set(specialWeeks || {});
+  }catch(e){}
+}
 function persistSwRecord(rec){
   if(!rec || !rec.v || !rec.label || !rec.start || !rec.end) return null;
   rec._uid=rec._uid || _swNewUid();
@@ -1289,6 +1298,8 @@ function persistSwRecord(rec){
       v:rec.v, label:rec.label, start:rec.start, end:rec.end, updatedAt:rec.updatedAt
     });
   }catch(e1){}
+  /* Dual-write: keep legacy specialWeeks in lockstep for multi-session visibility. */
+  _mirrorSpecialWeeksToFirebase();
   return rec._uid;
 }
 function removeSwRecord(uid){
@@ -1298,6 +1309,7 @@ function removeSwRecord(uid){
   if(window._fbRef){
     try{ window._fbRef.child('specialWeekRecords/'+uid).remove(); }catch(e){}
   }
+  _mirrorSpecialWeeksToFirebase();
 }
 function _swFindUid(venue, label, start, end){
   var norm=_swNorm(label), hit=null, hitSpan=1e9;
@@ -1322,8 +1334,8 @@ function _swUidsForLabel(venue, label){
   return out;
 }
 function _saveSpecialWeeksTree(){
-  if(_swUseRecords()) return;
-  if(window._fbSave) window._fbSave('specialWeeks', specialWeeks);
+  /* Records mode still mirrors so deletes/adds are visible on every session. */
+  _mirrorSpecialWeeksToFirebase();
 }
 
 function _dedupeSpecialWeeks(){
@@ -1454,6 +1466,8 @@ function deleteSpecialPeriodByLabel(label){
   } else {
     _saveSpecialWeeksTree();
   }
+  /* Explicit mirror after full-period delete so every open calendar drops the band. */
+  _mirrorSpecialWeeksToFirebase();
   dates.forEach(function(r){ r.ev=''; _persistShowEv(r); });
   _swEditKey=null; _swEditLabel=null; _swEditSrc=null; _swEditCluster=null;
   _setSwCoverageNote('');

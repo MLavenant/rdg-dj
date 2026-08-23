@@ -128,6 +128,8 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         calendar: calendar,
         liveShows: (ov && ov.shows) || {},
         liveDeletes: (ov && ov.deletes) || null,
+        specialWeekRecords: (typeof window._swRecords==='object' && window._swRecords) ? window._swRecords : null,
+        specialWeeks: (typeof specialWeeks==='object' && specialWeeks) ? specialWeeks : null,
         source: 'client'
       };
       window._fbRef.child('scheduleBackups').set({

@@ -146,6 +146,8 @@ function loadBake() {
     if (byYear[y] != null) byYear[y] += 1;
   });
   const liveShows = ov.shows && typeof ov.shows === "object" ? ov.shows : {};
+  const specialWeekRecords = (await req("GET", "/rdg/specialWeekRecords.json")).json || null;
+  const specialWeeks = (await req("GET", "/rdg/specialWeeks.json")).json || null;
   const payload = {
     name: "schedule latest",
     key: "latest",
@@ -155,7 +157,9 @@ function loadBake() {
     byYear,
     calendar,
     liveShows,
-    liveDeletes: ov.deletes || null
+    liveDeletes: ov.deletes || null,
+    specialWeekRecords,
+    specialWeeks
   };
   const tree = {
     latest: payload,
