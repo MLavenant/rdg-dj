@@ -239,12 +239,8 @@ function mergeReload(target, edit){
     return;
   }
   if(kind==='statusMerge' || kind==='djStatus'){
+    /* Bulletproof: status never touches DJ/fee — even if a legacy seed bundled them. */
     if(Object.prototype.hasOwnProperty.call(edit,'djStatus')) target.djStatus=edit.djStatus;
-    var legacy=(edit.fee!=null||edit.cost!=null) && edit.dj && String(edit.dj).trim()!=='';
-    if(legacy){
-      target.dj=edit.dj;
-      target.fee=edit.fee!=null?edit.fee:edit.cost;
-    }
     return;
   }
 }
@@ -268,5 +264,230 @@ function editShowPreserve(prev, feeNext){
 }
 var preserved=editShowPreserve({dj:'CEDRIC',djStatus:'Confirmed',agency:'WME',vipNote:'JD'}, 25000);
 assert(preserved.fee===25000 && preserved.djStatus==='Confirmed' && preserved.agency==='WME' && preserved.vipNote==='JD', 'Edit Show keeps status/agency/VIP');
+
+/* 15) Stable venue|date uid — DJ rename must not change uid */
+function ensureUidVenueDate(rec){
+  if(rec._uid) return rec._uid;
+  if(rec._added){
+    rec._uid='s_rand';
+    return rec._uid;
+  }
+  var base=[(rec.venue||rec.v||''),(rec.d||'')].join('|');
+  var h=2166136261;
+  for(var i=0;i<base.length;i++){ h^=base.charCodeAt(i); h=(h*16777619)>>>0; }
+  rec._uid='s_'+h.toString(36)+'_'+String(rec.d||'').replace(/-/g,'');
+  return rec._uid;
+}
+var uidA={v:'MILA Lounge',d:'2026-10-08',dj:'KIMONOS ????'};
+var uidB={v:'MILA Lounge',d:'2026-10-08',dj:'GUY GERBER',fee:20000};
+assert(ensureUidVenueDate(uidA)===ensureUidVenueDate(Object.assign({},uidB,{_uid:undefined})), 'rename same night keeps stable venue|date uid');
+assert(ensureUidVenueDate({v:'MILA Lounge',d:'2026-10-08',dj:'A'})!==ensureUidVenueDate({v:'Casa Neos Beach Club',d:'2026-10-08',dj:'A'}), 'different venues get different uids');
+
+/* 16) Live workbook night always beats bake (Guy Gerber / Oct 8 + Oct 10) */
+function applyLiveWins(bakeRows, workbook){
+  var s=bakeRows.map(function(r){ return Object.assign({}, r); });
+  function nk(r){ return (r.v||r.venue||'')+'|'+r.d; }
+  var liveByNight={};
+  Object.keys(workbook).forEach(function(uid){
+    var edit=workbook[uid];
+    if(!edit||!edit.d) return;
+    var key=nk(edit);
+    var prev=liveByNight[key];
+    var editAt=edit.updatedAt?Date.parse(edit.updatedAt):0;
+    var prevAt=prev&&prev.edit&&prev.edit.updatedAt?Date.parse(prev.edit.updatedAt):0;
+    if(!prev||editAt>=prevAt) liveByNight[key]={uid:uid, edit:edit};
+  });
+  Object.keys(liveByNight).forEach(function(key){
+    var pack=liveByNight[key];
+    var edit=Object.assign({}, pack.edit, {_uid:pack.uid, _writeKind:pack.edit._writeKind||'modal'});
+    var hits=s.filter(function(x){ return nk(x)===key; });
+    if(hits.length){
+      mergeReload(hits[0], edit);
+      hits[0]._uid=pack.uid;
+      hits[0].dj=edit.dj;
+      hits[0].fee=edit.fee!=null?edit.fee:edit.cost;
+    } else {
+      s.push(edit);
+    }
+  });
+  return s;
+}
+var bakeOct=[
+  {v:'MILA Lounge',d:'2026-10-08',dj:'KIMONOS ????',fee:10000,_uid:'bake_mila'},
+  {v:'Casa Neos Beach Club',d:'2026-10-10',dj:'',fee:10000,_uid:'bake_bc'}
+];
+var liveWb={
+  s_guy_mila:{v:'MILA Lounge',d:'2026-10-08',dj:'GUY GERBER',fee:20000,_writeKind:'modal',updatedAt:'2026-08-21T20:01:00.000Z',djStatus:'Confirmed'},
+  s_guy_bc:{v:'Casa Neos Beach Club',d:'2026-10-10',dj:'GUY GERBER',fee:50000,_writeKind:'modal',updatedAt:'2026-08-21T19:43:00.000Z',djStatus:'Hold 1'}
+};
+var afterLive=applyLiveWins(bakeOct, liveWb);
+var mila=afterLive.find(function(r){ return r.d==='2026-10-08' && (r.v||r.venue)==='MILA Lounge'; });
+var bc=afterLive.find(function(r){ return r.d==='2026-10-10' && (r.v||r.venue)==='Casa Neos Beach Club'; });
+assert(mila && mila.dj==='GUY GERBER' && mila.fee===20000, 'Oct 8 MILA live Guy Gerber beats bake KIMONOS');
+assert(bc && bc.dj==='GUY GERBER' && bc.fee===50000 && bc.djStatus==='Hold 1', 'Oct 10 Beach Club live Guy Gerber beats blank bake');
+
+/* 17) DJ rename must not wipe status / agency / VIP (Edit Show + Firebase txn) */
+function modalTxnPreserve(prevRemote, payload){
+  var out=Object.assign({}, payload);
+  if(out.djStatus==null && prevRemote.djStatus!=null) out.djStatus=prevRemote.djStatus;
+  if(out.agency==null && prevRemote.agency!=null) out.agency=prevRemote.agency;
+  if(out.vipNote==null && prevRemote.vipNote!=null) out.vipNote=prevRemote.vipNote;
+  return out;
+}
+var renamed=modalTxnPreserve(
+  {dj:'OLD DJ',fee:10000,djStatus:'Hold 1',agency:'WME',vipNote:'VIP note'},
+  {dj:'GUY GERBER',fee:20000,djStatus:null,agency:null,vipNote:null,_writeKind:'modal'}
+);
+assert(renamed.dj==='GUY GERBER' && renamed.fee===20000, 'rename updates DJ + fee');
+assert(renamed.djStatus==='Hold 1' && renamed.agency==='WME' && renamed.vipNote==='VIP note', 'rename preserves status/agency/VIP');
+
+/* 18) Status thin write must not carry DJ/fee (inverse isolation) */
+function statusOnlyPatch(rec, nextStatus){
+  return { d:rec.d, v:rec.v||rec.venue, _uid:rec._uid, djStatus:nextStatus, _writeKind:'statusMerge' };
+}
+var stOnly=statusOnlyPatch({d:'2026-10-08',v:'MILA Lounge',_uid:'s1',dj:'GUY GERBER',fee:20000}, 'Confirmed');
+assert(!('dj' in stOnly) && !('fee' in stOnly) && stOnly.djStatus==='Confirmed', 'status patch never ships DJ/fee');
+var rowAfterStatus={dj:'GUY GERBER',fee:20000,djStatus:'Hold 1'};
+mergeReload(rowAfterStatus, stOnly);
+assert(rowAfterStatus.dj==='GUY GERBER' && rowAfterStatus.fee===20000 && rowAfterStatus.djStatus==='Confirmed', 'status merge leaves DJ/fee untouched');
+
+/* 19) Save ack contract — failure must surface; success clears */
+function saveAck(err){
+  return err ? {ok:false, msg:String(err.message||err)} : {ok:true};
+}
+assert(saveAck(null).ok===true, 'save ack success');
+assert(saveAck(new Error('permission_denied')).ok===false, 'save ack failure surfaces');
+
+/* 20) Align must not retarget existing live uid onto bake hash */
+function alignKeepLiveUid(rec, bakeUid){
+  if(rec._uid){ rec._added=0; return {kept:true, uid:rec._uid}; }
+  rec._uid=bakeUid;
+  rec._added=0;
+  return {kept:false, uid:rec._uid};
+}
+var aligned=alignKeepLiveUid({_uid:'s_guy_live',d:'2026-10-10',dj:'GUY GERBER'}, 's_bake_empty');
+assert(aligned.kept===true && aligned.uid==='s_guy_live', 'align keeps live workbook uid');
+
+/* 21) CEDRIC GERVAIS: status update with legacy bundled fee must NOT change fee/DJ */
+var cedric={dj:'CEDRIC GERVAIS',fee:25000,djStatus:'Hold 1',_writeKind:'modal'};
+mergeReload(cedric, {
+  _writeKind:'statusMerge',
+  djStatus:'Confirmed',
+  dj:'CEDRIC GERVAIS',
+  fee:999999,
+  cost:999999
+});
+assert(cedric.dj==='CEDRIC GERVAIS' && cedric.fee===25000 && cedric.djStatus==='Confirmed',
+  'Cedric status change never rewrites fee/DJ even if seed is bundled');
+
+/* 22) Edit gate — no edits until live ready */
+function canEdit(liveReady, schedError){
+  return !!liveReady && !schedError;
+}
+assert(canEdit(false, null)===false, 'edits locked before live ready');
+assert(canEdit(true, 'sync fail')===false, 'edits locked on sync error');
+assert(canEdit(true, null)===true, 'edits allowed when live ready');
+
+/* 23) Pending echo confirm — save not done until live row matches */
+function pendingMatches(p, row){
+  if(!p||!row) return false;
+  if(p.kind==='statusMerge') return String(row.djStatus||'')===String(p.djStatus||'');
+  return String(row.dj||'').toUpperCase()===String(p.dj||'').toUpperCase()
+    && Number(row.fee)!=null && Number(row.fee)===Number(p.fee);
+}
+var pend={kind:'modal', dj:'GUY GERBER', fee:50000, djStatus:'Hold 1'};
+assert(pendingMatches(pend, {dj:'GUY GERBER', fee:50000})===true, 'echo confirms matching DJ/fee');
+assert(pendingMatches(pend, {dj:'KIMONOS', fee:10000})===false, 'echo rejects bake ghost after save');
+assert(pendingMatches({kind:'statusMerge', djStatus:'Confirmed'}, {dj:'CEDRIC GERVAIS', fee:25000, djStatus:'Confirmed'})===true,
+  'status echo confirms status only');
+
+/* 24) Save failure must roll back local optimistic paint */
+function rollbackOnFail(localRow, snap, err){
+  if(!err) return localRow;
+  return Object.assign({}, snap);
+}
+var optimistic={dj:'NEW NAME', fee:30000, djStatus:'Confirmed'};
+var snap={dj:'OLD NAME', fee:20000, djStatus:'Confirmed'};
+var rolled=rollbackOnFail(optimistic, snap, new Error('denied'));
+assert(rolled.dj==='OLD NAME' && rolled.fee===20000, 'failed save rolls back DJ/fee');
+
+/* 25) liveByNight must prefer modal row over newer thin status seed (Dec 27 class) */
+function nightAuth(edit){
+  if(!edit) return 0;
+  var s=0, kind=edit._writeKind||'';
+  if(kind==='modal'||kind==='evClear') s+=1000;
+  else if(kind==='statusMerge'||kind==='djStatus') s+=10;
+  if(edit.dj!=null && String(edit.dj).trim()!=='') s+=100;
+  if(edit.fee!=null||edit.cost!=null) s+=50;
+  if(edit.djStatus) s+=5;
+  return s;
+}
+var modalNight={_writeKind:'modal',dj:'SATORI',fee:32000,djStatus:'Hold 1',updatedAt:'2026-08-17T16:19:44.715Z'};
+var statusNight={_writeKind:'statusMerge',djStatus:'Confirmed',updatedAt:'2026-08-22T09:44:29.962Z'};
+assert(nightAuth(modalNight)>nightAuth(statusNight), 'modal night beats newer status-only seed');
+
+/* 26) In-flight add/rename must survive stale Firebase rebuild (user: new show vanished) */
+function preservePendingModalShows(s, pend, gmap){
+  Object.keys(pend||{}).forEach(function(uid){
+    var p=pend[uid];
+    if(!p || p.confirmed || p.stale) return;
+    if(p.kind!=='modal' && p.kind!=='evClear') return;
+    var g=gmap[uid];
+    if(!g || !g._lockIdentity) return;
+    var nk=p.night||((g.v||g.venue||'')+'|'+(g.d||''));
+    var row={v:g.v||g.venue,venue:g.venue||g.v,d:g.d,dj:g.dj,fee:g.fee,_uid:uid,_added:g._added||1,_writeKind:'modal'};
+    var hits=s.filter(function(r){ return r && (r.v||r.venue)===row.venue && r.d===row.d; });
+    if(hits.length) Object.assign(hits[0], row);
+    else s.push(row);
+  });
+  return s;
+}
+var staleBake=[{v:'MILA Lounge',d:'2027-11-15',dj:'',fee:null,_uid:'bake1'}];
+var pending={'s_new_add_1':{kind:'modal',night:'MILA Lounge|2027-11-15',confirmed:false,stale:false}};
+var guards={'s_new_add_1':{_lockIdentity:true,dj:'BRAND NEW DJ',fee:9000,d:'2027-11-15',v:'MILA Lounge',venue:'MILA Lounge',_added:1}};
+var afterRebuild=preservePendingModalShows(staleBake.slice(), pending, guards);
+var kept=afterRebuild.find(function(r){ return r.d==='2027-11-15' && r.dj==='BRAND NEW DJ'; });
+assert(kept && kept.fee===9000, 'pending add survives stale bake-only rebuild');
+
+/* 27) Delete → blank re-add must not resurrect old bake/fee */
+function applyWithClearedNight(baked, ov, clearedNights){
+  var s=baked.map(function(r){ return Object.assign({}, r); });
+  var wb=(ov&&ov.shows)||{};
+  Object.keys(wb).forEach(function(uid){
+    var edit=wb[uid];
+    if(!edit||!edit.d) return;
+    var hits=s.filter(function(x){ return x && (x.v||x.venue)===(edit.v||edit.venue) && x.d===edit.d; });
+    if(hits.length) Object.assign(hits[0], edit, {_uid:uid});
+    else s.push(Object.assign({}, edit, {_uid:uid, _added:1}));
+  });
+  return s.filter(function(r){
+    if(!r||!r.d) return false;
+    var nk=(r.v||r.venue)+'|'+r.d;
+    if(clearedNights[nk] && clearedNights[nk].baked && !r._added) return false;
+    return true;
+  });
+}
+var bakeNight=[{v:'MILA Lounge',d:'2027-11-20',dj:'OLD BAKE DJ',fee:15000,_uid:'bake_old'}];
+var cleared={'MILA Lounge|2027-11-20':{uid:'bake_old',baked:true,at:Date.now()}};
+var afterDel=applyWithClearedNight(bakeNight, {shows:{}}, cleared);
+assert(afterDel.length===0, 'cleared night hides bake after delete');
+var blankAdd={v:'MILA Lounge',d:'2027-11-20',dj:'',fee:null,_added:1,_uid:'s_new_blank',_writeKind:'modal'};
+var afterReadd=applyWithClearedNight(bakeNight, {shows:{s_new_blank:blankAdd}}, {});
+var hit=afterReadd.find(function(r){ return r.d==='2027-11-20'; });
+assert(hit && (!hit.fee || hit.fee===0) && !String(hit.dj||'').includes('OLD BAKE'), 'blank re-add has no old fee/DJ');
+
+/* 28) Blank placeholder must not clear baked tombstone */
+var clearedNights28={'MILA Lounge|2027-11-21':{uid:'bake_old2',baked:true,at:Date.now()}};
+function guardUndeleteSim(rec, store){
+  var blank=!String(rec.dj||'').trim() && rec.fee==null && rec.cost==null;
+  var nk=(rec.v||rec.venue)+'|'+rec.d;
+  if(nk && store[nk]){
+    if(blank && store[nk].baked) return store;
+    delete store[nk];
+  }
+  return store;
+}
+var afterUndelete=guardUndeleteSim({v:'MILA Lounge',d:'2027-11-21',dj:'',fee:null,_added:1}, clearedNights28);
+assert(afterUndelete['MILA Lounge|2027-11-21'] && afterUndelete['MILA Lounge|2027-11-21'].baked, 'blank undelete keeps bake tombstone');
 
 console.log('\nAll sched guard tests passed.');

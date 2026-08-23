@@ -6,3 +6,4 @@ _smoke_check.js
 today-dashboard-with-network.html
 
 node_modules/
+_local/

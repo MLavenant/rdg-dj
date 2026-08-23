@@ -56,7 +56,15 @@ function datesInFiscalPeriod(year, monthIndex0){
   while(d<=end){ out.push(_ymdLocal(d)); d.setDate(d.getDate()+1); }
   return out;
 }
-/* Stable per-show id so multiple performances on the same date sync correctly. */
+/* Stable per-show id so multiple performances on the same date sync correctly.
+   Bake / single-show nights: venue|date ONLY (never dj|fee) so rename/fee edits
+   do not orphan Firebase overlays. True multi-adds keep random uids. */
+function stableShowUidForNight(venue, d){
+  var base=[venue||'', d||''].join('|');
+  var h=2166136261;
+  for(var i=0;i<base.length;i++){ h^=base.charCodeAt(i); h=(h*16777619)>>>0; }
+  return 's_'+h.toString(36)+'_'+String(d||'').replace(/-/g,'');
+}
 function ensureShowUid(rec){
   if(!rec) return '';
   if(rec._uid) return rec._uid;
@@ -65,11 +73,27 @@ function ensureShowUid(rec){
     rec._uid='s_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,8);
     return rec._uid;
   }
-  var base=[(rec.venue||rec.v||''),(rec.d||''),(rec.dj||''),String(rec.fee!=null?rec.fee:(rec.cost!=null?rec.cost:''))].join('|');
-  var h=2166136261;
-  for(var i=0;i<base.length;i++){ h^=base.charCodeAt(i); h=(h*16777619)>>>0; }
-  rec._uid='s_'+h.toString(36)+'_'+String(rec.d||'').replace(/-/g,'');
+  rec._uid=stableShowUidForNight(rec.venue||rec.v||'', rec.d||'');
   return rec._uid;
+}
+/* Retarget non-add rows onto stable venue|date uid so old dj|fee hashes heal on save. */
+function preferStableShowUid(rec){
+  if(!rec||!rec.d) return '';
+  if(rec._added) return ensureShowUid(rec);
+  var stable=stableShowUidForNight(rec.venue||rec.v||'', rec.d);
+  if(rec._uid && rec._uid!==stable){
+    rec._prevUid=rec._uid;
+    rec._uid=stable;
+  } else if(!rec._uid){
+    rec._uid=stable;
+  }
+  return rec._uid;
+}
+function schedIsBlankIdentity(rec){
+  if(!rec) return false;
+  var djBlank=!rec.dj || !String(rec.dj).trim();
+  var fee=rec.fee!=null?rec.fee:(rec.cost!=null?rec.cost:null);
+  return djBlank && fee==null;
 }
 function _schedDateKey(rec){ return rec?((rec.venue||rec.v||'')+'|'+rec.d):''; }
 function _schedUidKey(rec){

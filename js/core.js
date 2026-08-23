@@ -14,9 +14,19 @@ recalcAllSchedTargets(); /* boot */
   buildSidebar();
   buildVenTabs();
   buildYrPills();
-  initLayoutMode();
+  /* Show calendar chrome before layout pass — initLayoutMode calls go()/renderCal. */
   setView('calendar');
+  initLayoutMode();
   initPresence();
+  try{ if(typeof window._schedSelfHeal==='function') window._schedSelfHeal(); }catch(eHeal){}
+  /* If a script error left the calendar hidden or empty, recover once. */
+  setTimeout(function(){
+    if(curView!=='calendar') return;
+    var root=document.getElementById('view-calendar');
+    var body=document.getElementById('calBody');
+    if(root && !root.classList.contains('view-on') && typeof setView==='function') setView('calendar');
+    if(body && !String(body.innerHTML||'').trim() && typeof renderCal==='function') renderCal();
+  }, 400);
   refreshUndoUI();
   /* Fire once-per-week VIP recap popup */
   setTimeout(checkNewWeekPopup, 800);
@@ -115,7 +125,9 @@ function setView(v) {
   if(v==='system' && !unlockSanity()) return;
   closeMobileNav();
   curView = v;
-  if(_presenceRef) _presenceRef.update({view:v,lastSeen:firebase.database.ServerValue.TIMESTAMP});
+  try{
+    if(_presenceRef) _presenceRef.update({view:v,lastSeen:firebase.database.ServerValue.TIMESTAMP});
+  }catch(ePresence){}
   ['calendar','summary','allshows','leaderboard','budget','accounting','vip','forecast','roi-rules','live','system','3d'].forEach(function(id){
     var el = document.getElementById('view-'+id);
     if (!el) return;

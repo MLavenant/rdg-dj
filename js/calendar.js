@@ -7,6 +7,36 @@ function renderCal(){
   }
   if(typeof window._applySchedGuardsToLiveSched==='function') window._applySchedGuardsToLiveSched();
   applyVenueTint();
+  try{
+    if(typeof window._paintSchedSyncBanner==='function'){
+      window._paintSchedSyncBanner();
+    } else {
+      var ban=document.getElementById('calLiveBanner');
+      if(ban){
+        if(window._fbSchedError){
+          ban.style.display='block';
+          ban.className='cal-live-banner cal-live-banner-err';
+          ban.textContent='Live schedule sync failed — do not trust bake placeholders. Hard refresh. '+(window._fbSchedError||'');
+        } else if(!window._fbSchedLiveReady){
+          ban.style.display='block';
+          ban.className='cal-live-banner cal-live-banner-wait';
+          ban.textContent='Loading live schedule — edits locked until sync finishes. Bake placeholders are NOT live.';
+        } else {
+          ban.style.display='none';
+          ban.textContent='';
+        }
+      }
+    }
+    var calRoot=document.getElementById('view-calendar');
+    if(calRoot){
+      if(!window._fbSchedLiveReady || window._fbSchedError){
+        calRoot.classList.add('cal-sync-locked');
+      } else {
+        calRoot.classList.remove('cal-sync-locked');
+      }
+    }
+  }catch(eBan){}
+  try{
   var yr=curYr, mo=curM;
   var mm=(mo+1<10?'0':'')+(mo+1);
   var fiscalDates=datesInFiscalPeriod(yr, mo);
@@ -110,13 +140,16 @@ function renderCal(){
       shows.forEach(function(r,ri){
         var st   = r._s||'nd';
         var gLive=(typeof window._guardForShow==='function')?window._guardForShow(r):null;
-        var djShow=(gLive && gLive.dj!=null && String(gLive.dj).trim()!=='')?gLive.dj:r.dj;
-        var nm   = djLabel(djShow);
+        var guardBlank=gLive && typeof schedIsBlankIdentity==='function' && schedIsBlankIdentity(gLive);
+        var liveReady=!!window._fbSchedLiveReady && !window._fbSchedError;
+        var djShow=(gLive && !guardBlank && gLive.dj!=null && String(gLive.dj).trim()!=='')?gLive.dj:r.dj;
+        /* Until live Firebase lands, do not present bake DJ/fee as truth (Guy Gerber class of bug). */
+        var nm   = liveReady ? djLabel(djShow) : 'Syncing…';
         var idx  = SCHED.indexOf(r);
         var py = (ri===0 ? (pyMap[ds]||pyBlank) : null);
         var tgt=showTargets(r);
         var bsM=tgt.bs_m, roiT=tgt.roi_t;
-        var fee=(gLive && gLive.fee!=null)?gLive.fee:(r.fee||r.cost);
+        var fee=liveReady ? (guardBlank ? null : ((gLive && gLive.fee!=null)?gLive.fee:(r.fee||r.cost))) : null;
         var bCls = perfTone(r.bs_a, bsM, fee, r.roi_a, roiT);
         var rCls = bCls;
         var tSty = toneStyle(bCls);
@@ -173,6 +206,22 @@ function renderCal(){
   wireCalEditClicks();
   initCalColResize();
   fitCalListRows(days);
+  }catch(eRender){
+    try{ console.error('renderCal failed', eRender); }catch(eLog){}
+    var calRootErr=document.getElementById('view-calendar');
+    if(calRootErr) calRootErr.classList.add('view-on');
+    var bodyErr=document.getElementById('calBody');
+    if(bodyErr){
+      bodyErr.innerHTML='<div style="padding:20px 24px;color:#991b1b;font-size:13px;line-height:1.5">'
+        +'<b>Calendar failed to render.</b> Hard refresh (Ctrl+Shift+R). '
+        +'If it persists, open DevTools (F12) and run:<br>'
+        +'<code style="display:block;margin-top:8px;padding:8px;background:#fef2f2;border-radius:8px">'
+        +'sessionStorage.removeItem(\"rdg_sched_deleted_v1\");'
+        +'sessionStorage.removeItem(\"rdg_sched_cleared_nights_v1\");'
+        +'sessionStorage.removeItem(\"rdg_sched_edits_v2\"); location.reload();'
+        +'</code></div>';
+    }
+  }
 }
 
 /* Reliable click-to-edit (delegation). Avoids broken inline handlers and drag-vs-click fights. */
@@ -1362,6 +1411,11 @@ function updateShowDjStatus(idx,val,sel,uid){
     ? _findSchedByUidOrIdx(wantUid, -1)
     : null;
   if(!r||!r.d) return;
+  if(typeof window._schedCanEdit==='function' && !window._schedCanEdit()){
+    try{ alert('DJ status change blocked — live schedule is not synced yet.'); }catch(eGate){}
+    try{ if(sel) sel.value = (typeof getShowDjStatus==='function' ? (getShowDjStatus(r,r.d)||'') : ''); }catch(eRev){}
+    return;
+  }
   /* Hard date check — never apply status to a different night than the control. */
   if(wantDs && r.d!==wantDs){
     try{ console.warn('updateShowDjStatus: date mismatch', wantDs, r.d); }catch(e2){}

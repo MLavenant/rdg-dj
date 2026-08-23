@@ -1,6 +1,11 @@
 function openAddModal(ds){
+  if(typeof window._schedCanEdit==='function' && !window._schedCanEdit()){
+    try{ alert('Add Show blocked — live schedule is not synced yet. Wait for sync, then retry.'); }catch(e){}
+    return;
+  }
   _editIdx=-1;
   _editUid='';
+  window._schedModalAdd=true;
   var f=getFields();
   f.venue.value=curV;
   var defaultDate=ds;
@@ -18,6 +23,10 @@ function openAddModal(ds){
   document.getElementById('evModal').classList.remove('hidden');
 }
 function openEditModal(idx, uid){
+  if(typeof window._schedCanEdit==='function' && !window._schedCanEdit()){
+    try{ alert('Edit Show blocked — live schedule is not synced yet. Wait for sync, then retry.'); }catch(e){}
+    return;
+  }
   var r=null;
   if(typeof _findSchedByUidOrIdx==='function') r=_findSchedByUidOrIdx(uid, idx);
   if(!r && idx!=null && idx>=0 && idx<SCHED.length) r=SCHED[idx];
@@ -30,6 +39,7 @@ function openEditModal(idx, uid){
     try{ console.warn('openEditModal: show not found', idx, uid); }catch(e){}
     return;
   }
+  window._schedModalAdd=false;
   _editIdx=SCHED.indexOf(r);
   if(_editIdx<0 && idx!=null && idx>=0) _editIdx=idx;
   /* Stable identity — SCHED may rebuild while the modal is open; never trust idx alone on save. */
@@ -487,6 +497,7 @@ function _fbSanitize(val){
 
 function _alignRecToBakedShow(rec){
   if(!rec || !rec.d) return false;
+  if(typeof schedIsBlankIdentity==='function' && schedIsBlankIdentity(rec)) return false;
   var venue=rec.v||rec.venue||'';
   ensureShowUid(rec);
   if(!window._bakedUidIndex){
@@ -510,7 +521,7 @@ function _alignRecToBakedShow(rec){
         var p=String(dels[i]||'').split('|');
         if(p.length>=3 && p[2]===bakeUid) return true;
       }
-    }catch(e){}
+  }catch(e){}
     return false;
   }
   if(window._bakedUidIndex[rec._uid]){
@@ -522,11 +533,16 @@ function _alignRecToBakedShow(rec){
     return r && (r.v||r.venue)===venue && r.d===rec.d;
   });
   if(hits.length!==1) return false;
-  /* One-show-per-night: fold shadow adds onto the baked uid ONLY if that bake
-     was not deleted. Otherwise the add must stay an add (AMOG after DARMON delete). */
+  /* One-show-per-night: fold shadow adds onto the baked night ONLY if that bake
+     was not deleted. Never retarget an existing live workbook uid to a bake hash —
+     that orphaned Guy Gerber-style saves under a second key. */
   var bakeUid=ensureShowUid(hits[0]);
   if(bakeDeleted(bakeUid)) return false;
   if(rec._added && bakeDeleted(bakeUid)) return false;
+  if(rec._uid){
+    rec._added=0;
+    return true;
+  }
   rec._uid=bakeUid;
   rec._added=0;
   return true;
@@ -637,17 +653,33 @@ function _fbDropOtherShowsOnNight(rec){
     });
   });
 }
-function persistSchedShow(rec){
+function persistSchedShow(rec, opt){
+  opt=opt||{};
   applyShowTargets(rec);
   if(rec && rec.ev==null) rec.ev='';
-  ensureShowUid(rec);
+  if(typeof preferStableShowUid==='function') preferStableShowUid(rec);
+  else ensureShowUid(rec);
   if(!rec._writeKind) rec._writeKind='modal';
   var wasAdded=!!rec._added;
-  var isBaked=_alignRecToBakedShow(rec);
-  if(wasAdded && !isBaked){ rec._added=1; }
+  var blankIdentity=(typeof schedIsBlankIdentity==='function') && schedIsBlankIdentity(rec);
+  var isBaked=blankIdentity ? false : _alignRecToBakedShow(rec);
+  if(blankIdentity || (wasAdded && !isBaked)){ rec._added=1; }
   if(typeof window._guardSchedWrite==='function') window._guardSchedWrite(rec);
-  if(!window._fbRef) return;
-  var uid=ensureShowUid(rec);
+  if(typeof window._trackSchedPending==='function') window._trackSchedPending(rec, 'modal');
+  if(window._fbOnline===false){
+    try{ if(typeof opt.onDone==='function') opt.onDone(new Error('Firebase offline')); }catch(eOff0){}
+    try{ alert('Schedule save blocked — you are offline. Reconnect and retry.'); }catch(eA0){}
+    return;
+  }
+  if(!window._fbRef){
+    try{ if(typeof opt.onDone==='function') opt.onDone(new Error('Firebase offline')); }catch(eOff){}
+    return;
+  }
+  var uid=(typeof preferStableShowUid==='function')?preferStableShowUid(rec):ensureShowUid(rec);
+  if(rec._prevUid && rec._prevUid!==uid){
+    try{ window._fbRef.child('schedOverrides/shows/'+rec._prevUid).remove(); }catch(ePrev){}
+    rec._prevUid=null;
+  }
   var fbKey=_schedUidKey(rec);
   if(!isBaked) rec._added=1;
   else rec._added=0;
@@ -662,6 +694,7 @@ function persistSchedShow(rec){
   payload.fee=rec.fee!=null?rec.fee:null;
   payload.cost=rec.cost!=null?rec.cost:(rec.fee!=null?rec.fee:null);
   payload._added=isBaked?0:1;
+  /* Edit Show owns DJ/fee/targets — never clear status/agency/VIP on rename. */
   try{
     window._fbRef.child('schedOverrides/deletes').transaction(function(vals){
       if(!vals) return vals;
@@ -691,11 +724,17 @@ function persistSchedShow(rec){
     if(prev && typeof prev==='object'){
       var prevAt=prev.updatedAt?Date.parse(prev.updatedAt):0;
       var newAt=payload.updatedAt?Date.parse(payload.updatedAt):0;
+      var blankIdentity=(!payload.dj || !String(payload.dj).trim()) && payload.fee==null && payload.cost==null;
       /* Edit Show must not wipe status / agency / VIP that live only on the remote row. */
       if(payload.djStatus==null && prev.djStatus!=null) payload.djStatus=prev.djStatus;
       if(payload.agency==null && prev.agency!=null) payload.agency=prev.agency;
       if(payload.vipNote==null && prev.vipNote!=null) payload.vipNote=prev.vipNote;
-      if(prevAt && newAt && prevAt>newAt){
+      if(blankIdentity){
+        /* Re-add after delete: never resurrect old DJ/fee from a stale workbook row. */
+        payload.dj='';
+        payload.fee=null;
+        payload.cost=null;
+      } else if(prevAt && newAt && prevAt>newAt){
         if(prev.djStatus!=null) payload.djStatus=prev.djStatus;
         if(prev.agency!=null) payload.agency=prev.agency;
         if(prev.vipNote!=null) payload.vipNote=prev.vipNote;
@@ -703,7 +742,18 @@ function persistSchedShow(rec){
     }
     map[uid]=payload;
     return map;
-  }, _fbOnSchedWrite);
+  }, function(err, committed){
+    _fbOnSchedWrite(err);
+    if(err || committed===false){
+      try{
+        var el=document.getElementById('fbSyncDot');
+        if(el){ el.style.background='#ef4444'; el.title='Schedule save failed — hard refresh and retry'; }
+      }catch(eDot){}
+      try{ if(typeof opt.onDone==='function') opt.onDone(err||new Error('schedule transaction aborted')); }catch(eCb){}
+      return;
+    }
+    try{ if(typeof opt.onDone==='function') opt.onDone(null); }catch(eOk){}
+  });
   _fbEraseLegacyCopies(rec);
   _fbEraseNightCopies(payload.v||payload.venue||'', rec.d, uid);
 }
@@ -713,55 +763,108 @@ function persistSchedShow(rec){
    to persist DJ name and fee. Never touch other nights. */
 function persistShowDjStatusOnly(rec){
   if(!rec||!rec.d) return;
-  ensureShowUid(rec);
-  if(!window._fbRef) return;
-  _alignRecToBakedShow(rec);
-  var uid=ensureShowUid(rec);
+  if(typeof window._schedCanEdit==='function' && !window._schedCanEdit()){
+    try{ alert('DJ status change blocked — live schedule is not synced yet. Wait for sync, then retry.'); }catch(e){}
+    return;
+  }
+  if(!rec._uid) ensureShowUid(rec);
+  if(!window._fbRef){
+    try{ alert('DJ status save failed — Firebase offline.'); }catch(e){}
+    return;
+  }
+  var venue=rec.v||rec.venue||'';
+  var uid=String(rec._uid||'');
+  if(!uid){
+    try{ alert('DJ status save failed — show identity missing. Hard refresh and retry.'); }catch(e){}
+    return;
+  }
   var nextStatus=rec.djStatus==null ? null : rec.djStatus;
   if(typeof window._guardSchedWrite==='function'){
     window._guardSchedWrite({
       d: rec.d,
-      v: rec.v||rec.venue||'',
-      venue: rec.venue||rec.v||'',
+      v: venue,
+      venue: venue,
       _uid: uid,
       djStatus: nextStatus,
       _writeKind: 'statusMerge'
     });
   }
-  var isBaked=_alignRecToBakedShow(rec);
-  if(!isBaked) rec._added=1;
+  if(typeof window._trackSchedPending==='function'){
+    window._trackSchedPending({
+      _uid: uid,
+      d: rec.d,
+      v: venue,
+      venue: venue,
+      djStatus: nextStatus
+    }, 'statusMerge');
+  }
   window._fbRef.child('schedOverrides/shows').transaction(function(map){
     if(!map || typeof map!=='object') map={};
-    var cur=map[uid];
+    /* Always patch the authoritative workbook row for this venue|date — never a
+       stale uid hash that could land status on the wrong night after uid drift. */
+    var wbUid=uid;
+    if(typeof window._workbookUidForNight==='function'){
+      wbUid=window._workbookUidForNight(map, venue, rec.d, uid);
+    } else {
+      var bestKey=uid, bestAuth=-1;
+      Object.keys(map).forEach(function(k){
+        var row=map[k];
+        if(!row||row.d!==rec.d) return;
+        if((row.v||row.venue||'')!==venue) return;
+        var auth=0, kind=row._writeKind||'';
+        if(kind==='modal'||kind==='evClear') auth+=1000;
+        else if(kind==='statusMerge'||kind==='djStatus') auth+=10;
+        if(row.dj!=null && String(row.dj).trim()!=='') auth+=100;
+        if(row.fee!=null||row.cost!=null) auth+=50;
+        if(auth>bestAuth){ bestAuth=auth; bestKey=k; }
+      });
+      wbUid=bestKey;
+    }
+    var cur=map[wbUid];
     if(cur && typeof cur==='object'){
+      /* Thin write: ONLY djStatus. Never rewrite dj/fee. */
       var next=Object.assign({}, cur);
       next.djStatus=nextStatus;
       next.updatedAt=new Date().toISOString();
-      /* Keep modal/evClear — downgrading to statusMerge hid saved fee/DJ on reload. */
-      if(cur._writeKind!=='modal' && cur._writeKind!=='evClear'){
+      if(cur._writeKind==='modal' || cur._writeKind==='evClear'){
+        next._writeKind=cur._writeKind;
+      } else {
         next._writeKind='statusMerge';
       }
-      map[uid]=next;
+      map[wbUid]=next;
       return map;
     }
-    map[uid]=_fbSanitize({
+    map[wbUid]=_fbSanitize({
       d: rec.d,
-      v: rec.v||rec.venue||'',
-      venue: rec.venue||rec.v||'',
-      _uid: uid,
+      v: venue,
+      venue: venue,
+      _uid: wbUid,
       djStatus: nextStatus,
       _writeKind: 'statusMerge',
-      _added: isBaked?0:1,
+      _added: 1,
       updatedAt:new Date().toISOString()
     });
     return map;
-  }, _fbOnSchedWrite);
+  }, function(err, committed){
+    if(typeof _fbOnSchedWrite==='function') _fbOnSchedWrite(err);
+    if(err || committed===false){
+      try{ if(typeof window._clearSchedPending==='function') window._clearSchedPending(uid); }catch(eC){}
+      try{ alert('DJ status save failed — live calendar was not updated. Hard refresh and retry.'); }catch(eA){}
+    }
+  });
 }
-/* VIP note only — never bundle DJ name / fee. */
+/* VIP note only - never bundle DJ name / fee. */
 function persistShowVipNoteOnly(rec){
   if(!rec||!rec.d) return;
+  if(typeof window._schedCanEdit==='function' && !window._schedCanEdit()){
+    try{ alert('VIP note blocked — live schedule is not synced yet.'); }catch(e){}
+    return;
+  }
   ensureShowUid(rec);
-  if(!window._fbRef) return;
+  if(!window._fbRef){
+    try{ alert('VIP note save failed — Firebase offline.'); }catch(e){}
+    return;
+  }
   _alignRecToBakedShow(rec);
   var uid=ensureShowUid(rec);
   var nextVip=rec.vipNote==null ? null : rec.vipNote;
@@ -775,6 +878,15 @@ function persistShowVipNoteOnly(rec){
       _writeKind: 'vipNote'
     });
   }
+  if(typeof window._trackSchedPending==='function'){
+    window._trackSchedPending({
+      _uid: uid,
+      d: rec.d,
+      v: rec.v||rec.venue||'',
+      venue: rec.venue||rec.v||'',
+      vipNote: nextVip
+    }, 'vipNote');
+  }
   var isBaked=_alignRecToBakedShow(rec);
   if(!isBaked) rec._added=1;
   window._fbRef.child('schedOverrides/shows').transaction(function(map){
@@ -784,9 +896,8 @@ function persistShowVipNoteOnly(rec){
       var next=Object.assign({}, cur);
       next.vipNote=nextVip;
       next.updatedAt=new Date().toISOString();
-      if(cur._writeKind!=='modal' && cur._writeKind!=='evClear'){
-        next._writeKind='vipNote';
-      }
+      if(cur._writeKind==='modal' || cur._writeKind==='evClear') next._writeKind=cur._writeKind;
+      else next._writeKind='vipNote';
       map[uid]=next;
       return map;
     }
@@ -801,13 +912,25 @@ function persistShowVipNoteOnly(rec){
       updatedAt:new Date().toISOString()
     });
     return map;
-  }, _fbOnSchedWrite);
+  }, function(err, committed){
+    if(typeof _fbOnSchedWrite==='function') _fbOnSchedWrite(err);
+    if(err || committed===false){
+      try{ if(typeof window._clearSchedPending==='function') window._clearSchedPending(uid); }catch(eC){}
+      try{ alert('VIP note save failed — live calendar was not updated.'); }catch(eA){}
+    }
+  });
 }
-/* Agency only — never bundle DJ name / fee. */
 function persistShowAgencyOnly(rec){
   if(!rec||!rec.d) return;
+  if(typeof window._schedCanEdit==='function' && !window._schedCanEdit()){
+    try{ alert('Agency change blocked — live schedule is not synced yet.'); }catch(e){}
+    return;
+  }
   ensureShowUid(rec);
-  if(!window._fbRef) return;
+  if(!window._fbRef){
+    try{ alert('Agency save failed — Firebase offline.'); }catch(e){}
+    return;
+  }
   _alignRecToBakedShow(rec);
   var uid=ensureShowUid(rec);
   var nextAgency=rec.agency==null ? null : rec.agency;
@@ -821,6 +944,15 @@ function persistShowAgencyOnly(rec){
       _writeKind: 'agency'
     });
   }
+  if(typeof window._trackSchedPending==='function'){
+    window._trackSchedPending({
+      _uid: uid,
+      d: rec.d,
+      v: rec.v||rec.venue||'',
+      venue: rec.venue||rec.v||'',
+      agency: nextAgency
+    }, 'agency');
+  }
   var isBaked=_alignRecToBakedShow(rec);
   if(!isBaked) rec._added=1;
   window._fbRef.child('schedOverrides/shows').transaction(function(map){
@@ -830,9 +962,8 @@ function persistShowAgencyOnly(rec){
       var next=Object.assign({}, cur);
       next.agency=nextAgency;
       next.updatedAt=new Date().toISOString();
-      if(cur._writeKind!=='modal' && cur._writeKind!=='evClear'){
-        next._writeKind='agency';
-      }
+      if(cur._writeKind==='modal' || cur._writeKind==='evClear') next._writeKind=cur._writeKind;
+      else next._writeKind='agency';
       map[uid]=next;
       return map;
     }
@@ -847,7 +978,13 @@ function persistShowAgencyOnly(rec){
       updatedAt:new Date().toISOString()
     });
     return map;
-  }, _fbOnSchedWrite);
+  }, function(err, committed){
+    if(typeof _fbOnSchedWrite==='function') _fbOnSchedWrite(err);
+    if(err || committed===false){
+      try{ if(typeof window._clearSchedPending==='function') window._clearSchedPending(uid); }catch(eC){}
+      try{ alert('Agency save failed — live calendar was not updated.'); }catch(eA){}
+    }
+  });
 }
 function _findSchedByUidOrIdx(uid, idx){
   if(uid){
@@ -919,6 +1056,10 @@ function _undoShowChange(before,after,beforeIndex){
 }
 
 function saveEvent(){
+  if(typeof window._schedCanEdit==='function' && !window._schedCanEdit()){
+    try{ alert('Edit Show blocked — live schedule is not synced yet. Wait for the green sync light, then retry.'); }catch(eGate){}
+    return;
+  }
   var f=getFields();
   var v=f.venue.value, d=f.date.value, dj=fixKnownAccents((f.dj.value||'').trim());
   var fee=parseFloat(f.fee.value)||null;
@@ -941,9 +1082,18 @@ function saveEvent(){
       return;
     }
   }
-  /* Hard rule: never create a second show on an occupied venue|date.
-     Heavily edited nights previously got bake + addsByUid as two rows. */
-  if(_editIdx<0){
+  /* Hard rule: one show per venue|date. Fold into the existing night — never create a twin.
+     Exception: fresh Add with blank DJ/fee must NOT fold onto bake (old fee resurrection). */
+  var isFreshBlankAdd=!!window._schedModalAdd && !dj && !fee;
+  if(isFreshBlankAdd){
+    for(var si=SCHED.length-1;si>=0;si--){
+      var sx=SCHED[si];
+      if(!sx||!sx.d||sx._s==='empty') continue;
+      if(sx.d===d && (sx.v||sx.venue)===v) SCHED.splice(si,1);
+    }
+    _editIdx=-1;
+    _editUid='';
+  } else if(_editIdx<0){
     var occupiedIdx=-1;
     for(var oi=0;oi<SCHED.length;oi++){
       var ox=SCHED[oi];
@@ -990,6 +1140,7 @@ function saveEvent(){
     rec._added=1;
     rec.djStatus=null;
   }
+  if(typeof window._guardUndelete==='function' && !(typeof schedIsBlankIdentity==='function' && schedIsBlankIdentity(rec))) window._guardUndelete(rec);
   if(_editUid && !rec._uid) rec._uid=_editUid;
   ensureShowUid(rec);
   rec._writeKind='modal';
@@ -1018,15 +1169,48 @@ function saveEvent(){
      .set() is synchronous and used to rebuild SCHED before go() ran — leaving the
      old DJ name on screen until a later status change re-rendered. */
   if(typeof window._guardSchedWrite==='function') window._guardSchedWrite(rec);
+  if(typeof window._trackSchedPending==='function') window._trackSchedPending(rec, 'modal');
   go();
   if(curView==='calendar') renderCal();
+  var saveSnap = before ? JSON.parse(JSON.stringify(before)) : null;
+  var saveUid = rec._uid;
   try{
-    persistSchedShow(rec);
+    persistSchedShow(rec, {
+      onDone: function(err){
+        if(!err){
+          setTimeout(function(){
+            var p = window._schedPending && window._schedPending[saveUid];
+            if(p && !p.confirmed && (Date.now()-p.at)>10000){
+              try{ alert('Save sent but not confirmed on the live calendar yet. Hard refresh and verify this night.'); }catch(eT){}
+            }
+          }, 10000);
+          return;
+        }
+        try{
+          if(saveSnap && saveUid){
+            for(var si=0; si<SCHED.length; si++){
+              if(SCHED[si] && String(SCHED[si]._uid||'')===String(saveUid)){
+                Object.keys(SCHED[si]).forEach(function(k){ delete SCHED[si][k]; });
+                Object.assign(SCHED[si], saveSnap);
+                break;
+              }
+            }
+            if(typeof window._clearSchedPending==='function') window._clearSchedPending(saveUid);
+            if(typeof go==='function') go();
+            if(curView==='calendar' && typeof renderCal==='function') renderCal();
+          }
+        }catch(eRoll){}
+        try{
+          alert('Schedule save failed — change was rolled back locally. Hard refresh and try again.\n\n'+(err.message||err));
+        }catch(eAlert){}
+      }
+    });
   }catch(ePersist){
     try{ console.warn('persistSchedShow failed', ePersist); }catch(e2){}
+    try{ alert('Schedule save failed — hard refresh and retry.'); }catch(e3){}
   }
-  if(typeof window._applySchedGuardsToLiveSched==='function') window._applySchedGuardsToLiveSched();
   _editUid='';
+  window._schedModalAdd=false;
   /* One paint is enough — a second go()/renderCal here plus the Firebase echo
      was freezing the app after Save (esp. on bake nights like MILA Aug 29). */
   if(curView==='accounting') renderAccounting();
@@ -1463,8 +1647,8 @@ function replaceSpecialWeekRange(label, startStr, endStr, uid){
   return true;
 }
 function swNudgePeriod(label, edge, delta){
-  var cov=findSpecialWeekCoverage(label, null);
-  if(!cov) return;
+    var cov=findSpecialWeekCoverage(label, null);
+    if(!cov) return;
   var start=cov.start, end=cov.end;
   if(edge==='start') start=_shiftYmd(start, delta);
   else end=_shiftYmd(end, delta);
@@ -1511,7 +1695,7 @@ function swDropOnDate(e, toDate){
   document.querySelectorAll('.sc-row-drop').forEach(function(tr){ tr.classList.remove('sc-row-drop'); });
   if(!drag || !toDate) return;
   if(drag.type==='period'){
-    var cov=findSpecialWeekCoverage(drag.label, drag.from||toDate);
+      var cov=findSpecialWeekCoverage(drag.label, drag.from||toDate);
     var range=cov ? {start:cov.start, end:cov.end} : findSpecialWeekRange(drag.label);
     if(!range) return;
     var from=drag.from||range.start;
@@ -1593,7 +1777,7 @@ function _restoreSpecialPeriodState(state){
       persistSwRecord(state.recs[uid]);
     });
   } else {
-    specialWeeks=_clone(state.specialWeeks)||{};
+  specialWeeks=_clone(state.specialWeeks)||{};
     _saveSpecialWeeksTree();
   }
   SCHED.forEach(function(r){
@@ -1623,17 +1807,17 @@ function deleteSelectedSpecialWeek(){
       });
     }
   } else {
-    Object.keys(specialWeeks).forEach(function(k){
-      if(!k.startsWith(curV+'|')) return;
-      var parts=k.split('|');
-      specialWeeks[k]=(specialWeeks[k]||[]).filter(function(sw){
-        if(_swNorm(sw.label)!==_swNorm(label)) return true;
-        var a=parts[1]+'-'+parts[2]+'-'+String(sw.startDay).padStart(2,'0');
-        var b=parts[1]+'-'+parts[2]+'-'+String(sw.endDay).padStart(2,'0');
-        return !(a<=end && b>=start);
-      });
-      if(!specialWeeks[k].length) delete specialWeeks[k];
+  Object.keys(specialWeeks).forEach(function(k){
+    if(!k.startsWith(curV+'|')) return;
+    var parts=k.split('|');
+    specialWeeks[k]=(specialWeeks[k]||[]).filter(function(sw){
+      if(_swNorm(sw.label)!==_swNorm(label)) return true;
+      var a=parts[1]+'-'+parts[2]+'-'+String(sw.startDay).padStart(2,'0');
+      var b=parts[1]+'-'+parts[2]+'-'+String(sw.endDay).padStart(2,'0');
+      return !(a<=end && b>=start);
     });
+    if(!specialWeeks[k].length) delete specialWeeks[k];
+  });
     _saveSpecialWeeksTree();
   }
   SCHED.forEach(function(r){
@@ -2341,11 +2525,11 @@ function renderVenueRulesPanel(){
             h+='<td>'+_vrMoneyInputHtml(tv, 'vr-cell-inp vr-cell-sm', 'data-action="table-field" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-cat="'+c+'"')+'</td>';
           });
         }else{
-          h+='<td><input type="number" class="vr-cell-inp" value="'+dayData.sales+'" data-action="day-field" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-field="sales"></td>';
-          (rules.tableCats||[]).forEach(function(c){
-            var tv=(dayData.tables||{})[c]||0;
-            h+='<td><input type="number" class="vr-cell-inp vr-cell-sm" value="'+tv+'" data-action="table-field" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-cat="'+c+'"></td>';
-          });
+        h+='<td><input type="number" class="vr-cell-inp" value="'+dayData.sales+'" data-action="day-field" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-field="sales"></td>';
+        (rules.tableCats||[]).forEach(function(c){
+          var tv=(dayData.tables||{})[c]||0;
+          h+='<td><input type="number" class="vr-cell-inp vr-cell-sm" value="'+tv+'" data-action="table-field" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-cat="'+c+'"></td>';
+        });
         }
         h+='</tr>';
       });
