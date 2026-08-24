@@ -816,16 +816,16 @@ var _FLASH_PL_VENUE_MAP = {
 };
 var _FLASH_PL_ORDER = ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'];
 /* P&L from ebidta calculation*.xlsx (EBIDTA 2 / OPEX DATA 2).
-   Hybrid: Payroll + Occupancy + Service Charge + CC Fees = % of day sales;
-   Direct OpEx, G&A (ex CC), Utilities, Corporate = fixed daily $; Live Ent = DJ fee. */
+   Hybrid: Occupancy + Service Charge + CC Fees = % of day sales;
+   Payroll, Direct OpEx, G&A (ex CC), Utilities, Corporate = fixed daily $; Live Ent = DJ fee. */
 var _FLASH_EBITDA_OPEX_BY_VENUE = {
   'Casa Neos Beach Club': {
     model: 'hybrid',
-    payroll: 0.10247154902899072,
     occupancy: 0.06,
     other: -0.033,
     ccPct: 0.03,
     fixedDaily: {
+      payroll: 32944.60301282052,
       directExLive: 9482.604395604401,
       gaExCc: 5536.9810989011,
       utilities: 1284.1948901098901,
@@ -833,7 +833,7 @@ var _FLASH_EBITDA_OPEX_BY_VENUE = {
     },
     cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 },
     opexLabels: {
-      payroll: 'Payroll (% sales)',
+      payroll: 'Payroll',
       directExLive: 'Direct OpEx (excl. Live Ent)',
       ccFees: '7010 — Credit Card Fees (3%)',
       gaExCc: 'G&A (excl. CC Fees)',
@@ -845,11 +845,11 @@ var _FLASH_EBITDA_OPEX_BY_VENUE = {
   },
   'MILA Lounge': {
     model: 'hybrid',
-    payroll: 0.3121295176544767,
     occupancy: 0.06,
     other: -0.033,
     ccPct: 0.033,
     fixedDaily: {
+      payroll: 19039.90057692308,
       directExLive: 3809.9299450549443,
       gaExCc: 2801.1549450549455,
       utilities: 361.11994505494505,
@@ -857,7 +857,7 @@ var _FLASH_EBITDA_OPEX_BY_VENUE = {
     },
     cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 },
     opexLabels: {
-      payroll: 'Payroll (% sales)',
+      payroll: 'Payroll',
       directExLive: 'Direct OpEx (excl. Live Ent)',
       ccFees: '7010 — Credit Card Fees (3.3%)',
       gaExCc: 'G&A (excl. CC Fees)',
@@ -869,11 +869,11 @@ var _FLASH_EBITDA_OPEX_BY_VENUE = {
   },
   'Casa Neos Lounge': {
     model: 'hybrid',
-    payroll: 0.02956092355544922,
     occupancy: 0.06,
     other: -0.033,
     ccPct: 0.03,
     fixedDaily: {
+      payroll: 9503.836923076924,
       directExLive: 2928.297912087917,
       gaExCc: 2571.3260439560436,
       utilities: 361.3115384615385,
@@ -881,7 +881,7 @@ var _FLASH_EBITDA_OPEX_BY_VENUE = {
     },
     cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 },
     opexLabels: {
-      payroll: 'Payroll (% sales)',
+      payroll: 'Payroll',
       directExLive: 'Direct OpEx (excl. Live Ent)',
       ccFees: '7010 — Credit Card Fees (3%)',
       gaExCc: 'G&A (excl. CC Fees)',
@@ -1281,7 +1281,7 @@ function _flashEbitdaWaterfall(sales, djCost, venue){
   var payroll, directExLive, gaExCc, ccFees, ga, utilities, occupancy, other, corporate;
   if(o.model==='hybrid' && o.fixedDaily){
     var f=o.fixedDaily;
-    payroll=sales*o.payroll;
+    payroll=f.payroll!=null?f.payroll:(sales*(o.payroll||0));
     directExLive=f.directExLive;
     gaExCc=f.gaExCc!=null?f.gaExCc:(f.ga||0);
     ccFees=sales*(o.ccPct||0);
@@ -1345,7 +1345,7 @@ function _flashEbitdaWaterfallTableHtml(wf, venue){
   h+=_flashEbitdaWfRow('Total COGS', wf.cogs, s, {bold:true});
   h+=_flashEbitdaWfRow('Gross Profit', wf.gp, s, {bold:true, highlight:true});
   h+='<tr class="ebitda-wf-sep"><td colspan="3">Operating Expenses</td></tr>';
-  h+=_flashEbitdaWfRow(ol.payroll||'Payroll', wf.payroll, s, {indent:1});
+  h+=_flashEbitdaWfRow(ol.payroll||'Payroll', wf.payroll, s, fx?Object.assign({indent:1},fix):{indent:1});
   h+=_flashEbitdaWfRow(ol.directExLive||'Direct OpEx (excl. Live Ent)', wf.directExLive, s, fx?Object.assign({indent:1},fix):{indent:1});
   h+=_flashEbitdaWfRow('6750 — Live Entertainment', wf.liveEnt, s, {indent:1, highlight:true});
   h+=_flashEbitdaWfRow(ol.ccFees||'7010 — Credit Card Fees', wf.ccFees, s, {indent:1});
