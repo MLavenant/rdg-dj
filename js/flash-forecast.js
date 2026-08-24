@@ -815,50 +815,78 @@ var _FLASH_PL_VENUE_MAP = {
   }
 };
 var _FLASH_PL_ORDER = ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'];
-/* P&L ratios from ebidta calculation*.xlsx (EBIDTA 2 / OPEX DATA 2). Live Ent (6750) is variable per DJ. */
+/* P&L from ebidta calculation*.xlsx (EBIDTA 2 / OPEX DATA 2).
+   Hybrid: Payroll + Occupancy + Service Charge = fixed % of day sales;
+   Direct OpEx, G&A, Utilities, Corporate = fixed daily $; Live Ent = DJ fee. */
 var _FLASH_EBITDA_OPEX_BY_VENUE = {
   'Casa Neos Beach Club': {
+    model: 'hybrid',
     payroll: 0.10247154902899072,
-    directExLive: 0.03441069505921759,
-    ga: 0.050092725605136175,
-    utilities: 0.004660116241974718,
     occupancy: 0.06,
     other: -0.033,
-    corporate: 0.02720031762172508,
+    fixedDaily: {
+      directExLive: 11063.038461538454,
+      ga: 16104.81128205128,
+      utilities: 1498.2273717948717,
+      corporate: 8744.902115384613
+    },
     cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 },
     opexLabels: {
+      payroll: 'Payroll (% sales)',
+      directExLive: 'Direct OpEx (excl. Live Ent)',
+      ga: 'General & Administrative',
+      utilities: 'Utilities',
       occupancy: 'Occupancy (6%)',
-      other: '8090 — Service Charge Retained (3.3%)'
-    }
+      other: '8090 — Service Charge Retained (3.3%)',
+      corporate: 'Corporate Overhead'
+    },
+    fixedLines: { directExLive: 1, ga: 1, utilities: 1, corporate: 1 }
   },
   'MILA Lounge': {
-    /* Fixed % of day sales from EBIDTA 2 template ($67.5k reference). Live Ent = actual DJ fee. */
+    model: 'hybrid',
     payroll: 0.29341915527065526,
-    directExLive: 0.09877596153846152,
-    ga: 0.1229921239316239,
-    utilities: 0.009362368945868945,
     occupancy: 0.06,
     other: -0.033,
-    corporate: 0.10215391452991451,
+    fixedDaily: {
+      directExLive: 6667.377403846152,
+      ga: 8301.968365384613,
+      utilities: 631.9599038461538,
+      corporate: 6895.3892307692295
+    },
     cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 },
     opexLabels: {
+      payroll: 'Payroll (% sales)',
+      directExLive: 'Direct OpEx (excl. Live Ent)',
+      ga: 'General & Administrative',
+      utilities: 'Utilities',
       occupancy: 'Occupancy (6%)',
-      other: '8090 — Service Charge Retained (3.3%)'
-    }
+      other: '8090 — Service Charge Retained (3.3%)',
+      corporate: 'Corporate Overhead'
+    },
+    fixedLines: { directExLive: 1, ga: 1, utilities: 1, corporate: 1 }
   },
   'Casa Neos Lounge': {
+    model: 'hybrid',
     payroll: 0.02956092355544922,
-    directExLive: 0.015939413207321465,
-    ga: 0.04399633149898313,
-    utilities: 0.001966703553056586,
     occupancy: 0.06,
     other: -0.033,
-    corporate: 0.012532396817801172,
+    fixedDaily: {
+      directExLive: 5124.5213461538515,
+      ga: 14144.820576923077,
+      utilities: 632.2951923076923,
+      corporate: 4029.165576923077
+    },
     cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 },
     opexLabels: {
+      payroll: 'Payroll (% sales)',
+      directExLive: 'Direct OpEx (excl. Live Ent)',
+      ga: 'General & Administrative',
+      utilities: 'Utilities',
       occupancy: 'Occupancy (6%)',
-      other: '8090 — Service Charge Retained (3.3%)'
-    }
+      other: '8090 — Service Charge Retained (3.3%)',
+      corporate: 'Corporate Overhead'
+    },
+    fixedLines: { directExLive: 1, ga: 1, utilities: 1, corporate: 1 }
   }
 };
 var _FLASH_DAILY_SALES_SOURCES = {
@@ -1246,14 +1274,26 @@ function _flashEbitdaWaterfall(sales, djCost, venue){
   var lbwCost=lbw*c.lbwPct, foodCost=food*c.foodPct, bevCost=bev*c.bevPct;
   var cogs=lbwCost+foodCost+bevCost;
   var gp=sales-cogs;
-  var payroll=sales*o.payroll;
-  var directExLive=sales*o.directExLive;
+  var payroll, directExLive, ga, utilities, occupancy, other, corporate;
+  if(o.model==='hybrid' && o.fixedDaily){
+    var f=o.fixedDaily;
+    payroll=sales*o.payroll;
+    directExLive=f.directExLive;
+    ga=f.ga;
+    utilities=f.utilities;
+    occupancy=sales*o.occupancy;
+    other=sales*o.other;
+    corporate=f.corporate;
+  } else {
+    payroll=sales*o.payroll;
+    directExLive=sales*o.directExLive;
+    ga=sales*o.ga;
+    utilities=sales*o.utilities;
+    occupancy=sales*o.occupancy;
+    other=sales*o.other;
+    corporate=sales*o.corporate;
+  }
   var liveEnt=+(djCost||0)||0;
-  var ga=sales*o.ga;
-  var utilities=sales*o.utilities;
-  var occupancy=sales*o.occupancy;
-  var other=sales*o.other;
-  var corporate=sales*o.corporate;
   var ebitda=gp-payroll-directExLive-liveEnt-ga-utilities-occupancy-other-corporate;
   return {
     sales:sales, lbw:lbw, food:food, bev:bev,
@@ -1269,7 +1309,11 @@ function _flashEbitdaWfRow(label, amt, sales, opts){
   var cls='ebitda-wf-row'+(bold?' ebitda-wf-bold':'')+(sub?' ebitda-wf-sub':'')+(highlight?' ebitda-wf-hl':'');
   var pad=indent?('padding-left:'+(indent*14)+'px'):'';
   var amtTxt=(amt==null||amt==='')?'\u2014':_flashMoneyTxt(amt);
-  var pct=(amt!=null&&sales>0&&!opts.noPct)?_flashEbitdaPct(amt, sales):'';
+  var pct='';
+  if(!opts.noPct){
+    if(opts.pctLabel) pct=opts.pctLabel;
+    else if(amt!=null&&sales>0) pct=_flashEbitdaPct(amt, sales);
+  }
   return '<tr class="'+cls+'">'
     +'<td class="l" style="'+pad+'">'+label+'</td>'
     +'<td>'+amtTxt+'</td>'
@@ -1279,6 +1323,7 @@ function _flashEbitdaWfRow(label, amt, sales, opts){
 function _flashEbitdaWaterfallTableHtml(wf, venue){
   if(!wf) return '';
   var s=wf.sales, o=_flashEbitdaOpex(venue), c=o.cogs;
+  var ol=o.opexLabels||{}, fx=!!(o.model==='hybrid'), fix={pctLabel:'fixed $'};
   var h='<table class="ebitda-wf-tbl"><thead><tr><th class="l">Line</th><th>Amount</th><th>% Sales</th></tr></thead><tbody>';
   h+=_flashEbitdaWfRow('Total Sales', s, s, {bold:true, highlight:true});
   h+='<tr class="ebitda-wf-sep"><td colspan="3">COGS</td></tr>';
@@ -1291,15 +1336,14 @@ function _flashEbitdaWaterfallTableHtml(wf, venue){
   h+=_flashEbitdaWfRow('Total COGS', wf.cogs, s, {bold:true});
   h+=_flashEbitdaWfRow('Gross Profit', wf.gp, s, {bold:true, highlight:true});
   h+='<tr class="ebitda-wf-sep"><td colspan="3">Operating Expenses</td></tr>';
-  h+=_flashEbitdaWfRow('Payroll', wf.payroll, s, {indent:1});
-  h+=_flashEbitdaWfRow('Direct OpEx (excl. Live Ent)', wf.directExLive, s, {indent:1});
+  h+=_flashEbitdaWfRow(ol.payroll||'Payroll', wf.payroll, s, {indent:1});
+  h+=_flashEbitdaWfRow(ol.directExLive||'Direct OpEx (excl. Live Ent)', wf.directExLive, s, fx?Object.assign({indent:1},fix):{indent:1});
   h+=_flashEbitdaWfRow('6750 — Live Entertainment', wf.liveEnt, s, {indent:1, highlight:true});
-  h+=_flashEbitdaWfRow('General &amp; Administrative', wf.ga, s, {indent:1});
-  h+=_flashEbitdaWfRow('Utilities', wf.utilities, s, {indent:1});
-  var ol=o.opexLabels||{};
+  h+=_flashEbitdaWfRow(ol.ga||'General &amp; Administrative', wf.ga, s, fx?Object.assign({indent:1},fix):{indent:1});
+  h+=_flashEbitdaWfRow(ol.utilities||'Utilities', wf.utilities, s, fx?Object.assign({indent:1},fix):{indent:1});
   h+=_flashEbitdaWfRow(ol.occupancy||'Occupancy', wf.occupancy, s, {indent:1});
   h+=_flashEbitdaWfRow(ol.other||'Other (Income) Expenses', wf.other, s, {indent:1});
-  h+=_flashEbitdaWfRow('Corporate Overhead', wf.corporate, s, {indent:1});
+  h+=_flashEbitdaWfRow(ol.corporate||'Corporate Overhead', wf.corporate, s, fx?Object.assign({indent:1},fix):{indent:1});
   h+=_flashEbitdaWfRow('EBITDA', wf.ebitda, s, {bold:true, highlight:true});
   h+='</tbody></table>';
   return h;
