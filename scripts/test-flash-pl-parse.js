@@ -227,11 +227,17 @@ var OPEX_CNBC={
   utilities:0.003994385350264044,occupancy:0.024495221916497185,other:-0.01376450002563533,
   corporate:0.023314557961478643
 };
-var OPEX_MILA={
-  payroll:0.3220454143214509,directExLive:0.1084126407129456,ga:0.13499135553470915,
-  utilities:0.010275770794246403,occupancy:0.06,other:-0.033005171982489055,
-  corporate:0.11212015009380862
+var OPEX_MILA_FIXED={
+  payroll:19805.79298076923,directExLive:6667.377403846152,ga:8301.968365384613,
+  utilities:631.9599038461538,corporate:6895.3892307692295,
+  occupancyPct:0.06,serviceChargePct:-0.033
 };
+function calcEbitdaMila(sales,dj){
+  var lbw=sales*0.62, food=sales*0.34, bev=sales*0.04;
+  var cogs=lbw*0.15+food*0.265+bev*0.28;
+  var gp=sales-cogs, f=OPEX_MILA_FIXED;
+  return Math.round(gp-f.payroll-f.directExLive-dj-f.ga-f.utilities-sales*f.occupancyPct-sales*f.serviceChargePct-f.corporate);
+}
 function calcEbitda(sales,dj,o){
   var lbw=sales*0.62, food=sales*0.34, bev=sales*0.04;
   var cogs=lbw*0.15+food*0.265+bev*0.28;
@@ -239,7 +245,9 @@ function calcEbitda(sales,dj,o){
   return Math.round(gp-sales*o.payroll-sales*o.directExLive-dj-sales*o.ga-sales*o.utilities-sales*o.occupancy-sales*o.other-sales*o.corporate);
 }
 assert(calcEbitda(cnDaily['2026-08-22'].total,500,OPEX_CNBC)===66420, 'BARUT Sat EBITDA ~66k');
-assert(calcEbitda(milaDaily['2026-08-22'].total,10000,OPEX_MILA)===-3896, 'MILA AJNA Sat EBITDA ~-3.9k');
-assert(calcEbitda(61500,4000,OPEX_MILA)===1588, 'MILA template $61.5k sales / $4k DJ → ~$1.6k EBITDA');
+assert(calcEbitdaMila(milaDaily['2026-08-22'].total,10000)===13, 'MILA AJNA Sat EBITDA ~breakeven (fixed daily model)');
+assert(calcEbitdaMila(61033,15000)===-9776, 'MILA OMRI Aug 20 actual sales + $15k DJ');
+assert(calcEbitdaMila(67500,15000)===-4740, 'MILA template $67.5k / $15k DJ matches EBIDTA 2');
+assert(calcEbitdaMila(61500,4000)===1588, 'MILA template $61.5k / $4k DJ');
 console.log('ok — all venues daily EBITDA sources');
 
