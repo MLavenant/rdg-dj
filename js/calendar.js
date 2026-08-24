@@ -3490,10 +3490,6 @@ function renderSystem(){
   }
   h += '</div>';
 
-  if(typeof _renderSanityEbitdaAccess==='function'){
-    h += _renderSanityEbitdaAccess();
-  }
-
   h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px">'
     + '<div style="font-size:13px;font-weight:800;margin-bottom:6px">How the pieces fit</div>'
     + '<div style="font-size:11px;color:var(--ink3);line-height:1.6">'

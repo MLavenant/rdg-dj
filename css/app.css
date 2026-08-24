@@ -1420,6 +1420,24 @@ body.mobile-mode .sb-btn{min-height:44px}
 .sanity-ebitda-foot{font-size:10px;color:var(--ink3);line-height:1.55}
 .sanity-ebitda-foot code{font-size:10px;background:var(--card2);padding:1px 4px;border-radius:4px}
 
+/* EBITDA Access — full waterfall */
+.ebitda-venue-block{background:var(--card);border-radius:12px;padding:14px 16px;margin-top:14px;border-left:4px solid #7c3aed}
+.ebitda-venue-hd{font-size:15px;font-weight:900;color:var(--ink);margin-bottom:4px}
+.ebitda-venue-meta{font-size:10px;color:var(--ink3);margin-bottom:12px}
+.ebitda-show-card{background:var(--card2);border-radius:10px;padding:12px 14px;margin-bottom:12px;border:0.5px solid var(--hair)}
+.ebitda-show-card.ebitda-week-total{border-color:#c4b5fd;background:#faf5ff}
+.ebitda-show-hd{font-size:12px;font-weight:800;color:var(--ink);margin-bottom:6px}
+.ebitda-show-meta{font-size:10px;color:var(--ink3);margin-bottom:10px;line-height:1.5}
+.ebitda-wf-tbl{width:100%;border-collapse:collapse;font-size:11px}
+.ebitda-wf-tbl th,.ebitda-wf-tbl td{padding:6px 8px;border-bottom:0.5px solid var(--hair);text-align:right;vertical-align:middle}
+.ebitda-wf-tbl th.l,.ebitda-wf-tbl td.l{text-align:left}
+.ebitda-wf-tbl th{font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);font-weight:800;background:var(--card)}
+.ebitda-wf-row.ebitda-wf-bold td{font-weight:800;color:var(--ink)}
+.ebitda-wf-row.ebitda-wf-sub td.l{color:var(--ink2);font-weight:600}
+.ebitda-wf-row.ebitda-wf-hl td{background:#faf5ff}
+.ebitda-wf-pct{color:var(--ink3);font-size:10px;font-weight:600}
+.ebitda-wf-sep td{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#5b21b6;background:#f5f3ff;padding:8px;border-bottom:0.5px solid #e9d5ff}
+
 
 /* Calendar locked until live Firebase schedule is ready */
 #view-calendar.cal-sync-locked .cal-body,

@@ -1440,6 +1440,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         else if(curView==='forecast')   renderForecast();
         else if(curView==='live')       renderLive();
         else if(curView==='system')     renderSystem();
+        else if(curView==='ebitda')     renderEbitdaAccess();
         else if(curView==='accounting'){
           if(typeof _calUiBusy==='function' && _calUiBusy()) window._calPendingRefresh='go';
           else renderAccounting();
@@ -1649,16 +1650,19 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
   window._fbDb.ref('rdg/scrapeStatus').on('value', function(snap){
     window._scrapeStatus = snap.val() || {};
     if(curView==='system') renderSystem();
+    if(curView==='ebitda') renderEbitdaAccess();
   });
   window._rdgConfig = {};
   window._fbDb.ref('rdg/config').on('value', function(snap){
     window._rdgConfig = snap.val() || {};
     if(curView==='system') renderSystem();
+    if(curView==='ebitda') renderEbitdaAccess();
   });
   window._liveRefreshRequest = null;
   window._fbDb.ref('rdg/liveRefreshRequest').on('value', function(snap){
     window._liveRefreshRequest = snap.val() || null;
     if(curView==='system') renderSystem();
+    if(curView==='ebitda') renderEbitdaAccess();
   });
 })();
 var calViewMode = 'list';
