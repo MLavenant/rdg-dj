@@ -1793,6 +1793,16 @@ var VIP_WEEK_TIER_ACTUALS = {
       Gold:{soldTables:4,totalTables:4,totalSales:4479,avgPerTable:1120,minPerTable:1000},
       Lounge:{soldTables:7,totalTables:24,totalSales:5744,avgPerTable:821,minPerTable:500}
     }
+  },
+  '2026-W34|MILA Lounge': {
+    source:'Toast actual \u00b7 Excel methodology \u00b7 Aug 17\u201323',
+    tiers:{
+      Diamond:{soldTables:7,totalTables:9,totalSales:25008,avgPerTable:3573,minPerTable:2000},
+      Prestige:{soldTables:2,totalTables:2,totalSales:7022,avgPerTable:3511,minPerTable:3000},
+      Gold:{soldTables:7,totalTables:8,totalSales:12516,avgPerTable:1788,minPerTable:1000},
+      Booths:{soldTables:24,totalTables:24,totalSales:14193,avgPerTable:591,minPerTable:500},
+      Seating:{soldTables:10,totalTables:30,totalSales:806,avgPerTable:81,minPerTable:200}
+    }
   }
 };
 function _vipAllocateWeeklyTiers(shows, weekly){
@@ -2342,10 +2352,10 @@ var FORECAST_DATA = [
   {"venue":"MILA Lounge","date":"2026-08-13","dj":"TOM & COLLINS","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"MILA Lounge","date":"2026-08-14","dj":"NICO BERNARDINI","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"MILA Lounge","date":"2026-08-15","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
-  {"venue":"MILA Lounge","date":"2026-08-19","dj":"AXEL BECA","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
-  {"venue":"MILA Lounge","date":"2026-08-20","dj":"OMRI","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
-  {"venue":"MILA Lounge","date":"2026-08-21","dj":"AUGUSTO YEPES","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
-  {"venue":"MILA Lounge","date":"2026-08-22","dj":"AJNA","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
+  {"venue":"MILA Lounge","date":"2026-08-19","dj":"AXEL BECA","bookedTables":4,"totalTables":73,"totalRevenue":241,"tierSummary":{"Gold":{"sold":0,"soldTables":0,"total":8,"totalTables":8,"sales":0,"totalSales":0,"avgPerTable":0,"minPerTable":1000},"Prestige":{"sold":0,"soldTables":0,"total":2,"totalTables":2,"sales":0,"totalSales":0,"avgPerTable":0,"minPerTable":3000},"Diamond":{"sold":0,"soldTables":0,"total":9,"totalTables":9,"sales":0,"totalSales":0,"avgPerTable":0,"minPerTable":2000},"Booths":{"sold":4,"soldTables":4,"total":24,"totalTables":24,"sales":241,"totalSales":241,"avgPerTable":60,"minPerTable":500},"Seating":{"sold":0,"soldTables":0,"total":30,"totalTables":30,"sales":0,"totalSales":0,"avgPerTable":0,"minPerTable":200}},"hasData":true,"_source":"toast_excel_bs","_period":"2026-W34"},
+  {"venue":"MILA Lounge","date":"2026-08-20","dj":"OMRI.","bookedTables":39,"totalTables":73,"totalRevenue":24923,"tierSummary":{"Gold":{"sold":5,"soldTables":5,"total":8,"totalTables":8,"sales":8687,"totalSales":8687,"avgPerTable":1737,"minPerTable":1000},"Prestige":{"sold":1,"soldTables":1,"total":2,"totalTables":2,"sales":3390,"totalSales":3390,"avgPerTable":3390,"minPerTable":3000},"Diamond":{"sold":3,"soldTables":3,"total":9,"totalTables":9,"sales":7071,"totalSales":7071,"avgPerTable":2357,"minPerTable":2000},"Booths":{"sold":22,"soldTables":22,"total":24,"totalTables":24,"sales":5427,"totalSales":5427,"avgPerTable":247,"minPerTable":500},"Seating":{"sold":8,"soldTables":8,"total":30,"totalTables":30,"sales":348,"totalSales":348,"avgPerTable":44,"minPerTable":200}},"hasData":true,"_source":"toast_excel_bs","_period":"2026-W34"},
+  {"venue":"MILA Lounge","date":"2026-08-21","dj":"AUGUSTO YEPES","bookedTables":30,"totalTables":73,"totalRevenue":10061,"tierSummary":{"Gold":{"sold":2,"soldTables":2,"total":8,"totalTables":8,"sales":1732,"totalSales":1732,"avgPerTable":866,"minPerTable":1000},"Prestige":{"sold":1,"soldTables":1,"total":2,"totalTables":2,"sales":590,"totalSales":590,"avgPerTable":590,"minPerTable":3000},"Diamond":{"sold":3,"soldTables":3,"total":9,"totalTables":9,"sales":3411,"totalSales":3411,"avgPerTable":1137,"minPerTable":2000},"Booths":{"sold":20,"soldTables":20,"total":24,"totalTables":24,"sales":4086,"totalSales":4086,"avgPerTable":204,"minPerTable":500},"Seating":{"sold":4,"soldTables":4,"total":30,"totalTables":30,"sales":242,"totalSales":242,"avgPerTable":61,"minPerTable":200}},"hasData":true,"_source":"toast_excel_bs","_period":"2026-W34"},
+  {"venue":"MILA Lounge","date":"2026-08-22","dj":"AJNA","bookedTables":32,"totalTables":73,"totalRevenue":24320,"tierSummary":{"Gold":{"sold":3,"soldTables":3,"total":8,"totalTables":8,"sales":2097,"totalSales":2097,"avgPerTable":699,"minPerTable":1000},"Prestige":{"sold":1,"soldTables":1,"total":2,"totalTables":2,"sales":3042,"totalSales":3042,"avgPerTable":3042,"minPerTable":3000},"Diamond":{"sold":6,"soldTables":6,"total":9,"totalTables":9,"sales":14526,"totalSales":14526,"avgPerTable":2421,"minPerTable":2000},"Booths":{"sold":19,"soldTables":19,"total":24,"totalTables":24,"sales":4439,"totalSales":4439,"avgPerTable":234,"minPerTable":500},"Seating":{"sold":3,"soldTables":3,"total":30,"totalTables":30,"sales":216,"totalSales":216,"avgPerTable":72,"minPerTable":200}},"hasData":true,"_source":"toast_excel_bs","_period":"2026-W34"},
   {"venue":"MILA Lounge","date":"2026-08-26","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"MILA Lounge","date":"2026-08-27","dj":"DIFFER","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"MILA Lounge","date":"2026-08-28","dj":"ONOMA","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
