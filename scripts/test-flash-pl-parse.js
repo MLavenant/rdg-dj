@@ -184,3 +184,61 @@ Object.keys(liveMap).forEach(function(sheet){
 });
 
 console.log('\nAll flash PL parse checks passed (Week 34).');
+
+/* CASA NEOS / CN LOUNGE / MILA II daily sales + EBITDA */
+function parseDailyBlocks(wb, sheet, blocks){
+  var rows=sheetRows(wb,sheet);
+  if(!rows||!rows.length) return null;
+  function xlIso(serial){
+    if(serial==null||typeof serial!=='number'||!isFinite(serial)) return null;
+    return new Date(Date.UTC(1899,11,30+serial)).toISOString().slice(0,10);
+  }
+  var byDate={};
+  blocks.forEach(function(b){
+    var off=b.off, key=b.key;
+    for(var i=1;i<rows.length;i++){
+      var r=rows[i]||[];
+      var iso=xlIso(r[off+4]);
+      var sales=flashNum(r[off+1]);
+      if(!iso||sales==null||sales<=0) continue;
+      if(!byDate[iso]) byDate[iso]={total:0};
+      byDate[iso][key]=sales;
+    }
+  });
+  Object.keys(byDate).forEach(function(iso){
+    var sum=0;
+    blocks.forEach(function(b){ sum+=(+byDate[iso][b.key]||0); });
+    byDate[iso].total=sum;
+  });
+  return byDate;
+}
+var salesWb=readWb('data/excel/rdg-sales-2026.xlsx');
+var cnDaily=parseDailyBlocks(salesWb,'CASA NEOS',[{off:0,key:'dinner'},{off:8,key:'lunch'}]);
+var cnlDaily=parseDailyBlocks(salesWb,'CN LOUNGE',[{off:0,key:'dinner'},{off:8,key:'lunch'}]);
+var milaDaily=parseDailyBlocks(salesWb,'MILA II',[{off:0,key:'part1'},{off:8,key:'part2'},{off:16,key:'part3'}]);
+assert(cnDaily&&cnDaily['2026-08-22'], 'CASA NEOS daily has Aug 22');
+assert(Math.round(cnDaily['2026-08-22'].total)===106392, 'Aug 22 CN BC total lunch+dinner');
+assert(cnlDaily&&cnlDaily['2026-08-21'], 'CN LOUNGE daily has Aug 21');
+assert(Math.round(cnlDaily['2026-08-21'].total)===48668, 'CN Lounge Aug 21 ~49k');
+assert(milaDaily&&milaDaily['2026-08-22'], 'MILA II daily has Aug 22');
+assert(Math.round(milaDaily['2026-08-22'].total)===67183, 'MILA Aug 22 ~67k');
+var OPEX_CNBC={
+  payroll:0.08228038213730282,directExLive:0.029494881479329382,ga:0.02689639259651702,
+  utilities:0.003994385350264044,occupancy:0.024495221916497185,other:-0.01376450002563533,
+  corporate:0.023314557961478643
+};
+var OPEX_MILA={
+  payroll:0.08228038213730282,directExLive:0.011850481944183366,ga:0.01475577581050365,
+  utilities:0.0011232346658007623,occupancy:0.011741935125527661,other:-0.007107503631671595,
+  corporate:0.012255746244424316
+};
+function calcEbitda(sales,dj,o){
+  var lbw=sales*0.62, food=sales*0.34, bev=sales*0.04;
+  var cogs=lbw*0.15+food*0.265+bev*0.28;
+  var gp=sales-cogs;
+  return Math.round(gp-sales*o.payroll-sales*o.directExLive-dj-sales*o.ga-sales*o.utilities-sales*o.occupancy-sales*o.other-sales*o.corporate);
+}
+assert(calcEbitda(cnDaily['2026-08-22'].total,500,OPEX_CNBC)===66420, 'BARUT Sat EBITDA ~66k');
+assert(calcEbitda(milaDaily['2026-08-22'].total,10000,OPEX_MILA)>0, 'MILA AJNA Sat EBITDA positive');
+console.log('ok — all venues daily EBITDA sources');
+

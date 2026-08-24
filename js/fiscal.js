@@ -686,6 +686,24 @@ function unlockSanity(){
   try{ sessionStorage.setItem('rdg_sanity_unlocked','1'); }catch(e){}
   return true;
 }
+function _sanityEbitdaUnlocked(){
+  try{ return sessionStorage.getItem('rdg_ebitda_unlocked')==='1'; }catch(e){ return false; }
+}
+function unlockEbitdaAccess(){
+  try{ if(sessionStorage.getItem('rdg_ebitda_unlocked')==='1') return true; }catch(e){}
+  var pw=prompt('EBITDA Access password:');
+  if(pw!=='matthias'){ if(pw!==null) alert('Incorrect password.'); return false; }
+  try{ sessionStorage.setItem('rdg_ebitda_unlocked','1'); }catch(e){}
+  return true;
+}
+function openSanityEbitdaAccess(){
+  if(!unlockEbitdaAccess()) return;
+  if(typeof renderSystem==='function') renderSystem();
+}
+function lockSanityEbitdaAccess(){
+  try{ sessionStorage.removeItem('rdg_ebitda_unlocked'); }catch(e){}
+  if(typeof renderSystem==='function') renderSystem();
+}
 
 /* Layout: auto mobile detection + manual Mobile/Laptop override */
 var LAYOUT_PREF_KEY='rdg_layout_mode';

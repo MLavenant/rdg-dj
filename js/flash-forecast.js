@@ -404,10 +404,6 @@ function _vipRenderPerfSummary(d){
     h += '<div style="padding:14px;font-size:11px;color:var(--ink3)">No shows this week.</div></div>';
     return h;
   }
-  var ebitdaAmt=_FLASH_EBITDA_PLACEHOLDER[d.venue];
-  if(ebitdaAmt==null) ebitdaAmt=0;
-  var ebitdaTxt=_vipEbitdaTxt(ebitdaAmt);
-  var ebitdaTone=ebitdaAmt>=0?'beat':'miss';
   h += '<div class="tbl-wrap" style="margin:0"><table class="vip-past-tbl"><thead><tr>'
      + '<th class="l" style="min-width:110px">Artist / Date</th>'
      + '<th>DJ Cost</th>'
@@ -418,7 +414,7 @@ function _vipRenderPerfSummary(d){
      + '<th>EBITDA</th>'
      + '</tr></thead><tbody>';
 
-  var totBS=0,totMin=0,totTbl=0,totBudget=0,totFee=0;
+  var totBS=0,totMin=0,totTbl=0,totBudget=0,totFee=0,totEbitda=0,totEbitdaN=0;
   d.shows.forEach(function(sh){
     var b=sh.bsActual>=sh.bsMin;
     var vbs=sh.bsActual-sh.bsMin;
@@ -429,6 +425,15 @@ function _vipRenderPerfSummary(d){
     var roiCls=roiTone(roiANum, roiTNum);
     var vipRoiCls=_vipRoiToneCls(roiCls);
     totBS+=sh.bsActual; totMin+=sh.bsMin; totTbl+=(sh.tablesActual||0); totBudget+=(sh.tablesBudget||0); totFee+=sh.fee;
+    var ebitdaPack=_flashEbitdaForShow(d.venue, sh);
+    var ebitdaAmt=ebitdaPack?ebitdaPack.ebitda:null;
+    var ebitdaCell;
+    if(ebitdaAmt==null) ebitdaCell='<td class="vip-ebitda-empty">\u2014</td>';
+    else{
+      totEbitda+=ebitdaAmt; totEbitdaN++;
+      ebitdaCell=_vipTdFill(_vipEbitdaTxt(ebitdaAmt), ebitdaAmt>=0?'beat':'miss');
+      if(ebitdaPack.tip) ebitdaCell=ebitdaCell.replace('<td ', '<td title="'+ebitdaPack.tip.replace(/"/g,'&quot;')+'" ');
+    }
     h += '<tr>'
        + '<td class="l"><b>'+sh.dj+'</b><br><span style="font-size:9px;color:var(--ink3)">'+sh.label.replace(/,.*$/,'')+'</span></td>'
        + '<td class="vip-cost">'+$kv(sh.fee)+'</td>'
@@ -440,7 +445,7 @@ function _vipRenderPerfSummary(d){
        + '<td>'+(sh.tablesActual!=null?sh.tablesActual:'\u2014')+'</td>'
        + '<td style="'+_TARGET_BG+'">'+(sh.tablesBudget!=null?sh.tablesBudget:'\u2014')+'</td>'
        + '<td>'+(avg?$kv(avg):'\u2014')+'</td>'
-       + '<td class="vip-ebitda-empty">\u2014</td>'
+       + ebitdaCell
        + '</tr>';
   });
   var totAvg=totTbl?Math.round(totBS/totTbl):0;
@@ -459,7 +464,7 @@ function _vipRenderPerfSummary(d){
      + '<td>'+(totTbl||'\u2014')+'</td>'
      + '<td style="'+_TARGET_BG+'">'+(totBudget||'\u2014')+'</td>'
      + '<td>'+$kv(totAvg)+'</td>'
-     + _vipTdFill(ebitdaTxt, ebitdaTone)
+     + (totEbitdaN?_vipTdFill(_vipEbitdaTxt(totEbitda), totEbitda>=0?'beat':'miss'):'<td class="vip-ebitda-empty">\u2014</td>')
      + '</tr>';
   h += '</tbody></table></div></div>';
   return h;
@@ -810,12 +815,47 @@ var _FLASH_PL_VENUE_MAP = {
   }
 };
 var _FLASH_PL_ORDER = ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'];
-/* Temporary EBITDA placeholders (replace when P&L feed is wired). */
-var _FLASH_EBITDA_PLACEHOLDER = {
-  'Casa Neos Beach Club': 125000,
-  'Casa Neos Lounge': -18000,
-  'MILA Lounge': 42000
+/* P&L ratios from ebidta calculation*.xlsx (EBIDTA 2 / OPEX DATA 2). Live Ent (6750) is variable per DJ. */
+var _FLASH_EBITDA_OPEX_BY_VENUE = {
+  'Casa Neos Beach Club': {
+    payroll: 0.08228038213730282,
+    directExLive: 0.029494881479329382,
+    ga: 0.02689639259651702,
+    utilities: 0.003994385350264044,
+    occupancy: 0.024495221916497185,
+    other: -0.01376450002563533,
+    corporate: 0.023314557961478643,
+    cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 }
+  },
+  'MILA Lounge': {
+    payroll: 0.08228038213730282,
+    directExLive: 0.011850481944183366,
+    ga: 0.01475577581050365,
+    utilities: 0.0011232346658007623,
+    occupancy: 0.011741935125527661,
+    other: -0.007107503631671595,
+    corporate: 0.012255746244424316,
+    cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 }
+  },
+  'Casa Neos Lounge': {
+    payroll: 0.08228038213730282,
+    directExLive: 0.009108236118469393,
+    ga: 0.011067480730777776,
+    utilities: 0.0011238306017466206,
+    occupancy: 0.007993472561652965,
+    other: -0.0038030987985575846,
+    corporate: 0.007161369610172098,
+    cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 }
+  }
 };
+var _FLASH_DAILY_SALES_SOURCES = {
+  'Casa Neos Beach Club': { sheet: 'CASA NEOS', blocks: [{ off: 0, key: 'dinner' }, { off: 8, key: 'lunch' }] },
+  'Casa Neos Lounge': { sheet: 'CN LOUNGE', blocks: [{ off: 0, key: 'dinner' }, { off: 8, key: 'lunch' }] },
+  'MILA Lounge': { sheet: 'MILA II', blocks: [{ off: 0, key: 'part1' }, { off: 8, key: 'part2' }, { off: 16, key: 'part3' }] }
+};
+function _flashEbitdaOpex(venue){
+  return _FLASH_EBITDA_OPEX_BY_VENUE[venue] || _FLASH_EBITDA_OPEX_BY_VENUE['Casa Neos Beach Club'];
+}
 
 function _flashPlLoadLocal(){
   try{
@@ -1119,9 +1159,208 @@ function _flashParseSalesFromLocationSheets(wb, fileName){
 }
 function _flashParseSalesWorkbook(wb, fileName){
   /* Prefer weekly Actual / Budget sheets (period labels in col B). */
-  return _flashParseSalesFromWeeklySheets(wb, fileName)
+  var sales=_flashParseSalesFromWeeklySheets(wb, fileName)
     || _flashParseSalesFromLocationSheets(wb, fileName)
     || { uploadedAt:new Date().toISOString(), fileName:fileName||'', year:2026, period:'', periodNum:null, week:null, venues:{} };
+  sales.dailyByVenue=_flashParseAllDailySales(wb, sales.dailyByVenue);
+  return sales;
+}
+function _flashParseAllDailySales(wb, existing){
+  var out=existing||{};
+  Object.keys(_FLASH_DAILY_SALES_SOURCES).forEach(function(venue){
+    var src=_FLASH_DAILY_SALES_SOURCES[venue];
+    var daily=_flashParseDailySalesBlocks(wb, src.sheet, src.blocks);
+    if(daily && Object.keys(daily).length) out[venue]=daily;
+  });
+  return out;
+}
+
+/** Excel serial → YYYY-MM-DD (UTC). */
+function _flashExcelDateIso(serial){
+  if(serial==null || typeof serial!=='number' || !isFinite(serial)) return null;
+  var d=new Date(Date.UTC(1899,11,30+serial));
+  return d.toISOString().slice(0,10);
+}
+/** Daily net sales from side-by-side source tables (CASA NEOS, CN LOUNGE, MILA II). */
+function _flashParseDailySalesBlocks(wb, sheetName, blocks){
+  var rows=_flashSheetRows(wb, sheetName);
+  if(!rows || !rows.length || !blocks || !blocks.length) return null;
+  var byDate={}, i, b, off, key, dateCol, salesCol, r, iso, sales;
+  blocks.forEach(function(blk){
+    off=blk.off; key=blk.key;
+    dateCol=off+4; salesCol=off+1;
+    for(i=1;i<rows.length;i++){
+      r=rows[i]||[];
+      iso=_flashExcelDateIso(r[dateCol]);
+      sales=_flashNum(r[salesCol]);
+      if(!iso || sales==null || sales<=0) continue;
+      if(!byDate[iso]) byDate[iso]={ total:0 };
+      byDate[iso][key]=sales;
+    }
+  });
+  Object.keys(byDate).forEach(function(iso){
+    var d=byDate[iso], sum=0;
+    blocks.forEach(function(blk){ sum+=(+d[blk.key]||0); });
+    d.total=sum;
+  });
+  return byDate;
+}
+function _flashDailySalesDay(venue, dateStr){
+  var ov=window.FLASH_PL_OVERLAY||{};
+  var map=ov.sales&&ov.sales.dailyByVenue&&ov.sales.dailyByVenue[venue];
+  if(!map || !dateStr) return null;
+  return map[dateStr]||null;
+}
+/** Per operating day: lunch + dinner net sales from CASA NEOS source. */
+function _flashDailySalesForShow(venue, dateStr){
+  var day=_flashDailySalesDay(venue, dateStr);
+  if(!day || !(day.total>0)) return null;
+  return day.total;
+}
+function _flashCalcEbitda(sales, djCost, venue){
+  if(!(sales>0)) return null;
+  var o=_flashEbitdaOpex(venue), c=o.cogs;
+  var lbw=sales*c.lbwShare, food=sales*c.foodShare, bev=sales*c.bevShare;
+  var cogs=lbw*c.lbwPct+food*c.foodPct+bev*c.bevPct;
+  var gp=sales-cogs;
+  var dj=+(djCost||0)||0;
+  return gp
+    -sales*o.payroll
+    -sales*o.directExLive
+    -dj
+    -sales*o.ga
+    -sales*o.utilities
+    -sales*o.occupancy
+    -sales*o.other
+    -sales*o.corporate;
+}
+function _flashEbitdaSalesTip(venue, day, sales){
+  var parts=[];
+  if(venue==='MILA Lounge'){
+    if(day.part1) parts.push('P1 '+Math.round(day.part1).toLocaleString());
+    if(day.part2) parts.push('P2 '+Math.round(day.part2).toLocaleString());
+    if(day.part3) parts.push('P3 '+Math.round(day.part3).toLocaleString());
+  } else {
+    if(day.lunch) parts.push('Lunch '+Math.round(day.lunch).toLocaleString());
+    if(day.dinner) parts.push('Dinner '+Math.round(day.dinner).toLocaleString());
+  }
+  return 'Sales '+Math.round(sales).toLocaleString()+(parts.length?' ('+parts.join(' + ')+')':'');
+}
+function _flashEbitdaForShow(venue, sh){
+  if(!_FLASH_EBITDA_OPEX_BY_VENUE[venue]) return null;
+  var dateStr=sh&&sh.date;
+  var day=_flashDailySalesDay(venue, dateStr);
+  var sales=day&&day.total>0?day.total:null;
+  if(sales==null) return null;
+  var dj=+(sh.fee||0)||0;
+  var ebitda=_flashCalcEbitda(sales, dj, venue);
+  if(ebitda==null) return null;
+  var tip=_flashEbitdaSalesTip(venue, day, sales)+' · Live Ent '+Math.round(dj).toLocaleString();
+  return { ebitda:Math.round(ebitda), sales:sales, dj:dj, tip:tip };
+}
+function _flashSanityDayParts(venue, day){
+  if(!day || !(day.total>0)) return '\u2014';
+  if(venue==='MILA Lounge'){
+    return 'P1 '+_flashMoneyTxt(day.part1||0)+' \u00b7 P2 '+_flashMoneyTxt(day.part2||0)+' \u00b7 P3 '+_flashMoneyTxt(day.part3||0);
+  }
+  return 'L '+_flashMoneyTxt(day.lunch||0)+' \u00b7 D '+_flashMoneyTxt(day.dinner||0);
+}
+
+/** Sanity → EBITDA Access: methodology recap + live per-location / per-week position. */
+function _renderSanityEbitdaAccess(){
+  var unlocked=(typeof _sanityEbitdaUnlocked==='function')&&_sanityEbitdaUnlocked();
+  var h='<div class="sanity-ebitda-block">';
+  h+='<div class="sanity-ebitda-hd">'
+    +'<div><div class="sanity-ebitda-title">EBITDA Access</div>'
+    +'<div class="sanity-ebitda-sub">How Performance Summary EBITDA is built · per DJ day · per location · per week</div></div>'
+    +(unlocked
+      ? '<button type="button" class="sanity-ebitda-btn sanity-ebitda-btn-muted" onclick="lockSanityEbitdaAccess()">Lock</button>'
+      : '<button type="button" class="sanity-ebitda-btn" onclick="openSanityEbitdaAccess()">Unlock</button>')
+    +'</div>';
+
+  if(!unlocked){
+    h+='<div class="sanity-ebitda-locked">Password required. Same access as Sanity — unlock to view the full EBITDA model, data sources, and live week recap.</div>';
+    h+='</div>';
+    return h;
+  }
+
+  var ov=window.FLASH_PL_OVERLAY||{};
+  var salesOv=ov.sales||{};
+  var dailyMap=salesOv.dailyByVenue||{};
+  function dailyCount(v){ var m=dailyMap[v]; return m?Object.keys(m).length:0; }
+
+  h+='<div class="sanity-ebitda-sec"><div class="sanity-ebitda-sec-title">Overall position</div>'
+    +'<p class="sanity-ebitda-p">EBITDA on <b>Weekly Flash → Performance Summary</b> (right column) auto-calculates when <b>RDG Sales</b> is uploaded. '
+    +'Each location uses its own <b>ebidta calculation*.xlsx</b> (EBIDTA 2 + OPEX DATA 2). OPEX ratios are <b>fixed % of sales</b>. '
+    +'Variables per DJ day: <b>Total Sales</b> (daily source tables) + <b>6750 Live Entertainment</b> (scheduled DJ cost).</p>'
+    +'<div class="sanity-ebitda-kpi-row">'
+    +'<div class="sanity-ebitda-kpi"><span>Sales overlay</span><b>'+(salesOv.week?'Week '+salesOv.week+' · '+(_escHtml(salesOv.period||'')):'Not loaded')+'</b></div>'
+    +'<div class="sanity-ebitda-kpi"><span>Daily sources parsed</span><b>'+(Object.keys(dailyMap).length?Object.keys(dailyMap).length+' venues':'Upload Sales Excel')+'</b></div>'
+    +'</div></div>';
+
+  h+='<div class="sanity-ebitda-sec"><div class="sanity-ebitda-sec-title">Data sources (RDG Sales)</div>'
+    +'<table class="sanity-ebitda-tbl"><thead><tr><th class="l">Location</th><th class="l">Source sheet</th><th class="l">Daily tables</th><th>Day total</th></tr></thead><tbody>'
+    +'<tr><td class="l"><b>Casa Neos Beach Club</b></td><td class="l">CASA NEOS</td><td class="l">Dinner + Lunch/Brunch</td><td>Sum both blocks</td></tr>'
+    +'<tr><td class="l"><b>Casa Neos Lounge</b></td><td class="l">CN LOUNGE</td><td class="l">Dinner + Lunch</td><td>Sum both blocks</td></tr>'
+    +'<tr><td class="l"><b>MILA Lounge</b></td><td class="l">MILA II</td><td class="l">3 side-by-side tables</td><td>Sum all 3 parts</td></tr>'
+    +'</tbody></table></div>';
+
+  h+='<div class="sanity-ebitda-sec"><div class="sanity-ebitda-sec-title">Per location · OPEX model</div>'
+    +'<table class="sanity-ebitda-tbl"><thead><tr><th class="l">Location</th><th>Daily dates</th><th>Per-show EBITDA</th><th class="l">Model file</th></tr></thead><tbody>';
+  _FLASH_PL_ORDER.forEach(function(vn){
+    var n=dailyCount(vn);
+    var model=vn==='MILA Lounge'?'ebidta calculation mila lounge.xlsx':(vn==='Casa Neos Lounge'?'ebidta calculation cn lounge.xlsx':'ebidta calculation.xlsx');
+    h+='<tr><td class="l"><b>'+_escHtml(vn)+'</b></td><td>'+(n?'✓ '+n:'—')+'</td><td class="'+(n?'beat':'miss')+'">'+(n?'Live':'Needs upload')+'</td><td class="l">'+model+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+
+  /* Last completed flash week — same window as Performance Summary (offset 0). */
+  var pack=(typeof _vipCollectFlashVenues==='function')?_vipCollectFlashVenues(0):null;
+  var weekLbl=(pack&&pack.venues&&pack.venues[0])?pack.venues[0].weekOf:'Last week';
+  h+='<div class="sanity-ebitda-sec"><div class="sanity-ebitda-sec-title">Per week · '+_escHtml(weekLbl)+'</div>'
+    +'<p class="sanity-ebitda-p">Each Performance Summary row = one DJ operating day. <b>Week total EBITDA</b> = sum of show rows where daily sales exist.</p>';
+
+  if(!pack||!pack.venues||!pack.venues.length){
+    h+='<div class="sanity-ebitda-empty">No flash week data.</div>';
+  } else {
+    pack.venues.forEach(function(d){
+      var shows=d.shows||[];
+      if(!shows.length) return;
+      var rows='', totSales=0, totDj=0, totE=0, nE=0;
+      shows.forEach(function(sh){
+        var packE=_flashEbitdaForShow(d.venue, sh);
+        var day=packE?(_flashDailySalesDay(d.venue, sh.date)||{}):{};
+        var sales=packE?packE.sales:null;
+        var ebitda=packE?packE.ebitda:null;
+        if(sales!=null) totSales+=sales;
+        totDj+=+(sh.fee||0)||0;
+        if(ebitda!=null){ totE+=ebitda; nE++; }
+        rows+='<tr>'
+          +'<td class="l"><b>'+_escHtml(sh.dj||'TBD')+'</b><br><span class="sanity-ebitda-dim">'+_escHtml((sh.label||sh.date||'').replace(/,.*$/,''))+'</span></td>'
+          +'<td>'+(sales!=null?_flashMoneyTxt(sales):'—')+'</td>'
+          +'<td class="sanity-ebitda-dim">'+_flashSanityDayParts(d.venue, day)+'</td>'
+          +'<td class="vip-cost">'+_flashMoneyTxt(sh.fee||0)+'</td>'
+          +'<td class="'+(ebitda==null?'':(ebitda>=0?'beat':'miss'))+'">'+(ebitda!=null?_flashMoneyTxt(ebitda):'—')+'</td>'
+          +'</tr>';
+      });
+      h+='<div class="sanity-ebitda-venue">'+_escHtml(d.venue)+'</div>';
+      h+='<div class="tbl-wrap" style="margin:0"><table class="sanity-ebitda-tbl sanity-ebitda-show-tbl"><thead><tr>'
+        +'<th class="l">Artist / Date</th><th>Day Sales</th><th>Breakdown</th><th>DJ Cost</th><th>EBITDA</th>'
+        +'</tr></thead><tbody>'+rows
+        +'<tr class="sanity-ebitda-total"><td class="l"><b>Week total</b></td>'
+        +'<td><b>'+(totSales?_flashMoneyTxt(totSales):'—')+'</b></td><td></td>'
+        +'<td class="vip-cost"><b>'+_flashMoneyTxt(totDj)+'</b></td>'
+        +'<td class="'+(nE?(totE>=0?'beat':'miss'):'')+'"><b>'+(nE?_flashMoneyTxt(totE):'—')+'</b></td>'
+        +'</tr></tbody></table></div>';
+    });
+  }
+
+  h+='<div class="sanity-ebitda-sec sanity-ebitda-foot">'
+    +'<b>Refresh:</b> Weekly Flash → Upload Sales re-parses CASA NEOS, CN LOUNGE, and MILA II daily tables. '
+    +'Models: <code>ebidta calculation.xlsx</code>, <code>ebidta calculation mila lounge.xlsx</code>, <code>ebidta calculation cn lounge.xlsx</code>.</div>';
+
+  h+='</div>';
+  return h;
 }
 
 function _flashParseLiveWorkbook(wb, fileName){
@@ -1415,7 +1654,7 @@ function _vipFlashPlRoiCell(roi){
     +'<div class="bgt-monthly-vs">beat / miss</div>'
     +'<div class="bgt-monthly-var '+(!measured?'':(good?'pos':'neg'))+'">'+(measured&&roi.pct!=null?(roi.pct+'% beat rate'):'\u2014')+'</div></div>';
 }
-/** Placeholder EBITDA until real P&L feed is wired. Green if >= 0, red if negative. */
+/** EBITDA amount for Performance Summary cells. Green if >= 0, red if negative. */
 function _vipEbitdaTxt(amount){
   var v=(amount==null)?0:+amount;
   return (typeof $k==='function')?$k(v):('$'+Math.round(v).toLocaleString());

@@ -6,7 +6,7 @@ window.FLASH_EXCEL_CATALOG = [
       {
         name: 'RDG Sales - 2026.xlsx',
         path: 'data/excel/rdg-sales-2026.xlsx',
-        note: 'Weekly Actual + Budget sheets · through Week 34 · Upload via Weekly Flash → Upload Sales'
+        note: 'Weekly Actual + Budget · CASA NEOS / CN LOUNGE / MILA II daily tables · Upload via Weekly Flash → Upload Sales'
       }
     ]
   },
@@ -17,6 +17,26 @@ window.FLASH_EXCEL_CATALOG = [
         name: 'Live Entertainment Report - 2026.xlsx',
         path: 'data/excel/live-entertainment-report-2026.xlsx',
         note: 'GL 6750 by week · through Week 34 · Upload via Weekly Flash → Upload Live Ent'
+      }
+    ]
+  },
+  {
+    category: 'EBITDA model',
+    files: [
+      {
+        name: 'ebidta calculation.xlsx',
+        path: 'data/excel/ebidta-calculation.xlsx',
+        note: 'Casa Neos Beach Club · EBIDTA 2 + OPEX DATA 2'
+      },
+      {
+        name: 'ebidta calculation mila lounge.xlsx',
+        path: 'data/excel/ebidta-calculation-mila-lounge.xlsx',
+        note: 'MILA Lounge · EBIDTA 2 + OPEX DATA 2'
+      },
+      {
+        name: 'ebidta calculation cn lounge.xlsx',
+        path: 'data/excel/ebidta-calculation-cn-lounge.xlsx',
+        note: 'Casa Neos Lounge · EBIDTA 2 + OPEX DATA 2'
       }
     ]
   },

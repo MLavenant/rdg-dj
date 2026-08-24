@@ -226,8 +226,57 @@ function parseSales(wb, fileName) {
     periodNum: cur.periodNum,
     week: cur.week,
     source: 'weekly',
-    venues: venues
+    venues: venues,
+    dailyByVenue: parseAllDailySales(wb)
   };
+}
+
+const DAILY_SALES_SOURCES = {
+  'Casa Neos Beach Club': { sheet: 'CASA NEOS', blocks: [{ off: 0, key: 'dinner' }, { off: 8, key: 'lunch' }] },
+  'Casa Neos Lounge': { sheet: 'CN LOUNGE', blocks: [{ off: 0, key: 'dinner' }, { off: 8, key: 'lunch' }] },
+  'MILA Lounge': { sheet: 'MILA II', blocks: [{ off: 0, key: 'part1' }, { off: 8, key: 'part2' }, { off: 16, key: 'part3' }] }
+};
+
+function flashExcelDateIso(serial) {
+  if (serial == null || typeof serial !== 'number' || !isFinite(serial)) return null;
+  const d = new Date(Date.UTC(1899, 11, 30 + serial));
+  return d.toISOString().slice(0, 10);
+}
+
+function parseDailySalesBlocks(wb, sheetName, blocks) {
+  const rows = sheetRows(wb, sheetName);
+  if (!rows || !rows.length) return null;
+  const byDate = {};
+  blocks.forEach(({ off, key }) => {
+    const dateCol = off + 4;
+    const salesCol = off + 1;
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i] || [];
+      const iso = flashExcelDateIso(r[dateCol]);
+      const sales = flashNum(r[salesCol]);
+      if (!iso || sales == null || sales <= 0) continue;
+      if (!byDate[iso]) byDate[iso] = { total: 0 };
+      byDate[iso][key] = sales;
+    }
+  });
+  Object.keys(byDate).forEach((iso) => {
+    let sum = 0;
+    blocks.forEach(({ key }) => {
+      sum += +byDate[iso][key] || 0;
+    });
+    byDate[iso].total = sum;
+  });
+  return Object.keys(byDate).length ? byDate : null;
+}
+
+function parseAllDailySales(wb) {
+  const out = {};
+  Object.keys(DAILY_SALES_SOURCES).forEach((venue) => {
+    const src = DAILY_SALES_SOURCES[venue];
+    const daily = parseDailySalesBlocks(wb, src.sheet, src.blocks);
+    if (daily) out[venue] = daily;
+  });
+  return Object.keys(out).length ? out : null;
 }
 
 function parseLive(wb, fileName) {
@@ -291,6 +340,11 @@ function parseLive(wb, fileName) {
   const live = parseLive(liveWb, 'Live Entertainment Report - 2026.xlsx');
 
   console.log('Sales week', sales.week, sales.period);
+  if (sales.dailyByVenue) {
+    Object.keys(sales.dailyByVenue).forEach((v) => {
+      console.log('  daily', v + ':', Object.keys(sales.dailyByVenue[v]).length, 'dates');
+    });
+  }
   Object.keys(sales.venues).forEach((v) => {
     const x = sales.venues[v];
     console.log('  ', v, 'MTD', Math.round(x.salesMtdA || 0), 'YTD', Math.round(x.salesYtdA || 0), 'Bud MTD', Math.round(x.salesMtdB || 0));
