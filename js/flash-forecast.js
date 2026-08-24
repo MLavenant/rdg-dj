@@ -477,16 +477,32 @@ function _vipEnsureShowTierForFill(d){
     var hasSplit=names.some(function(t){
       var x=sh.tiers[t]; return x && ((+x.soldTables||0)>0 || (+x.totalSales||0)>0);
     });
-    var inconsistent=names.some(function(t){
-      var x=sh.tiers[t]; return x && (+x.totalSales||0)>0 && !(+x.soldTables||0);
-    });
-    if(hasSplit && !inconsistent){
-      /* Keep real Toast/FV splits; still zero sales on empty sold cells. */
+    /* Real Toast/FV splits: keep them, but never leave dollars on a 0-sold tier.
+       Prior estimated splits are rebuilt below so sold/sales stay aligned. */
+    if(hasSplit && !sh._tierEstimated){
+      var orphan=0;
       names.forEach(function(t){
         var x=sh.tiers[t];
-        if(x && !(+x.soldTables||0) && (+x.totalSales||0)>0){
-          x.totalSales=0; x.avgPerTable=0;
-        } else if(x && (+x.soldTables||0)>0){
+        if(!x) return;
+        if((+x.totalSales||0)>0 && !(+x.soldTables||0)){
+          orphan+=(+x.totalSales||0);
+          x.totalSales=0;
+          x.avgPerTable=0;
+        }
+      });
+      if(orphan){
+        for(var oi=names.length-1;oi>=0;oi--){
+          var ox=sh.tiers[names[oi]];
+          if(ox && (+ox.soldTables||0)>0){
+            ox.totalSales=(+ox.totalSales||0)+orphan;
+            ox.avgPerTable=Math.round(ox.totalSales/ox.soldTables);
+            break;
+          }
+        }
+      }
+      names.forEach(function(t){
+        var x=sh.tiers[t];
+        if(x && (+x.soldTables||0)>0){
           x.avgPerTable=Math.round((+x.totalSales||0)/(+x.soldTables));
         }
       });
