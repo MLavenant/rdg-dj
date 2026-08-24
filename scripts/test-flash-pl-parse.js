@@ -133,9 +133,9 @@ var neos=sumPeriod(actual, aCols['Casa Neos Beach Club'], 1, 8, aMeta.dataStart)
 var lounge=sumPeriod(actual, aCols['Casa Neos Lounge'], 1, 8, aMeta.dataStart);
 var mila=sumPeriod(actual, aCols['MILA Lounge'], 1, 8, aMeta.dataStart);
 console.log('Actual P8 MTD', Math.round(neos.mtd), Math.round(lounge.mtd), Math.round(mila.mtd));
-assert(Math.round(neos.mtd)===1268214, 'CASA NEOS P8 MTD ~1.268M');
-assert(Math.round(lounge.mtd)===314770, 'LOUNGE P8 MTD ~315K');
-assert(Math.round(mila.mtd)===519556, 'MILA P8 MTD ~520K');
+assert(Math.round(neos.mtd)===1654780, 'CASA NEOS P8 MTD ~1.655M (through W34)');
+assert(Math.round(lounge.mtd)===432279, 'LOUNGE P8 MTD ~432K (through W34)');
+assert(Math.round(mila.mtd)===675580, 'MILA P8 MTD ~676K (through W34)');
 
 var budget=sheetRows(wb, 'Budget - 2026');
 var bMeta=findCols(budget, true, 2026);
@@ -171,15 +171,16 @@ Object.keys(liveMap).forEach(function(sheet){
     a=rows[i]&&rows[i][0];
     if(a!=null && /6750/.test(String(a)) && /Live\s*Entertain/i.test(String(a))){ liveRow=i; break; }
   }
-  var mtd=0, n=0;
+  var mtd=0, n=0, maxWk=0;
   Object.keys(weekCols).forEach(function(w){
     var p=flashWeekToPeriodNum(+w);
     var val=flashNum(rows[liveRow][weekCols[w]]);
-    if(p===8 && val!=null){ mtd+=val; n++; }
+    if(p===8 && val!=null){ mtd+=val; n++; maxWk=Math.max(maxWk, +w); }
   });
-  console.log(liveMap[sheet], 'P8 live MTD', Math.round(mtd));
+  console.log(liveMap[sheet], 'P8 live MTD', Math.round(mtd), 'through W'+maxWk);
   assert(liveRow>=0, liveMap[sheet]+' finds GL 6750');
   assert(n>=1 && mtd>0, liveMap[sheet]+' has P8 live MTD');
+  assert(maxWk===34, liveMap[sheet]+' Live Ent through Week 34');
 });
 
-console.log('\nAll flash PL parse checks passed.');
+console.log('\nAll flash PL parse checks passed (Week 34).');
