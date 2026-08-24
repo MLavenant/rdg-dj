@@ -3053,7 +3053,9 @@ var _FCAST_EMAIL_CC = [
   'takuma@rivieradininggroup.com',
   'VIP@rivieradininggroup.com',
   'yulyana@rivieradininggroup.com',
-  'g.moorefield@rivieradininggroup.com'
+  'g.moorefield@rivieradininggroup.com',
+  'Perrine@rivieradininggroup.com',
+  'j.costini@rivieradininggroup.com'
 ];
 
 function _fcastVenueShortFile(v){
