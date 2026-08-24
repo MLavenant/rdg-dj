@@ -229,7 +229,7 @@ var OPEX_CNBC={
 };
 var OPEX_MILA={
   payroll:0.3220454143214509,directExLive:0.1084126407129456,ga:0.13499135553470915,
-  utilities:0.010275770794246403,occupancy:0.10741961382113821,other:-0.06502210131332083,
+  utilities:0.010275770794246403,occupancy:0.06,other:-0.033005171982489055,
   corporate:0.11212015009380862
 };
 function calcEbitda(sales,dj,o){
@@ -239,7 +239,7 @@ function calcEbitda(sales,dj,o){
   return Math.round(gp-sales*o.payroll-sales*o.directExLive-dj-sales*o.ga-sales*o.utilities-sales*o.occupancy-sales*o.other-sales*o.corporate);
 }
 assert(calcEbitda(cnDaily['2026-08-22'].total,500,OPEX_CNBC)===66420, 'BARUT Sat EBITDA ~66k');
-assert(calcEbitda(milaDaily['2026-08-22'].total,10000,OPEX_MILA)===-4931, 'MILA AJNA Sat EBITDA ~-5k (higher payroll model)');
-assert(calcEbitda(61500,4000,OPEX_MILA)===641, 'MILA template $61.5k sales / $4k DJ → ~$641 EBITDA');
+assert(calcEbitda(milaDaily['2026-08-22'].total,10000,OPEX_MILA)===-3896, 'MILA AJNA Sat EBITDA ~-3.9k');
+assert(calcEbitda(61500,4000,OPEX_MILA)===1588, 'MILA template $61.5k sales / $4k DJ → ~$1.6k EBITDA');
 console.log('ok — all venues daily EBITDA sources');
 

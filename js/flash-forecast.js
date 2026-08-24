@@ -832,8 +832,8 @@ var _FLASH_EBITDA_OPEX_BY_VENUE = {
     directExLive: 0.1084126407129456,
     ga: 0.13499135553470915,
     utilities: 0.010275770794246403,
-    occupancy: 0.10741961382113821,
-    other: -0.06502210131332083,
+    occupancy: 0.06,
+    other: -0.033005171982489055,
     corporate: 0.11212015009380862,
     cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 }
   },
