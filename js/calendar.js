@@ -1784,6 +1784,15 @@ var VIP_WEEK_TIER_ACTUALS = {
       Gold:{soldTables:5,totalTables:5,totalSales:13628,avgPerTable:2726,minPerTable:1500},
       Riverwalk:{soldTables:4,totalTables:5,totalSales:7020,avgPerTable:1755,minPerTable:1000}
     }
+  },
+  '2026-W34|Casa Neos Lounge': {
+    source:'Toast actual \u00b7 Excel methodology \u00b7 Aug 17\u201323',
+    tiers:{
+      Diamond:{soldTables:6,totalTables:6,totalSales:21634,avgPerTable:3606,minPerTable:2000},
+      Platinum:{soldTables:6,totalTables:10,totalSales:14909,avgPerTable:2485,minPerTable:1500},
+      Gold:{soldTables:4,totalTables:4,totalSales:4479,avgPerTable:1120,minPerTable:1000},
+      Lounge:{soldTables:7,totalTables:24,totalSales:5744,avgPerTable:821,minPerTable:500}
+    }
   }
 };
 function _vipAllocateWeeklyTiers(shows, weekly){
@@ -2359,10 +2368,10 @@ var FORECAST_DATA = [
   {"venue":"Casa Neos Lounge","date":"2026-08-14","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-08-15","dj":"DARMON","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-08-16","dj":"AFTERDARK","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
-  {"venue":"Casa Neos Lounge","date":"2026-08-20","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
-  {"venue":"Casa Neos Lounge","date":"2026-08-21","dj":"","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
-  {"venue":"Casa Neos Lounge","date":"2026-08-22","dj":"ROCKIN MOROCCIN","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
-  {"venue":"Casa Neos Lounge","date":"2026-08-23","dj":"AFTERDARK","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
+  {"venue":"Casa Neos Lounge","date":"2026-08-20","dj":"BARUT","bookedTables":3,"totalTables":44,"totalRevenue":405,"tierSummary":{"Diamond":{"sold":1,"soldTables":1,"total":6,"totalTables":6,"sales":235,"totalSales":235,"avgPerTable":235,"minPerTable":2000},"Platinum":{"sold":1,"soldTables":1,"total":10,"totalTables":10,"sales":78,"totalSales":78,"avgPerTable":78,"minPerTable":1500},"Gold":{"sold":1,"soldTables":1,"total":4,"totalTables":4,"sales":92,"totalSales":92,"avgPerTable":92,"minPerTable":1000},"Lounge":{"sold":0,"soldTables":0,"total":24,"totalTables":24,"sales":0,"totalSales":0,"avgPerTable":0,"minPerTable":500}},"hasData":true,"_source":"toast_excel_bs","_period":"2026-W34"},
+  {"venue":"Casa Neos Lounge","date":"2026-08-21","dj":"ONOMA","bookedTables":17,"totalTables":44,"totalRevenue":23035,"tierSummary":{"Diamond":{"sold":5,"soldTables":5,"total":6,"totalTables":6,"sales":11295,"totalSales":11295,"avgPerTable":2259,"minPerTable":2000},"Platinum":{"sold":4,"soldTables":4,"total":10,"totalTables":10,"sales":9021,"totalSales":9021,"avgPerTable":2255,"minPerTable":1500},"Gold":{"sold":2,"soldTables":2,"total":4,"totalTables":4,"sales":44,"totalSales":44,"avgPerTable":22,"minPerTable":1000},"Lounge":{"sold":6,"soldTables":6,"total":24,"totalTables":24,"sales":2675,"totalSales":2675,"avgPerTable":446,"minPerTable":500}},"hasData":true,"_source":"toast_excel_bs","_period":"2026-W34"},
+  {"venue":"Casa Neos Lounge","date":"2026-08-22","dj":"ROCKIN MOROCCIN","bookedTables":14,"totalTables":44,"totalRevenue":14990,"tierSummary":{"Diamond":{"sold":3,"soldTables":3,"total":6,"totalTables":6,"sales":3692,"totalSales":3692,"avgPerTable":1231,"minPerTable":2000},"Platinum":{"sold":3,"soldTables":3,"total":10,"totalTables":10,"sales":3886,"totalSales":3886,"avgPerTable":1295,"minPerTable":1500},"Gold":{"sold":3,"soldTables":3,"total":4,"totalTables":4,"sales":4343,"totalSales":4343,"avgPerTable":1448,"minPerTable":1000},"Lounge":{"sold":5,"soldTables":5,"total":24,"totalTables":24,"sales":3069,"totalSales":3069,"avgPerTable":614,"minPerTable":500}},"hasData":true,"_source":"toast_excel_bs","_period":"2026-W34"},
+  {"venue":"Casa Neos Lounge","date":"2026-08-23","dj":"AFTERDARK","bookedTables":7,"totalTables":44,"totalRevenue":8336,"tierSummary":{"Diamond":{"sold":5,"soldTables":5,"total":6,"totalTables":6,"sales":6412,"totalSales":6412,"avgPerTable":1282,"minPerTable":2000},"Platinum":{"sold":2,"soldTables":2,"total":10,"totalTables":10,"sales":1924,"totalSales":1924,"avgPerTable":962,"minPerTable":1500},"Gold":{"sold":0,"soldTables":0,"total":4,"totalTables":4,"sales":0,"totalSales":0,"avgPerTable":0,"minPerTable":1000},"Lounge":{"sold":0,"soldTables":0,"total":24,"totalTables":24,"sales":0,"totalSales":0,"avgPerTable":0,"minPerTable":500}},"hasData":true,"_source":"toast_excel_bs","_period":"2026-W34"},
   {"venue":"Casa Neos Lounge","date":"2026-08-27","dj":"ONOMA","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-08-28","dj":"BARUT","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
   {"venue":"Casa Neos Lounge","date":"2026-08-29","dj":"DA MIKE","bookedTables":0,"totalTables":0,"totalRevenue":0,"tierSummary":{},"hasData":false,"_source":"sales_period_unattended","_period":"Last 7 days"},
