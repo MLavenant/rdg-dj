@@ -818,14 +818,18 @@ var _FLASH_PL_ORDER = ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'];
 /* P&L ratios from ebidta calculation*.xlsx (EBIDTA 2 / OPEX DATA 2). Live Ent (6750) is variable per DJ. */
 var _FLASH_EBITDA_OPEX_BY_VENUE = {
   'Casa Neos Beach Club': {
-    payroll: 0.08228038213730282,
-    directExLive: 0.029494881479329382,
-    ga: 0.02689639259651702,
-    utilities: 0.003994385350264044,
-    occupancy: 0.024495221916497185,
-    other: -0.01376450002563533,
-    corporate: 0.023314557961478643,
-    cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 }
+    payroll: 0.10247154902899072,
+    directExLive: 0.03441069505921759,
+    ga: 0.050092725605136175,
+    utilities: 0.004660116241974718,
+    occupancy: 0.06,
+    other: -0.033,
+    corporate: 0.02720031762172508,
+    cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 },
+    opexLabels: {
+      occupancy: 'Occupancy (6%)',
+      other: '8090 — Service Charge Retained (3.3%)'
+    }
   },
   'MILA Lounge': {
     /* Fixed % of day sales from EBIDTA 2 template ($67.5k reference). Live Ent = actual DJ fee. */
@@ -843,14 +847,18 @@ var _FLASH_EBITDA_OPEX_BY_VENUE = {
     }
   },
   'Casa Neos Lounge': {
-    payroll: 0.08228038213730282,
-    directExLive: 0.009108236118469393,
-    ga: 0.011067480730777776,
-    utilities: 0.0011238306017466206,
-    occupancy: 0.007993472561652965,
-    other: -0.0038030987985575846,
-    corporate: 0.007161369610172098,
-    cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 }
+    payroll: 0.02956092355544922,
+    directExLive: 0.015939413207321465,
+    ga: 0.04399633149898313,
+    utilities: 0.001966703553056586,
+    occupancy: 0.06,
+    other: -0.033,
+    corporate: 0.012532396817801172,
+    cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 },
+    opexLabels: {
+      occupancy: 'Occupancy (6%)',
+      other: '8090 — Service Charge Retained (3.3%)'
+    }
   }
 };
 var _FLASH_DAILY_SALES_SOURCES = {
