@@ -110,9 +110,9 @@ function renderVIP(venueIdx){
 }
 
 function _vipExcludedTiers(venue){
-  /* Cabana/Deck are beach-club ancillary — not core BS tiers for flash fills.
-     MILA Booths/Seating are Excel BAR and must stay visible for Excel methodology. */
-  return (venue==='MILA Lounge') ? []
+  /* MILA Booths/Seating = Excel BAR — counted in BS total, not VIP tier columns.
+     Cabana/Deck are beach-club ancillary. */
+  return (venue==='MILA Lounge') ? ['Booths','Seating']
        : (venue==='Casa Neos Lounge') ? []
        : ['Cabana','Deck'];
 }

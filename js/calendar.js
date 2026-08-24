@@ -1799,9 +1799,7 @@ var VIP_WEEK_TIER_ACTUALS = {
     tiers:{
       Diamond:{soldTables:7,totalTables:9,totalSales:25008,avgPerTable:3573,minPerTable:2000},
       Prestige:{soldTables:2,totalTables:2,totalSales:7022,avgPerTable:3511,minPerTable:3000},
-      Gold:{soldTables:7,totalTables:8,totalSales:12516,avgPerTable:1788,minPerTable:1000},
-      Booths:{soldTables:24,totalTables:24,totalSales:14193,avgPerTable:591,minPerTable:500},
-      Seating:{soldTables:10,totalTables:30,totalSales:806,avgPerTable:81,minPerTable:200}
+      Gold:{soldTables:7,totalTables:8,totalSales:12516,avgPerTable:1788,minPerTable:1000}
     }
   }
 };
@@ -4628,9 +4626,13 @@ function buildVipFromSched(mon, sun) {
         if(src.color) tierRef[key].color=src.color;
         if(src.textColor) tierRef[key].textColor=src.textColor;
       });
-      /* Excel sold-table count always wins over FourVenues bookedTables=1 pacing. */
+      /* Excel sold-table count for TBL column = VIP tiers only (excl. Booths/Seating). */
       if(excelRow || tablesActual==null || tablesActual===0){
-        var sumSold=Object.keys(tierRef).reduce(function(s,t){ return s+(tierRef[t].soldTables||0); },0);
+        var excl = (typeof _vipExcludedTiers==='function') ? _vipExcludedTiers(vn) : [];
+        var sumSold=Object.keys(tierRef).reduce(function(s,t){
+          if(excl.indexOf(t)>=0) return s;
+          return s+(tierRef[t].soldTables||0);
+        },0);
         if(sumSold>0) tablesActual=sumSold;
       }
     }
@@ -4660,9 +4662,13 @@ function buildVipFromSched(mon, sun) {
     var tgtRow = (typeof showTargets==='function') ? showTargets(e) : null;
     var bsMinN = e.bs_m || (tgtRow && tgtRow.bs_m) || (baked && baked.bsMin) || 0;
     var roiTN = e.roi_t || (tgtRow && tgtRow.roi_t) || (baked && baked.roiTarget) || 0;
-    var tblBudget = (excelRow && excelRow.totalTables!=null && +excelRow.totalTables>0)
-      ? +excelRow.totalTables
-      : (budget || (baked && baked.tablesBudget) || null);
+    /* VIP floor-plan budget = non-excluded tiers only (MILA = Diamond+Prestige+Gold). */
+    var exclBudget = (typeof _vipExcludedTiers==='function') ? _vipExcludedTiers(vn) : [];
+    var vipBudget = Object.keys(tierRef).reduce(function(s,t){
+      if(exclBudget.indexOf(t)>=0) return s;
+      return s+(+tierRef[t].totalTables||0);
+    },0) || null;
+    var tblBudget = vipBudget || budget || (baked && baked.tablesBudget) || null;
     venueMap[vn].shows.push({
       date:         e.d,
       label:        new Date(e.d+'T12:00:00Z').toLocaleDateString('en-US', dateOpts),
