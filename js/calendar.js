@@ -1810,11 +1810,24 @@ function _vipAllocateWeeklyTiers(shows, weekly){
     allocations.sort(function(a,b){return b.rem-a.rem;});
     for(var left=sold-used, ai=0;left>0;left--,ai++) allocations[ai%allocations.length].n++;
     allocations.sort(function(a,b){return a.i-b.i;});
-    var salesUsed=0;
+    /* Sales follow sold tables — never put dollars on a 0-sold show/tier. */
+    var soldWeight=allocations.reduce(function(s,a){ return s+a.n; },0) || 1;
+    var bsWeight=allocations.reduce(function(s,a){
+      return s+(a.n>0?(+out[a.i].bsActual||0):0);
+    },0);
+    var salesUsed=0, withSold=[];
+    allocations.forEach(function(a){ if(a.n>0) withSold.push(a); });
     out.forEach(function(sh,i){
       var n=allocations[i].n;
-      var part=i===out.length-1?sales-salesUsed:Math.round(sales*(totalBs?(+sh.bsActual||0)/totalBs:1/out.length));
-      salesUsed+=part;
+      var part=0;
+      if(n>0 && sales>0){
+        var last=withSold.length && withSold[withSold.length-1].i===i;
+        if(last) part=sales-salesUsed;
+        else if(bsWeight>0) part=Math.round(sales*((+sh.bsActual||0)/bsWeight));
+        else part=Math.round(sales*(n/soldWeight));
+        if(part<0) part=0;
+        salesUsed+=part;
+      }
       sh.tiers[tname]={
         soldTables:n,totalTables:+wt.totalTables||0,totalSales:part,
         avgPerTable:n?Math.round(part/n):0,minPerTable:+wt.minPerTable||0,

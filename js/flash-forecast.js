@@ -477,7 +477,22 @@ function _vipEnsureShowTierForFill(d){
     var hasSplit=names.some(function(t){
       var x=sh.tiers[t]; return x && ((+x.soldTables||0)>0 || (+x.totalSales||0)>0);
     });
-    if(hasSplit){ sh._tierDataAvailable=true; return; }
+    var inconsistent=names.some(function(t){
+      var x=sh.tiers[t]; return x && (+x.totalSales||0)>0 && !(+x.soldTables||0);
+    });
+    if(hasSplit && !inconsistent){
+      /* Keep real Toast/FV splits; still zero sales on empty sold cells. */
+      names.forEach(function(t){
+        var x=sh.tiers[t];
+        if(x && !(+x.soldTables||0) && (+x.totalSales||0)>0){
+          x.totalSales=0; x.avgPerTable=0;
+        } else if(x && (+x.soldTables||0)>0){
+          x.avgPerTable=Math.round((+x.totalSales||0)/(+x.soldTables));
+        }
+      });
+      sh._tierDataAvailable=true;
+      return;
+    }
     if(sh.bsActual==null && sh.tablesActual==null) return;
     var tblN=+sh.tablesActual||0;
     var bs=+sh.bsActual||0;
@@ -492,20 +507,38 @@ function _vipEnsureShowTierForFill(d){
       return;
     }
     var invTot=names.reduce(function(s,t){ return s+(+sh.tiers[t].totalTables||0); },0) || names.length;
-    /* Put known sold tables / BS into tiers by inventory weight so Avg vs Min fills work. */
-    var soldLeft=tblN, salesLeft=Math.round(bs);
+    /* 1) Place sold tables by inventory weight. 2) Place BS only onto tiers that got sold. */
+    var soldLeft=tblN;
     names.forEach(function(t,i){
       var inv=+sh.tiers[t].totalTables||0;
       var sold=i===names.length-1 ? soldLeft : Math.min(inv, Math.round(tblN*(inv/invTot)));
       if(sold<0) sold=0;
       soldLeft-=sold;
-      var sales=i===names.length-1 ? salesLeft : Math.round(bs*(inv/invTot));
-      if(sales<0) sales=0;
-      salesLeft-=sales;
       sh.tiers[t].soldTables=sold;
+    });
+    var soldTot=names.reduce(function(s,t){ return s+(+sh.tiers[t].soldTables||0); },0) || 1;
+    var salesLeft=Math.round(bs);
+    names.forEach(function(t,i){
+      var sold=+sh.tiers[t].soldTables||0;
+      var sales=0;
+      if(sold>0){
+        sales=i===names.length-1 ? salesLeft : Math.round(bs*(sold/soldTot));
+        if(sales<0) sales=0;
+        salesLeft-=sales;
+      }
       sh.tiers[t].totalSales=sales;
       sh.tiers[t].avgPerTable=sold?Math.round(sales/sold):0;
     });
+    /* Any leftover dollars (rounding) go to the last tier that has sold tables. */
+    if(salesLeft!==0){
+      for(var j=names.length-1;j>=0;j--){
+        if((+sh.tiers[names[j]].soldTables||0)>0){
+          sh.tiers[names[j]].totalSales=(+sh.tiers[names[j]].totalSales||0)+salesLeft;
+          sh.tiers[names[j]].avgPerTable=Math.round(sh.tiers[names[j]].totalSales/sh.tiers[names[j]].soldTables);
+          break;
+        }
+      }
+    }
     sh._tierDataAvailable=true;
     sh._tierEstimated=true;
   });
