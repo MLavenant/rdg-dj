@@ -828,13 +828,13 @@ var _FLASH_EBITDA_OPEX_BY_VENUE = {
     cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 }
   },
   'MILA Lounge': {
-    payroll: 0.18402595104082908,
-    directExLive: 0.06195008040739748,
-    ga: 0.07713791744840526,
-    utilities: 0.00587186902528366,
-    occupancy: 0.06138263646922184,
-    other: -0.03715548646475476,
-    corporate: 0.06406865719646207,
+    payroll: 0.3220454143214509,
+    directExLive: 0.1084126407129456,
+    ga: 0.13499135553470915,
+    utilities: 0.010275770794246403,
+    occupancy: 0.10741961382113821,
+    other: -0.06502210131332083,
+    corporate: 0.11212015009380862,
     cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 }
   },
   'Casa Neos Lounge': {
