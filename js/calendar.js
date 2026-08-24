@@ -4626,14 +4626,14 @@ function buildVipFromSched(mon, sun) {
         if(src.color) tierRef[key].color=src.color;
         if(src.textColor) tierRef[key].textColor=src.textColor;
       });
-      /* Excel sold-table count for TBL column = VIP tiers only (excl. Booths/Seating). */
-      if(excelRow || tablesActual==null || tablesActual===0){
-        var excl = (typeof _vipExcludedTiers==='function') ? _vipExcludedTiers(vn) : [];
-        var sumSold=Object.keys(tierRef).reduce(function(s,t){
-          if(excl.indexOf(t)>=0) return s;
-          return s+(tierRef[t].soldTables||0);
-        },0);
-        if(sumSold>0) tablesActual=sumSold;
+      /* TBL = VIP tiers only (MILA: Diamond+Prestige+Gold; never Booths/Seating). */
+      var excl = (typeof _vipExcludedTiers==='function') ? _vipExcludedTiers(vn) : [];
+      var sumSold=Object.keys(tierRef).reduce(function(s,t){
+        if(excl.indexOf(t)>=0) return s;
+        return s+(tierRef[t].soldTables||0);
+      },0);
+      if(excelRow || tablesActual==null || tablesActual===0 || excl.length){
+        tablesActual=sumSold;
       }
     }
 
