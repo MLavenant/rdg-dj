@@ -1790,8 +1790,7 @@ var VIP_WEEK_TIER_ACTUALS = {
     tiers:{
       Diamond:{soldTables:6,totalTables:6,totalSales:21634,avgPerTable:3606,minPerTable:2000},
       Platinum:{soldTables:6,totalTables:10,totalSales:14909,avgPerTable:2485,minPerTable:1500},
-      Gold:{soldTables:4,totalTables:4,totalSales:4479,avgPerTable:1120,minPerTable:1000},
-      Lounge:{soldTables:7,totalTables:24,totalSales:5744,avgPerTable:821,minPerTable:500}
+      Gold:{soldTables:4,totalTables:4,totalSales:4479,avgPerTable:1120,minPerTable:1000}
     }
   },
   '2026-W34|MILA Lounge': {

@@ -110,10 +110,11 @@ function renderVIP(venueIdx){
 }
 
 function _vipExcludedTiers(venue){
-  /* MILA Booths/Seating = Excel BAR — counted in BS total, not VIP tier columns.
+  /* VIP columns only: MILA = Diamond/Prestige/Gold; CN Lounge = Diamond/Platinum/Gold.
+     Excel BAR (MILA Booths/Seating, CN Lounge) stays in BS total, not VIP columns.
      Cabana/Deck are beach-club ancillary. */
   return (venue==='MILA Lounge') ? ['Booths','Seating']
-       : (venue==='Casa Neos Lounge') ? []
+       : (venue==='Casa Neos Lounge') ? ['Lounge']
        : ['Cabana','Deck'];
 }
 
