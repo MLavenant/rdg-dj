@@ -828,13 +828,13 @@ var _FLASH_EBITDA_OPEX_BY_VENUE = {
     cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 }
   },
   'MILA Lounge': {
-    payroll: 0.08228038213730282,
-    directExLive: 0.011850481944183366,
-    ga: 0.01475577581050365,
-    utilities: 0.0011232346658007623,
-    occupancy: 0.011741935125527661,
-    other: -0.007107503631671595,
-    corporate: 0.012255746244424316,
+    payroll: 0.18402595104082908,
+    directExLive: 0.06195008040739748,
+    ga: 0.07713791744840526,
+    utilities: 0.00587186902528366,
+    occupancy: 0.06138263646922184,
+    other: -0.03715548646475476,
+    corporate: 0.06406865719646207,
     cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 }
   },
   'Casa Neos Lounge': {
@@ -1337,6 +1337,93 @@ function _flashEbitdaForShow(venue, sh){
   var tip=_flashEbitdaSalesTip(venue, day, sales)+' · Live Ent '+Math.round(dj).toLocaleString();
   return { ebitda:Math.round(ebitda), sales:sales, dj:dj, tip:tip };
 }
+var _EBITDA_ACCESS_SEL_KEY = 'rdg_ebitda_access_venues_v1';
+function _ebitdaAccessGetSel(){
+  try{
+    var raw=sessionStorage.getItem(_EBITDA_ACCESS_SEL_KEY);
+    if(raw){
+      var parsed=JSON.parse(raw);
+      if(parsed && typeof parsed==='object'){
+        return _FLASH_PL_ORDER.filter(function(v){ return !!parsed[v]; });
+      }
+    }
+  }catch(e){}
+  /* Default: current venue if flash location, else MILA Lounge only. */
+  if(typeof curV!=='undefined' && _FLASH_PL_ORDER.indexOf(curV)>=0) return [curV];
+  return ['MILA Lounge'];
+}
+function _ebitdaAccessSetSel(list){
+  var map={};
+  _FLASH_PL_ORDER.forEach(function(v){ map[v]=list.indexOf(v)>=0; });
+  try{ sessionStorage.setItem(_EBITDA_ACCESS_SEL_KEY, JSON.stringify(map)); }catch(e){}
+}
+function _ebitdaAccessToggleVenue(venue){
+  var sel=_ebitdaAccessGetSel().slice();
+  var i=sel.indexOf(venue);
+  if(i>=0){
+    if(sel.length<=1) return;
+    sel.splice(i,1);
+  } else {
+    sel.push(venue);
+    sel.sort(function(a,b){ return _FLASH_PL_ORDER.indexOf(a)-_FLASH_PL_ORDER.indexOf(b); });
+  }
+  _ebitdaAccessSetSel(sel);
+  renderEbitdaAccess();
+}
+function _ebitdaAccessVenuePillsHtml(active){
+  var selMap={};
+  (active||[]).forEach(function(v){ selMap[v]=1; });
+  var h='<div class="ebitda-loc-bar"><div class="ebitda-loc-lbl">Locations</div><div class="ebitda-loc-pills">';
+  _FLASH_PL_ORDER.forEach(function(vn){
+    var on=!!selMap[vn];
+    h+='<button type="button" class="ebitda-loc-pill'+(on?' on':'')+'" onclick="_ebitdaAccessToggleVenue(\''+vn.replace(/'/g,"\\'")+'\')">'+_escHtml(vn)+'</button>';
+  });
+  h+='</div><div class="ebitda-loc-hint">Select one or more · side-by-side compare when 2+ picked</div></div>';
+  return h;
+}
+function _ebitdaAccessVenuePack(pack, venue){
+  if(!pack||!pack.venues) return null;
+  for(var i=0;i<pack.venues.length;i++){
+    if(pack.venues[i].venue===venue) return pack.venues[i];
+  }
+  return null;
+}
+function _ebitdaAccessBuildVenueData(d){
+  var shows=d.shows||[], wfList=[], showRows=[];
+  shows.forEach(function(sh){
+    var day=_flashDailySalesDay(d.venue, sh.date);
+    var sales=day&&day.total>0?day.total:null;
+    var fee=+(sh.fee||0)||0;
+    var wf=sales!=null?_flashEbitdaWaterfall(sales, fee, d.venue):null;
+    if(wf) wfList.push(wf);
+    showRows.push({ sh:sh, day:day, sales:sales, fee:fee, wf:wf });
+  });
+  return { venue:d.venue, shows:showRows, weekWf:_flashEbitdaMergeWaterfalls(wfList), wfList:wfList };
+}
+function _ebitdaAccessCompareSummaryHtml(items){
+  if(!items||items.length<2) return '';
+  var h='<div class="ebitda-compare-sec"><div class="sanity-ebitda-sec-title">Side-by-side · week total</div>';
+  h+='<div class="ebitda-compare-grid cols-'+Math.min(items.length,3)+'">';
+  items.forEach(function(it){
+    var wf=it.weekWf;
+    h+='<div class="ebitda-compare-col">';
+    h+='<div class="ebitda-compare-col-hd">'+_escHtml(it.venue)+'</div>';
+    if(!wf){
+      h+='<div class="sanity-ebitda-empty">No daily sales this week.</div>';
+    } else {
+      h+='<div class="ebitda-compare-kpis">'
+        +'<div><span>Sales</span><b>'+_flashMoneyTxt(wf.sales)+'</b></div>'
+        +'<div><span>Live Ent</span><b class="vip-cost">'+_flashMoneyTxt(wf.liveEnt)+'</b></div>'
+        +'<div><span>EBITDA</span><b class="'+(wf.ebitda>=0?'beat':'miss')+'">'+_flashMoneyTxt(wf.ebitda)+'</b></div>'
+        +'<div><span>EBITDA %</span><b>'+_flashEbitdaPct(wf.ebitda, wf.sales)+'</b></div>'
+        +'</div>';
+      h+='<div class="tbl-wrap">'+_flashEbitdaWaterfallTableHtml(wf, it.venue)+'</div>';
+    }
+    h+='</div>';
+  });
+  h+='</div></div>';
+  return h;
+}
 function _flashSanityDayParts(venue, day){
   if(!day || !(day.total>0)) return '\u2014';
   if(venue==='MILA Lounge'){
@@ -1365,32 +1452,29 @@ function renderEbitdaAccess(){
 
   var ov=window.FLASH_PL_OVERLAY||{};
   var salesOv=ov.sales||{};
-  var dailyMap=salesOv.dailyByVenue||{};
   var pack=(typeof _vipCollectFlashVenues==='function')?_vipCollectFlashVenues(0):null;
   var weekLbl=(pack&&pack.venues&&pack.venues[0])?pack.venues[0].weekOf:'Last week';
+  var sel=_ebitdaAccessGetSel();
 
   h+='<div class="sanity-ebitda-block">'
     +'<div class="sanity-ebitda-hd">'
     +'<div><div class="sanity-ebitda-title">How we get to EBITDA</div>'
-    +'<div class="sanity-ebitda-sub">Same structure as <b>EBIDTA 2</b> in your calculation workbook · '+_escHtml(weekLbl)+'</div></div>'
+    +'<div class="sanity-ebitda-sub">EBIDTA 2 workbook structure · '+_escHtml(weekLbl)+'</div></div>'
     +'<button type="button" class="sanity-ebitda-btn sanity-ebitda-btn-muted" onclick="lockEbitdaAccess()">Lock</button>'
     +'</div>';
-
   h+='<div class="sanity-ebitda-kpi-row">'
-    +'<div class="sanity-ebitda-kpi"><span>RDG Sales overlay</span><b>'+(salesOv.week?'Week '+salesOv.week+' · '+(_escHtml(salesOv.period||'')):'Upload Sales')+'</b></div>'
-    +'<div class="sanity-ebitda-kpi"><span>Variables per DJ day</span><b>Daily Sales + DJ Cost</b></div>'
-    +'<div class="sanity-ebitda-kpi"><span>Fixed OPEX</span><b>OPEX DATA 2 ratios</b></div>'
+    +'<div class="sanity-ebitda-kpi"><span>RDG Sales</span><b>'+(salesOv.week?'Week '+salesOv.week+' · '+(_escHtml(salesOv.period||'')):'Upload Sales')+'</b></div>'
+    +'<div class="sanity-ebitda-kpi"><span>Variables</span><b>Daily Sales + DJ Cost</b></div>'
+    +'<div class="sanity-ebitda-kpi"><span>Fixed OPEX</span><b>OPEX DATA 2</b></div>'
     +'</div></div>';
 
-  h+='<div class="sanity-ebitda-sec" style="margin-top:0"><div class="sanity-ebitda-sec-title">Daily sales sources</div>'
-    +'<table class="sanity-ebitda-tbl"><thead><tr><th class="l">Location</th><th class="l">RDG Sales sheet</th><th class="l">Tables summed</th><th>Model</th></tr></thead><tbody>';
-  _FLASH_PL_ORDER.forEach(function(vn){
-    var n=dailyMap[vn]?Object.keys(dailyMap[vn]).length:0;
-    var src=_FLASH_DAILY_SALES_SOURCES[vn];
-    var tbls=vn==='MILA Lounge'?'3 parts (MILA II)':'Dinner + Lunch';
-    h+='<tr><td class="l"><b>'+_escHtml(vn)+'</b></td><td class="l">'+(src?src.sheet:'—')+'</td><td class="l">'+tbls+'</td><td class="l">'+_flashEbitdaModelFile(vn)+'</td></tr>';
-  });
-  h+='</tbody></table></div>';
+  h+=_ebitdaAccessVenuePillsHtml(sel);
+
+  if(!sel.length){
+    h+='<div class="sanity-ebitda-empty">Pick at least one location above.</div>';
+    el.innerHTML=h;
+    return;
+  }
 
   if(!pack||!pack.venues||!pack.venues.length){
     h+='<div class="sanity-ebitda-empty">No flash week performances to model.</div>';
@@ -1398,43 +1482,47 @@ function renderEbitdaAccess(){
     return;
   }
 
-  pack.venues.forEach(function(d){
-    var shows=d.shows||[];
-    if(!shows.length) return;
-    var wfList=[];
-    h+='<div class="ebitda-venue-block">';
-    h+='<div class="ebitda-venue-hd">'+_escHtml(d.venue)+'</div>';
-    h+='<div class="ebitda-venue-meta">Source: <b>'+_flashEbitdaSourceSheet(d.venue)+'</b> · Model: <b>'+_flashEbitdaModelFile(d.venue)+'</b></div>';
+  var venueData=[];
+  sel.forEach(function(vn){
+    var d=_ebitdaAccessVenuePack(pack, vn);
+    if(d && d.shows && d.shows.length) venueData.push(_ebitdaAccessBuildVenueData(d));
+  });
 
-    shows.forEach(function(sh, si){
-      var day=_flashDailySalesDay(d.venue, sh.date);
-      var sales=day&&day.total>0?day.total:null;
-      var fee=+(sh.fee||0)||0;
-      var wf=sales!=null?_flashEbitdaWaterfall(sales, fee, d.venue):null;
-      if(wf) wfList.push(wf);
+  if(!venueData.length){
+    h+='<div class="sanity-ebitda-empty">No shows for selected location(s) this week.</div>';
+    el.innerHTML=h;
+    return;
+  }
+
+  if(venueData.length>=2) h+=_ebitdaAccessCompareSummaryHtml(venueData);
+
+  venueData.forEach(function(vd){
+    h+='<div class="ebitda-venue-block">';
+    h+='<div class="ebitda-venue-hd">'+_escHtml(vd.venue)+'</div>';
+    h+='<div class="ebitda-venue-meta">Source: <b>'+_flashEbitdaSourceSheet(vd.venue)+'</b> · Model: <b>'+_flashEbitdaModelFile(vd.venue)+'</b></div>';
+
+    vd.shows.forEach(function(row){
       h+='<div class="ebitda-show-card">';
-      h+='<div class="ebitda-show-hd"><b>'+_escHtml(sh.dj||'TBD')+'</b> · '+_escHtml((sh.label||sh.date||'').replace(/,.*$/,''))+'</div>';
-      if(!wf){
-        h+='<div class="sanity-ebitda-empty">No daily sales for '+_escHtml(sh.date||'')+' — upload RDG Sales.</div>';
+      h+='<div class="ebitda-show-hd"><b>'+_escHtml(row.sh.dj||'TBD')+'</b> · '+_escHtml((row.sh.label||row.sh.date||'').replace(/,.*$/,''))+'</div>';
+      if(!row.wf){
+        h+='<div class="sanity-ebitda-empty">No daily sales for '+_escHtml(row.sh.date||'')+' — upload RDG Sales.</div>';
       } else {
-        h+='<div class="ebitda-show-meta">Day sales: <b>'+_flashMoneyTxt(sales)+'</b> ('+_flashSanityDayParts(d.venue, day)+') · DJ Cost: <b class="vip-cost">'+_flashMoneyTxt(fee)+'</b></div>';
-        h+='<div class="tbl-wrap">'+_flashEbitdaWaterfallTableHtml(wf, d.venue)+'</div>';
+        h+='<div class="ebitda-show-meta">Day sales: <b>'+_flashMoneyTxt(row.sales)+'</b> ('+_flashSanityDayParts(vd.venue, row.day)+') · DJ Cost: <b class="vip-cost">'+_flashMoneyTxt(row.fee)+'</b></div>';
+        h+='<div class="tbl-wrap">'+_flashEbitdaWaterfallTableHtml(row.wf, vd.venue)+'</div>';
       }
       h+='</div>';
     });
 
-    var weekWf=_flashEbitdaMergeWaterfalls(wfList);
-    if(weekWf){
+    if(vd.weekWf){
       h+='<div class="ebitda-show-card ebitda-week-total">';
-      h+='<div class="ebitda-show-hd">Week total · '+_escHtml(d.venue)+'</div>';
-      h+='<div class="tbl-wrap">'+_flashEbitdaWaterfallTableHtml(weekWf, d.venue)+'</div>';
+      h+='<div class="ebitda-show-hd">Week total · '+_escHtml(vd.venue)+'</div>';
+      h+='<div class="tbl-wrap">'+_flashEbitdaWaterfallTableHtml(vd.weekWf, vd.venue)+'</div>';
       h+='</div>';
     }
     h+='</div>';
   });
 
-  h+='<div class="sanity-ebitda-foot sanity-ebitda-sec">Performance Summary (Weekly Flash) uses the <b>EBITDA</b> line from each show waterfall above. Re-upload <b>RDG Sales</b> to refresh daily sales.</div>';
-
+  h+='<div class="sanity-ebitda-foot sanity-ebitda-sec">Performance Summary uses the <b>EBITDA</b> line from each show waterfall. Re-upload <b>RDG Sales</b> to refresh daily sales.</div>';
   el.innerHTML=h;
 }
 

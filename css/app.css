@@ -1438,6 +1438,26 @@ body.mobile-mode .sb-btn{min-height:44px}
 .ebitda-wf-pct{color:var(--ink3);font-size:10px;font-weight:600}
 .ebitda-wf-sep td{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#5b21b6;background:#f5f3ff;padding:8px;border-bottom:0.5px solid #e9d5ff}
 
+/* EBITDA Access — location filter + compare */
+.ebitda-loc-bar{background:var(--card);border-radius:12px;padding:12px 14px;margin-top:14px;border:0.5px solid var(--hair)}
+.ebitda-loc-lbl{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#5b21b6;margin-bottom:8px}
+.ebitda-loc-pills{display:flex;flex-wrap:wrap;gap:6px}
+.ebitda-loc-pill{font-size:11px;font-weight:800;padding:7px 12px;border-radius:999px;border:0.5px solid var(--hair);background:var(--card2);color:var(--ink2);cursor:pointer;font-family:inherit;transition:background .15s,border-color .15s,color .15s}
+.ebitda-loc-pill:hover{background:#f5f3ff;border-color:#ddd6fe}
+.ebitda-loc-pill.on{background:#ede9fe;border-color:#c4b5fd;color:#5b21b6}
+.ebitda-loc-hint{font-size:10px;color:var(--ink3);margin-top:8px;line-height:1.45}
+.ebitda-compare-sec{margin-top:14px}
+.ebitda-compare-grid{display:grid;gap:12px;margin-top:8px}
+.ebitda-compare-grid.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.ebitda-compare-grid.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:900px){.ebitda-compare-grid.cols-2,.ebitda-compare-grid.cols-3{grid-template-columns:1fr}}
+.ebitda-compare-col{background:var(--card);border-radius:12px;padding:12px 14px;border:0.5px solid var(--hair);min-width:0}
+.ebitda-compare-col-hd{font-size:13px;font-weight:900;color:var(--ink);margin-bottom:10px;padding-bottom:8px;border-bottom:0.5px solid var(--hair)}
+.ebitda-compare-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin-bottom:10px}
+.ebitda-compare-kpis div{background:var(--card2);border-radius:8px;padding:7px 9px}
+.ebitda-compare-kpis span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);margin-bottom:2px}
+.ebitda-compare-kpis b{font-size:12px;font-weight:800;color:var(--ink)}
+
 
 /* Calendar locked until live Firebase schedule is ready */
 #view-calendar.cal-sync-locked .cal-body,
