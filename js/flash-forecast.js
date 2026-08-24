@@ -1268,6 +1268,7 @@ function _flashEbitdaPct(amt, sales){
 }
 /** Full EBIDTA 2-style waterfall for one operating day. */
 function _flashEbitdaWaterfall(sales, djCost, venue){
+  sales=Math.round(+(sales||0)||0);
   if(!(sales>0)) return null;
   var o=_flashEbitdaOpex(venue), c=o.cogs;
   var lbw=sales*c.lbwShare, food=sales*c.foodShare, bev=sales*c.bevShare;

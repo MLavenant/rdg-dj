@@ -223,6 +223,7 @@ assert(Math.round(cnlDaily['2026-08-21'].total)===48668, 'CN Lounge Aug 21 ~49k'
 assert(milaDaily&&milaDaily['2026-08-22'], 'MILA II daily has Aug 22');
 assert(Math.round(milaDaily['2026-08-22'].total)===67183, 'MILA Aug 22 ~67k');
 function calcEbitdaHybrid(sales,dj,o){
+  sales=Math.round(sales);
   var lbw=sales*0.62, food=sales*0.34, bev=sales*0.04;
   var cogs=lbw*0.15+food*0.265+bev*0.28;
   var gp=sales-cogs;
