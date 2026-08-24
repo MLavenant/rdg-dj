@@ -110,8 +110,9 @@ function renderVIP(venueIdx){
 }
 
 function _vipExcludedTiers(venue){
-  /* Seating-only inventory — not bottle-service tiers for flash fills. */
-  return (venue==='MILA Lounge') ? ['Booths','Seating']
+  /* Cabana/Deck are beach-club ancillary — not core BS tiers for flash fills.
+     MILA Booths/Seating are Excel BAR and must stay visible for Excel methodology. */
+  return (venue==='MILA Lounge') ? []
        : (venue==='Casa Neos Lounge') ? []
        : ['Cabana','Deck'];
 }
@@ -650,7 +651,7 @@ function _vipRenderTierBreakdown(d, rangeWkKey){
      Excel/Toast day tiers (FORECAST) stay as-is so sold/sales/avg match the night. */
   var toastWeek=_vipResolveWeeklyTier(d.venue, rangeWkKey);
   var hasExactShowTiers=(d.shows||[]).some(function(sh){
-    return sh && sh._tierDataAvailable && !sh._tierEstimated;
+    return sh && (sh._tierExact || (sh._tierDataAvailable && !sh._tierEstimated));
   });
   var tierRows=(toastWeek && !hasExactShowTiers)?_vipAllocateWeeklyTiers(d.shows,toastWeek):d.shows;
   tierRows.forEach(function(sh){

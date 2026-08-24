@@ -4585,8 +4585,26 @@ function buildVipFromSched(mon, sun) {
       };
     });
 
-    var liveRow = (typeof _vipLiveRow==='function') ? _vipLiveRow(vn, e.d) : ((typeof _vipForecastRow==='function') ? _vipForecastRow(vn, e.d) : null);
-    var tablesActual = (typeof _vipResolveTables==='function') ? _vipResolveTables(vn, e.d, null) : null;
+    /* Prefer Excel/Toast tier rows (FORECAST toast_excel_bs) over sparse FourVenues
+       live rows that often have bookedTables=1 and empty tierSummary. */
+    var liveFv = (typeof _vipLiveRow==='function') ? _vipLiveRow(vn, e.d) : null;
+    var fcastRow = (typeof _vipForecastRow==='function') ? _vipForecastRow(vn, e.d) : null;
+    var excelRow = (fcastRow && fcastRow._source==='toast_excel_bs' && fcastRow.tierSummary
+      && Object.keys(fcastRow.tierSummary).length) ? fcastRow : null;
+    var liveHasTiers = !!(liveFv && liveFv.tierSummary && typeof liveFv.tierSummary==='object'
+      && Object.keys(liveFv.tierSummary).length
+      && Object.keys(liveFv.tierSummary).some(function(t){
+        var x=liveFv.tierSummary[t]||{};
+        return (+x.soldTables||+x.sold||+x.booked||0)>0 || (+x.totalSales||+x.sales||+x.revenue||0)>0;
+      }));
+    var liveRow = excelRow || (liveHasTiers ? liveFv : null) || fcastRow || liveFv;
+
+    var tablesActual = null;
+    if(excelRow && excelRow.bookedTables!=null && +excelRow.bookedTables>0){
+      tablesActual = +excelRow.bookedTables;
+    } else if(typeof _vipResolveTables==='function'){
+      tablesActual = _vipResolveTables(vn, e.d, null);
+    }
     var hasTierActual=!!(liveRow&&liveRow.tierSummary&&typeof liveRow.tierSummary==='object'&&Object.keys(liveRow.tierSummary).length);
     if(hasTierActual){
       Object.keys(liveRow.tierSummary).forEach(function(tname){
@@ -4594,7 +4612,7 @@ function buildVipFromSched(mon, sun) {
         var canon=tname.charAt(0).toUpperCase()+tname.slice(1).toLowerCase();
         var key=tierRef[tname]?tname:(tierRef[canon]?canon:tname);
         if(!tierRef[key]){
-          tierRef[key]={ soldTables:0, totalTables:0, totalSales:0, avgPerTable:0, minPerTable:0, color:'#eee', textColor:'#333' };
+          tierRef[key]={ soldTables:0, totalTables:0, totalSales:0, avgPerTable:0, minPerTable:0, color:TIER_COLORS[key]||'#eee', textColor:TIER_TEXT[key]||'#333' };
         }
         if(src.soldTables!=null) tierRef[key].soldTables=+src.soldTables;
         else if(src.sold!=null) tierRef[key].soldTables=+src.sold;
@@ -4606,8 +4624,12 @@ function buildVipFromSched(mon, sun) {
         else if(src.revenue!=null) tierRef[key].totalSales=+src.revenue;
         if(src.avgPerTable!=null) tierRef[key].avgPerTable=+src.avgPerTable;
         else if(tierRef[key].soldTables>0) tierRef[key].avgPerTable=Math.round(tierRef[key].totalSales/tierRef[key].soldTables);
+        if(src.minPerTable!=null) tierRef[key].minPerTable=+src.minPerTable;
+        if(src.color) tierRef[key].color=src.color;
+        if(src.textColor) tierRef[key].textColor=src.textColor;
       });
-      if(tablesActual==null || tablesActual===0){
+      /* Excel sold-table count always wins over FourVenues bookedTables=1 pacing. */
+      if(excelRow || tablesActual==null || tablesActual===0){
         var sumSold=Object.keys(tierRef).reduce(function(s,t){ return s+(tierRef[t].soldTables||0); },0);
         if(sumSold>0) tablesActual=sumSold;
       }
@@ -4638,6 +4660,9 @@ function buildVipFromSched(mon, sun) {
     var tgtRow = (typeof showTargets==='function') ? showTargets(e) : null;
     var bsMinN = e.bs_m || (tgtRow && tgtRow.bs_m) || (baked && baked.bsMin) || 0;
     var roiTN = e.roi_t || (tgtRow && tgtRow.roi_t) || (baked && baked.roiTarget) || 0;
+    var tblBudget = (excelRow && excelRow.totalTables!=null && +excelRow.totalTables>0)
+      ? +excelRow.totalTables
+      : (budget || (baked && baked.tablesBudget) || null);
     venueMap[vn].shows.push({
       date:         e.d,
       label:        new Date(e.d+'T12:00:00Z').toLocaleDateString('en-US', dateOpts),
@@ -4646,10 +4671,11 @@ function buildVipFromSched(mon, sun) {
       bsActual:     bsAct,
       bsMin:        bsMinN,
       tablesActual: tablesActual,
-      tablesBudget: budget || (baked && baked.tablesBudget) || null,
+      tablesBudget: tblBudget,
       tiers:        tierRef,
-      tableDetail:  (baked && baked.tableDetail) || null,
+      tableDetail:  (excelRow && excelRow.tableDetail) || (baked && baked.tableDetail) || null,
       _tierDataAvailable: hasTierActual,
+      _tierExact: !!(excelRow || (liveRow && liveRow._source==='toast_excel_bs')),
       roiActual:    e.roi_a || (feeN > 0 ? Math.round(bsAct/feeN*100)/100 : 0),
       roiTarget:    roiTN || (feeN > 0 && bsMinN > 0 ? Math.round(bsMinN/feeN*100)/100 : 0),
       note:         e.note || null
