@@ -239,7 +239,7 @@ function calcEbitda(sales,dj,o){
   return Math.round(gp-sales*o.payroll-sales*o.directExLive-dj-sales*o.ga-sales*o.utilities-sales*o.occupancy-sales*o.other-sales*o.corporate);
 }
 assert(calcEbitda(cnDaily['2026-08-22'].total,500,OPEX_CNBC)===66420, 'BARUT Sat EBITDA ~66k');
-assert(calcEbitda(milaDaily['2026-08-22'].total,10000,OPEX_MILA)>0, 'MILA AJNA Sat EBITDA positive');
+assert(calcEbitda(milaDaily['2026-08-22'].total,10000,OPEX_MILA)===-4931, 'MILA AJNA Sat EBITDA ~-5k (higher payroll model)');
 assert(calcEbitda(61500,4000,OPEX_MILA)===641, 'MILA template $61.5k sales / $4k DJ → ~$641 EBITDA');
 console.log('ok — all venues daily EBITDA sources');
 
