@@ -816,17 +816,18 @@ var _FLASH_PL_VENUE_MAP = {
 };
 var _FLASH_PL_ORDER = ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'];
 /* P&L from ebidta calculation*.xlsx (EBIDTA 2 / OPEX DATA 2).
-   Hybrid: Payroll + Occupancy + Service Charge = fixed % of day sales;
-   Direct OpEx, G&A, Utilities, Corporate = fixed daily $; Live Ent = DJ fee. */
+   Hybrid: Payroll + Occupancy + Service Charge + CC Fees = % of day sales;
+   Direct OpEx, G&A (ex CC), Utilities, Corporate = fixed daily $; Live Ent = DJ fee. */
 var _FLASH_EBITDA_OPEX_BY_VENUE = {
   'Casa Neos Beach Club': {
     model: 'hybrid',
     payroll: 0.10247154902899072,
     occupancy: 0.06,
     other: -0.033,
+    ccPct: 0.03,
     fixedDaily: {
       directExLive: 11063.038461538454,
-      ga: 16104.81128205128,
+      gaExCc: 6459.81128205128,
       utilities: 1498.2273717948717,
       corporate: 8744.902115384613
     },
@@ -834,45 +835,47 @@ var _FLASH_EBITDA_OPEX_BY_VENUE = {
     opexLabels: {
       payroll: 'Payroll (% sales)',
       directExLive: 'Direct OpEx (excl. Live Ent)',
-      ga: 'General & Administrative',
+      ccFees: '7010 — Credit Card Fees (3%)',
+      gaExCc: 'G&A (excl. CC Fees)',
       utilities: 'Utilities',
       occupancy: 'Occupancy (6%)',
       other: '8090 — Service Charge Retained (3.3%)',
       corporate: 'Corporate Overhead'
-    },
-    fixedLines: { directExLive: 1, ga: 1, utilities: 1, corporate: 1 }
+    }
   },
   'MILA Lounge': {
     model: 'hybrid',
-    payroll: 0.29341915527065526,
+    payroll: 0.17835972437398664,
     occupancy: 0.06,
     other: -0.033,
+    ccPct: 0.033,
     fixedDaily: {
-      directExLive: 6667.377403846152,
-      ga: 8301.968365384613,
-      utilities: 631.9599038461538,
-      corporate: 6895.3892307692295
+      directExLive: 3809.9299450549443,
+      gaExCc: 2801.1549450549455,
+      utilities: 361.11994505494505,
+      corporate: 3940.2224175824176
     },
     cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 },
     opexLabels: {
       payroll: 'Payroll (% sales)',
       directExLive: 'Direct OpEx (excl. Live Ent)',
-      ga: 'General & Administrative',
+      ccFees: '7010 — Credit Card Fees (3.3%)',
+      gaExCc: 'G&A (excl. CC Fees)',
       utilities: 'Utilities',
       occupancy: 'Occupancy (6%)',
       other: '8090 — Service Charge Retained (3.3%)',
       corporate: 'Corporate Overhead'
-    },
-    fixedLines: { directExLive: 1, ga: 1, utilities: 1, corporate: 1 }
+    }
   },
   'Casa Neos Lounge': {
     model: 'hybrid',
     payroll: 0.02956092355544922,
     occupancy: 0.06,
     other: -0.033,
+    ccPct: 0.03,
     fixedDaily: {
       directExLive: 5124.5213461538515,
-      ga: 14144.820576923077,
+      gaExCc: 4499.820576923077,
       utilities: 632.2951923076923,
       corporate: 4029.165576923077
     },
@@ -880,13 +883,13 @@ var _FLASH_EBITDA_OPEX_BY_VENUE = {
     opexLabels: {
       payroll: 'Payroll (% sales)',
       directExLive: 'Direct OpEx (excl. Live Ent)',
-      ga: 'General & Administrative',
+      ccFees: '7010 — Credit Card Fees (3%)',
+      gaExCc: 'G&A (excl. CC Fees)',
       utilities: 'Utilities',
       occupancy: 'Occupancy (6%)',
       other: '8090 — Service Charge Retained (3.3%)',
       corporate: 'Corporate Overhead'
-    },
-    fixedLines: { directExLive: 1, ga: 1, utilities: 1, corporate: 1 }
+    }
   }
 };
 var _FLASH_DAILY_SALES_SOURCES = {
@@ -1275,12 +1278,14 @@ function _flashEbitdaWaterfall(sales, djCost, venue){
   var lbwCost=lbw*c.lbwPct, foodCost=food*c.foodPct, bevCost=bev*c.bevPct;
   var cogs=lbwCost+foodCost+bevCost;
   var gp=sales-cogs;
-  var payroll, directExLive, ga, utilities, occupancy, other, corporate;
+  var payroll, directExLive, gaExCc, ccFees, ga, utilities, occupancy, other, corporate;
   if(o.model==='hybrid' && o.fixedDaily){
     var f=o.fixedDaily;
     payroll=sales*o.payroll;
     directExLive=f.directExLive;
-    ga=f.ga;
+    gaExCc=f.gaExCc!=null?f.gaExCc:(f.ga||0);
+    ccFees=sales*(o.ccPct||0);
+    ga=gaExCc+ccFees;
     utilities=f.utilities;
     occupancy=sales*o.occupancy;
     other=sales*o.other;
@@ -1288,7 +1293,9 @@ function _flashEbitdaWaterfall(sales, djCost, venue){
   } else {
     payroll=sales*o.payroll;
     directExLive=sales*o.directExLive;
-    ga=sales*o.ga;
+    gaExCc=sales*(o.ga||0);
+    ccFees=sales*(o.ccPct||0);
+    ga=gaExCc+ccFees;
     utilities=sales*o.utilities;
     occupancy=sales*o.occupancy;
     other=sales*o.other;
@@ -1300,7 +1307,8 @@ function _flashEbitdaWaterfall(sales, djCost, venue){
     sales:sales, lbw:lbw, food:food, bev:bev,
     lbwCost:lbwCost, foodCost:foodCost, bevCost:bevCost, cogs:cogs, gp:gp,
     payroll:payroll, directExLive:directExLive, liveEnt:liveEnt,
-    ga:ga, utilities:utilities, occupancy:occupancy, other:other, corporate:corporate,
+    ccFees:ccFees, gaExCc:gaExCc, ga:ga,
+    utilities:utilities, occupancy:occupancy, other:other, corporate:corporate,
     ebitda:Math.round(ebitda)
   };
 }
@@ -1340,7 +1348,8 @@ function _flashEbitdaWaterfallTableHtml(wf, venue){
   h+=_flashEbitdaWfRow(ol.payroll||'Payroll', wf.payroll, s, {indent:1});
   h+=_flashEbitdaWfRow(ol.directExLive||'Direct OpEx (excl. Live Ent)', wf.directExLive, s, fx?Object.assign({indent:1},fix):{indent:1});
   h+=_flashEbitdaWfRow('6750 — Live Entertainment', wf.liveEnt, s, {indent:1, highlight:true});
-  h+=_flashEbitdaWfRow(ol.ga||'General &amp; Administrative', wf.ga, s, fx?Object.assign({indent:1},fix):{indent:1});
+  h+=_flashEbitdaWfRow(ol.ccFees||'7010 — Credit Card Fees', wf.ccFees, s, {indent:1});
+  h+=_flashEbitdaWfRow(ol.gaExCc||'G&A (excl. CC Fees)', wf.gaExCc, s, fx?Object.assign({indent:1},fix):{indent:1});
   h+=_flashEbitdaWfRow(ol.utilities||'Utilities', wf.utilities, s, fx?Object.assign({indent:1},fix):{indent:1});
   h+=_flashEbitdaWfRow(ol.occupancy||'Occupancy', wf.occupancy, s, {indent:1});
   h+=_flashEbitdaWfRow(ol.other||'Other (Income) Expenses', wf.other, s, {indent:1});
@@ -1359,7 +1368,8 @@ function _flashEbitdaMergeWaterfalls(list){
     lbwCost:sum('lbwCost'), foodCost:sum('foodCost'), bevCost:sum('bevCost'),
     cogs:sum('cogs'), gp:sum('gp'), payroll:sum('payroll'),
     directExLive:sum('directExLive'), liveEnt:sum('liveEnt'),
-    ga:sum('ga'), utilities:sum('utilities'), occupancy:sum('occupancy'),
+    ccFees:sum('ccFees'), gaExCc:sum('gaExCc'), ga:sum('ga'),
+    utilities:sum('utilities'), occupancy:sum('occupancy'),
     other:sum('other'), corporate:sum('corporate'), ebitda:sum('ebitda')
   };
 }
@@ -1407,9 +1417,8 @@ function _ebitdaAccessGetSel(){
       }
     }
   }catch(e){}
-  /* Default: current venue if flash location, else MILA Lounge only. */
-  if(typeof curV!=='undefined' && _FLASH_PL_ORDER.indexOf(curV)>=0) return [curV];
-  return ['MILA Lounge'];
+  /* Default: all flash locations so week compare is visible. */
+  return _FLASH_PL_ORDER.slice();
 }
 function _ebitdaAccessSetSel(list){
   var map={};
@@ -1437,7 +1446,7 @@ function _ebitdaAccessVenuePillsHtml(active){
     var on=!!selMap[vn];
     h+='<button type="button" class="ebitda-loc-pill'+(on?' on':'')+'" onclick="_ebitdaAccessToggleVenue(\''+vn.replace(/'/g,"\\'")+'\')">'+_escHtml(vn)+'</button>';
   });
-  h+='</div><div class="ebitda-loc-hint">Select one or more · side-by-side compare when 2+ picked</div></div>';
+  h+='</div><div class="ebitda-loc-hint">Pick locations · week grid aligns days across venues for easy compare</div></div>';
   return h;
 }
 function _ebitdaAccessVenuePack(pack, venue){
@@ -1448,20 +1457,90 @@ function _ebitdaAccessVenuePack(pack, venue){
   return null;
 }
 function _ebitdaAccessBuildVenueData(d){
-  var shows=d.shows||[], wfList=[], showRows=[];
+  var shows=d.shows||[], wfList=[], showRows=[], byDate={};
   shows.forEach(function(sh){
     var day=_flashDailySalesDay(d.venue, sh.date);
     var sales=day&&day.total>0?day.total:null;
     var fee=+(sh.fee||0)||0;
     var wf=sales!=null?_flashEbitdaWaterfall(sales, fee, d.venue):null;
     if(wf) wfList.push(wf);
-    showRows.push({ sh:sh, day:day, sales:sales, fee:fee, wf:wf });
+    var row={ sh:sh, day:day, sales:sales, fee:fee, wf:wf };
+    showRows.push(row);
+    if(sh.date) byDate[sh.date]=row;
   });
-  return { venue:d.venue, shows:showRows, weekWf:_flashEbitdaMergeWaterfalls(wfList), wfList:wfList };
+  return { venue:d.venue, shows:showRows, byDate:byDate, weekWf:_flashEbitdaMergeWaterfalls(wfList), wfList:wfList };
+}
+function _ebitdaAccessShortVenue(vn){
+  if(vn==='Casa Neos Beach Club') return 'CN Beach Club';
+  if(vn==='Casa Neos Lounge') return 'CN Lounge';
+  if(vn==='MILA Lounge') return 'MILA';
+  return vn;
+}
+function _ebitdaAccessWeekGridHtml(items, weekLbl){
+  if(!items||!items.length) return '';
+  var dateMap={}, dateOrder=[];
+  items.forEach(function(it){
+    (it.shows||[]).forEach(function(row){
+      var d=row.sh&&row.sh.date;
+      if(!d) return;
+      if(!dateMap[d]){ dateMap[d]=1; dateOrder.push(d); }
+    });
+  });
+  dateOrder.sort();
+  if(!dateOrder.length) return '';
+
+  var h='<div class="ebitda-week-grid-wrap">';
+  h+='<div class="sanity-ebitda-sec-title">Week compare · '+_escHtml(weekLbl||'Flash week')+'</div>';
+  h+='<div class="tbl-wrap"><table class="ebitda-week-grid"><thead><tr>';
+  h+='<th class="l sticky">Day</th>';
+  items.forEach(function(it){
+    h+='<th>'+_escHtml(_ebitdaAccessShortVenue(it.venue))+'</th>';
+  });
+  h+='</tr></thead><tbody>';
+
+  dateOrder.forEach(function(iso){
+    var label='';
+    items.forEach(function(it){
+      var row=it.byDate[iso];
+      if(row&&row.sh&&!label) label=(row.sh.label||iso).replace(/,.*$/,'');
+    });
+    h+='<tr><td class="l sticky"><b>'+_escHtml(label||iso)+'</b><br><span class="ebitda-week-iso">'+_escHtml(iso)+'</span></td>';
+    items.forEach(function(it){
+      var row=it.byDate[iso];
+      if(!row){
+        h+='<td class="ebitda-week-empty">—</td>';
+        return;
+      }
+      if(!row.wf){
+        h+='<td class="ebitda-week-cell miss"><div class="ebitda-week-dj">'+_escHtml(row.sh.dj||'TBD')+'</div><div class="ebitda-week-meta">No sales</div></td>';
+        return;
+      }
+      var cls=row.wf.ebitda>=0?'beat':'miss';
+      h+='<td class="ebitda-week-cell '+cls+'">'
+        +'<div class="ebitda-week-dj">'+_escHtml(row.sh.dj||'TBD')+'</div>'
+        +'<div class="ebitda-week-meta">Sales '+_flashMoneyTxt(row.sales)+' · DJ '+_flashMoneyTxt(row.fee)+'</div>'
+        +'<div class="ebitda-week-ebitda">'+_flashMoneyTxt(row.wf.ebitda)+' <span>'+_flashEbitdaPct(row.wf.ebitda,row.sales)+'</span></div>'
+        +'</td>';
+    });
+    h+='</tr>';
+  });
+
+  h+='<tr class="ebitda-week-total-row"><td class="l sticky"><b>Week total</b></td>';
+  items.forEach(function(it){
+    var wf=it.weekWf;
+    if(!wf){ h+='<td class="ebitda-week-empty">—</td>'; return; }
+    var cls=wf.ebitda>=0?'beat':'miss';
+    h+='<td class="ebitda-week-cell '+cls+'">'
+      +'<div class="ebitda-week-meta">Sales '+_flashMoneyTxt(wf.sales)+' · DJ '+_flashMoneyTxt(wf.liveEnt)+'</div>'
+      +'<div class="ebitda-week-ebitda">'+_flashMoneyTxt(wf.ebitda)+' <span>'+_flashEbitdaPct(wf.ebitda,wf.sales)+'</span></div>'
+      +'</td>';
+  });
+  h+='</tr></tbody></table></div></div>';
+  return h;
 }
 function _ebitdaAccessCompareSummaryHtml(items){
   if(!items||items.length<2) return '';
-  var h='<div class="ebitda-compare-sec"><div class="sanity-ebitda-sec-title">Side-by-side · week total</div>';
+  var h='<div class="ebitda-compare-sec"><div class="sanity-ebitda-sec-title">Side-by-side · week waterfall</div>';
   h+='<div class="ebitda-compare-grid cols-'+Math.min(items.length,3)+'">';
   items.forEach(function(it){
     var wf=it.weekWf;
@@ -1553,6 +1632,7 @@ function renderEbitdaAccess(){
     return;
   }
 
+  if(venueData.length>=1) h+=_ebitdaAccessWeekGridHtml(venueData, weekLbl);
   if(venueData.length>=2) h+=_ebitdaAccessCompareSummaryHtml(venueData);
 
   venueData.forEach(function(vd){

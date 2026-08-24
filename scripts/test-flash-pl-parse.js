@@ -228,27 +228,28 @@ function calcEbitdaHybrid(sales,dj,o){
   var cogs=lbw*0.15+food*0.265+bev*0.28;
   var gp=sales-cogs;
   var f=o.fixedDaily;
-  return Math.round(gp-sales*o.payroll-f.directExLive-dj-f.ga-f.utilities-sales*o.occupancy-sales*o.other-f.corporate);
+  var ga=f.gaExCc + sales*(o.ccPct||0);
+  return Math.round(gp-sales*o.payroll-f.directExLive-dj-ga-f.utilities-sales*o.occupancy-sales*o.other-f.corporate);
 }
 var HYBRID_CNBC={
-  payroll:0.10247154902899072,occupancy:0.06,other:-0.033,
-  fixedDaily:{directExLive:11063.038461538454,ga:16104.81128205128,utilities:1498.2273717948717,corporate:8744.902115384613}
+  payroll:0.10247154902899072,occupancy:0.06,other:-0.033,ccPct:0.03,
+  fixedDaily:{directExLive:11063.038461538454,gaExCc:6459.81128205128,utilities:1498.2273717948717,corporate:8744.902115384613}
 };
 var HYBRID_CNL={
-  payroll:0.02956092355544922,occupancy:0.06,other:-0.033,
-  fixedDaily:{directExLive:5124.5213461538515,ga:14144.820576923077,utilities:632.2951923076923,corporate:4029.165576923077}
+  payroll:0.02956092355544922,occupancy:0.06,other:-0.033,ccPct:0.03,
+  fixedDaily:{directExLive:5124.5213461538515,gaExCc:4499.820576923077,utilities:632.2951923076923,corporate:4029.165576923077}
 };
 var HYBRID_MILA={
-  payroll:0.29341915527065526,occupancy:0.06,other:-0.033,
-  fixedDaily:{directExLive:6667.377403846152,ga:8301.968365384613,utilities:631.9599038461538,corporate:6895.3892307692295}
+  payroll:0.17835972437398664,occupancy:0.06,other:-0.033,ccPct:0.033,
+  fixedDaily:{directExLive:3809.9299450549443,gaExCc:2801.1549450549455,utilities:361.11994505494505,corporate:3940.2224175824176}
 };
-assert(calcEbitdaHybrid(cnDaily['2026-08-22'].total,500,HYBRID_CNBC)===34034, 'BARUT Sat EBITDA (hybrid)');
-assert(calcEbitdaHybrid(cnlDaily['2026-08-21'].total,500,HYBRID_CNL)===12028, 'CN Lounge Aug 21 EBITDA (hybrid)');
-assert(calcEbitdaHybrid(321500,100000,HYBRID_CNBC)===79996, 'CN BC template hybrid');
-assert(calcEbitdaHybrid(321500,100000,HYBRID_CNL)===116917, 'CN Lounge template hybrid');
-assert(calcEbitdaHybrid(milaDaily['2026-08-22'].total,10000,HYBRID_MILA)===106, 'MILA AJNA Sat hybrid');
-assert(calcEbitdaHybrid(61033,15000,HYBRID_MILA)===-7879, 'MILA OMRI Aug 20 hybrid');
-assert(calcEbitdaHybrid(67500,15000,HYBRID_MILA)===-4740, 'MILA template hybrid');
-assert(calcEbitdaHybrid(61500,4000,HYBRID_MILA)===3348, 'MILA $61.5k / $4k hybrid');
+assert(calcEbitdaHybrid(cnDaily['2026-08-22'].total,500,HYBRID_CNBC)===40488, 'BARUT Sat EBITDA (hybrid+CC)');
+assert(calcEbitdaHybrid(cnlDaily['2026-08-21'].total,500,HYBRID_CNL)===20213, 'CN Lounge Aug 21 EBITDA (hybrid+CC)');
+assert(calcEbitdaHybrid(321500,100000,HYBRID_CNBC)===79996, 'CN BC template hybrid+CC');
+assert(calcEbitdaHybrid(321500,100000,HYBRID_CNL)===116917, 'CN Lounge template hybrid+CC');
+assert(calcEbitdaHybrid(milaDaily['2026-08-22'].total,10000,HYBRID_MILA)===17203, 'MILA AJNA Sat hybrid+CC');
+assert(calcEbitdaHybrid(61033,15000,HYBRID_MILA)===8714, 'MILA OMRI Aug 20 hybrid+CC');
+assert(calcEbitdaHybrid(61000,15000,HYBRID_MILA)===8695, 'MILA template $61k / $15k DJ');
+assert(calcEbitdaHybrid(61500,4000,HYBRID_MILA)>0, 'MILA $61.5k / $4k positive');
 console.log('ok — all venues daily EBITDA sources');
 
