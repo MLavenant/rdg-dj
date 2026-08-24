@@ -7,7 +7,7 @@ alwaysApply: true
 
 After completing meaningful application changes in this repo:
 
-1. Bump the app version in `index.html` (title, `RDG_APP_VERSION`, sidebar `vX.Y`, and all `?v=` cache-bust query strings).
-2. Commit with a message matching the repo style: `Flash vX.Y: <short why>`.
+1. Bump the app version in `index.html` (title, `RDG_APP_VERSION`, sidebar `vX.YY`, and all `?v=` cache-bust query strings). Use **5.01-style patch bumps** within major 5: `5.01` → `5.02` → … → `5.09` → `5.10` → `5.11` (always two decimal digits; **never** `5.1`, `5.2`, `6.0`, etc.).
+2. Commit with a message matching the repo style: `Flash vX.YY: <short why>`.
 3. Push to `origin/main` without waiting to be asked.
 4. Do not commit temp/local-only files (e.g. `_tmp_*.xlsx`, secrets, `.env`).
