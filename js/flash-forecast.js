@@ -646,9 +646,13 @@ function _vipRenderTierBreakdown(d, rangeWkKey){
   tiers.forEach(function(t){ totTiers[t]={sold:0,sales:0,inv:0,hasActual:false}; });
   var totTblSum=0, totBSSum=0, totFeeSum=0;
 
-  /* Prefer Toast week allocation; otherwise keep per-show (incl. estimated) tiers. */
+  /* Prefer Toast week allocation only when shows lack real per-night tier splits.
+     Excel/Toast day tiers (FORECAST) stay as-is so sold/sales/avg match the night. */
   var toastWeek=_vipResolveWeeklyTier(d.venue, rangeWkKey);
-  var tierRows=toastWeek?_vipAllocateWeeklyTiers(d.shows,toastWeek):d.shows;
+  var hasExactShowTiers=(d.shows||[]).some(function(sh){
+    return sh && sh._tierDataAvailable && !sh._tierEstimated;
+  });
+  var tierRows=(toastWeek && !hasExactShowTiers)?_vipAllocateWeeklyTiers(d.shows,toastWeek):d.shows;
   tierRows.forEach(function(sh){
     var tblN=(sh.tablesActual!=null)?+sh.tablesActual:0;
     var rowSales=tiers.reduce(function(s,t){return s+((sh.tiers[t]&&sh.tiers[t].totalSales)||0);},0);
