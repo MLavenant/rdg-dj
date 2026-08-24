@@ -411,10 +411,9 @@ function _vipRenderPerfSummary(d){
      + '<th>ROI</th><th style="'+_TARGET_BG+'">ROI Tgt</th>'
      + '<th>Tables</th><th style="'+_TARGET_BG+'">Bgt</th>'
      + '<th>Avg/Tbl</th>'
-     + '<th>EBITDA</th>'
      + '</tr></thead><tbody>';
 
-  var totBS=0,totMin=0,totTbl=0,totBudget=0,totFee=0,totEbitda=0,totEbitdaN=0;
+  var totBS=0,totMin=0,totTbl=0,totBudget=0,totFee=0;
   d.shows.forEach(function(sh){
     var b=sh.bsActual>=sh.bsMin;
     var vbs=sh.bsActual-sh.bsMin;
@@ -425,15 +424,6 @@ function _vipRenderPerfSummary(d){
     var roiCls=roiTone(roiANum, roiTNum);
     var vipRoiCls=_vipRoiToneCls(roiCls);
     totBS+=sh.bsActual; totMin+=sh.bsMin; totTbl+=(sh.tablesActual||0); totBudget+=(sh.tablesBudget||0); totFee+=sh.fee;
-    var ebitdaPack=_flashEbitdaForShow(d.venue, sh);
-    var ebitdaAmt=ebitdaPack?ebitdaPack.ebitda:null;
-    var ebitdaCell;
-    if(ebitdaAmt==null) ebitdaCell='<td class="vip-ebitda-empty">\u2014</td>';
-    else{
-      totEbitda+=ebitdaAmt; totEbitdaN++;
-      ebitdaCell=_vipTdFill(_vipEbitdaTxt(ebitdaAmt), ebitdaAmt>=0?'beat':'miss');
-      if(ebitdaPack.tip) ebitdaCell=ebitdaCell.replace('<td ', '<td title="'+ebitdaPack.tip.replace(/"/g,'&quot;')+'" ');
-    }
     h += '<tr>'
        + '<td class="l"><b>'+sh.dj+'</b><br><span style="font-size:9px;color:var(--ink3)">'+sh.label.replace(/,.*$/,'')+'</span></td>'
        + '<td class="vip-cost">'+$kv(sh.fee)+'</td>'
@@ -445,7 +435,6 @@ function _vipRenderPerfSummary(d){
        + '<td>'+(sh.tablesActual!=null?sh.tablesActual:'\u2014')+'</td>'
        + '<td style="'+_TARGET_BG+'">'+(sh.tablesBudget!=null?sh.tablesBudget:'\u2014')+'</td>'
        + '<td>'+(avg?$kv(avg):'\u2014')+'</td>'
-       + ebitdaCell
        + '</tr>';
   });
   var totAvg=totTbl?Math.round(totBS/totTbl):0;
@@ -464,7 +453,6 @@ function _vipRenderPerfSummary(d){
      + '<td>'+(totTbl||'\u2014')+'</td>'
      + '<td style="'+_TARGET_BG+'">'+(totBudget||'\u2014')+'</td>'
      + '<td>'+$kv(totAvg)+'</td>'
-     + (totEbitdaN?_vipTdFill(_vipEbitdaTxt(totEbitda), totEbitda>=0?'beat':'miss'):'<td class="vip-ebitda-empty">\u2014</td>')
      + '</tr>';
   h += '</tbody></table></div></div>';
   return h;
@@ -1661,7 +1649,7 @@ function renderEbitdaAccess(){
     h+='</div>';
   });
 
-  h+='<div class="sanity-ebitda-foot sanity-ebitda-sec">Performance Summary uses the <b>EBITDA</b> line from each show waterfall. Re-upload <b>RDG Sales</b> to refresh daily sales.</div>';
+  h+='<div class="sanity-ebitda-foot sanity-ebitda-sec">Re-upload <b>RDG Sales</b> to refresh daily sales used in the waterfalls above.</div>';
   el.innerHTML=h;
 }
 
