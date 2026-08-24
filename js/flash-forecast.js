@@ -826,10 +826,10 @@ var _FLASH_EBITDA_OPEX_BY_VENUE = {
     other: -0.033,
     ccPct: 0.03,
     fixedDaily: {
-      directExLive: 11063.038461538454,
-      gaExCc: 6459.81128205128,
-      utilities: 1498.2273717948717,
-      corporate: 8744.902115384613
+      directExLive: 9482.604395604401,
+      gaExCc: 5536.9810989011,
+      utilities: 1284.1948901098901,
+      corporate: 7495.630384615384
     },
     cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 },
     opexLabels: {
@@ -845,7 +845,7 @@ var _FLASH_EBITDA_OPEX_BY_VENUE = {
   },
   'MILA Lounge': {
     model: 'hybrid',
-    payroll: 0.17835972437398664,
+    payroll: 0.3121295176544767,
     occupancy: 0.06,
     other: -0.033,
     ccPct: 0.033,
@@ -874,10 +874,10 @@ var _FLASH_EBITDA_OPEX_BY_VENUE = {
     other: -0.033,
     ccPct: 0.03,
     fixedDaily: {
-      directExLive: 5124.5213461538515,
-      gaExCc: 4499.820576923077,
-      utilities: 632.2951923076923,
-      corporate: 4029.165576923077
+      directExLive: 2928.297912087917,
+      gaExCc: 2571.3260439560436,
+      utilities: 361.3115384615385,
+      corporate: 2302.3803296703295
     },
     cogs: { lbwShare: 0.62, foodShare: 0.34, bevShare: 0.04, lbwPct: 0.15, foodPct: 0.265, bevPct: 0.28 },
     opexLabels: {
