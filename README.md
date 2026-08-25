@@ -25,10 +25,13 @@ Layout (plain files, no build step):
 4. After deploy, hard-refresh or open with `?v=3.62` if the browser caches old assets
 
 ## Automated refresh
-- **Cloud (laptop off):** GitHub Actions `RDG Daily Forecast + Toast` ~**8:30 AM ET**
-- **FourVenues** — daily Integrations API → Firebase `forecastLive` (accepted + not-completed bookings, **event dates today−7 through today+30**)
-  - **Toast BS** — Wed–Sun → GitHub Pages
-- **Local backup (this PC):** Task Scheduler at **8:30 / 8:35 AM** runs the same Integrations API + Toast path
+- **Cloud (laptop off):** GitHub Actions `RDG Daily Forecast + Toast` (~**8:25 AM ET** dispatch)
+- **FourVenues** — Integrations API → Firebase `forecastLive`
+- **Toast BS + VIP tiers** — Excel methodology → Firebase `toastActuals` (day totals), `toastVipNights` (per-night Diamond/Prestige/Platinum/Gold splits), `vipTierActuals` (week rollups)
+  - CN Lounge: no “No Table”; VIP columns = Diamond / Platinum / Gold
+  - MILA: VIP columns = Diamond / Prestige / Gold
+  - Lookback: last 14 Miami business days on every run (any week, not just a baked week)
+- **Local backup (this PC):** Task Scheduler at **8:30 / 8:35 AM** runs the same path
 - Status is written to Firebase and shown on the dashboard **System** page
 
 PC does **not** need to be on for cloud jobs. Local tasks are a backup if Actions is delayed.

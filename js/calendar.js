@@ -3655,9 +3655,12 @@ function renderSystem(){
     : '';
   h += card('FourVenues (Forecast BS Actual)', 'Dispatch ~8:25 ET · retries 9:00 & 9:30 if needed · Integrations API · laptop off', fv, 36, fvExtra);
 
-  h += card('Toast BS Actual (calendar / history)', 'Dispatch ~8:25 ET · retries 9:00 & 9:30 if needed · Firebase toastActuals', toast, 84,
+  h += card('Toast BS Actual (calendar / history)', 'Dispatch ~8:25 ET · retries 9:00 & 9:30 if needed · Excel methodology · toastActuals + VIP nights', toast, 84,
     (window._toastActuals && window._toastActuals.updatedAt
       ? '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">toastActuals: <b style="color:var(--ink2)">'+window._toastActuals.updatedAt+'</b></div>'
+      : '')
+    +(window._toastVipNights && window._toastVipNights.updatedAt
+      ? '<div style="margin-top:4px;font-size:11px;color:var(--ink3)">toastVipNights: <b style="color:var(--ink2)">'+window._toastVipNights.updatedAt+'</b></div>'
       : ''));
 
   var liveExtra = '';
@@ -4672,7 +4675,21 @@ var _vipFloorPlan = (function(){
 })();
 
 
+function _vipToastVipRow(venue, date){
+  var live=window._toastVipNights && window._toastVipNights.events;
+  if(!live) return null;
+  var key=(venue+'_'+date).replace(/[^a-zA-Z0-9_-]/g,'_');
+  if(live[key] && live[key].tierSummary) return live[key];
+  var keys=Object.keys(live);
+  for(var j=0;j<keys.length;j++){
+    var row=live[keys[j]];
+    if(row && row.venue===venue && row.date===date && row.tierSummary) return row;
+  }
+  return null;
+}
 function _vipForecastRow(venue, date){
+  var toast=_vipToastVipRow(venue, date);
+  if(toast) return toast;
   if(typeof FORECAST_DATA!=='undefined' && Array.isArray(FORECAST_DATA)){
     for(var i=0;i<FORECAST_DATA.length;i++){
       var e=FORECAST_DATA[i];

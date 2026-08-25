@@ -1432,6 +1432,9 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     if(schedChanged && window._toastActuals && typeof window._applyToastActuals==='function'){
       window._applyToastActuals(window._toastActuals);
     }
+    if(schedChanged && window._toastVipNights && typeof window._applyToastVipNights==='function'){
+      window._applyToastVipNights(window._toastVipNights);
+    }
 
     if(window._fbReady){
       /* View refresh must not mark sync as failed — data already applied. */
@@ -1546,8 +1549,39 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     if(window._fbReady && curView==='vip') renderVIP();
   });
 
+  /* Per-night Excel VIP tiers from morning Toast job (any week in lookback). */
+  window._toastVipNights = null;
+  function _applyToastVipNights(live){
+    window._toastVipNights = live || null;
+    if(!live || !live.events || typeof FORECAST_DATA==='undefined') return 0;
+    var n = 0;
+    FORECAST_DATA.forEach(function(e){
+      if(!e) return;
+      var key = (e.venue + '_' + e.date).replace(/[^a-zA-Z0-9_-]/g, '_');
+      var row = live.events[key];
+      if(!row || !row.tierSummary) return;
+      if(row.totalRevenue != null) e.totalRevenue = row.totalRevenue;
+      if(row.bookedTables != null) e.bookedTables = row.bookedTables;
+      if(row.totalTables != null) e.totalTables = row.totalTables;
+      e.tierSummary = row.tierSummary;
+      e.hasData = row.hasData != null ? row.hasData : true;
+      e._source = 'toast_excel_bs';
+      if(row._period) e._period = row._period;
+      n++;
+    });
+    return n;
+  }
+  window._applyToastVipNights = _applyToastVipNights;
+  window._fbDb.ref('rdg/toastVipNights').on('value', function(snap){
+    var live = snap.val() || null;
+    _applyToastVipNights(live);
+    if(window._fbReady && curView==='vip') renderVIP();
+    if(window._fbReady && curView==='forecast') renderForecast();
+  });
+
   /* Live Forecast Actuals from unattended FourVenues job (Sales-export math).
-     Overrides baked FORECAST_DATA so every viewer sees morning updates without a Pages redeploy. */
+     Overrides baked FORECAST_DATA so every viewer sees morning updates without a Pages redeploy.
+     Never clobber Excel Toast VIP night rows (toast_excel_bs). */
   window._forecastLive = null;
   function _applyForecastLive(live){
     window._forecastLive = live || null;
@@ -1557,6 +1591,11 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       var key = (e.venue + '_' + e.date).replace(/[^a-zA-Z0-9_-]/g, '_');
       var row = live.events[key];
       if(!row) return;
+      if(e._source==='toast_excel_bs'){
+        if(row.dj != null && row.dj !== '') e.dj = row.dj;
+        n++;
+        return;
+      }
       if(row.totalRevenue != null && (row.hasData || row.totalRevenue>0 || e.totalRevenue==null)) e.totalRevenue = row.totalRevenue;
       if(row.bookedTables != null && (row.hasData || row.bookedTables>0 || !e.bookedTables)) e.bookedTables = row.bookedTables;
       if(row.totalTables != null && (row.hasData || row.totalTables>0 || !e.totalTables)) e.totalTables = row.totalTables;
@@ -1566,6 +1605,8 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       e._source = row._source || 'forecast_live';
       n++;
     });
+    /* Re-apply Toast VIP nights in case FV listener fired first. */
+    if(window._toastVipNights && typeof _applyToastVipNights==='function') _applyToastVipNights(window._toastVipNights);
     return n;
   }
   window._fbDb.ref('rdg/forecastLive').on('value', function(snap){
