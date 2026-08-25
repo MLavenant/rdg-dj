@@ -31,6 +31,7 @@ Layout (plain files, no build step):
   - CN Lounge: no “No Table”; VIP columns = Diamond / Platinum / Gold
   - MILA: VIP columns = Diamond / Prestige / Gold
   - Lookback: last 14 Miami business days on every run (any week, not just a baked week)
+- **Forecast flash email:** Mon–Fri **9:00 ET** (retry **9:30**) — same To/Cc as dashboard **Send all emails**, only if FourVenues is OK for that Miami day; **max one email/day**. If 9:30 still fails → alert to Matthias. Status: Firebase `rdg/scrapeStatus/forecastEmail` (System page).
 - **Local backup (this PC):** Task Scheduler at **8:30 / 8:35 AM** runs the same path
 - Status is written to Firebase and shown on the dashboard **System** page
 

@@ -3562,6 +3562,7 @@ function renderSystem(){
   if(!el) return;
   var st = window._scrapeStatus || {};
   var fv = st.fourvenues || null;
+  var forecastEmail = st.forecastEmail || null;
   var toast = st.toast || null;
   var toastLive = st.toastLive || null;
   var fbOk = !!window._fbReady;
@@ -3603,9 +3604,11 @@ function renderSystem(){
       + '</div>';
   }
 
-  var overallBad = (!fbOk) || (fv && fv.ok === false) || (toast && toast.ok === false) || !liveCfgOk;
+  var overallBad = (!fbOk) || (fv && fv.ok === false) || (toast && toast.ok === false) || !liveCfgOk
+    || (forecastEmail && forecastEmail.ok === false && forecastEmail.failedAlertSent);
   var overallWarn = !overallBad && (
     health(fv, 36).stale || health(toast, 84).stale || health(toastLive, 36).stale
+    || (forecastEmail && forecastEmail.pending)
   );
 
   var h = '';
@@ -3618,6 +3621,7 @@ function renderSystem(){
     + '<div style="margin-top:8px;font-size:11px;color:var(--ink3);line-height:1.55">'
     + 'GitHub Pages hosts the site. Toast + FourVenues refresh via punctual workflow_dispatch ~8:25 AM ET, with automatic retries at <b>9:00</b> and <b>9:30</b> ET if needed (cron-job.org / Windows task). '
     + 'If still failing after 9:30, Sanity stays <b style="color:#ef4444">RED</b>. '
+    + 'Forecast flash email auto-sends Mon–Fri at <b>9:00</b> (retry <b>9:30</b>) only when FourVenues is OK — max one email per day. '
     + 'GitHub schedule crons are late backup only (often hours delayed). '
     + 'LIVE only updates when someone presses Refresh (Toast API to Firebase).'
     + '</div></div>';
@@ -3654,6 +3658,11 @@ function renderSystem(){
       + (forecastLive.source ? ' ? '+forecastLive.source : '') + '</div>'
     : '';
   h += card('FourVenues (Forecast BS Actual)', 'Dispatch ~8:25 ET · retries 9:00 & 9:30 if needed · Integrations API · laptop off', fv, 36, fvExtra);
+
+  h += card('Forecast flash email (auto Send all)', 'Mon–Fri 9:00 ET · retry 9:30 · only if FourVenues OK · max 1/day', forecastEmail, 36,
+    (forecastEmail && forecastEmail.subject
+      ? '<div style="margin-top:6px;font-size:11px;color:var(--ink3)">Subject: <b style="color:var(--ink2)">'+forecastEmail.subject+'</b></div>'
+      : ''));
 
   h += card('Toast BS Actual (calendar / history)', 'Dispatch ~8:25 ET · retries 9:00 & 9:30 if needed · Excel methodology · toastActuals + VIP nights', toast, 84,
     (window._toastActuals && window._toastActuals.updatedAt
