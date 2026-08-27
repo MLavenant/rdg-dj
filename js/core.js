@@ -56,8 +56,6 @@ function buildSidebar() {
     html += '<button class="sb-btn" data-view="'+b.id+'" onclick="setView(\''+b.id+'\')">'
           + '<span class="sb-ic">'+b.ic+'</span>'+b.lb+'</button>';
   });
-  html += '<button class="sb-btn sb-btn-live" data-view="live" onclick="setView(\'live\')">'
-        + '<span class="sb-ic">&#9679;</span>LIVE</button>';
   html += '<button class="sb-btn" data-view="3d" onclick="setView(\'3d\')">'
         + '<span class="sb-ic">&#127760;</span>3D View</button>';
   html += '<div class="sb-section-lbl" style="margin-top:8px">Admin</div>';
@@ -86,7 +84,6 @@ function selVenue(v) {
   /* Re-render venue-driven tabs if active */
   if(curView==='vip')      renderVIP();
   if(curView==='forecast') renderForecast();
-  if(curView==='live')     renderLive();
   if(curView==='system')   renderSystem();
   if(curView==='ebitda')   renderEbitdaAccess();
 }
@@ -132,7 +129,7 @@ function setView(v) {
   try{
     if(_presenceRef) _presenceRef.update({view:v,lastSeen:firebase.database.ServerValue.TIMESTAMP});
   }catch(ePresence){}
-  ['calendar','summary','allshows','leaderboard','budget','accounting','vip','forecast','roi-rules','live','system','ebitda','3d'].forEach(function(id){
+  ['calendar','summary','allshows','leaderboard','budget','accounting','vip','forecast','roi-rules','system','ebitda','3d'].forEach(function(id){
     var el = document.getElementById('view-'+id);
     if (!el) return;
     var on = id===v;
@@ -173,10 +170,6 @@ function setView(v) {
     clearGlobalCalChrome();
     document.getElementById('pgSub').innerHTML = '<span>Venue ROI Rules · BS targets, table mins, special days</span>';
     if(typeof renderRoiRulesPage==='function') renderRoiRulesPage();
-    return;
-  }
-  if (v === 'live') {
-    renderLive();
     return;
   }
   if (v === 'system') {

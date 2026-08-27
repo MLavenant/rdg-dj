@@ -1441,7 +1441,6 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       try{
         if(curView==='vip')             renderVIP();
         else if(curView==='forecast')   renderForecast();
-        else if(curView==='live')       renderLive();
         else if(curView==='system')     renderSystem();
         else if(curView==='ebitda')     renderEbitdaAccess();
         else if(curView==='accounting'){
@@ -1667,24 +1666,10 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     }
   });
 
-  /* Toast LIVE night-of BS (11pm?3am pulls) */
+  /* Toast LIVE night-of BS — view removed; keep listener for any residual writes */
   window._liveNight = null;
   window._fbDb.ref('rdg/liveNight').on('value', function(snap){
-    var prev = window._liveNight;
     window._liveNight = snap.val() || null;
-    if(window._fbReady && curView==='live'){
-      // Animate dollar increases when Firebase pushes a higher total
-      var shouldAnim = false;
-      try{
-        if(prev && window._liveNight && prev.salesByVenue && window._liveNight.salesByVenue){
-          Object.keys(window._liveNight.salesByVenue).forEach(function(v){
-            var a = prev.salesByVenue[v], b = window._liveNight.salesByVenue[v];
-            if(b!=null && a!=null && b>a) shouldAnim = true;
-          });
-        }
-      }catch(e){}
-      renderLive(shouldAnim);
-    }
   });
 
   window._scrapeStatus = {};
