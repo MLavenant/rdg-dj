@@ -3265,7 +3265,10 @@ var _FCAST_EMAIL_CC = [
   'yulyana@rivieradininggroup.com',
   'g.moorefield@rivieradininggroup.com',
   'Perrine@rivieradininggroup.com',
-  'j.costini@rivieradininggroup.com'
+  'j.costini@rivieradininggroup.com',
+  'w.fily@casa-neos.com',
+  'anzou@casaneoslounge.com',
+  'goran@milarestaurant.com'
 ];
 
 function _fcastVenueShortFile(v){
@@ -3478,6 +3481,11 @@ var _VIP_EMAIL_TO = [
   'greg@rivieradininggroup.com',
   'marine@rivieradininggroup.com'
 ];
+var _VIP_EMAIL_CC = [
+  'w.fily@casa-neos.com',
+  'anzou@casaneoslounge.com',
+  'goran@milarestaurant.com'
+];
 
 function prepareVipFlashEmail(){
   var btn=document.getElementById('vipEmailBtn');
@@ -3552,7 +3560,7 @@ function prepareVipFlashEmail(){
             html+='</div>';
             var eml=_buildForecastFlashEml({
               to:_VIP_EMAIL_TO,
-              cc:[],
+              cc:_VIP_EMAIL_CC,
               subject:subject,
               htmlBody:html,
               inlines:snapResults.map(function(r){
