@@ -3360,6 +3360,36 @@ function _buildForecastFlashEml(opts){
 
 function prepareForecastFlashEmail(){
   var btn=document.getElementById('fcastEmailBtn');
+  if(btn){ btn.disabled=true; btn.textContent='Preparing email…'; }
+  _buildForecastFlashEmailPack({}).then(function(pack){
+    var eml=_buildForecastFlashEml({
+      to:pack.to,
+      cc:pack.cc,
+      subject:pack.subject,
+      htmlBody:pack.htmlBody,
+      inlines:pack.results.map(function(r){
+        return {cid:r.cid, filename:r.short+'-snap.jpg', contentType:'image/jpeg', base64:r.snapB64};
+      }),
+      attachments:pack.results.map(function(r){
+        return {filename:r.pdfName, contentType:'application/pdf', base64:r.pdfB64};
+      })
+    });
+    _openBlobInApp(eml, 'DJ-Booking-Performance-Flash-W'+pack.weekNum+'.eml');
+    if(btn){ btn.disabled=false; btn.textContent='Send all emails'; }
+  }).catch(function(err){
+    console.warn('Forecast email prepare failed', err);
+    document.body.classList.remove('printing-forecast');
+    if(btn){ btn.disabled=false; btn.textContent='Send all emails'; }
+    alert('Could not prepare the email. Check your network and try again.');
+  });
+}
+
+/** Shared pack for UI "Send all emails" + unattended automation.
+ *  opts: { to?: string[], cc?: string[] }
+ *  Returns Promise<{ subject, weekNum, todayLabel, to, cc, htmlBody, results }>
+ */
+function _buildForecastFlashEmailPack(opts){
+  opts=opts||{};
   var venues=['Casa Neos Beach Club','MILA Lounge','Casa Neos Lounge'];
   var prevView=curView, prevV=curV;
   var weekKey=getISOWeek(new Date());
@@ -3369,7 +3399,8 @@ function prepareForecastFlashEmail(){
     return (d.getMonth()+1)+'/'+d.getDate()+'/'+d.getFullYear();
   })();
   var subject='DJ Booking Performance Flash : Week '+weekNum;
-  if(btn){ btn.disabled=true; btn.textContent='Preparing email…'; }
+  var toList=(opts.to && opts.to.length) ? opts.to.slice() : _FCAST_EMAIL_TO.slice();
+  var ccList=(opts.cc!=null) ? opts.cc.slice() : _FCAST_EMAIL_CC.slice();
 
   function restore(){
     curV=prevV;
@@ -3378,10 +3409,9 @@ function prepareForecastFlashEmail(){
     if(typeof updateTopbarLogo==='function') updateTopbarLogo(curV);
     if(prevView!=='forecast') setView(prevView);
     else { curView='forecast'; renderForecast(); }
-    if(btn){ btn.disabled=false; btn.textContent='Send all emails'; }
   }
 
-  _ensurePdfLibs().then(function(){
+  return _ensurePdfLibs().then(function(){
     if(curView!=='forecast') setView('forecast');
     var results=[];
     var chain=Promise.resolve();
@@ -3406,8 +3436,8 @@ function prepareForecastFlashEmail(){
             return _pdfFromCanvases([c1,c2], pdfName, true).then(function(pdfBlob){
               return _blobToBase64(pdfBlob).then(function(pdfB64){
                 results.push({
-                  venue:venue, short:short, pdfName:pdfName, pdfBlob:pdfBlob, pdfB64:pdfB64,
-                  snapJpeg:snapJpeg, snapB64:snapJpeg.split(',')[1]||'', cid:'snap'+vi+'@rdg'
+                  venue:venue, short:short, pdfName:pdfName, pdfB64:pdfB64,
+                  snapB64:snapJpeg.split(',')[1]||'', cid:'snap'+vi+'@rdg'
                 });
               });
             });
@@ -3417,7 +3447,6 @@ function prepareForecastFlashEmail(){
     });
     return chain.then(function(){
       document.body.classList.remove('printing-forecast');
-
       var html='<div style="font-family:Segoe UI,Arial,sans-serif;font-size:14px;color:#1c1c1e;line-height:1.5">';
       html+='<p>Hi team,</p>';
       html+='<p>Please find below our booking performance as of <b>'+todayLabel+'</b>.</p>';
@@ -3427,31 +3456,19 @@ function prepareForecastFlashEmail(){
       });
       html+='<p style="margin-top:18px;font-size:12px;color:#8e8e93">PDFs attached for each location (page 1 = Actual vs Target + Details; page 2 = Pick up pace).</p>';
       html+='</div>';
-
-      var eml=_buildForecastFlashEml({
-        to:_FCAST_EMAIL_TO,
-        cc:_FCAST_EMAIL_CC,
-        subject:subject,
-        htmlBody:html,
-        inlines:results.map(function(r){
-          return {cid:r.cid, filename:r.short+'-snap.jpg', contentType:'image/jpeg', base64:r.snapB64};
-        }),
-        attachments:results.map(function(r){
-          return {filename:r.pdfName, contentType:'application/pdf', base64:r.pdfB64};
-        })
-      });
-      var emlName='DJ-Booking-Performance-Flash-W'+weekNum+'.eml';
-      /* EML only — open Outlook draft (snapshots + PDFs). No bare mailto. */
-      _openBlobInApp(eml, emlName);
       restore();
+      return {
+        subject:subject, weekNum:weekNum, todayLabel:todayLabel,
+        to:toList, cc:ccList, htmlBody:html, results:results
+      };
     });
   }).catch(function(err){
-    console.warn('Forecast email prepare failed', err);
     document.body.classList.remove('printing-forecast');
-    restore();
-    alert('Could not prepare the email. Check your network and try again.');
+    try{ restore(); }catch(eR){}
+    throw err;
   });
 }
+window._buildForecastFlashEmailPack = _buildForecastFlashEmailPack;
 
 var _VIP_EMAIL_TO = [
   'Salesteam@rivieradininggroup.com',
