@@ -28,8 +28,6 @@ recalcAllSchedTargets(); /* boot */
     if(body && !String(body.innerHTML||'').trim() && typeof renderCal==='function') renderCal();
   }, 400);
   refreshUndoUI();
-  /* Fire once-per-week VIP recap popup */
-  setTimeout(checkNewWeekPopup, 800);
 }
 
 /*    Sidebar                                                      */
