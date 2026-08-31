@@ -888,6 +888,29 @@ function _flashWeekToPeriodNum(weekNum){
   return null;
 }
 function _flashPeriodLabel(n){ return n?('P'+n):''; }
+/** Fiscal/ISO week number (1–53) for a YYYY-MM-DD — drives Weekly Flash P/W labels. */
+function _flashFiscalWeekNum(dateStr){
+  if(!dateStr) return null;
+  var key=(typeof getISOWeek==='function')
+    ? getISOWeek(new Date(String(dateStr).slice(0,10)+'T12:00:00'))
+    : '';
+  var m=String(key).match(/W(\d+)/);
+  return m?+m[1]:null;
+}
+/** Sum uploaded daily sales for a venue between inclusive dates. */
+function _flashSumDailySalesInRange(venue, fromDate, toDate){
+  var ov=window.FLASH_PL_OVERLAY||{};
+  var map=ov.sales&&ov.sales.dailyByVenue&&ov.sales.dailyByVenue[venue];
+  if(!map||!fromDate||!toDate) return null;
+  var sum=0, n=0, d, tot;
+  for(d in map){
+    if(!Object.prototype.hasOwnProperty.call(map,d)) continue;
+    if(d<fromDate||d>toDate) continue;
+    tot=map[d]&&map[d].total;
+    if(tot!=null&&isFinite(+tot)){ sum+=+tot; n++; }
+  }
+  return n?sum:null;
+}
 function _flashNum(v){
   if(v==null || v==='') return null;
   if(typeof v==='number' && isFinite(v)) return v;
@@ -1945,41 +1968,60 @@ function _vipRenderFlashPlForVenue(venue, asOfDate){
   if(_FLASH_PL_ORDER.indexOf(venue)<0) return '';
   var ov=window.FLASH_PL_OVERLAY||{};
   var sales=ov.sales, live=ov.live;
+  /* Always use 4-4-5 fiscal calendar for the VIP week (not stale Excel P/W labels). */
+  var cutDate=String(asOfDate||(typeof TODAY!=='undefined'?TODAY:'')||'').slice(0,10);
   var info=(typeof fiscalInfoForDate==='function')
-    ? fiscalInfoForDate(asOfDate||(typeof TODAY!=='undefined'?TODAY:''))
+    ? fiscalInfoForDate(cutDate)
     : {year:2026, monthIndex:7};
-  var periodNum=(sales&&sales.periodNum)||(info.monthIndex+1);
-  var year=(sales&&sales.year)||info.year||2026;
+  var periodNum=(info.monthIndex!=null?info.monthIndex:7)+1;
+  var year=info.year||2026;
   var monthIndex0=periodNum-1;
   var periodListMtd=[periodNum];
+  var throughWeek=_flashFiscalWeekNum(cutDate);
+  var periodRange=(typeof fiscalPeriodRange==='function')
+    ? fiscalPeriodRange(year, monthIndex0)
+    : null;
+  var mtdThrough=(periodRange&&cutDate>periodRange.to)?periodRange.to:cutDate;
 
   var sv=(sales&&sales.venues&&sales.venues[venue])||{};
   var lv=(live&&live.venues&&live.venues[venue])||{};
-  var throughWeek=(sales&&sales.week)||null;
-  /* Live MTD = same weeks as Sales (period through flash week). */
+  /* Live MTD = weeks in this fiscal period through the flash week. */
   var liveMtd=_flashSumByWeekMap(lv.byWeek, periodNum, throughWeek);
   if(liveMtd==null) liveMtd=_flashSumLiveForPeriods(lv.byWeek, periodListMtd);
 
-  /* 2026 Target: prefer Sales Excel Budget sheet MTD; else Budget page prorated. */
+  /* Sales MTD: prefer daily upload summed to flash week; else overlay only if same period. */
+  var salesMtdA=null;
+  if(periodRange){
+    salesMtdA=_flashSumDailySalesInRange(venue, periodRange.from, mtdThrough);
+  }
+  if(salesMtdA==null && sales&&sales.periodNum===periodNum && sv.salesMtdA!=null){
+    salesMtdA=sv.salesMtdA;
+  }
+
+  /* 2026 Target: prefer Sales Excel Budget sheet MTD (same period); else Budget page prorated. */
   var salesFullB=_flashSalesBudgetSum(venue, year, monthIndex0, monthIndex0);
   var liveFullB=_flashLiveBudgetSum(venue, year, monthIndex0, monthIndex0);
   var py=_flashPyMonthVals(venue, year, monthIndex0, throughWeek);
   var elapsed=_flashWeeksElapsedInPeriod(periodNum, throughWeek);
   var weeksInP=((typeof FISCAL_WEEKS_445!=='undefined')?FISCAL_WEEKS_445:[4,4,5,4,4,5,4,4,5,4,4,5])[monthIndex0]||4;
-  var salesMtdB=(sv.salesMtdB!=null)?sv.salesMtdB:salesFullB;
+  var salesMtdB=null;
+  if(sv.salesMtdB!=null && sales&&sales.periodNum===periodNum
+    && (sales.week==null||throughWeek==null||sales.week===throughWeek)){
+    salesMtdB=sv.salesMtdB;
+  }
+  if(salesMtdB==null) salesMtdB=salesFullB;
   var liveMtdB=liveFullB;
-  if(sv.salesMtdB==null && elapsed>0 && weeksInP>0 && salesFullB!=null){
+  if(salesMtdB===salesFullB && elapsed>0 && weeksInP>0 && salesFullB!=null){
     salesMtdB=salesFullB*(elapsed/weeksInP);
   }
   if(elapsed>0 && weeksInP>0 && liveFullB!=null){
     liveMtdB=liveFullB*(elapsed/weeksInP);
   }
-  var marginMtdA=(typeof pctLive==='function')?pctLive(sv.salesMtdA, liveMtd):null;
-  var marginSalesB=(sv.salesMtdB!=null)?sv.salesMtdB:salesFullB;
-  var marginLiveB=liveFullB;
+  var marginMtdA=(typeof pctLive==='function')?pctLive(salesMtdA, liveMtd):null;
+  var marginSalesB=salesMtdB;
+  var marginLiveB=liveMtdB;
   var marginMtdB=(typeof pctLive==='function')?pctLive(marginSalesB, marginLiveB):null;
 
-  var cutDate=asOfDate||String(TODAY||'');
   var monthRoi=(typeof _vipRoiCompletionStats==='function')
     ? _vipRoiCompletionStats(venue, year, monthIndex0, cutDate)
     : {beats:0,measured:0,pct:null};
@@ -2015,13 +2057,13 @@ function _vipRenderFlashPlForVenue(venue, asOfDate){
   /* ---- Left: 2026 Actual vs 2026 Target vs PY ---- */
   h+='<div class="bgt-monthly flash-pl-monthly flash-pl-mtd-panel">';
   h+='<div class="bgt-monthly-hd">Sales &amp; Live Entertainment<span>'+periodLbl+' MTD'
-    +(sales&&sales.week?(' · Week '+sales.week):'')
+    +(throughWeek!=null?(' · Week '+throughWeek):'')
     +' · '+year+' Actual · '+pyNote+'</span></div>';
   h+='<div class="bgt-monthly-grid flash-pl-grid flash-pl-grid-mtd">';
   h+='<div class="bgt-monthly-cell bgt-monthly-month"></div>';
   h+='<div class="bgt-monthly-cell bgt-monthly-month">'+year+' Actual vs Target vs PY</div>';
   h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Total Sales</b><span>'+year+' actual · '+year+' target · PY</span></div>';
-  h+=_vipFlashPlCompareCell(sv.salesMtdA, salesMtdB, py.sales, 'sales', py.year, cmpOpts);
+  h+=_vipFlashPlCompareCell(salesMtdA, salesMtdB, py.sales, 'sales', py.year, cmpOpts);
   h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live Entertainment</b><span>GL 6750 · '+year+' target · PY</span></div>';
   h+=_vipFlashPlCompareCell(liveMtd, liveMtdB, py.live, 'live', py.year, cmpOpts);
   h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live E Margin</b><span>Live \u00f7 Sales % · '+year+' target · PY</span></div>';
