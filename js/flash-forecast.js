@@ -1016,16 +1016,18 @@ function _flashDetectCurrentPeriod(rows, periodCol, weekCol, salesColLists, data
   (salesColLists||[]).forEach(function(cols){
     for(j=0;j<cols.length;j++) allCols.push(cols[j]);
   });
+  function hasSales(row){
+    for(c=0;c<allCols.length;c++){
+      v=_flashNum(row[allCols[c]]);
+      if(v!=null && v!==0) return true;
+    }
+    return false;
+  }
   for(i=start;i<rows.length;i++){
     r=rows[i]||[];
     pn=_flashParsePeriodCell(r[periodCol]);
     if(!pn) continue;
-    rowHasSales=false;
-    for(c=0;c<allCols.length;c++){
-      v=_flashNum(r[allCols[c]]);
-      if(v!=null && v!==0){ rowHasSales=true; break; }
-    }
-    if(rowHasSales) maxPWithSales=Math.max(maxPWithSales, pn);
+    if(hasSales(r)) maxPWithSales=Math.max(maxPWithSales, pn);
   }
   if(!maxPWithSales){
     for(i=start;i<rows.length;i++){
@@ -1041,6 +1043,7 @@ function _flashDetectCurrentPeriod(rows, periodCol, weekCol, salesColLists, data
     r=rows[i]||[];
     pn=_flashParsePeriodCell(r[periodCol]);
     if(pn!==maxPWithSales) continue;
+    if(!hasSales(r)) continue;
     wk=_flashParseWeekCell(r[weekCol]);
     if(wk) maxWInPeriod=Math.max(maxWInPeriod, wk);
   }

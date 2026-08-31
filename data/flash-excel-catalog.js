@@ -16,7 +16,7 @@ window.FLASH_EXCEL_CATALOG = [
       {
         name: 'Live Entertainment Report - 2026.xlsx',
         path: 'data/excel/live-entertainment-report-2026.xlsx',
-        note: 'GL 6750 by week · through Week 34 · Upload via Weekly Flash → Upload Live Ent'
+        note: 'GL 6750 by week · through Week 35 · Upload via Weekly Flash → Upload Live Ent'
       }
     ]
   },

@@ -9,8 +9,12 @@ const https = require('https');
 const XLSX = require('../js/vendor/xlsx.js');
 
 const HOST = 'rdg-dj-dashboard-default-rtdb.firebaseio.com';
-const SALES_PATH = path.join(__dirname, '..', 'data', 'excel', 'rdg-sales-2026.xlsx');
-const LIVE_PATH = path.join(__dirname, '..', 'data', 'excel', 'live-entertainment-report-2026.xlsx');
+const SALES_PATH = process.argv[2]
+  ? path.resolve(process.argv[2])
+  : path.join(__dirname, '..', 'data', 'excel', 'rdg-sales-2026.xlsx');
+const LIVE_PATH = process.argv[3]
+  ? path.resolve(process.argv[3])
+  : path.join(__dirname, '..', 'data', 'excel', 'live-entertainment-report-2026.xlsx');
 
 const FISCAL_WEEKS_445 = [4, 4, 5, 4, 4, 5, 4, 4, 5, 4, 4, 5];
 const SALES_MATCHERS = [
@@ -134,23 +138,23 @@ function detectCurrentPeriod(rows, periodCol, weekCol, colLists, dataStart) {
   let maxP = 0;
   let maxW = 0;
   const allCols = [].concat.apply([], colLists);
+  function rowHasSales(r) {
+    for (let c = 0; c < allCols.length; c++) {
+      const v = flashNum(r[allCols[c]]);
+      if (v != null && v !== 0) return true;
+    }
+    return false;
+  }
   for (let i = dataStart; i < rows.length; i++) {
     const r = rows[i] || [];
     const pn = parsePeriod(r[periodCol]);
     if (!pn) continue;
-    let has = false;
-    for (let c = 0; c < allCols.length; c++) {
-      const v = flashNum(r[allCols[c]]);
-      if (v != null && v !== 0) {
-        has = true;
-        break;
-      }
-    }
-    if (has) maxP = Math.max(maxP, pn);
+    if (rowHasSales(r)) maxP = Math.max(maxP, pn);
   }
   for (let i = dataStart; i < rows.length; i++) {
     const r = rows[i] || [];
     if (parsePeriod(r[periodCol]) !== maxP) continue;
+    if (!rowHasSales(r)) continue;
     const wk = parseWeek(r[weekCol]);
     if (wk) maxW = Math.max(maxW, wk);
   }
@@ -334,10 +338,40 @@ function parseLive(wb, fileName) {
 }
 
 (async () => {
+  console.log('Sales file:', SALES_PATH);
+  console.log('Live file:', LIVE_PATH);
   const salesWb = XLSX.read(fs.readFileSync(SALES_PATH), { type: 'buffer' });
   const liveWb = XLSX.read(fs.readFileSync(LIVE_PATH), { type: 'buffer' });
-  const sales = parseSales(salesWb, 'RDG Sales - 2026.xlsx');
-  const live = parseLive(liveWb, 'Live Entertainment Report - 2026.xlsx');
+  const sales = parseSales(salesWb, path.basename(SALES_PATH));
+  let live = parseLive(liveWb, path.basename(LIVE_PATH));
+
+  /* Partial Live reports (e.g. Jul–Aug only) must not wipe earlier weeks. */
+  const prev = await req('GET', '/rdg/flashPlOverlay.json');
+  if (prev.status === 200 && prev.json && prev.json.live && prev.json.live.venues) {
+    const mergedVenues = {};
+    const weekSet = {};
+    Object.keys(prev.json.live.venues).forEach((venue) => {
+      mergedVenues[venue] = {
+        byWeek: Object.assign({}, prev.json.live.venues[venue].byWeek || {})
+      };
+      Object.keys(mergedVenues[venue].byWeek).forEach((w) => { weekSet[w] = 1; });
+    });
+    Object.keys(live.venues || {}).forEach((venue) => {
+      mergedVenues[venue] = mergedVenues[venue] || { byWeek: {} };
+      Object.assign(mergedVenues[venue].byWeek, live.venues[venue].byWeek || {});
+      Object.keys(live.venues[venue].byWeek || {}).forEach((w) => { weekSet[w] = 1; });
+    });
+    const weeks = Object.keys(weekSet).map(Number).sort((a, b) => a - b);
+    live = {
+      uploadedAt: live.uploadedAt,
+      fileName: live.fileName,
+      dateRange: live.dateRange || (prev.json.live && prev.json.live.dateRange) || '',
+      weeks: weeks,
+      venues: mergedVenues,
+      mergedFromPrior: true
+    };
+    console.log('Merged Live with prior Firebase weeks →', weeks[0], '–', weeks[weeks.length - 1]);
+  }
 
   console.log('Sales week', sales.week, sales.period);
   if (sales.dailyByVenue) {
@@ -357,11 +391,11 @@ function parseLive(wb, fileName) {
     console.log('  ', v, 'weeks', keys.length, 'last W' + last, '=', Math.round(by[String(last)] || 0));
   });
 
-  if (sales.week !== 34) {
-    console.warn('WARNING: expected Sales week 34, got', sales.week);
+  if (!(sales.week >= 35)) {
+    console.warn('WARNING: expected Sales week ≥ 35 for this update, got', sales.week);
   }
   const lastLive = live.weeks[live.weeks.length - 1];
-  if (lastLive < 33) {
+  if (lastLive < 35) {
     console.warn('WARNING: Live Ent last week looks early:', lastLive);
   }
 
