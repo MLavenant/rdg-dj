@@ -2001,24 +2001,21 @@ function _vipRenderFlashPlForVenue(venue, asOfDate){
     salesMtdA=sv.salesMtdA;
   }
 
-  /* 2026 Target: prefer Sales Excel Budget sheet MTD (same period); else Budget page prorated. */
+  /* 2026 Target MTD: full-period budget × (weeks elapsed ÷ weeks in period).
+     W35 = week 1 of P9 (5 weeks) → Target = period budget / 5. Never show full-period as MTD. */
   var salesFullB=_flashSalesBudgetSum(venue, year, monthIndex0, monthIndex0);
   var liveFullB=_flashLiveBudgetSum(venue, year, monthIndex0, monthIndex0);
   var py=_flashPyMonthVals(venue, year, monthIndex0, throughWeek);
   var elapsed=_flashWeeksElapsedInPeriod(periodNum, throughWeek);
   var weeksInP=((typeof FISCAL_WEEKS_445!=='undefined')?FISCAL_WEEKS_445:[4,4,5,4,4,5,4,4,5,4,4,5])[monthIndex0]||4;
-  var salesMtdB=null;
-  if(sv.salesMtdB!=null && sales&&sales.periodNum===periodNum
-    && (sales.week==null||throughWeek==null||sales.week===throughWeek)){
-    salesMtdB=sv.salesMtdB;
-  }
-  if(salesMtdB==null) salesMtdB=salesFullB;
+  var salesPeriodB=(sv.salesMtdB!=null && sales&&sales.periodNum===periodNum)
+    ? sv.salesMtdB
+    : salesFullB;
+  var salesMtdB=salesPeriodB;
   var liveMtdB=liveFullB;
-  if(salesMtdB===salesFullB && elapsed>0 && weeksInP>0 && salesFullB!=null){
-    salesMtdB=salesFullB*(elapsed/weeksInP);
-  }
-  if(elapsed>0 && weeksInP>0 && liveFullB!=null){
-    liveMtdB=liveFullB*(elapsed/weeksInP);
+  if(elapsed>0 && weeksInP>0){
+    if(salesPeriodB!=null) salesMtdB=salesPeriodB*(elapsed/weeksInP);
+    if(liveFullB!=null) liveMtdB=liveFullB*(elapsed/weeksInP);
   }
   var marginMtdA=(typeof pctLive==='function')?pctLive(salesMtdA, liveMtd):null;
   var marginSalesB=salesMtdB;
