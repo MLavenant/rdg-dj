@@ -19,6 +19,19 @@ recalcAllSchedTargets(); /* boot */
   initLayoutMode();
   initPresence();
   try{ if(typeof window._schedSelfHeal==='function') window._schedSelfHeal(); }catch(eHeal){}
+  /* Deep links from Forecast flash email: ?view=forecast&venue=... */
+  try{
+    var q=new URLSearchParams(location.search||'');
+    var bootView=q.get('view');
+    var bootVenue=q.get('venue');
+    if(bootVenue){
+      curV=bootVenue;
+      if(typeof buildVenTabs==='function') buildVenTabs();
+      if(typeof updateTopbarLogo==='function') updateTopbarLogo(curV);
+      if(typeof buildSidebar==='function') buildSidebar();
+    }
+    if(bootView && typeof setView==='function') setView(bootView);
+  }catch(eQ){}
   /* If a script error left the calendar hidden or empty, recover once. */
   setTimeout(function(){
     if(curView!=='calendar') return;
