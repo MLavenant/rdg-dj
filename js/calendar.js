@@ -3450,19 +3450,14 @@ function _buildForecastFlashEmailPack(opts){
     });
     return chain.then(function(){
       document.body.classList.remove('printing-forecast');
-      var dashBase='https://mlavenant.github.io/rdg-dj/';
       var html='<div style="font-family:Segoe UI,Arial,sans-serif;font-size:14px;color:#1c1c1e;line-height:1.5">';
       html+='<p>Hi team,</p>';
       html+='<p>Please find below our booking performance as of <b>'+todayLabel+'</b>.</p>';
       results.forEach(function(r){
-        var liveUrl=dashBase+'?view=forecast&venue='+encodeURIComponent(r.venue||'');
         html+='<div style="margin:18px 0 8px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#48484a">'+r.venue+'</div>';
-        html+='<a href="'+liveUrl+'" target="_blank" rel="noopener" style="text-decoration:none;color:inherit;display:block">';
-        html+='<img src="cid:'+r.cid+'" alt="'+r.venue+' booking performance" style="max-width:100%;border:1px solid #e5e5ea;border-radius:8px;display:block;cursor:pointer"/>';
-        html+='</a>';
-        html+='<div style="margin:4px 0 0;font-size:11px"><a href="'+liveUrl+'" target="_blank" rel="noopener" style="color:#0f766e;font-weight:600">Open live Forecast \u2192</a></div>';
+        html+='<img src="cid:'+r.cid+'" alt="'+r.venue+' booking performance" style="max-width:100%;border:1px solid #e5e5ea;border-radius:8px;display:block"/>';
       });
-      html+='<p style="margin-top:18px;font-size:12px;color:#8e8e93">Snapshots open the live Forecast page. PDFs attached for each location (page 1 = Actual vs Target + Details; page 2 = Pick up pace).</p>';
+      html+='<p style="margin-top:18px;font-size:12px;color:#8e8e93">PDFs attached for each location (page 1 = Actual vs Target + Details; page 2 = Pick up pace).</p>';
       html+='</div>';
       restore();
       return {
