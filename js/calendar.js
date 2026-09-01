@@ -3484,7 +3484,8 @@ var _VIP_EMAIL_TO = [
 var _VIP_EMAIL_CC = [
   'w.fily@casa-neos.com',
   'anzou@casaneoslounge.com',
-  'goran@milarestaurant.com'
+  'goran@milarestaurant.com',
+  'e.leroux@rivieradininggroup.com'
 ];
 
 function prepareVipFlashEmail(){
