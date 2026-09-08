@@ -1737,6 +1737,25 @@ function _flashSumLiveForPeriods(byWeek, periodNums){
   });
   return n?sum:null;
 }
+/** Calendar DJ fees in fiscal period through MTD cut, strictly before today (proxy when Live Excel is negative). */
+function _flashCalendarDjFeesMtd(venue, year, monthIndex0, throughDate, beforeDate){
+  var through=String(throughDate||'').slice(0,10);
+  var before=String(beforeDate||(typeof TODAY!=='undefined'?TODAY:'')||'').slice(0,10);
+  if(!venue||!before) return null;
+  var sum=0, n=0;
+  (typeof SCHED!=='undefined'?SCHED:[]).forEach(function(r){
+    if(!r||r._s==='empty') return;
+    if((r.v||r.venue)!==venue) return;
+    if(!r.d) return;
+    if(typeof dateInFiscalPeriod==='function' && !dateInFiscalPeriod(r.d, year, monthIndex0)) return;
+    if(through && r.d>through) return;
+    if(r.d>=before) return;
+    var fee=+(r.fee||r.cost||0)||0;
+    if(!(fee>0)) return;
+    sum+=fee; n++;
+  });
+  return n?sum:0;
+}
 function _flashLiveBudgetSum(venue, year, fromMi, toMi){
   if(typeof getBgtPlan!=='function') return null;
   var sum=0, n=0;
@@ -2039,6 +2058,18 @@ function _vipRenderFlashPlForVenue(venue, asOfDate){
   /* Live MTD = weeks in this fiscal period through the flash week (not current calendar week). */
   var liveMtd=_flashSumByWeekMap(lv.byWeek, periodNum, throughWeek);
   if(liveMtd==null) liveMtd=_flashSumLiveForPeriods(lv.byWeek, periodListMtd);
+  /* Negative Live Excel (credits/reversals) → Calendar DJ fees MTD before today. */
+  var liveFromCalendarFees=false;
+  if(liveMtd!=null && liveMtd<0){
+    var feeProxy=_flashCalendarDjFeesMtd(
+      venue, year, monthIndex0, mtdThrough,
+      (typeof TODAY!=='undefined'?TODAY:null)
+    );
+    if(feeProxy!=null){
+      liveMtd=feeProxy;
+      liveFromCalendarFees=true;
+    }
+  }
 
   /* Sales MTD: prefer daily upload summed to flash week; else overlay only if same period. */
   var salesMtdA=null;
@@ -2112,7 +2143,11 @@ function _vipRenderFlashPlForVenue(venue, asOfDate){
   h+='<div class="bgt-monthly-cell bgt-monthly-month">'+year+' Actual vs Target vs PY</div>';
   h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Total Sales</b><span>'+year+' actual · '+year+' target · PY</span></div>';
   h+=_vipFlashPlCompareCell(salesMtdA, salesMtdB, py.sales, 'sales', py.year, cmpOpts);
-  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live Entertainment</b><span>GL 6750 · '+year+' target · PY</span></div>';
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live Entertainment</b><span>'
+    +(liveFromCalendarFees
+      ?('Calendar DJ fees (Excel Live &lt; 0) · '+year+' target · PY')
+      :('GL 6750 · '+year+' target · PY'))
+    +'</span></div>';
   h+=_vipFlashPlCompareCell(liveMtd, liveMtdB, py.live, 'live', py.year, cmpOpts);
   h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live E Margin</b><span>Live \u00f7 Sales % · '+year+' target · PY</span></div>';
   h+=_vipFlashPlCompareCell(marginMtdA, marginMtdB, py.margin, 'margin', py.year, cmpOpts);
