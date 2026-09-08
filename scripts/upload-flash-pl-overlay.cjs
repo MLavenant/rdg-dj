@@ -291,7 +291,9 @@ function parseLive(wb, fileName) {
     const venue = LIVE_SHEETS[sheetName];
     const rows = sheetRows(wb, sheetName);
     if (!rows || !rows.length) return;
-    if (!dateRange && rows[1] && rows[1][0]) dateRange = String(rows[1][0]);
+    if (!dateRange && rows[1] && rows[1][0] && !/6750/.test(String(rows[1][0]))) {
+      dateRange = String(rows[1][0]);
+    }
     let headerRow = -1;
     const weekCols = {};
     for (let i = 0; i < Math.min(rows.length, 10); i++) {
@@ -310,7 +312,7 @@ function parseLive(wb, fileName) {
         break;
       }
     }
-    if (headerRow < 0) return;
+
     let liveRow = -1;
     for (let i = 0; i < rows.length; i++) {
       const a = rows[i] && rows[i][0];
@@ -320,6 +322,47 @@ function parseLive(wb, fileName) {
       }
     }
     if (liveRow < 0) return;
+
+    /* Newer R365 exports sometimes omit "Week N" headers — only amount/% columns.
+       Infer consecutive weeks ending at last complete ISO week before export. */
+    if (headerRow < 0) {
+      const liveVals = [];
+      const r = rows[liveRow] || [];
+      for (let c = 1; c < r.length; c++) {
+        const v = flashNum(r[c]);
+        const next = flashNum(r[c + 1]);
+        /* amount then share (0–1 or blank) then spacer — take amount cols */
+        if (v != null && (next == null || Math.abs(next) <= 1.5)) {
+          liveVals.push({ col: c, val: v });
+          c += 2;
+        }
+      }
+      if (!liveVals.length) return;
+      const stamp = String((rows[rows.length - 1] && rows[rows.length - 1][0]) || '');
+      const stampM = stamp.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      let endWeek = null;
+      if (stampM) {
+        const d = new Date(+stampM[3], +stampM[1] - 1, +stampM[2], 12, 0, 0);
+        const dow = d.getDay() || 7;
+        /* last complete week = previous Monday's ISO week */
+        d.setDate(d.getDate() - (dow + 6));
+        const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        const dayNum = t.getUTCDay() || 7;
+        t.setUTCDate(t.getUTCDate() + 4 - dayNum);
+        const yearStart = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+        endWeek = Math.ceil((((t - yearStart) / 86400000) + 1) / 7);
+      }
+      if (!endWeek) endWeek = 36;
+      const startWeek = endWeek - liveVals.length + 1;
+      if (!dateRange) dateRange = 'unlabeled weeks W' + startWeek + '–W' + endWeek;
+      liveVals.forEach((item, idx) => {
+        const wk = startWeek + idx;
+        weekCols[wk] = item.col;
+        if (weeksFound.indexOf(wk) < 0) weeksFound.push(wk);
+      });
+      console.log('Live', venue, 'unlabeled → W' + startWeek + '–W' + endWeek, liveVals.map((x) => Math.round(x.val)).join(', '));
+    }
+
     const byWeek = {};
     Object.keys(weekCols).forEach((wk) => {
       const val = flashNum(rows[liveRow][weekCols[wk]]);
@@ -391,11 +434,11 @@ function parseLive(wb, fileName) {
     console.log('  ', v, 'weeks', keys.length, 'last W' + last, '=', Math.round(by[String(last)] || 0));
   });
 
-  if (!(sales.week >= 35)) {
-    console.warn('WARNING: expected Sales week ≥ 35 for this update, got', sales.week);
+  if (!(sales.week >= 36)) {
+    console.warn('WARNING: expected Sales week ≥ 36 for this update, got', sales.week);
   }
   const lastLive = live.weeks[live.weeks.length - 1];
-  if (lastLive < 35) {
+  if (lastLive < 36) {
     console.warn('WARNING: Live Ent last week looks early:', lastLive);
   }
 

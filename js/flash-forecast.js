@@ -1643,7 +1643,7 @@ function _flashParseLiveWorkbook(wb, fileName){
     var venue=_FLASH_PL_VENUE_MAP.liveSheets[sheetName];
     var rows=_flashSheetRows(wb, sheetName);
     if(!rows || !rows.length) return;
-    if(!dateRange && rows[1] && rows[1][0]) dateRange=String(rows[1][0]);
+    if(!dateRange && rows[1] && rows[1][0] && !/6750/.test(String(rows[1][0]))) dateRange=String(rows[1][0]);
     var headerRow=-1, weekCols={};
     var i, c, r;
     for(i=0;i<Math.min(rows.length,10);i++){
@@ -1659,7 +1659,6 @@ function _flashParseLiveWorkbook(wb, fileName){
       }
       if(hits>=2){ headerRow=i; break; }
     }
-    if(headerRow<0) return;
     var liveRow=-1;
     for(i=0;i<rows.length;i++){
       var a=rows[i]&&rows[i][0];
@@ -1668,6 +1667,41 @@ function _flashParseLiveWorkbook(wb, fileName){
       }
     }
     if(liveRow<0) return;
+
+    /* R365 unlabeled weekly columns: amount · share · spacer → infer weeks ending last complete week. */
+    if(headerRow<0){
+      var liveVals=[];
+      r=rows[liveRow]||[];
+      for(c=1;c<r.length;c++){
+        var v=_flashNum(r[c]);
+        var next=_flashNum(r[c+1]);
+        if(v!=null && (next==null || Math.abs(next)<=1.5)){
+          liveVals.push({col:c, val:v});
+          c+=2;
+        }
+      }
+      if(!liveVals.length) return;
+      var stamp=String((rows[rows.length-1]&&rows[rows.length-1][0])||'');
+      var stampM=stamp.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      var endWeek=null;
+      if(stampM){
+        var d=new Date(+stampM[3], +stampM[1]-1, +stampM[2], 12, 0, 0);
+        var dow=d.getDay()||7;
+        d.setDate(d.getDate()-(dow+6));
+        var key=(typeof getISOWeek==='function')?getISOWeek(d):'';
+        var wm=String(key).match(/W(\d+)/);
+        endWeek=wm?+wm[1]:null;
+      }
+      if(!endWeek) endWeek=36;
+      var startWeek=endWeek-liveVals.length+1;
+      if(!dateRange) dateRange='unlabeled weeks W'+startWeek+'\u2013W'+endWeek;
+      liveVals.forEach(function(item, idx){
+        var wk=startWeek+idx;
+        weekCols[wk]=item.col;
+        if(weeksFound.indexOf(wk)<0) weeksFound.push(wk);
+      });
+    }
+
     var byWeek={};
     Object.keys(weekCols).forEach(function(wk){
       var col=weekCols[wk];
