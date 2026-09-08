@@ -4532,6 +4532,15 @@ function getVipWeekRange(weeksBack) {
   var lastMon = _vipShiftDate(todayStr, -daysToLastMon);
   var targetMon = _vipShiftDate(lastMon, -weeksBack * 7);
   var targetSun = _vipShiftDate(targetMon, 6);
+  /* Labor Day Monday (first Monday of September) sits after the Sun week end —
+     include it in "Last Week" so CN BC Monday shows with that weekend. */
+  if (weeksBack === 0) {
+    var dayAfter = _vipShiftDate(targetSun, 1);
+    var d = new Date(dayAfter + 'T12:00:00Z');
+    if (d.getUTCDay() === 1 && d.getUTCMonth() === 8 && d.getUTCDate() <= 7 && todayStr > dayAfter) {
+      targetSun = dayAfter;
+    }
+  }
   return { mon: targetMon, sun: targetSun };
 }
 
