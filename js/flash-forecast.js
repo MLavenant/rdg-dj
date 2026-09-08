@@ -2013,22 +2013,30 @@ function _vipRenderFlashPlForVenue(venue, asOfDate){
   var sales=ov.sales, live=ov.live;
   /* Always use 4-4-5 fiscal calendar for the VIP week (not stale Excel P/W labels). */
   var cutDate=String(asOfDate||(typeof TODAY!=='undefined'?TODAY:'')||'').slice(0,10);
+  /* Performance week may spill one day into the next Monday (Labor Day CN BC).
+     Sales/Live MTD Target + PY must close on that flash week's Sunday — never
+     pull W37 into a W36 flash while calendar today is already W37. */
+  var mtdCut=cutDate;
+  try{
+    var cutDow=new Date(cutDate+'T12:00:00Z').getUTCDay();
+    if(cutDow===1 && typeof _vipShiftDate==='function') mtdCut=_vipShiftDate(cutDate,-1);
+  }catch(eMtd){}
   var info=(typeof fiscalInfoForDate==='function')
-    ? fiscalInfoForDate(cutDate)
+    ? fiscalInfoForDate(mtdCut)
     : {year:2026, monthIndex:7};
   var periodNum=(info.monthIndex!=null?info.monthIndex:7)+1;
   var year=info.year||2026;
   var monthIndex0=periodNum-1;
   var periodListMtd=[periodNum];
-  var throughWeek=_flashFiscalWeekNum(cutDate);
+  var throughWeek=_flashFiscalWeekNum(mtdCut);
   var periodRange=(typeof fiscalPeriodRange==='function')
     ? fiscalPeriodRange(year, monthIndex0)
     : null;
-  var mtdThrough=(periodRange&&cutDate>periodRange.to)?periodRange.to:cutDate;
+  var mtdThrough=(periodRange&&mtdCut>periodRange.to)?periodRange.to:mtdCut;
 
   var sv=(sales&&sales.venues&&sales.venues[venue])||{};
   var lv=(live&&live.venues&&live.venues[venue])||{};
-  /* Live MTD = weeks in this fiscal period through the flash week. */
+  /* Live MTD = weeks in this fiscal period through the flash week (not current calendar week). */
   var liveMtd=_flashSumByWeekMap(lv.byWeek, periodNum, throughWeek);
   if(liveMtd==null) liveMtd=_flashSumLiveForPeriods(lv.byWeek, periodListMtd);
 
@@ -2042,7 +2050,7 @@ function _vipRenderFlashPlForVenue(venue, asOfDate){
   }
 
   /* 2026 Target MTD: full-period budget × (weeks elapsed ÷ weeks in period).
-     W35 = week 1 of P9 (5 weeks) → Target = period budget / 5. Never show full-period as MTD. */
+     W36 flash in P9 (5 weeks) → Target = period budget × 2/5. Never include W37. */
   var salesFullB=_flashSalesBudgetSum(venue, year, monthIndex0, monthIndex0);
   var liveFullB=_flashLiveBudgetSum(venue, year, monthIndex0, monthIndex0);
   var py=_flashPyMonthVals(venue, year, monthIndex0, throughWeek);
