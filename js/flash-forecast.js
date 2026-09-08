@@ -177,6 +177,12 @@ function _vipCollectFlashVenues(weekOffset){
   venues = order.map(function(vn){
     return byName[vn] || {venue:vn, weekOf:_fmtVipWeekLabel(weekOffset==null?_vipWeekOffset:weekOffset), weekKey:rangeWkKey, shows:[]};
   });
+  /* Chronological show order (Wed→Thu→Fri→Sat→Sun), not by BS size */
+  venues.forEach(function(v){
+    if(v.shows&&v.shows.length>1){
+      v.shows.sort(function(a,b){ return String(a.date||'').localeCompare(String(b.date||'')); });
+    }
+  });
   return {venues:venues, range:range, rangeWkKey:rangeWkKey};
 }
 
