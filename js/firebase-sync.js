@@ -1635,6 +1635,8 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       var byDate = live.byVenueDate[venue];
       if(!byDate || byDate[r.d] == null) return;
       var next = byDate[r.d];
+      /* Don't wipe a real BS night with a stale 0 overlay (off-calendar show days). */
+      if(+next === 0 && r.bs_a != null && +r.bs_a > 0) return;
       if(r.bs_a === next) return;
       r.bs_a = next;
       var fee = r.fee || r.cost || 0;
