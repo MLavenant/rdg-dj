@@ -4,6 +4,7 @@ var _roiPageTab = 'rules'; /* rules | special */
 var _roiEditSpecialUid = null;
 var _roiSpForceCustom = false;
 var _roiSpPrefill = null;
+var _roiDatePick = { venue: '', date: '', q: '' };
 
 function _roiSpResolveFee(ev){
   if(ev&&ev.djFee>0) return ev.djFee;
@@ -147,9 +148,11 @@ function _roiRulesTemplateOptions(selected){
 function renderRoiSpecialSection(){
   var h='';
   h+='<div class="roi-special-intro">';
-  h+='<p>Add <b>special performances</b> for one-off dates or holidays (Labor Day Monday, NYE, etc.) when a venue runs on a day outside its normal schedule or needs different ROI / floor-plan rules.</p>';
-  h+='<p class="roi-page-hint">Example: Casa Neos BC on a Monday in September — pick <em>Sunset Rituals</em> rules, enable Monday, and set floor plan to Sunset (20 tables).</p>';
+  h+='<p>Pick a <b>specific date</b> below to apply <b>High</b> or <b>Low</b> season ROI rules, or open a full <b>Special ROI</b> rule (custom targets / off-schedule days).</p>';
+  h+='<p class="roi-page-hint">Click the date field to open the calendar, or type/search a date, label, or venue. Example: Casa Neos BC Labor Day Monday → High or Low season, or a custom special.</p>';
   h+='</div>';
+
+  h+=renderRoiDateAssignBar();
 
   h+='<div class="roi-special-toolbar">';
   h+='<button type="button" class="btn-add" onclick="openRoiSpecialForm()">+ Add special performance</button>';
@@ -159,16 +162,17 @@ function renderRoiSpecialSection(){
     h+=renderRoiSpecialForm(_roiEditSpecialUid);
   }
 
-  var list=_roiSpeList();
+  var list=_roiSpeListFiltered();
   h+='<div class="roi-special-list">';
+  h+='<div class="roi-section-title">Saved specials'+(list.length?' <span class="roi-page-hint" style="font-weight:600">('+list.length+')</span>':'')+'</div>';
   if(!list.length){
-    h+='<div class="roi-empty">No special performances yet. Add one for Labor Day, Art Basel, NYE, or any off-schedule show.</div>';
+    h+='<div class="roi-empty">No specials match'+( _roiDatePick.q||_roiDatePick.date ? ' your search' : ' yet')+'. Pick a date above or add one.</div>';
   }else{
     h+='<table class="fcast-tbl roi-special-tbl"><thead><tr>';
     h+='<th class="left">Label</th><th class="left">Venue</th><th>Dates</th><th>Days</th><th>Rules</th><th>Floor plan</th><th></th>';
     h+='</tr></thead><tbody>';
     list.forEach(function(ev){
-      var rulesLbl=ev.rules&&ev.rules.tiers?'Custom':(ev.rulesVenue||'Auto');
+      var rulesLbl=ev.forceSeason?('Season: '+ev.forceSeason):(ev.rules&&ev.rules.tiers?'Custom':(ev.rulesVenue||'Auto'));
       if(rulesLbl===CNBC_SUMMER_ROOF_KEY) rulesLbl='Sunset Rituals';
       var days=(ev.days&&ev.days.length)?ev.days.map(function(d){return d.slice(0,3);}).join(', '):'All in range';
       if(ev.extraDays&&ev.extraDays.length){
@@ -178,7 +182,7 @@ function renderRoiSpecialSection(){
       h+='<tr>';
       h+='<td class="left" style="font-weight:800">'+_escRoi(ev.label||'Untitled')+'</td>';
       h+='<td class="left">'+_escRoi(ev.venue||'')+'</td>';
-      h+='<td style="font-size:11px">'+ev.start+(ev.end!==ev.start?' → '+ev.end:'')+'</td>';
+      h+='<td style="font-size:11px"><button type="button" class="roi-date-chip" onclick="roiJumpToDate(\''+_escRoi(ev.venue||'')+'\',\''+ev.start+'\')" title="Select this date">'+ev.start+(ev.end!==ev.start?' → '+ev.end:'')+'</button></td>';
       h+='<td style="font-size:10px">'+days+'</td>';
       h+='<td style="font-size:10px">'+_escRoi(rulesLbl)+'</td>';
       h+='<td style="font-size:10px">'+fp+'</td>';
@@ -193,6 +197,214 @@ function renderRoiSpecialSection(){
 
   h+=renderRoiSpecialUpcoming();
   return h;
+}
+
+function _roiSpeListFiltered(){
+  var list=_roiSpeList();
+  var q=String(_roiDatePick.q||'').trim().toLowerCase();
+  var d=String(_roiDatePick.date||'').trim();
+  var v=String(_roiDatePick.venue||'').trim();
+  return list.filter(function(ev){
+    if(v && ev.venue!==v) return false;
+    if(d){
+      if(!(ev.start<=d && ev.end>=d) && ev.start!==d && ev.end!==d) return false;
+    }
+    if(!q) return true;
+    var blob=((ev.label||'')+' '+(ev.venue||'')+' '+(ev.start||'')+' '+(ev.end||'')+' '+(ev.forceSeason||'')+' '+(ev.rulesVenue||'')).toLowerCase();
+    return blob.indexOf(q)>=0;
+  });
+}
+
+function renderRoiDateAssignBar(){
+  var venues=(typeof listActiveVenues==='function'?listActiveVenues():['Casa Neos Beach Club','MILA Lounge','Casa Neos Lounge']);
+  if(!_roiDatePick.venue) _roiDatePick.venue=curV||venues[0]||'';
+  var h='<div class="roi-date-bar" id="roiDateBar">';
+  h+='<div class="roi-date-bar-hd">Select a date</div>';
+  h+='<div class="roi-date-bar-grid">';
+  h+='<div class="fld"><label>Venue</label><select id="roiDateVenue" onchange="_roiDatePick.venue=this.value;roiRefreshDateInspect()">';
+  venues.forEach(function(v){
+    h+='<option value="'+_escRoi(v)+'"'+(v===_roiDatePick.venue?' selected':'')+'>'+_escRoi(v)+'</option>';
+  });
+  h+='</select></div>';
+  h+='<div class="fld"><label>Date (click to pick)</label><input id="roiDatePick" type="date" value="'+(_roiDatePick.date||'')+'" onchange="_roiDatePick.date=this.value;roiRefreshDateInspect()"></div>';
+  h+='<div class="fld"><label>Search specials</label><input id="roiDateSearch" type="search" placeholder="Label, date, venue…" value="'+_escRoi(_roiDatePick.q||'')+'" oninput="_roiDatePick.q=this.value;roiFilterSpecialList()"></div>';
+  h+='</div>';
+  h+='<div class="roi-date-actions">';
+  h+='<button type="button" class="roi-season-btn roi-season-high" onclick="roiAssignSeasonForDate(\'High\')">Apply High season ROI</button>';
+  h+='<button type="button" class="roi-season-btn roi-season-low" onclick="roiAssignSeasonForDate(\'Low\')">Apply Low season ROI</button>';
+  h+='<button type="button" class="btn-add" onclick="roiOpenSpecialForPickedDate()">Special ROI rules…</button>';
+  h+='</div>';
+  h+='<div id="roiDateInspect" class="roi-date-inspect">'+_roiDateInspectHtml()+'</div>';
+  h+='</div>';
+  return h;
+}
+
+function _roiFeeOnDate(venue, dateStr){
+  var fee=0;
+  if(typeof SCHED==='undefined'||!dateStr) return fee;
+  SCHED.forEach(function(r){
+    if(!r||r.d!==dateStr) return;
+    if((r.v||r.venue)!==venue) return;
+    var f=+(r.fee||r.cost||0)||0;
+    if(f>fee) fee=f;
+  });
+  return fee;
+}
+
+function _roiShowsOnDate(venue, dateStr){
+  var out=[];
+  if(typeof SCHED==='undefined'||!dateStr) return out;
+  SCHED.forEach(function(r){
+    if(!r||r.d!==dateStr) return;
+    if(venue && (r.v||r.venue)!==venue) return;
+    out.push(r);
+  });
+  return out;
+}
+
+function _roiDateInspectHtml(){
+  var venue=_roiDatePick.venue||'';
+  var dateStr=_roiDatePick.date||'';
+  if(!dateStr){
+    return '<div class="roi-page-hint">Choose a date (or click a date chip in the list) to preview Calendar targets and assign High / Low / Special rules.</div>';
+  }
+  var day=typeof dayNameFor==='function'?dayNameFor(dateStr):'';
+  var fee=_roiFeeOnDate(venue, dateStr);
+  var shows=_roiShowsOnDate(venue, dateStr);
+  var sp=typeof roiSpecialEventFor==='function'?roiSpecialEventFor(venue, dateStr):null;
+  var look=(fee>0 && typeof venueRoiLookup==='function')?venueRoiLookup(venue, dateStr, fee):null;
+  var natural=typeof seasonFor==='function'?seasonFor(
+    (typeof effectiveRoiVenue==='function'?effectiveRoiVenue(venue, dateStr, fee):venue),
+    dateStr
+  ):'';
+  var h='<div class="roi-inspect-card">';
+  h+='<div class="roi-inspect-title">'+_escRoi(venue)+' · <button type="button" class="roi-date-chip" onclick="document.getElementById(\'roiDatePick\').showPicker&&document.getElementById(\'roiDatePick\').showPicker()">'+dateStr+'</button> <span class="roi-page-hint">('+day+')</span></div>';
+  if(shows.length){
+    h+='<div class="roi-inspect-shows">Shows: '+shows.map(function(r){
+      return '<b>'+_escRoi(r.dj||'TBD')+'</b> ($'+((r.fee||r.cost||0).toLocaleString? (r.fee||r.cost||0).toLocaleString():(r.fee||r.cost||0))+')';
+    }).join(' · ')+'</div>';
+  }else{
+    h+='<div class="roi-inspect-shows roi-page-hint">No show booked on Calendar for this venue/date — you can still assign season or special rules.</div>';
+  }
+  if(sp){
+    var spUid=_roiUidForSpecial(sp);
+    h+='<div class="roi-inspect-sp">Existing special: <b>'+_escRoi(sp.label||'')+'</b>'
+      +(sp.forceSeason?(' · forced <b>'+sp.forceSeason+'</b> season'):'')
+      +(spUid?(' <button type="button" class="roi-mini-btn" onclick="openRoiSpecialForm(\''+spUid+'\')">Edit</button>'):'')
+      +'</div>';
+  }
+  if(look){
+    h+='<div class="roi-inspect-targets">Current targets → BS <b>$'+(look.bsTarget!=null?Math.round(look.bsTarget).toLocaleString():'—')+'</b> · ROI <b>'+(look.roiTarget!=null?look.roiTarget+'x':'—')+'</b> · season <b>'+look.season+'</b>'
+      +(look.specialEvent?(' · via “'+_escRoi(look.specialEvent)+'”'):(' · calendar default '+natural))
+      +'</div>';
+  }else if(fee<=0){
+    h+='<div class="roi-page-hint">Add a DJ fee on Calendar to preview BS / ROI targets for this date.</div>';
+  }else{
+    h+='<div class="roi-page-hint">No matching ROI tier for this day (off-schedule). Use Special ROI rules or Apply High/Low (adds the weekday as an extra day).</div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+function roiRefreshDateInspect(){
+  var venueEl=document.getElementById('roiDateVenue');
+  var dateEl=document.getElementById('roiDatePick');
+  if(venueEl) _roiDatePick.venue=venueEl.value;
+  if(dateEl) _roiDatePick.date=dateEl.value;
+  var box=document.getElementById('roiDateInspect');
+  if(box) box.innerHTML=_roiDateInspectHtml();
+  roiFilterSpecialList();
+}
+
+function roiFilterSpecialList(){
+  var qEl=document.getElementById('roiDateSearch');
+  if(qEl) _roiDatePick.q=qEl.value;
+  var venueEl=document.getElementById('roiDateVenue');
+  var dateEl=document.getElementById('roiDatePick');
+  if(venueEl) _roiDatePick.venue=venueEl.value;
+  if(dateEl) _roiDatePick.date=dateEl.value;
+  renderRoiRulesPage();
+}
+
+function _roiUidForSpecial(sp){
+  if(!sp) return '';
+  if(sp._uid) return sp._uid;
+  var found='';
+  Object.keys(ROI_SPECIAL_EVENTS||{}).forEach(function(uid){
+    if(ROI_SPECIAL_EVENTS[uid]===sp) found=uid;
+  });
+  return found;
+}
+
+function roiJumpToDate(venue, dateStr){
+  _roiDatePick.venue=venue||_roiDatePick.venue;
+  _roiDatePick.date=dateStr||'';
+  _roiPageTab='special';
+  renderRoiRulesPage();
+  setTimeout(function(){
+    var el=document.getElementById('roiDateBar');
+    if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+  },40);
+}
+
+function roiOpenSpecialForPickedDate(){
+  var venue=(document.getElementById('roiDateVenue')||{}).value||_roiDatePick.venue;
+  var dateStr=(document.getElementById('roiDatePick')||{}).value||_roiDatePick.date;
+  if(!dateStr){ alert('Pick a date first (click the date field).'); return; }
+  _roiDatePick.venue=venue; _roiDatePick.date=dateStr;
+  var shows=_roiShowsOnDate(venue, dateStr);
+  var dj=shows[0]&&shows[0].dj?shows[0].dj:'Special';
+  openRoiSpecialFormForShow(venue, dateStr, dj);
+}
+
+function roiAssignSeasonForDate(season){
+  if(season!=='High'&&season!=='Low') return;
+  var venue=(document.getElementById('roiDateVenue')||{}).value||_roiDatePick.venue;
+  var dateStr=(document.getElementById('roiDatePick')||{}).value||_roiDatePick.date;
+  if(!venue||!dateStr){ alert('Pick a venue and date first.'); return; }
+  _roiDatePick.venue=venue; _roiDatePick.date=dateStr;
+  var day=dayNameFor(dateStr);
+  var fee=_roiFeeOnDate(venue, dateStr);
+  var rulesVenue=(typeof effectiveRoiVenue==='function')?effectiveRoiVenue(venue, dateStr, fee||0):venue;
+  var rules=VENUE_ROI_RULES[rulesVenue];
+  var offDay=!(rules&&rules.days&&rules.days.indexOf(day)>-1);
+  var dateLbl='';
+  try{
+    dateLbl=new Date(dateStr+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  }catch(e){ dateLbl=dateStr; }
+
+  /* Update existing special covering this exact single day, else create */
+  var existingUid=null;
+  Object.keys(ROI_SPECIAL_EVENTS||{}).forEach(function(uid){
+    var ev=ROI_SPECIAL_EVENTS[uid];
+    if(!ev||ev.venue!==venue) return;
+    if(ev.start===dateStr&&ev.end===dateStr) existingUid=uid;
+  });
+  var uid=existingUid||_roiSpeUid();
+  var fp='auto';
+  if(venue==='Casa Neos Beach Club'&&typeof isCnbcSummerFloor==='function'&&isCnbcSummerFloor(dateStr)) fp='summer';
+  var rec={
+    _uid:uid,
+    label:season+' season · '+dateLbl,
+    venue:venue,
+    start:dateStr,
+    end:dateStr,
+    forceSeason:season,
+    rulesVenue:rulesVenue,
+    rules:null,
+    floorPlan:fp,
+    days:[day],
+    extraDays:offDay?[day]:[],
+    dayTemplate:(rules&&rules.days&&rules.days.indexOf('Sunday')>-1)?'Sunday':((rules&&rules.days&&rules.days[0])||'Sunday'),
+    djFee:fee||0,
+    updatedAt:new Date().toISOString()
+  };
+  ROI_SPECIAL_EVENTS[uid]=rec;
+  saveRoiSpecialEvents();
+  if(typeof refreshAllRoiDerivedData==='function') refreshAllRoiDerivedData();
+  else if(typeof recalcAllSchedTargets==='function') recalcAllSchedTargets();
+  _roiEditSpecialUid=null;
+  renderRoiRulesPage();
 }
 
 function renderRoiSpecialUpcoming(){
@@ -317,6 +529,11 @@ function renderRoiSpecialForm(uid){
   h+='<div class="fld"><label>Start date</label><input id="roiSpStart" type="date" value="'+(ev.start||'')+'"></div>';
   h+='<div class="fld"><label>End date</label><input id="roiSpEnd" type="date" value="'+(ev.end||ev.start||'')+'"></div>';
   h+='<div class="fld"><label>Rule template</label><select id="roiSpTemplate" onchange="toggleRoiSpCustom()">'+_roiRulesTemplateOptions(templateSel)+'</select></div>';
+  h+='<div class="fld"><label>Season for this date</label><select id="roiSpForceSeason">';
+  [{v:'',l:'Auto (High/Low by month)'},{v:'High',l:'Force High season'},{v:'Low',l:'Force Low season'}].forEach(function(o){
+    h+='<option value="'+o.v+'"'+((ev.forceSeason||'')===o.v?' selected':'')+'>'+o.l+'</option>';
+  });
+  h+='</select></div>';
   h+='<div class="fld"><label>Floor plan</label><select id="roiSpFloor">';
   [{v:'auto',l:'Auto (date-based)'},{v:'summer',l:'Sunset rooftop — 20 tables (BC)'},{v:'regular',l:'Regular venue plan'}].forEach(function(o){
     h+='<option value="'+o.v+'"'+(ev.floorPlan===o.v?' selected':'')+'>'+o.l+'</option>';
@@ -484,6 +701,7 @@ function saveRoiSpecialForm(uid){
   var template=(document.getElementById('roiSpTemplate')||{}).value||'';
   var floorPlan=(document.getElementById('roiSpFloor')||{}).value||'auto';
   var dayTemplate=(document.getElementById('roiSpDayTemplate')||{}).value||'Sunday';
+  var forceSeason=(document.getElementById('roiSpForceSeason')||{}).value||'';
   if(!label.trim()){ alert('Please enter a label.'); return; }
   if(!start){ alert('Please enter a start date.'); return; }
   if(end<start) end=start;
@@ -499,6 +717,7 @@ function saveRoiSpecialForm(uid){
   var rec={
     label:label.trim(), venue:venue, start:start, end:end,
     floorPlan:floorPlan, extraDays:extraDays, dayTemplate:dayTemplate,
+    forceSeason:(forceSeason==='High'||forceSeason==='Low')?forceSeason:null,
     updatedAt:new Date().toISOString(),
     djFee:_roiSpResolveFee({venue:venue,start:start,end:end,djFee:0})
   };

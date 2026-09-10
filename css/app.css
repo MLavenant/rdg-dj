@@ -1151,6 +1151,21 @@ model-viewer{--min-hotspot-opacity:0}
 .roi-subtab.on{background:var(--ink);color:#fff;border-color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.12)}
 .roi-rules-body{margin-top:4px}
 .roi-special-intro{background:var(--card2);border-radius:12px;padding:12px 16px;margin-bottom:12px;font-size:11px;line-height:1.55;border:0.5px solid var(--hair)}
+.roi-date-bar{background:var(--card);border:0.5px solid var(--rule);border-radius:14px;padding:14px 16px;margin-bottom:14px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+.roi-date-bar-hd{font-size:12px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;color:var(--ink);margin-bottom:10px}
+.roi-date-bar-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:12px}
+.roi-date-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+.roi-season-btn{font-size:11px;font-weight:800;padding:8px 14px;border-radius:10px;border:1px solid var(--rule);cursor:pointer;font-family:inherit}
+.roi-season-high{background:#ecfdf5;color:#047857;border-color:#a7f3d0}
+.roi-season-high:hover{background:#d1fae5}
+.roi-season-low{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
+.roi-season-low:hover{background:#dbeafe}
+.roi-date-inspect{margin-top:4px}
+.roi-inspect-card{background:var(--card2);border-radius:10px;padding:10px 12px;font-size:11px;line-height:1.5;border:0.5px solid var(--hair)}
+.roi-inspect-title{font-weight:800;margin-bottom:4px}
+.roi-inspect-shows,.roi-inspect-sp,.roi-inspect-targets{margin-top:4px}
+.roi-date-chip{display:inline-block;font:inherit;font-weight:800;font-size:11px;padding:2px 8px;border-radius:999px;border:0.5px solid #93c5fd;background:#eff6ff;color:var(--blue);cursor:pointer}
+.roi-date-chip:hover{background:#dbeafe}
 .roi-special-toolbar{margin-bottom:10px}
 .roi-special-list{margin-top:12px}
 .roi-special-tbl{font-size:11px}

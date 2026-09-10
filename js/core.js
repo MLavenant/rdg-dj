@@ -1148,7 +1148,9 @@ function venueRoiLookup(venue, dateStr, fee){
       return null;
     }
   }
-  var season=seasonFor(rules, dateStr);
+  var season=(sp&&(sp.forceSeason==='High'||sp.forceSeason==='Low'))
+    ? sp.forceSeason
+    : seasonFor(rules, dateStr);
 
   /* Above the highest defined tier: flat 2x ROI, any day, any season */
   var highestTier=rules.tiers[rules.tiers.length-1];
