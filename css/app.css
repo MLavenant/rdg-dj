@@ -735,6 +735,11 @@ body.session-locked .shell{pointer-events:none;user-select:none}
 .bgt-details[open]>summary::before{content:'- '}
 .bgt-details-body{padding:0 10px 12px;border-top:0.5px solid var(--hair)}
 /* Accounting sub-tabs + Others grid */
+.acct-folder-tracker{display:flex;align-items:center;gap:12px;margin:10px 16px 0;padding:12px 16px;border-radius:10px;border:1px solid #b7d0ef;background:linear-gradient(180deg,#eef6ff 0%,#f7fbff 100%);text-decoration:none;color:inherit;box-shadow:var(--shadow-sm);transition:border-color .15s,box-shadow .15s}
+.acct-folder-tracker:hover{border-color:var(--blue);box-shadow:0 4px 14px rgba(45,103,178,.18)}
+.acct-folder-tracker-label{font-size:13px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;color:var(--blue)}
+.acct-folder-tracker-sub{flex:1;font-size:11px;font-weight:600;color:var(--ink3)}
+.acct-folder-tracker-go{font-size:16px;font-weight:800;color:var(--blue);line-height:1}
 .acct-tabs{display:flex;gap:8px;padding:7px 16px;background:var(--card2);border-bottom:0.5px solid var(--rule);align-items:center}
 .acct-tab{font-size:11px;font-weight:800;padding:7px 16px;border:1px solid var(--rule);border-radius:999px;background:var(--card);color:var(--ink3);cursor:pointer;font-family:inherit;box-shadow:var(--shadow-sm);transition:all .15s}
 .acct-tab.on{color:#fff;background:var(--blue);border-color:var(--blue);box-shadow:0 3px 10px rgba(45,103,178,.25)}

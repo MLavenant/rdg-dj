@@ -1,6 +1,6 @@
 /**
- * One overwrite backup of the full 2025–2027 calendar (bake + live workbook).
- * Writes rdg/scheduleBackups/latest and deletes any older snapshots.
+ * Backup of the full 2025–2027 calendar (bake + live workbook).
+ * Writes rdg/scheduleBackups/latest and a dated snap-* (keeps older snaps).
  */
 const fs = require("fs");
 const path = require("path");
@@ -161,23 +161,37 @@ function loadBake() {
     specialWeekRecords,
     specialWeeks
   };
-  const tree = {
+  const snapKey =
+    "snap-" +
+    now.toISOString().slice(0, 10) +
+    "-" +
+    now.toISOString().slice(11, 19).replace(/:/g, "");
+  const snapPayload = Object.assign({}, payload, {
+    name: "schedule backup " + snapKey,
+    key: snapKey
+  });
+  /* Keep dated snapshots + refresh latest (do not wipe older snaps). */
+  const existing = (await req("GET", "/rdg/scheduleBackups.json")).json || {};
+  const tree = Object.assign({}, existing, {
     latest: payload,
+    [snapKey]: snapPayload,
     _meta: {
-      lastKey: "latest",
-      lastName: payload.name,
+      lastKey: snapKey,
+      lastName: snapPayload.name,
       lastAt: payload.savedAt,
       lastCount: payload.count,
       byYear
     }
-  };
+  });
   const put = await req("PUT", "/rdg/scheduleBackups.json", tree);
   if (put.status !== 200) {
     console.error("Backup write failed", put.status, put.body);
     process.exit(1);
   }
   console.log(
-    "Saved schedule latest — " +
+    "Saved schedule " +
+      snapKey +
+      " + latest — " +
       payload.count +
       " shows (2025=" +
       byYear["2025"] +
@@ -185,7 +199,7 @@ function loadBake() {
       byYear["2026"] +
       " 2027=" +
       byYear["2027"] +
-      "). Previous backups replaced."
+      ")."
   );
 })().catch((e) => {
   console.error(e);
