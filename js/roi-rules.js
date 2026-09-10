@@ -323,7 +323,13 @@ function roiFilterSpecialList(){
   var dateEl=document.getElementById('roiDatePick');
   if(venueEl) _roiDatePick.venue=venueEl.value;
   if(dateEl) _roiDatePick.date=dateEl.value;
+  var caret=qEl?qEl.selectionStart:null;
   renderRoiRulesPage();
+  var again=document.getElementById('roiDateSearch');
+  if(again){
+    again.focus();
+    try{ again.setSelectionRange(caret!=null?caret:again.value.length, caret!=null?caret:again.value.length); }catch(e){}
+  }
 }
 
 function _roiUidForSpecial(sp){
