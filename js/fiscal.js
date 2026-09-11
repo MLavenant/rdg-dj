@@ -470,18 +470,35 @@ function _showSessionGate(msg){
   var gate=document.getElementById('sessionGate');
   var note=document.getElementById('sessionGateNote');
   var inp=document.getElementById('sessionGateName');
+  var pw=document.getElementById('sessionGatePass');
   var cancel=document.getElementById('sessionGateCancel');
-  if(note) note.textContent=msg||'Enter your name to continue.';
+  var active=false;
+  try{ active=sessionStorage.getItem('rdg_session_active')==='1' && _sessionIsActive(); }catch(e){}
+  if(note) note.textContent=msg||(active?'Update your first name.':'Enter your first name and password to continue.');
   if(inp) inp.value=_presenceName();
-  if(cancel) cancel.style.display=_sessionIsActive() ? '' : 'none';
+  if(pw){
+    pw.value='';
+    pw.style.display=active?'none':'';
+    var pwLbl=document.querySelector('label[for="sessionGatePass"]');
+    if(pwLbl) pwLbl.style.display=active?'none':'';
+  }
+  if(cancel) cancel.style.display=active ? '' : 'none';
   if(gate){
     gate.classList.remove('hidden');
     document.body.classList.add('session-locked');
-    setTimeout(function(){ try{ inp && inp.focus(); }catch(e){} }, 50);
+    setTimeout(function(){
+      try{
+        if(active && inp) inp.focus();
+        else if(inp && !inp.value) inp.focus();
+        else if(pw) pw.focus();
+      }catch(e){}
+    }, 50);
   }
 }
 function _hideSessionGate(){
   var gate=document.getElementById('sessionGate');
+  var pw=document.getElementById('sessionGatePass');
+  if(pw) pw.value='';
   if(gate) gate.classList.add('hidden');
   document.body.classList.remove('session-locked');
 }
@@ -542,15 +559,27 @@ function _sessionLogout(reason){
   try{ if(window._fbDb) window._fbDb.goOffline(); }catch(e3){}
   refreshPresenceChip();
   _showSessionGate(reason==='idle'
-    ? 'Signed out after 20 minutes idle. Enter your name to continue.'
-    : 'Enter your name to continue.');
+    ? 'Signed out after 20 minutes idle. Enter your first name and password to continue.'
+    : 'Enter your first name and password to continue.');
 }
+var _RDG_APP_PASSWORD='RDG2026!';
 function submitSessionGate(){
   var inp=document.getElementById('sessionGateName');
+  var pw=document.getElementById('sessionGatePass');
+  var note=document.getElementById('sessionGateNote');
   var name=inp ? String(inp.value||'').trim() : '';
+  var already=false;
+  try{ already=sessionStorage.getItem('rdg_session_active')==='1' && _sessionIsActive(); }catch(e){}
+  if(!already){
+    var pass=pw ? String(pw.value||'') : '';
+    if(pass!==_RDG_APP_PASSWORD){
+      if(note) note.textContent='Incorrect password. Try again.';
+      if(pw){ pw.value=''; pw.focus(); }
+      return;
+    }
+  }
   if(!_setPresenceName(name)){
-    var note=document.getElementById('sessionGateNote');
-    if(note) note.textContent='Please enter your real name (not Guest).';
+    if(note) note.textContent='Please enter your first name (not Guest).';
     if(inp) inp.focus();
     return;
   }
@@ -565,7 +594,7 @@ function submitSessionGate(){
     try{ if(window._fbDb) window._fbDb.goOnline(); }catch(eOn){}
     _writePresence();
     refreshPresenceChip();
-    if(btn){ btn.disabled=false; btn.textContent='Continue'; }
+    if(btn){ btn.disabled=false; btn.textContent='Sign in'; }
   });
 }
 function initSessionWatch(){
@@ -586,7 +615,7 @@ function initSessionWatch(){
     if(marked && !_sessionIsActive()) _sessionLogout('idle');
   }, 15000);
   if(!_sessionIsActive()){
-    _showSessionGate('Enter your name to open the DJ Dashboard.');
+    _showSessionGate('Enter your first name and password to open the DJ Dashboard.');
   } else {
     _hideSessionGate();
     _touchSessionActivity();
@@ -616,11 +645,11 @@ function _setPresenceName(name){
   return true;
 }
 function _askPresenceName(force){
-  _showSessionGate(force ? 'Update the name others see on this computer.' : 'Enter your name to continue.');
+  _showSessionGate(force ? 'Update the first name others see on this computer.' : 'Enter your first name and password to continue.');
   return _presenceName();
 }
 function editPresenceName(){
-  _showSessionGate('Update the name others see on this computer.');
+  _showSessionGate('Update the first name others see on this computer.');
 }
 function _presencePayload(){
   return {
