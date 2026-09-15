@@ -1348,7 +1348,11 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     if(data.venueRoiRules) VENUE_ROI_RULES = data.venueRoiRules;
     if(typeof ensureCnbcSummerRoofRules==='function') ensureCnbcSummerRoofRules();
     if(data.roiSpecialEvents) ROI_SPECIAL_EVENTS = data.roiSpecialEvents;
-    var roiSig=JSON.stringify({v:data.venueRoiRules||null,s:data.roiSpecialEvents||null});
+    if(data.roiFloorPlans){
+      ROI_FLOOR_PLANS = data.roiFloorPlans;
+      if(typeof ensureDefaultRoiFloorPlans==='function') ensureDefaultRoiFloorPlans();
+    }
+    var roiSig=JSON.stringify({v:data.venueRoiRules||null,s:data.roiSpecialEvents||null,f:data.roiFloorPlans||null});
     var roiChanged=(roiSig!==window._lastRoiSig);
     if(roiChanged) window._lastRoiSig=roiSig;
     if(roiChanged&&window._fbReady){
@@ -1516,6 +1520,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     'acctOthersData',
     'venueRoiRules',
     'roiSpecialEvents',
+    'roiFloorPlans',
     'feeTiers',
     'monthlyDjBudget',
     'bgtPlan',
