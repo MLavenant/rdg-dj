@@ -1170,6 +1170,14 @@ model-viewer{--min-hotspot-opacity:0}
 .roi-special-list{margin-top:12px}
 .roi-special-tbl{font-size:11px}
 .roi-special-form{background:var(--card);border:0.5px solid var(--rule);border-radius:14px;padding:16px 18px;margin:12px 0;box-shadow:0 2px 12px rgba(0,0,0,.05)}
+.roi-fp-callout{background:#fff7ed;border:0.5px solid #fdba74;border-radius:10px;padding:10px 12px;font-size:11px;line-height:1.5;color:#9a3412;margin-bottom:12px}
+.roi-fp-preview{margin-top:12px}
+.roi-fp-preview-ok{background:#f0fdf4;border:0.5px solid #86efac;border-radius:10px;padding:12px 14px;font-size:11px;line-height:1.5;color:#14532d}
+.roi-fp-preview-err{background:#fef2f2;border:0.5px solid #fca5a5;border-radius:10px;padding:10px 12px;font-size:11px;color:#991b1b}
+.roi-fp-preview-hd{font-weight:900;text-transform:uppercase;letter-spacing:.04em;font-size:10px;margin-bottom:6px;color:#166534}
+.roi-fp-preview-warn{color:#9a3412;background:#fff7ed;border-radius:8px;padding:8px 10px;margin:0 0 8px}
+.roi-fp-preview-ok ul{margin:6px 0 0;padding-left:18px}
+.roi-fp-preview-ok li{margin:3px 0}
 .roi-form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:10px}
 .roi-form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;padding-top:10px;border-top:0.5px solid var(--hair)}
 .roi-section-title{font-size:13px;font-weight:900;margin-bottom:8px;color:var(--ink);letter-spacing:-.2px}

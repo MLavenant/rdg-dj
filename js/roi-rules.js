@@ -801,8 +801,8 @@ function renderRoiFloorPlansSection(){
   if(typeof ensureDefaultRoiFloorPlans==='function') ensureDefaultRoiFloorPlans();
   var h='';
   h+='<div class="roi-special-intro">';
-  h+='<p>When Casa Neos (or MILA) publishes a <b>new 3D plan that only appears from a specific booking date</b>, add a drop here. Use the <b>first date</b> on the website where BOOK YOUR TABLE loads the new plan — e.g. rooftop through Sep 27, waterfront from <b>Oct 3</b>.</p>';
-  h+='<p class="roi-page-hint">Paste the booking site URL on the drop for reference. A newer drop (later start) overrides an older overlapping one for that venue. Built-ins still cover Aug–Sep rooftop and Lounge remodel if no drop applies.</p>';
+  h+='<p>Floor-plan drops schedule <b>which built-in 3D preset</b> a venue uses from a <b>first live date</b>. The booking URL is for your notes — the app does <b>not</b> scrape the link when you save.</p>';
+  h+='<p class="roi-page-hint">Oct 2026 example: waterfront preset is already in the app. A default drop from <b>2026-10-03</b> should appear in the list below. To verify: 3D View → Casa Neos Beach Club → date Oct 3 → badge “Waterfront + slips”.</p>';
   h+='</div>';
 
   h+='<div class="roi-special-toolbar">';
@@ -876,39 +876,120 @@ function cancelRoiFloorForm(){
 function renderRoiFloorForm(uid){
   var isNew=uid==='__new__';
   var p=isNew?{
-    label:'', venue:'Casa Neos Beach Club', start:'', end:'',
-    preset:'casa-neos-beach-club-new', sourceUrl:'https://beachclub.casa-neos.com/',
+    label:'CNBC Sunset Rituals waterfront',
+    venue:'Casa Neos Beach Club',
+    start:'2026-10-03',
+    end:'',
+    preset:'casa-neos-beach-club-new',
+    sourceUrl:'https://beachclub.casa-neos.com/',
     closePrevious:true
   }:Object.assign({closePrevious:false}, ROI_FLOOR_PLANS[uid]||{});
   var venues=(typeof listActiveVenues==='function'?listActiveVenues():['Casa Neos Beach Club','MILA Lounge','Casa Neos Lounge']);
   var h='<div class="roi-special-form" id="roiFloorForm">';
   h+='<div class="roi-section-title">'+(isNew?'New floor-plan drop':'Edit floor-plan drop')+'</div>';
-  h+='<p class="roi-page-hint" style="margin:0 0 12px">Open the booking link → find the <b>first date</b> whose BOOK YOUR TABLE shows the new layout → put that date in <b>First live date</b>. Example: waterfront plan starts <b>2026-10-03</b> even if you discovered it on Oct 4.</p>';
+  h+='<div class="roi-fp-callout">';
+  h+='<b>What this form does:</b> it schedules <i>when</i> an already-built 3D preset turns on. ';
+  h+='Pasting the booking URL does <b>not</b> download or scrape a model — the GLB + tables must already exist as a preset below. ';
+  h+='After you save, open <b>3D View</b>, pick the venue, and set the date to the First live date to see it.';
+  h+='</div>';
   h+='<div class="roi-form-grid">';
-  h+='<div class="fld"><label>Label</label><input id="roiFpLabel" type="text" value="'+_escRoi(p.label||'')+'" placeholder="CNBC waterfront Oct 2026…"></div>';
-  h+='<div class="fld"><label>Venue</label><select id="roiFpVenue" onchange="roiFpVenueChanged()">'+venues.map(function(v){
+  h+='<div class="fld"><label>Label</label><input id="roiFpLabel" type="text" value="'+_escRoi(p.label||'')+'" placeholder="CNBC waterfront Oct 2026…" oninput="roiFpRefreshPreview()"></div>';
+  h+='<div class="fld"><label>Venue</label><select id="roiFpVenue" onchange="roiFpVenueChanged();roiFpRefreshPreview()">'+venues.map(function(v){
     return '<option value="'+_escRoi(v)+'"'+(v===p.venue?' selected':'')+'>'+_escRoi(v)+'</option>';
   }).join('')+'</select></div>';
-  h+='<div class="fld"><label>First live date (on the website)</label><input id="roiFpStart" type="date" value="'+(p.start||'')+'"></div>';
-  h+='<div class="fld"><label>Until (blank = open-ended)</label><input id="roiFpEnd" type="date" value="'+(p.end||'')+'"></div>';
-  h+='<div class="fld" style="grid-column:1/-1"><label>3D plan preset</label><select id="roiFpPreset">'+_roiFpPresetOptions(p.preset||'casa-neos-beach-club-new')+'</select></div>';
-  h+='<div class="fld" style="grid-column:1/-1"><label>Source booking URL</label><input id="roiFpSourceUrl" type="url" value="'+_escRoi(p.sourceUrl||'')+'" placeholder="https://beachclub.casa-neos.com/"></div>';
+  h+='<div class="fld"><label>First live date (on the website)</label><input id="roiFpStart" type="date" value="'+(p.start||'')+'" onchange="roiFpRefreshPreview()"></div>';
+  h+='<div class="fld"><label>Until (blank = open-ended)</label><input id="roiFpEnd" type="date" value="'+(p.end||'')+'" onchange="roiFpRefreshPreview()"></div>';
+  h+='<div class="fld" style="grid-column:1/-1"><label>3D plan preset (must already exist in the app)</label><select id="roiFpPreset" onchange="roiFpPresetChanged();roiFpRefreshPreview()">'+_roiFpPresetOptions(p.preset||'casa-neos-beach-club-new')+'</select></div>';
+  h+='<div class="fld" style="grid-column:1/-1"><label>Source booking URL <span class="roi-page-hint">(notes only — not fetched)</span></label><input id="roiFpSourceUrl" type="url" value="'+_escRoi(p.sourceUrl||'')+'" placeholder="https://beachclub.casa-neos.com/"></div>';
   h+='</div>';
   h+='<label class="roi-page-hint" style="display:flex;align-items:center;gap:8px;margin:10px 0;cursor:pointer">';
   h+='<input id="roiFpClosePrev" type="checkbox"'+(p.closePrevious!==false?' checked':'')+'> ';
   h+='End any open-ended earlier drop for this venue the day before First live date (clean switchover)</label>';
+  h+='<div id="roiFpPreview" class="roi-fp-preview"></div>';
   h+='<div class="roi-form-actions">';
   h+='<button type="button" class="btn-cancel" onclick="cancelRoiFloorForm()">Cancel</button>';
   h+='<button type="button" class="btn-save" onclick="saveRoiFloorForm(\''+(isNew?'__new__':uid)+'\')">Save floor-plan drop</button>';
   h+='</div></div>';
+  setTimeout(function(){ roiFpRefreshPreview(); },0);
   return h;
 }
 function roiFpVenueChanged(){
   var v=(document.getElementById('roiFpVenue')||{}).value||'';
   var url=document.getElementById('roiFpSourceUrl');
-  if(!url||(url.value&&url.value.trim())) return;
-  if(/Beach Club/i.test(v)) url.value='https://beachclub.casa-neos.com/';
-  else if(/Lounge/i.test(v)&&/Casa Neos/i.test(v)) url.value='https://lounge.casa-neos.com/';
+  if(!url) return;
+  if(/Beach Club/i.test(v)){
+    if(!url.value||/casa-neos\.com/i.test(url.value)) url.value='https://beachclub.casa-neos.com/';
+  }else if(/Lounge/i.test(v)&&/Casa Neos/i.test(v)){
+    if(!url.value||/casa-neos\.com/i.test(url.value)) url.value='https://lounge.casa-neos.com/';
+  }
+}
+function roiFpPresetChanged(){
+  var preset=(document.getElementById('roiFpPreset')||{}).value||'';
+  var startEl=document.getElementById('roiFpStart');
+  var labelEl=document.getElementById('roiFpLabel');
+  var urlEl=document.getElementById('roiFpSourceUrl');
+  var p=(typeof FV_3D_PLAN_PRESETS!=='undefined')?FV_3D_PLAN_PRESETS[preset]:null;
+  if(p&&p.sourceUrl&&urlEl&&!urlEl.value) urlEl.value=p.sourceUrl;
+  /* Suggest known first-live dates for built-in remodel presets when start is empty */
+  if(startEl&&!startEl.value){
+    if(preset==='casa-neos-beach-club-new') startEl.value='2026-10-03';
+    if(preset==='casa-neos-lounge-new') startEl.value='2026-09-25';
+    if(preset==='casa-neos-beach-club-summer') startEl.value='2026-08-01';
+  }
+  if(labelEl&&!String(labelEl.value||'').trim()&&p&&p.label) labelEl.value=p.label;
+}
+function roiFpRefreshPreview(){
+  var box=document.getElementById('roiFpPreview');
+  if(!box) return;
+  var venue=(document.getElementById('roiFpVenue')||{}).value||'';
+  var start=(document.getElementById('roiFpStart')||{}).value||'';
+  var preset=(document.getElementById('roiFpPreset')||{}).value||'';
+  var p=(typeof FV_3D_PLAN_PRESETS!=='undefined')?FV_3D_PLAN_PRESETS[preset]:null;
+  if(!p){
+    box.innerHTML='<div class="roi-fp-preview-err">Unknown preset — nothing will load in 3D View until this preset exists in the app.</div>';
+    return;
+  }
+  var tiers=(typeof FV_3D_TABLES!=='undefined'&&FV_3D_TABLES[p.tableKey])?FV_3D_TABLES[p.tableKey]:[];
+  var nTables=tiers.reduce(function(s,t){ return s+((t.tables&&t.tables.length)||0); },0);
+  var tierLine=tiers.map(function(t){ return t.name+'×'+((t.tables&&t.tables.length)||0); }).join(' · ')||'No tables';
+  var glb=p.modelUrl||'(venue default GLB)';
+  var h='<div class="roi-fp-preview-ok">';
+  h+='<div class="roi-fp-preview-hd">Preview — what will activate</div>';
+  if(!start){
+    h+='<p class="roi-fp-preview-warn">Set <b>First live date</b> (required). Nothing is scheduled until you save with a date.</p>';
+  }else{
+    h+='<p>From <b>'+start+'</b> onward at <b>'+_escRoi(venue)+'</b>, 3D View will use:</p>';
+  }
+  h+='<ul>';
+  h+='<li><b>Preset:</b> '+_escRoi(p.label||preset)+'</li>';
+  h+='<li><b>Model:</b> <code style="font-size:10px">'+_escRoi(glb)+'</code></li>';
+  h+='<li><b>Tables:</b> '+nTables+' ('+_escRoi(tierLine)+')</li>';
+  h+='</ul>';
+  if(start){
+    h+='<button type="button" class="btn-add" style="margin-top:8px" onclick="roiFpOpen3dPreview()">Open 3D View on '+start+'</button>';
+  }
+  h+='</div>';
+  box.innerHTML=h;
+}
+function roiFpOpen3dPreview(){
+  var venue=(document.getElementById('roiFpVenue')||{}).value||'';
+  var start=(document.getElementById('roiFpStart')||{}).value||'';
+  var preset=(document.getElementById('roiFpPreset')||{}).value||'';
+  var p=(typeof FV_3D_PLAN_PRESETS!=='undefined')?FV_3D_PLAN_PRESETS[preset]:null;
+  var key=(p&&p.modelKey)||(typeof fv3dKeyForVenue==='function'?fv3dKeyForVenue(venue):null);
+  if(!key||!start){ alert('Pick a venue preset and First live date first.'); return; }
+  if(!p){ alert('Unknown preset — cannot preview.'); return; }
+  /* Temporary draft so resolve uses this preset even before Save. */
+  ROI_FLOOR_PLANS.__draft_preview__={
+    _uid:'__draft_preview__', venue:venue, start:start, end:'', preset:preset,
+    updatedAt:new Date().toISOString(), label:'(preview)'
+  };
+  if(typeof _fv3dModelKey!=='undefined') _fv3dModelKey=key;
+  if(typeof setView==='function') setView('3d');
+  setTimeout(function(){
+    if(typeof setFv3dModel==='function') setFv3dModel(key);
+    if(typeof setFv3dDate==='function') setFv3dDate(start);
+  },50);
 }
 function _roiFpDayBefore(ymd){
   if(!ymd||!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return '';
@@ -961,7 +1042,19 @@ function saveRoiFloorForm(uid){
   };
   if(typeof saveRoiFloorPlans==='function') saveRoiFloorPlans();
   _roiEditFloorUid=null;
+  var open3d=confirm('Floor-plan drop saved.\n\nFrom '+start+', '+venue+' will use preset “'+(FV_3D_PLAN_PRESETS[preset]?FV_3D_PLAN_PRESETS[preset].label:preset)+'”.\n\nOpen 3D View on that date now?');
   renderRoiRulesPage();
+  if(open3d){
+    var key=(FV_3D_PLAN_PRESETS[preset]&&FV_3D_PLAN_PRESETS[preset].modelKey)||(typeof fv3dKeyForVenue==='function'?fv3dKeyForVenue(venue):null);
+    if(key){
+      if(typeof _fv3dModelKey!=='undefined') _fv3dModelKey=key;
+      if(typeof setView==='function') setView('3d');
+      setTimeout(function(){
+        if(typeof setFv3dModel==='function') setFv3dModel(key);
+        if(typeof setFv3dDate==='function') setFv3dDate(start);
+      },80);
+    }
+  }
 }
 function deleteRoiFloorPlan(uid){
   if(!ROI_FLOOR_PLANS[uid]) return;
