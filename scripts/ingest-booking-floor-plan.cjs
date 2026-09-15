@@ -432,10 +432,10 @@ async function processQueue() {
 }
 
 (async () => {
-  // Resolve playwright from boh-dashboard if needed
   try {
     require.resolve('playwright');
   } catch (e) {
+    module.paths.push(path.join(__dirname, '..', 'node_modules'));
     module.paths.push(path.join(__dirname, '..', '..', 'boh-dashboard', 'node_modules'));
   }
 

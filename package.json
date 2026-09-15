@@ -1,0 +1,14 @@
+{
+  "name": "rdg-dj-dashboard",
+  "private": true,
+  "description": "RDG DJ / Flash dashboard tooling",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "ingest-floor-plans": "node scripts/ingest-booking-floor-plan.cjs --process-queue"
+  },
+  "dependencies": {
+    "playwright": "^1.61.1"
+  }
+}

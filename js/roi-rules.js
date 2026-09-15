@@ -813,7 +813,8 @@ function renderRoiFloorPlansSection(){
   if(typeof ensureDefaultRoiFloorPlans==='function') ensureDefaultRoiFloorPlans();
   var h='';
   h+='<div class="roi-special-intro">';
-  h+='<p>Paste the booking site link, set the <b>first date</b> the new floor plan goes live (and optional end), then hit <b>Save floor plan</b>. That one step loads GLB + table IDs + tiers and schedules them in 3D View.</p>';
+  h+='<p>Paste the booking link, set <b>Starts</b> (and optional <b>Ends</b>), hit <b>Save floor plan</b>. The app attaches the 3D plan (GLB + tables + tiers) for that date range — no coding.</p>';
+  h+='<p class="roi-page-hint">Known Casa Neos remodel links apply instantly. Brand-new links are grabbed automatically in the background (usually within ~30 minutes).</p>';
   h+='</div>';
 
   h+='<div class="roi-special-toolbar">';
@@ -899,7 +900,7 @@ function renderRoiFloorForm(uid){
   var venues=(typeof listActiveVenues==='function'?listActiveVenues():['Casa Neos Beach Club','MILA Lounge','Casa Neos Lounge']);
   var h='<div class="roi-special-form" id="roiFloorForm">';
   h+='<div class="roi-section-title">'+(isNew?'Add floor plan':'Edit floor plan')+'</div>';
-  h+='<div class="roi-fp-callout">Paste the booking link and the date the new plan starts on the website. One Save does the rest.</div>';
+  h+='<div class="roi-fp-callout">Link + dates + Save. The 3D plan is picked up for those dates automatically.</div>';
   h+='<div class="roi-form-grid">';
   h+='<div class="fld" style="grid-column:1/-1"><label>Booking site link</label><input id="roiFpSourceUrl" type="url" value="'+_escRoi(p.sourceUrl||'')+'" placeholder="https://beachclub.casa-neos.com/" oninput="roiFpRefreshPreview()"></div>';
   h+='<div class="fld"><label>Venue</label><select id="roiFpVenue" onchange="roiFpVenueChanged();roiFpRefreshPreview()">'+venues.map(function(v){
@@ -971,7 +972,7 @@ function roiFpRefreshPreview(){
     var h0='<div class="roi-fp-preview-ok">';
     h0+='<div class="roi-fp-preview-hd">Ready to save</div>';
     h0+='<p>From <b>'+start+'</b>'+(end?' to <b>'+end+'</b>':' onward')+' at <b>'+_escRoi(venue)+'</b>.</p>';
-    h0+='<p class="roi-page-hint">This link isn’t a known built-in plan yet — Save will queue a scrape (same GLB + tables + tiers capture as Oct 3).</p>';
+    h0+='<p class="roi-page-hint">New link — Save queues an automatic grab. The plan usually appears within ~30 minutes (no coding).</p>';
     h0+='</div>';
     box.innerHTML=h0;
     return;
@@ -1112,7 +1113,7 @@ function saveRoiFloorForm(uid){
     updatedAt:new Date().toISOString()
   });
   _roiEditFloorUid=null;
-  alert('Saved and queued for scrape.\n\nWhen ready, run once:\nnode scripts/ingest-booking-floor-plan.cjs --process-queue');
+  alert('Saved. Automatic grab is queued — the 3D plan usually appears within ~30 minutes. Hard-refresh later or open 3D View on the Starts date once status shows ready.');
   renderRoiRulesPage();
 }
 function grabRoiFloorFromLink(uid){ saveRoiFloorForm(uid); }
