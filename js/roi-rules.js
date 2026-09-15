@@ -184,9 +184,10 @@ function renderRoiSpecialSection(){
         days+=(days?' + ':'')+ev.extraDays.map(function(d){return d.slice(0,3);}).join(', ')+' (extra)';
       }
       var fp=ev.floorPlan==='summer'?'Sunset 20'
+        :(ev.floorPlan==='casa-neos-beach-club-new'?'CNBC waterfront'
         :(ev.floorPlan==='casa-neos-lounge-new'?'CNL remodel'
         :(ev.floorPlan==='casa-neos-lounge'?'CNL classic'
-        :(ev.floorPlan==='regular'?'Regular':'Auto')));
+        :(ev.floorPlan==='regular'?'Regular':'Auto'))));
       h+='<tr>';
       h+='<td class="left" style="font-weight:800">'+_escRoi(ev.label||'Untitled')+'</td>';
       h+='<td class="left">'+_escRoi(ev.venue||'')+'</td>';
@@ -551,7 +552,7 @@ function renderRoiSpecialForm(uid){
   });
   h+='</select></div>';
   h+='<div class="fld"><label>Floor plan</label><select id="roiSpFloor">';
-  [{v:'auto',l:'Auto (date / floor-plan drops)'},{v:'summer',l:'Sunset rooftop — 20 tables (BC)'},{v:'casa-neos-lounge-new',l:'CN Lounge remodel (Sep 2026+)'},{v:'casa-neos-lounge',l:'CN Lounge classic'},{v:'regular',l:'Regular / classic venue plan'}].forEach(function(o){
+  [{v:'auto',l:'Auto (date / floor-plan drops)'},{v:'summer',l:'Sunset rooftop — 20 tables (BC)'},{v:'casa-neos-beach-club-new',l:'CNBC waterfront + slips (Oct 2026+)'},{v:'casa-neos-lounge-new',l:'CN Lounge remodel (Sep 2026+)'},{v:'casa-neos-lounge',l:'CN Lounge classic'},{v:'regular',l:'Regular / classic venue plan'}].forEach(function(o){
     h+='<option value="'+o.v+'"'+(ev.floorPlan===o.v?' selected':'')+'>'+o.l+'</option>';
   });
   h+='</select></div>';
@@ -800,8 +801,8 @@ function renderRoiFloorPlansSection(){
   if(typeof ensureDefaultRoiFloorPlans==='function') ensureDefaultRoiFloorPlans();
   var h='';
   h+='<div class="roi-special-intro">';
-  h+='<p>Schedule which <b>3D floor plan</b> each venue uses by date range. A newer drop (later start date) <b>overrides</b> an older overlapping one for that venue.</p>';
-  h+='<p class="roi-page-hint">Built-in defaults: CN Lounge remodel from Sep 25, 2026 · CNBC Sunset Rituals rooftop Aug–Sep. Add a drop here to pin a plan, end a remodel early, or switch back to classic.</p>';
+  h+='<p>When Casa Neos (or MILA) publishes a <b>new 3D plan that only appears from a specific booking date</b>, add a drop here. Use the <b>first date</b> on the website where BOOK YOUR TABLE loads the new plan — e.g. rooftop through Sep 27, waterfront from <b>Oct 3</b>.</p>';
+  h+='<p class="roi-page-hint">Paste the booking site URL on the drop for reference. A newer drop (later start) overrides an older overlapping one for that venue. Built-ins still cover Aug–Sep rooftop and Lounge remodel if no drop applies.</p>';
   h+='</div>';
 
   h+='<div class="roi-special-toolbar">';
@@ -816,21 +817,23 @@ function renderRoiFloorPlansSection(){
   h+='<div class="roi-special-list">';
   h+='<div class="roi-section-title">Scheduled floor plans'+(list.length?' <span class="roi-page-hint" style="font-weight:600">('+list.length+')</span>':'')+'</div>';
   if(!list.length){
-    h+='<div class="roi-empty">No floor-plan drops yet. Add one to schedule a remodel or seasonal plan.</div>';
+    h+='<div class="roi-empty">No floor-plan drops yet. Add one when a booking link only shows the new plan from a certain date.</div>';
   }else{
     h+='<table class="fcast-tbl roi-special-tbl"><thead><tr>';
-    h+='<th class="left">Label</th><th class="left">Venue</th><th>From</th><th>Until</th><th class="left">Plan</th><th></th>';
+    h+='<th class="left">Label</th><th class="left">Venue</th><th>First live date</th><th>Until</th><th class="left">Plan</th><th class="left">Source link</th><th></th>';
     h+='</tr></thead><tbody>';
     list.forEach(function(p){
       var preset=(typeof FV_3D_PLAN_PRESETS!=='undefined'&&FV_3D_PLAN_PRESETS[p.preset])?FV_3D_PLAN_PRESETS[p.preset]:null;
       var planLbl=preset?preset.label:(p.preset||'—');
       var endLbl=p.end?p.end:'Open-ended';
+      var src=p.sourceUrl||(preset&&preset.sourceUrl)||'';
       h+='<tr>';
       h+='<td class="left" style="font-weight:800">'+_escRoi(p.label||'Untitled')+(p.seeded?' <span class="roi-page-hint">default</span>':'')+'</td>';
       h+='<td class="left">'+_escRoi(p.venue||'')+'</td>';
       h+='<td style="font-size:11px">'+_escRoi(p.start||'')+'</td>';
       h+='<td style="font-size:11px">'+_escRoi(endLbl)+'</td>';
       h+='<td class="left" style="font-size:10px">'+_escRoi(planLbl)+'</td>';
+      h+='<td class="left" style="font-size:10px">'+(src?('<a href="'+_escRoi(src)+'" target="_blank" rel="noopener">'+_escRoi(src.replace(/^https?:\/\//,''))+'</a>'):'—')+'</td>';
       h+='<td style="white-space:nowrap">';
       h+='<button type="button" class="roi-mini-btn" onclick="openRoiFloorForm(\''+p._uid+'\')">Edit</button> ';
       h+='<button type="button" class="roi-mini-btn roi-mini-del" onclick="deleteRoiFloorPlan(\''+p._uid+'\')">Delete</button>';
@@ -840,17 +843,24 @@ function renderRoiFloorPlansSection(){
   }
   h+='</div>';
 
-  /* Quick preview of active plan for today */
+  /* Timeline preview for key dates */
   h+='<div class="roi-special-upcoming">';
-  h+='<div class="roi-section-title">Active today</div>';
+  h+='<div class="roi-section-title">Plan by date (check the switchover)</div>';
+  var checkDates=['2026-09-27','2026-09-30','2026-10-02','2026-10-03','2026-10-04'];
   var today=(typeof miamiToday==='function')?miamiToday():new Date().toISOString().slice(0,10);
-  var venues=(typeof listActiveVenues==='function'?listActiveVenues():['Casa Neos Beach Club','MILA Lounge','Casa Neos Lounge']);
-  h+='<table class="fcast-tbl roi-special-tbl"><thead><tr><th class="left">Venue</th><th>Date</th><th class="left">Active plan</th></tr></thead><tbody>';
-  venues.forEach(function(v){
-    var key=typeof fv3dKeyForVenue==='function'?fv3dKeyForVenue(v):null;
-    var plan=key&&typeof fv3dResolvePlan==='function'?fv3dResolvePlan(key, today):null;
-    var lbl=plan?(plan.badge||plan.label||plan.tableKey||'Default'):'—';
-    h+='<tr><td class="left">'+_escRoi(v)+'</td><td style="font-size:11px">'+today+'</td><td class="left" style="font-size:10px">'+_escRoi(lbl)+' <span class="roi-page-hint">('+(plan&&plan.source?plan.source:'')+')</span></td></tr>';
+  if(checkDates.indexOf(today)<0) checkDates.push(today);
+  checkDates.sort();
+  h+='<table class="fcast-tbl roi-special-tbl"><thead><tr><th>Date</th><th class="left">Casa Neos Beach Club</th><th class="left">Casa Neos Lounge</th></tr></thead><tbody>';
+  checkDates.forEach(function(d){
+    function cell(venue){
+      var key=typeof fv3dKeyForVenue==='function'?fv3dKeyForVenue(venue):null;
+      var plan=key&&typeof fv3dResolvePlan==='function'?fv3dResolvePlan(key, d):null;
+      var lbl=plan?(plan.badge||plan.label||plan.tableKey||'Default'):'—';
+      return _escRoi(lbl)+' <span class="roi-page-hint">('+(plan&&plan.source?plan.source:'')+')</span>';
+    }
+    h+='<tr><td style="font-size:11px;font-weight:700">'+d+(d===today?' · today':'')+'</td>';
+    h+='<td class="left" style="font-size:10px">'+cell('Casa Neos Beach Club')+'</td>';
+    h+='<td class="left" style="font-size:10px">'+cell('Casa Neos Lounge')+'</td></tr>';
   });
   h+='</tbody></table></div>';
   return h;
@@ -866,27 +876,48 @@ function cancelRoiFloorForm(){
 function renderRoiFloorForm(uid){
   var isNew=uid==='__new__';
   var p=isNew?{
-    label:'', venue:'Casa Neos Lounge', start:'', end:'',
-    preset:'casa-neos-lounge-new'
-  }:Object.assign({}, ROI_FLOOR_PLANS[uid]||{});
+    label:'', venue:'Casa Neos Beach Club', start:'', end:'',
+    preset:'casa-neos-beach-club-new', sourceUrl:'https://beachclub.casa-neos.com/',
+    closePrevious:true
+  }:Object.assign({closePrevious:false}, ROI_FLOOR_PLANS[uid]||{});
   var venues=(typeof listActiveVenues==='function'?listActiveVenues():['Casa Neos Beach Club','MILA Lounge','Casa Neos Lounge']);
   var h='<div class="roi-special-form" id="roiFloorForm">';
   h+='<div class="roi-section-title">'+(isNew?'New floor-plan drop':'Edit floor-plan drop')+'</div>';
+  h+='<p class="roi-page-hint" style="margin:0 0 12px">Open the booking link → find the <b>first date</b> whose BOOK YOUR TABLE shows the new layout → put that date in <b>First live date</b>. Example: waterfront plan starts <b>2026-10-03</b> even if you discovered it on Oct 4.</p>';
   h+='<div class="roi-form-grid">';
-  h+='<div class="fld"><label>Label</label><input id="roiFpLabel" type="text" value="'+_escRoi(p.label||'')+'" placeholder="Lounge remodel, Winter classic…"></div>';
-  h+='<div class="fld"><label>Venue</label><select id="roiFpVenue">'+venues.map(function(v){
+  h+='<div class="fld"><label>Label</label><input id="roiFpLabel" type="text" value="'+_escRoi(p.label||'')+'" placeholder="CNBC waterfront Oct 2026…"></div>';
+  h+='<div class="fld"><label>Venue</label><select id="roiFpVenue" onchange="roiFpVenueChanged()">'+venues.map(function(v){
     return '<option value="'+_escRoi(v)+'"'+(v===p.venue?' selected':'')+'>'+_escRoi(v)+'</option>';
   }).join('')+'</select></div>';
-  h+='<div class="fld"><label>Starts</label><input id="roiFpStart" type="date" value="'+(p.start||'')+'"></div>';
+  h+='<div class="fld"><label>First live date (on the website)</label><input id="roiFpStart" type="date" value="'+(p.start||'')+'"></div>';
   h+='<div class="fld"><label>Until (blank = open-ended)</label><input id="roiFpEnd" type="date" value="'+(p.end||'')+'"></div>';
-  h+='<div class="fld" style="grid-column:1/-1"><label>3D plan preset</label><select id="roiFpPreset">'+_roiFpPresetOptions(p.preset||'casa-neos-lounge-new')+'</select></div>';
+  h+='<div class="fld" style="grid-column:1/-1"><label>3D plan preset</label><select id="roiFpPreset">'+_roiFpPresetOptions(p.preset||'casa-neos-beach-club-new')+'</select></div>';
+  h+='<div class="fld" style="grid-column:1/-1"><label>Source booking URL</label><input id="roiFpSourceUrl" type="url" value="'+_escRoi(p.sourceUrl||'')+'" placeholder="https://beachclub.casa-neos.com/"></div>';
   h+='</div>';
-  h+='<p class="roi-page-hint">If two drops overlap for the same venue, the one with the <b>later start date</b> wins.</p>';
+  h+='<label class="roi-page-hint" style="display:flex;align-items:center;gap:8px;margin:10px 0;cursor:pointer">';
+  h+='<input id="roiFpClosePrev" type="checkbox"'+(p.closePrevious!==false?' checked':'')+'> ';
+  h+='End any open-ended earlier drop for this venue the day before First live date (clean switchover)</label>';
   h+='<div class="roi-form-actions">';
   h+='<button type="button" class="btn-cancel" onclick="cancelRoiFloorForm()">Cancel</button>';
   h+='<button type="button" class="btn-save" onclick="saveRoiFloorForm(\''+(isNew?'__new__':uid)+'\')">Save floor-plan drop</button>';
   h+='</div></div>';
   return h;
+}
+function roiFpVenueChanged(){
+  var v=(document.getElementById('roiFpVenue')||{}).value||'';
+  var url=document.getElementById('roiFpSourceUrl');
+  if(!url||(url.value&&url.value.trim())) return;
+  if(/Beach Club/i.test(v)) url.value='https://beachclub.casa-neos.com/';
+  else if(/Lounge/i.test(v)&&/Casa Neos/i.test(v)) url.value='https://lounge.casa-neos.com/';
+}
+function _roiFpDayBefore(ymd){
+  if(!ymd||!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return '';
+  var dt=new Date(ymd+'T12:00:00');
+  dt.setDate(dt.getDate()-1);
+  var y=dt.getFullYear();
+  var m=String(dt.getMonth()+1).padStart(2,'0');
+  var d=String(dt.getDate()).padStart(2,'0');
+  return y+'-'+m+'-'+d;
 }
 function saveRoiFloorForm(uid){
   var label=(document.getElementById('roiFpLabel')||{}).value||'';
@@ -894,14 +925,28 @@ function saveRoiFloorForm(uid){
   var start=(document.getElementById('roiFpStart')||{}).value||'';
   var end=(document.getElementById('roiFpEnd')||{}).value||'';
   var preset=(document.getElementById('roiFpPreset')||{}).value||'';
+  var sourceUrl=((document.getElementById('roiFpSourceUrl')||{}).value||'').trim();
+  var closePrev=!!(document.getElementById('roiFpClosePrev')||{}).checked;
   if(!label.trim()){ alert('Please enter a label.'); return; }
-  if(!start){ alert('Please enter a start date.'); return; }
-  if(end && end<start){ alert('Until date must be on or after the start date.'); return; }
+  if(!start){ alert('Please enter the first live date (first date the new plan appears on the booking site).'); return; }
+  if(end && end<start){ alert('Until date must be on or after the first live date.'); return; }
   if(!preset||(typeof FV_3D_PLAN_PRESETS!=='undefined'&&!FV_3D_PLAN_PRESETS[preset])){
     alert('Please pick a floor-plan preset.'); return;
   }
   var newUid=uid==='__new__'?_roiFpUid():uid;
   var prev=ROI_FLOOR_PLANS[newUid]||{};
+  if(closePrev){
+    var dayBefore=_roiFpDayBefore(start);
+    Object.keys(ROI_FLOOR_PLANS||{}).forEach(function(oid){
+      if(oid===newUid) return;
+      var o=ROI_FLOOR_PLANS[oid];
+      if(!o||o.venue!==venue) return;
+      if(o.start>=start) return;
+      if(o.end && o.end!=='') return; /* already bounded */
+      o.end=dayBefore;
+      o.updatedAt=new Date().toISOString();
+    });
+  }
   ROI_FLOOR_PLANS[newUid]={
     _uid:newUid,
     label:label.trim(),
@@ -909,6 +954,7 @@ function saveRoiFloorForm(uid){
     start:start,
     end:end||'',
     preset:preset,
+    sourceUrl:sourceUrl||'',
     createdAt:prev.createdAt||new Date().toISOString(),
     updatedAt:new Date().toISOString(),
     seeded:false

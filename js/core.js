@@ -212,18 +212,21 @@ function setView(v) {
    Dated drops in ROI_FLOOR_PLANS (Venue ROI Rules → 3D Floor plans) override built-ins. */
 var FV_CNBC_SUMMER_GLB = 'https://fvwebs-storage.fourvenues.com/casa-neos/rooftop.glb?v=1';
 var FV_CNL_NEW_GLB = 'https://fvwebs-storage.fourvenues.com/casa-neos/lounge/model-new.glb?v=1';
+var FV_CNBC_NEW_GLB = 'https://fvwebs-storage.fourvenues.com/casa-neos/new.glb?v=2';
 var FV_3D_MODELS = [
   {key:'mila-lounge', venue:'MILA Lounge', label:'MILA Lounge', orbit:'45deg 60deg 72%', url:'https://fvwebs-storage.fourvenues.com/mila-lounge/model.glb?v=1'},
   {key:'casa-neos-lounge', venue:'Casa Neos Lounge', label:'Casa Neos Lounge', orbit:'45deg 60deg 86%', url:'https://fvwebs-storage.fourvenues.com/casa-neos/lounge/model.glb?v=3', newOrbit:'40deg 65deg 95%'},
-  {key:'casa-neos-beach-club', venue:'Casa Neos Beach Club', label:'Casa Neos Beach Club', orbit:'45deg 60deg 110%', url:'https://fvwebs-storage.fourvenues.com/casa-neos/model2.glb?v=1', summerOrbit:'55deg 65deg 125%'}
+  {key:'casa-neos-beach-club', venue:'Casa Neos Beach Club', label:'Casa Neos Beach Club', orbit:'45deg 60deg 110%', url:'https://fvwebs-storage.fourvenues.com/casa-neos/model2.glb?v=1', summerOrbit:'55deg 65deg 125%', fallOrbit:'50deg 62deg 115%'}
 ];
-/* Named plan presets selectable from Venue ROI Rules → 3D Floor plans. */
+/* Named plan presets selectable from Venue ROI Rules → 3D Floor plans.
+   Starts = first date that date shows the plan on the booking site (e.g. BOOK YOUR TABLE on Oct 3). */
 var FV_3D_PLAN_PRESETS = {
   'mila-lounge':{label:'MILA Lounge (default)', modelKey:'mila-lounge', tableKey:'mila-lounge'},
   'casa-neos-lounge':{label:'CN Lounge — classic', modelKey:'casa-neos-lounge', tableKey:'casa-neos-lounge'},
   'casa-neos-lounge-new':{label:'CN Lounge — remodel (Sep 2026+)', modelKey:'casa-neos-lounge', tableKey:'casa-neos-lounge-new', modelUrl:FV_CNL_NEW_GLB, badge:'After Dark remodel', badgeColor:'#7c3aed'},
   'casa-neos-beach-club':{label:'CNBC — regular beach club', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club'},
-  'casa-neos-beach-club-summer':{label:'CNBC — Sunset Rituals rooftop', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-summer', modelUrl:FV_CNBC_SUMMER_GLB, badge:'Sunset Rituals · Summer rooftop', badgeColor:'#0f766e'}
+  'casa-neos-beach-club-summer':{label:'CNBC — Sunset Rituals rooftop', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-summer', modelUrl:FV_CNBC_SUMMER_GLB, badge:'Sunset Rituals · Summer rooftop', badgeColor:'#0f766e'},
+  'casa-neos-beach-club-new':{label:'CNBC — Sunset Rituals waterfront (Oct 2026+)', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-new', modelUrl:FV_CNBC_NEW_GLB, badge:'Sunset Rituals · Waterfront + slips', badgeColor:'#c2410c', sourceUrl:'https://beachclub.casa-neos.com/'}
 };
 /* Static reference copied from the source floor-plan configuration. It is
    intentionally local and contains no events, availability or performance. */
@@ -260,6 +263,16 @@ var FV_3D_TABLES = {
     {name:'PLATINUM',color:'rgb(158,158,158)',minimum:1500,capacity:10,tables:['66','68','76','75','88','86']},
     {name:'PRESTIGE',color:'rgb(139,195,74)',minimum:2000,capacity:10,tables:['64','65','84','85','74']},
     {name:'GOLD',color:'rgb(251,192,45)',minimum:1000,capacity:10,tables:['91','92','93','94']}
+  ],
+  /* Sunset Rituals waterfront from beachclub.casa-neos.com (new.glb) — first live date Oct 3, 2026.
+     Diamond×3 · Prestige×4 · Platinum×10 · Gold×6 · Riverwalk×5 · Slip×3. */
+  'casa-neos-beach-club-new':[
+    {name:'DIAMOND',color:'rgb(3,169,244)',minimum:6000,capacity:10,tables:['34','51','52']},
+    {name:'PRESTIGE',color:'rgb(139,195,74)',minimum:5500,capacity:10,tables:['31','35','36','41']},
+    {name:'PLATINUM',color:'rgb(158,158,158)',minimum:4000,capacity:8,tables:['32','33','42','43','46','47','53','54','55','56']},
+    {name:'GOLD',color:'rgb(251,192,45)',minimum:3500,capacity:8,tables:['22','23','24','25','26','27']},
+    {name:'RIVERWALK',color:'rgb(245,127,23)',minimum:1500,capacity:8,tables:['17','18','19','20','21']},
+    {name:'SLIP',color:'rgb(96,165,250)',minimum:5000,capacity:8,tables:['D1','D2','D3']}
   ]
 };
 /* Model-space table centers read from each raw GLB. model-viewer hotspots use
@@ -310,6 +323,20 @@ var FV_3D_HOTSPOTS = {
     '81':[29.856,1.15,5.969],'83':[24.118,1.15,5.969],'84':[17.849,1.15,5.969],
     '85':[14.292,1.15,5.969],'86':[8.170,1.15,5.969],'88':[2.331,1.15,5.969],
     '91':[-5.742,1.00,7.597],'92':[-10.136,1.00,7.597],'93':[-14.509,1.00,7.597],'94':[-18.837,1.00,7.597]
+  },
+  /* Waterfront + slips — node translations from new.glb?v=2 (S_17…S_56, S_D1…S_D3). */
+  'casa-neos-beach-club-new':{
+    '17':[20.747,1.02,5.469],'18':[18.422,1.02,5.513],'19':[16.302,1.02,5.522],
+    '20':[14.090,1.02,5.533],'21':[11.923,1.02,5.530],'22':[7.756,1.02,5.117],
+    '23':[5.578,1.02,4.997],'24':[3.335,1.02,4.855],'25':[0.183,1.02,4.776],
+    '26':[-2.135,1.02,4.477],'27':[-4.332,1.02,4.322],'31':[2.984,1.02,2.655],
+    '32':[0.590,1.02,2.655],'33':[0.442,1.02,0.545],'34':[0.442,1.02,-0.910],
+    '35':[3.156,1.02,-0.875],'36':[3.156,1.02,0.580],'41':[6.111,1.02,1.746],
+    '42':[5.707,1.02,-0.722],'43':[5.799,1.02,-3.039],'46':[-1.747,1.02,-0.722],
+    '47':[-2.343,1.02,1.746],'51':[5.935,1.02,-5.933],'52':[0.251,1.02,-5.933],
+    '53':[-2.551,1.02,-4.171],'54':[-3.817,1.02,-1.831],'55':[-4.948,1.02,0.159],
+    '56':[-6.780,1.02,3.175],'D1':[-2.134,1.05,7.269],'D2':[7.631,1.05,7.827],
+    'D3':[17.365,1.05,8.067]
   }
 };
 var _fv3dModelKey = 'mila-lounge';
@@ -330,26 +357,45 @@ function loadSavedRoiFloorPlans(){
   }catch(e){}
 }
 function ensureDefaultRoiFloorPlans(){
-  var hasCnlNew=Object.keys(ROI_FLOOR_PLANS||{}).some(function(uid){
-    var p=ROI_FLOOR_PLANS[uid];
-    return p && p.venue==='Casa Neos Lounge' && p.preset==='casa-neos-lounge-new';
-  });
-  if(!hasCnlNew){
-    var uid='fp_cnl_new_20260925';
-    ROI_FLOOR_PLANS[uid]={
-      _uid:uid,
+  var added=false;
+  function hasPreset(venue, preset){
+    return Object.keys(ROI_FLOOR_PLANS||{}).some(function(uid){
+      var p=ROI_FLOOR_PLANS[uid];
+      return p && p.venue===venue && p.preset===preset;
+    });
+  }
+  if(!hasPreset('Casa Neos Lounge','casa-neos-lounge-new')){
+    ROI_FLOOR_PLANS.fp_cnl_new_20260925={
+      _uid:'fp_cnl_new_20260925',
       label:'Casa Neos Lounge remodel',
       venue:'Casa Neos Lounge',
       start:'2026-09-25',
       end:'',
       preset:'casa-neos-lounge-new',
+      sourceUrl:'https://lounge.casa-neos.com/',
       createdAt:'2026-09-15T00:00:00.000Z',
       updatedAt:'2026-09-15T00:00:00.000Z',
       seeded:true
     };
-    return true;
+    added=true;
   }
-  return false;
+  /* First booking date on beachclub.casa-neos.com that loads new.glb (Sunset Rituals waterfront). */
+  if(!hasPreset('Casa Neos Beach Club','casa-neos-beach-club-new')){
+    ROI_FLOOR_PLANS.fp_cnbc_new_20261003={
+      _uid:'fp_cnbc_new_20261003',
+      label:'CNBC Sunset Rituals waterfront',
+      venue:'Casa Neos Beach Club',
+      start:'2026-10-03',
+      end:'',
+      preset:'casa-neos-beach-club-new',
+      sourceUrl:'https://beachclub.casa-neos.com/',
+      createdAt:'2026-09-15T00:00:00.000Z',
+      updatedAt:'2026-09-15T00:00:00.000Z',
+      seeded:true
+    };
+    added=true;
+  }
+  return added;
 }
 function saveRoiFloorPlans(){
   try{ localStorage.setItem('rdg_roi_floor_plans', JSON.stringify(ROI_FLOOR_PLANS)); }catch(e){}
@@ -732,6 +778,7 @@ function renderFv3dFloorVisual(){
     mv.setAttribute('alt', m.venue+(planTag?' '+planTag:'')+' 3D floor plan');
     var orbit=m.orbit||'45deg 60deg 110%';
     if(plan.tableKey==='casa-neos-beach-club-summer' && m.summerOrbit) orbit=m.summerOrbit;
+    if(plan.tableKey==='casa-neos-beach-club-new' && m.fallOrbit) orbit=m.fallOrbit;
     if(plan.tableKey==='casa-neos-lounge-new' && m.newOrbit) orbit=m.newOrbit;
     mv.setAttribute('camera-orbit', orbit);
     if(mv.getAttribute('src')!==modelUrl) mv.setAttribute('src', modelUrl);

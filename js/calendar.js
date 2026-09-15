@@ -513,6 +513,7 @@ function openShow3dModal(idx){
     var orbit=model.orbit||'45deg 60deg 110%';
     var tableKey=(typeof fv3dEffectiveTableKey==='function')?fv3dEffectiveTableKey(key, r.d):key;
     if(tableKey==='casa-neos-beach-club-summer' && model.summerOrbit) orbit=model.summerOrbit;
+    if(tableKey==='casa-neos-beach-club-new' && model.fallOrbit) orbit=model.fallOrbit;
     if(tableKey==='casa-neos-lounge-new' && model.newOrbit) orbit=model.newOrbit;
     mv.setAttribute('camera-orbit', orbit);
     mv.style.cssText='width:100%;height:100%;background:transparent;--poster-color:transparent';
