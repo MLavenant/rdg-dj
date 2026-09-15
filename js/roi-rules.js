@@ -809,11 +809,37 @@ function _roiFpPlanSummary(p){
   if(p&&p.status==='error') return {lbl:'Grab failed', tiers:p.error||'', ready:false};
   return {lbl:p&&p.preset?p.preset:'—', tiers:'', ready:false};
 }
+function _roiFpLatestForVenue(venue){
+  var best=null;
+  Object.keys(ROI_FLOOR_PLANS||{}).forEach(function(uid){
+    if(uid==='__draft_preview__') return;
+    var p=ROI_FLOOR_PLANS[uid];
+    if(!p||p.venue!==venue) return;
+    if(!best){ best=Object.assign({_uid:uid}, p); return; }
+    if((p.updatedAt||'')>(best.updatedAt||'')) best=Object.assign({_uid:uid}, p);
+    else if((p.updatedAt||'')===(best.updatedAt||'') && (p.start||'')>(best.start||'')) best=Object.assign({_uid:uid}, p);
+  });
+  return best;
+}
+function openFv3dForVenue(venue, dateStr){
+  var key=typeof fv3dKeyForVenue==='function'?fv3dKeyForVenue(venue):null;
+  var src=typeof fv3dBookingSourceFor==='function'?fv3dBookingSourceFor(venue):null;
+  if(!key && src) key=src.modelKey;
+  if(!key){ alert('No 3D model for '+venue); return; }
+  var d=dateStr||(typeof getFv3dDate==='function'?getFv3dDate():'')||(typeof miamiToday==='function'?miamiToday():'');
+  if(typeof _fv3dModelKey!=='undefined') _fv3dModelKey=key;
+  if(typeof setView==='function') setView('3d');
+  setTimeout(function(){
+    if(typeof setFv3dModel==='function') setFv3dModel(key);
+    if(d && typeof setFv3dDate==='function') setFv3dDate(d);
+  },80);
+}
 function renderRoiFloorPlansSection(){
   if(typeof ensureDefaultRoiFloorPlans==='function') ensureDefaultRoiFloorPlans();
   var h='';
   h+='<div class="roi-special-intro">';
-  h+='<p>The booking link stays the same. When the website’s 3D floor plan changes, open <b>3D View</b>, pick the venue + date, and hit <b>Refresh floor plan</b>. That re-grabs GLB + tables + tiers from the site (may take a few minutes).</p>';
+  h+='<p><b>To see a plan:</b> open <b>3D View</b> in the left sidebar → pick the venue → set the date. This page only starts a Refresh; the model never appears here.</p>';
+  h+='<p class="roi-page-hint">When status is ready, use <b>Open in 3D View</b>. Refreshing = wait. Error = grab failed (try again or check Actions).</p>';
   h+='</div>';
 
   h+='<div class="roi-special-list">';
@@ -822,16 +848,26 @@ function renderRoiFloorPlansSection(){
   var today=(typeof miamiToday==='function')?miamiToday():new Date().toISOString().slice(0,10);
   Object.keys(sources).forEach(function(venue){
     var src=sources[venue];
-    var drop=typeof roiFloorPlanDropFor==='function'?roiFloorPlanDropFor(venue, today):null;
+    var drop=_roiFpLatestForVenue(venue)||(typeof roiFloorPlanDropFor==='function'?roiFloorPlanDropFor(venue, today):null);
     var sum=_roiFpPlanSummary(drop||{});
-    var st=drop?(drop.status||(sum.ready?'ready':'')):'—';
+    var st=drop?(drop.status||(sum.ready?'ready':'')):'none';
+    var viewDate=(drop&&drop.start)||today;
     h+='<div class="roi-fp-venue-card">';
     h+='<div style="flex:1;min-width:0">';
     h+='<div style="font-weight:800">'+_escRoi(venue)+'</div>';
     h+='<div class="roi-page-hint" style="margin-top:4px"><a href="'+_escRoi(src.url)+'" target="_blank" rel="noopener">'+_escRoi(src.url)+'</a></div>';
-    h+='<div style="font-size:10px;margin-top:6px">'+_escRoi(sum.lbl||'No plan loaded yet')+(st&&st!=='ready'&&st!=='—'?' <span class="roi-page-hint">['+st+']</span>':'')+'</div>';
+    if(st==='ready'||(sum.ready&&st!=='error'&&st!=='refreshing'&&st!=='queued')){
+      h+='<div style="font-size:11px;margin-top:6px;color:#166534;font-weight:700">Ready — '+_escRoi(sum.lbl)+'</div>';
+    }else if(st==='refreshing'||st==='queued'||st==='running'){
+      h+='<div style="font-size:11px;margin-top:6px;color:#9a3412;font-weight:700">Grabbing… check back in ~15–30 min, then Open in 3D View</div>';
+    }else if(st==='error'){
+      h+='<div style="font-size:11px;margin-top:6px;color:#991b1b;font-weight:700">Grab failed'+(drop&&drop.error?(': '+_escRoi(String(drop.error).slice(0,120))):'')+'</div>';
+    }else{
+      h+='<div style="font-size:10px;margin-top:6px" class="roi-page-hint">No refreshed plan yet — existing built-in 3D still works in 3D View</div>';
+    }
     h+='</div>';
     h+='<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">';
+    h+='<button type="button" class="btn-save" onclick="openFv3dForVenue(\''+_escRoi(venue).replace(/'/g,"\\'")+'\',\''+_escRoi(viewDate)+'\')">Open in 3D View</button>';
     h+='<button type="button" class="btn-add" onclick="refreshFloorPlanFromBookingSite(\''+_escRoi(venue).replace(/'/g,"\\'")+'\')">Refresh floor plan</button>';
     h+='</div></div>';
   });
@@ -856,6 +892,7 @@ function renderRoiFloorPlansSection(){
       h+='<td style="font-size:11px">'+_escRoi(endLbl)+'</td>';
       h+='<td class="left" style="font-size:10px">'+_escRoi(sum.lbl)+(st&&st!=='ready'?' <span class="roi-page-hint">['+st+']</span>':'')+'</td>';
       h+='<td style="white-space:nowrap">';
+      h+='<button type="button" class="roi-mini-btn" onclick="openFv3dForVenue(\''+_escRoi(p.venue||'').replace(/'/g,"\\'")+'\',\''+_escRoi(p.start||today)+'\')">Open 3D</button> ';
       h+='<button type="button" class="roi-mini-btn" onclick="refreshFloorPlanFromBookingSite(\''+_escRoi(p.venue||'').replace(/'/g,"\\'")+'\',\''+_escRoi(p.start||today)+'\')">Refresh</button> ';
       h+='<button type="button" class="roi-mini-btn roi-mini-del" onclick="deleteRoiFloorPlan(\''+p._uid+'\')">Delete</button>';
       h+='</td></tr>';
