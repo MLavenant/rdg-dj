@@ -351,40 +351,46 @@ async function scrapePlan({ url, dateStr, venue }) {
   };
 }
 
-async function saveDrop({ venue, start, end, sourceUrl, plan, uid }) {
+async function saveDrop({ venue, start, end, sourceUrl, plan, uid, refresh }) {
   const drops = (await fbGet('/rdg/roiFloorPlans')) || {};
   const id = uid || 'fp_grab_' + Date.now().toString(36);
-  // Close earlier open-ended drops for venue
-  const dayBefore = (() => {
-    const dt = new Date(start + 'T12:00:00');
-    dt.setDate(dt.getDate() - 1);
-    return dt.toISOString().slice(0, 10);
-  })();
-  Object.keys(drops).forEach((k) => {
-    const o = drops[k];
-    if (!o || o.venue !== venue || k === id) return;
-    if (o.start >= start) return;
-    if (o.end) return;
-    o.end = dayBefore;
-    o.updatedAt = new Date().toISOString();
-  });
+  const prev = drops[id] || {};
+
+  if (!refresh) {
+    // Close earlier open-ended drops for venue (new schedule switchover only)
+    const dayBefore = (() => {
+      const dt = new Date(start + 'T12:00:00');
+      dt.setDate(dt.getDate() - 1);
+      return dt.toISOString().slice(0, 10);
+    })();
+    Object.keys(drops).forEach((k) => {
+      const o = drops[k];
+      if (!o || o.venue !== venue || k === id) return;
+      if (o.start >= start) return;
+      if (o.end) return;
+      o.end = dayBefore;
+      o.updatedAt = new Date().toISOString();
+    });
+  }
+
   drops[id] = {
     _uid: id,
-    label: plan.label || venue + ' grabbed plan',
+    label: prev.label || plan.label || venue + ' grabbed plan',
     venue,
-    start,
-    end: end || '',
-    sourceUrl: sourceUrl || '',
-    preset: null,
+    start: refresh && prev.start ? prev.start : start,
+    end: end != null && end !== '' ? end : prev.end || '',
+    sourceUrl: sourceUrl || prev.sourceUrl || '',
+    preset: prev.preset || null,
     status: 'ready',
     plan,
-    createdAt: new Date().toISOString(),
+    createdAt: prev.createdAt || new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     seeded: false,
-    grabbed: true
+    grabbed: true,
+    lastRefreshDate: start
   };
   const code = await fbPut('/rdg/roiFloorPlans', drops);
-  console.log('Firebase roiFloorPlans PUT', code, 'uid', id);
+  console.log('Firebase roiFloorPlans PUT', code, 'uid', id, refresh ? '(refresh)' : '');
   return { id, code, drop: drops[id] };
 }
 
@@ -397,7 +403,7 @@ async function processQueue() {
   }
   for (const id of ids) {
     const req = q[id];
-    console.log('Processing', id, req.url, req.start);
+    console.log('Processing', id, req.url, req.start, req.refresh ? 'refresh' : '');
     q[id] = { ...req, status: 'running', updatedAt: new Date().toISOString() };
     await fbPut('/rdg/floorPlanIngestRequests', q);
     try {
@@ -413,7 +419,8 @@ async function processQueue() {
         end: req.end || '',
         sourceUrl: req.url,
         plan,
-        uid: req.dropUid || id
+        uid: req.dropUid || id,
+        refresh: !!req.refresh
       });
       q[id] = {
         ...req,
@@ -426,6 +433,15 @@ async function processQueue() {
     } catch (e) {
       console.error(e);
       q[id] = { ...req, status: 'error', error: String(e.message || e), updatedAt: new Date().toISOString() };
+      if (req.dropUid) {
+        const drops = (await fbGet('/rdg/roiFloorPlans')) || {};
+        if (drops[req.dropUid]) {
+          drops[req.dropUid].status = 'error';
+          drops[req.dropUid].error = String(e.message || e);
+          drops[req.dropUid].updatedAt = new Date().toISOString();
+          await fbPut('/rdg/roiFloorPlans', drops);
+        }
+      }
     }
     await fbPut('/rdg/floorPlanIngestRequests', q);
   }

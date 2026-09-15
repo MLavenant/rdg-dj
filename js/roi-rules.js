@@ -813,69 +813,146 @@ function renderRoiFloorPlansSection(){
   if(typeof ensureDefaultRoiFloorPlans==='function') ensureDefaultRoiFloorPlans();
   var h='';
   h+='<div class="roi-special-intro">';
-  h+='<p>Paste the booking link, set <b>Starts</b> (and optional <b>Ends</b>), hit <b>Save floor plan</b>. The app attaches the 3D plan (GLB + tables + tiers) for that date range — no coding.</p>';
-  h+='<p class="roi-page-hint">Known Casa Neos remodel links apply instantly. Brand-new links are grabbed automatically in the background (usually within ~30 minutes).</p>';
+  h+='<p>The booking link stays the same. When the website’s 3D floor plan changes, open <b>3D View</b>, pick the venue + date, and hit <b>Refresh floor plan</b>. That re-grabs GLB + tables + tiers from the site (may take a few minutes).</p>';
   h+='</div>';
 
-  h+='<div class="roi-special-toolbar">';
-  h+='<button type="button" class="btn-add" onclick="openRoiFloorForm()">+ Add floor plan</button>';
-  h+='</div>';
-
-  if(_roiEditFloorUid!==null){
-    h+=renderRoiFloorForm(_roiEditFloorUid);
-  }
-
-  var list=_roiFpList();
   h+='<div class="roi-special-list">';
-  h+='<div class="roi-section-title">Scheduled floor plans'+(list.length?' <span class="roi-page-hint" style="font-weight:600">('+list.length+')</span>':'')+'</div>';
+  h+='<div class="roi-section-title">Venue booking sites</div>';
+  var sources=typeof FV_3D_BOOKING_SOURCES!=='undefined'?FV_3D_BOOKING_SOURCES:{};
+  var today=(typeof miamiToday==='function')?miamiToday():new Date().toISOString().slice(0,10);
+  Object.keys(sources).forEach(function(venue){
+    var src=sources[venue];
+    var drop=typeof roiFloorPlanDropFor==='function'?roiFloorPlanDropFor(venue, today):null;
+    var sum=_roiFpPlanSummary(drop||{});
+    var st=drop?(drop.status||(sum.ready?'ready':'')):'—';
+    h+='<div class="roi-fp-venue-card">';
+    h+='<div style="flex:1;min-width:0">';
+    h+='<div style="font-weight:800">'+_escRoi(venue)+'</div>';
+    h+='<div class="roi-page-hint" style="margin-top:4px"><a href="'+_escRoi(src.url)+'" target="_blank" rel="noopener">'+_escRoi(src.url)+'</a></div>';
+    h+='<div style="font-size:10px;margin-top:6px">'+_escRoi(sum.lbl||'No plan loaded yet')+(st&&st!=='ready'&&st!=='—'?' <span class="roi-page-hint">['+st+']</span>':'')+'</div>';
+    h+='</div>';
+    h+='<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">';
+    h+='<button type="button" class="btn-add" onclick="refreshFloorPlanFromBookingSite(\''+_escRoi(venue).replace(/'/g,"\\'")+'\')">Refresh floor plan</button>';
+    h+='</div></div>';
+  });
+  h+='</div>';
+
+  var list=_roiFpList().filter(function(p){ return p&&p._uid!=='__draft_preview__'; });
+  h+='<div class="roi-special-list" style="margin-top:18px">';
+  h+='<div class="roi-section-title">Scheduled plans'+(list.length?' <span class="roi-page-hint" style="font-weight:600">('+list.length+')</span>':'')+'</div>';
   if(!list.length){
-    h+='<div class="roi-empty">No floor plans yet. Add one with the booking link and first live date.</div>';
+    h+='<div class="roi-empty">None yet — Refresh on a venue above (or in 3D View) to grab one.</div>';
   }else{
     h+='<table class="fcast-tbl roi-special-tbl"><thead><tr>';
-    h+='<th class="left">Label</th><th class="left">Venue</th><th>First live date</th><th>Until</th><th class="left">Plan</th><th class="left">Source link</th><th></th>';
+    h+='<th class="left">Venue</th><th>From</th><th>Until</th><th class="left">Plan</th><th></th>';
     h+='</tr></thead><tbody>';
     list.forEach(function(p){
       var sum=_roiFpPlanSummary(p);
-      var endLbl=p.end?p.end:'Open-ended';
-      var src=p.sourceUrl||'';
+      var endLbl=p.end?p.end:'Open';
       var st=p.status||(sum.ready?'ready':'');
       h+='<tr>';
-      h+='<td class="left" style="font-weight:800">'+_escRoi(p.label||'Untitled')+(p.seeded?' <span class="roi-page-hint">default</span>':'')+(p.grabbed?' <span class="roi-page-hint">grabbed</span>':'')+'</td>';
-      h+='<td class="left">'+_escRoi(p.venue||'')+'</td>';
+      h+='<td class="left" style="font-weight:800">'+_escRoi(p.venue||'')+'</td>';
       h+='<td style="font-size:11px">'+_escRoi(p.start||'')+'</td>';
       h+='<td style="font-size:11px">'+_escRoi(endLbl)+'</td>';
       h+='<td class="left" style="font-size:10px">'+_escRoi(sum.lbl)+(st&&st!=='ready'?' <span class="roi-page-hint">['+st+']</span>':'')+'</td>';
-      h+='<td class="left" style="font-size:10px">'+(src?('<a href="'+_escRoi(src)+'" target="_blank" rel="noopener">'+_escRoi(src.replace(/^https?:\/\//,''))+'</a>'):'—')+'</td>';
       h+='<td style="white-space:nowrap">';
-      h+='<button type="button" class="roi-mini-btn" onclick="openRoiFloorForm(\''+p._uid+'\')">Edit</button> ';
+      h+='<button type="button" class="roi-mini-btn" onclick="refreshFloorPlanFromBookingSite(\''+_escRoi(p.venue||'').replace(/'/g,"\\'")+'\',\''+_escRoi(p.start||today)+'\')">Refresh</button> ';
       h+='<button type="button" class="roi-mini-btn roi-mini-del" onclick="deleteRoiFloorPlan(\''+p._uid+'\')">Delete</button>';
       h+='</td></tr>';
     });
     h+='</tbody></table>';
   }
   h+='</div>';
-
-  /* Timeline preview for key dates */
-  h+='<div class="roi-special-upcoming">';
-  h+='<div class="roi-section-title">Plan by date (check the switchover)</div>';
-  var checkDates=['2026-09-27','2026-09-30','2026-10-02','2026-10-03','2026-10-04'];
-  var today=(typeof miamiToday==='function')?miamiToday():new Date().toISOString().slice(0,10);
-  if(checkDates.indexOf(today)<0) checkDates.push(today);
-  checkDates.sort();
-  h+='<table class="fcast-tbl roi-special-tbl"><thead><tr><th>Date</th><th class="left">Casa Neos Beach Club</th><th class="left">Casa Neos Lounge</th></tr></thead><tbody>';
-  checkDates.forEach(function(d){
-    function cell(venue){
-      var key=typeof fv3dKeyForVenue==='function'?fv3dKeyForVenue(venue):null;
-      var plan=key&&typeof fv3dResolvePlan==='function'?fv3dResolvePlan(key, d):null;
-      var lbl=plan?(plan.badge||plan.label||plan.tableKey||'Default'):'—';
-      return _escRoi(lbl)+' <span class="roi-page-hint">('+(plan&&plan.source?plan.source:'')+')</span>';
-    }
-    h+='<tr><td style="font-size:11px;font-weight:700">'+d+(d===today?' · today':'')+'</td>';
-    h+='<td class="left" style="font-size:10px">'+cell('Casa Neos Beach Club')+'</td>';
-    h+='<td class="left" style="font-size:10px">'+cell('Casa Neos Lounge')+'</td></tr>';
-  });
-  h+='</tbody></table></div>';
   return h;
+}
+
+function updateFv3dRefreshStatus(){
+  var el=document.getElementById('fv3dRefreshStatus');
+  if(!el) return;
+  var m=typeof FV_3D_MODELS!=='undefined'?FV_3D_MODELS.find(function(x){return x.key===_fv3dModelKey;}):null;
+  var venue=m?m.venue:null;
+  var d=(typeof getFv3dDate==='function'?getFv3dDate():'')||'';
+  var drop=venue&&d&&typeof roiFloorPlanDropFor==='function'?roiFloorPlanDropFor(venue, d):null;
+  if(!drop){ el.textContent=''; return; }
+  if(drop.status==='queued'||drop.status==='refreshing'||drop.status==='running'){
+    el.textContent='Grabbing from booking site… keep this date; it updates when ready.';
+    return;
+  }
+  if(drop.status==='error'){
+    el.textContent='Last grab failed — try Refresh again.';
+    return;
+  }
+  if(drop.plan&&drop.updatedAt){
+    el.textContent='Last grab '+String(drop.updatedAt).slice(0,16).replace('T',' ');
+    return;
+  }
+  el.textContent='';
+}
+
+/* Same fixed booking URL every time → scrape BOOK YOUR TABLE for the selected date → update 3D plan. */
+function refreshFloorPlanFromBookingSite(venueOpt, dateOpt){
+  var m=typeof FV_3D_MODELS!=='undefined'?FV_3D_MODELS.find(function(x){return x.key===_fv3dModelKey;}):null;
+  var venue=venueOpt||(m&&m.venue)||'';
+  var src=typeof fv3dBookingSourceFor==='function'?fv3dBookingSourceFor(venue):null;
+  if(!src||!src.url){
+    alert('No fixed booking link for this venue. Refresh works for Casa Neos Beach Club and Casa Neos Lounge.');
+    return;
+  }
+  venue=src.venue||venue;
+  var dateStr=dateOpt||(typeof getFv3dDate==='function'?getFv3dDate():'')||(typeof miamiToday==='function'?miamiToday():'');
+  if(!dateStr){
+    alert('Pick a date in 3D View first (the date on the booking site to open).');
+    return;
+  }
+
+  var drop=typeof roiFloorPlanDropFor==='function'?roiFloorPlanDropFor(venue, dateStr):null;
+  var uid=(drop&&drop._uid)?drop._uid:_roiFpUid();
+  var prev=ROI_FLOOR_PLANS[uid]||drop||{};
+  var known=typeof _roiFpGuessKnownPreset==='function'?_roiFpGuessKnownPreset(venue, src.url, dateStr):null;
+  var interim=null;
+  if(!(prev.plan&&prev.plan.tables&&prev.plan.tables.length)&&known&&typeof _fv3dPlanPayloadFromPreset==='function'){
+    interim=_fv3dPlanPayloadFromPreset(known);
+  }
+
+  ROI_FLOOR_PLANS[uid]={
+    _uid:uid,
+    label:prev.label||(venue+' live plan'),
+    venue:venue,
+    start:prev.start||dateStr,
+    end:prev.end||'',
+    preset:known||prev.preset||null,
+    sourceUrl:src.url,
+    status:'refreshing',
+    plan:prev.plan&&prev.plan.tables?prev.plan:(interim||null),
+    grabbed:!!(prev.grabbed||interim),
+    createdAt:prev.createdAt||new Date().toISOString(),
+    updatedAt:new Date().toISOString(),
+    seeded:false,
+    lastRefreshDate:dateStr
+  };
+  if(typeof saveRoiFloorPlans==='function') saveRoiFloorPlans();
+
+  var reqId='req_refresh_'+uid+'_'+Date.now().toString(36);
+  _roiFpQueueIngest({
+    _uid:reqId,
+    dropUid:uid,
+    url:src.url,
+    venue:venue,
+    start:dateStr,
+    end:ROI_FLOOR_PLANS[uid].end||'',
+    label:ROI_FLOOR_PLANS[uid].label,
+    status:'queued',
+    refresh:true,
+    createdAt:new Date().toISOString(),
+    updatedAt:new Date().toISOString()
+  });
+
+  updateFv3dRefreshStatus();
+  if(typeof curView!=='undefined'&&curView==='roi-rules'&&typeof renderRoiRulesPage==='function') renderRoiRulesPage();
+
+  var st=document.getElementById('fv3dRefreshStatus');
+  if(st) st.textContent='Grab queued — scraping '+src.url.replace(/^https?:\/\//,'')+' for '+dateStr+'…';
+  alert('Refresh queued.\n\nSame link: '+src.url+'\nDate on site: '+dateStr+'\n\nThe worker grabs the 3D plan (usually within ~15–30 min). Leave this date selected — 3D View updates when it’s ready.');
 }
 function openRoiFloorForm(uid){
   _roiEditFloorUid=uid||'__new__';

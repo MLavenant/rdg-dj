@@ -228,6 +228,18 @@ var FV_3D_PLAN_PRESETS = {
   'casa-neos-beach-club-summer':{label:'CNBC — Sunset Rituals rooftop', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-summer', modelUrl:FV_CNBC_SUMMER_GLB, badge:'Sunset Rituals · Summer rooftop', badgeColor:'#0f766e'},
   'casa-neos-beach-club-new':{label:'CNBC — Sunset Rituals waterfront (Oct 2026+)', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-new', modelUrl:FV_CNBC_NEW_GLB, badge:'Sunset Rituals · Waterfront + slips', badgeColor:'#c2410c', sourceUrl:'https://beachclub.casa-neos.com/'}
 };
+/* Fixed booking-site URLs. Refresh scrapes these (same link every time → BOOK YOUR TABLE → 3D plan). */
+var FV_3D_BOOKING_SOURCES = {
+  'Casa Neos Beach Club':{url:'https://beachclub.casa-neos.com/', modelKey:'casa-neos-beach-club'},
+  'Casa Neos Lounge':{url:'https://lounge.casa-neos.com/', modelKey:'casa-neos-lounge'}
+};
+function fv3dBookingSourceFor(venueOrModelKey){
+  if(!venueOrModelKey) return null;
+  if(FV_3D_BOOKING_SOURCES[venueOrModelKey]) return Object.assign({venue:venueOrModelKey}, FV_3D_BOOKING_SOURCES[venueOrModelKey]);
+  var m=FV_3D_MODELS.find(function(x){ return x.key===venueOrModelKey || x.venue===venueOrModelKey; });
+  if(m && FV_3D_BOOKING_SOURCES[m.venue]) return Object.assign({venue:m.venue}, FV_3D_BOOKING_SOURCES[m.venue]);
+  return null;
+}
 /* Static reference copied from the source floor-plan configuration. It is
    intentionally local and contains no events, availability or performance. */
 var FV_3D_TABLES = {
@@ -444,7 +456,7 @@ function roiFloorPlanDropFor(venue, dateStr){
     if(uid==='__draft_preview__') return;
     var p=ROI_FLOOR_PLANS[uid];
     if(!p||p.venue!==venue) return;
-    if(p.status==='queued'||p.status==='error') return; /* not ready yet */
+    if(p.status==='queued'||p.status==='error') return; /* not ready yet — refreshing keeps showing prior plan */
     if(!p.start||dateStr<p.start) return;
     var end=p.end||'9999-12-31';
     if(dateStr>end) return;
@@ -917,6 +929,12 @@ function render3dView(){
   if(dateInp) dateInp.value=_fv3dDate;
   var dateWrap=document.getElementById('fv3dDateWrap');
   if(dateWrap) dateWrap.style.display=(_fv3dModelKey==='casa-neos-beach-club'||_fv3dModelKey==='casa-neos-lounge')?'flex':'none';
+  var refreshBtn=document.getElementById('fv3dRefreshBtn');
+  if(refreshBtn){
+    var canRefresh=!!(typeof fv3dBookingSourceFor==='function'&&fv3dBookingSourceFor(_fv3dModelKey));
+    refreshBtn.style.display=canRefresh?'inline-flex':'none';
+  }
+  if(typeof updateFv3dRefreshStatus==='function') updateFv3dRefreshStatus();
   setFv3dDate(_fv3dDate);
   if(typeof updateFv3dPricing==='function') updateFv3dPricing();
   else { renderFv3dFloorVisual(); renderFv3dReference(); }

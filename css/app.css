@@ -1178,6 +1178,8 @@ model-viewer{--min-hotspot-opacity:0}
 .roi-fp-preview-warn{color:#9a3412;background:#fff7ed;border-radius:8px;padding:8px 10px;margin:0 0 8px}
 .roi-fp-preview-ok ul{margin:6px 0 0;padding-left:18px}
 .roi-fp-preview-ok li{margin:3px 0}
+.roi-fp-venue-card{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;margin:0 0 10px;border:0.5px solid var(--rule);border-radius:12px;background:var(--card2)}
+@media(max-width:640px){.roi-fp-venue-card{flex-direction:column;align-items:stretch}}
 .roi-form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:10px}
 .roi-form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;padding-top:10px;border-top:0.5px solid var(--hair)}
 .roi-section-title{font-size:13px;font-weight:900;margin-bottom:8px;color:var(--ink);letter-spacing:-.2px}
