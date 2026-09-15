@@ -373,6 +373,8 @@ function ensureDefaultRoiFloorPlans(){
       end:'',
       preset:'casa-neos-lounge-new',
       sourceUrl:'https://lounge.casa-neos.com/',
+      status:'ready',
+      plan:_fv3dPlanPayloadFromPreset('casa-neos-lounge-new'),
       createdAt:'2026-09-15T00:00:00.000Z',
       updatedAt:'2026-09-15T00:00:00.000Z',
       seeded:true
@@ -389,13 +391,41 @@ function ensureDefaultRoiFloorPlans(){
       end:'',
       preset:'casa-neos-beach-club-new',
       sourceUrl:'https://beachclub.casa-neos.com/',
+      status:'ready',
+      plan:_fv3dPlanPayloadFromPreset('casa-neos-beach-club-new'),
       createdAt:'2026-09-15T00:00:00.000Z',
       updatedAt:'2026-09-15T00:00:00.000Z',
       seeded:true
     };
     added=true;
   }
+  /* Backfill scraped GLB+tables+tiers onto older drops that only stored a preset key. */
+  Object.keys(ROI_FLOOR_PLANS).forEach(function(uid){
+    var p=ROI_FLOOR_PLANS[uid];
+    if(!p||!p.preset) return;
+    if(p.plan&&p.plan.tables&&p.plan.tables.length) return;
+    var payload=_fv3dPlanPayloadFromPreset(p.preset);
+    if(!payload) return;
+    p.plan=payload;
+    p.status=p.status||'ready';
+    added=true;
+  });
   return added;
+}
+function _fv3dPlanPayloadFromPreset(presetKey){
+  var pre=FV_3D_PLAN_PRESETS[presetKey];
+  if(!pre) return null;
+  var tables=FV_3D_TABLES[pre.tableKey];
+  if(!tables) return null;
+  return {
+    modelKey:pre.modelKey,
+    modelUrl:pre.modelUrl||null,
+    badge:pre.badge||pre.label||presetKey,
+    badgeColor:pre.badgeColor||'#c2410c',
+    label:pre.label||presetKey,
+    tables:JSON.parse(JSON.stringify(tables)),
+    hotspots:JSON.parse(JSON.stringify(FV_3D_HOTSPOTS[pre.tableKey]||{}))
+  };
 }
 function saveRoiFloorPlans(){
   try{ localStorage.setItem('rdg_roi_floor_plans', JSON.stringify(ROI_FLOOR_PLANS)); }catch(e){}
@@ -411,17 +441,36 @@ function roiFloorPlanDropFor(venue, dateStr){
   if(!venue||!dateStr||!ROI_FLOOR_PLANS) return null;
   var best=null;
   Object.keys(ROI_FLOOR_PLANS).forEach(function(uid){
+    if(uid==='__draft_preview__') return;
     var p=ROI_FLOOR_PLANS[uid];
     if(!p||p.venue!==venue) return;
+    if(p.status==='queued'||p.status==='error') return; /* not ready yet */
     if(!p.start||dateStr<p.start) return;
     var end=p.end||'9999-12-31';
     if(dateStr>end) return;
     if(!best){ best=p; return; }
-    /* Newer drop (later start) overrides; tie-break on updatedAt. */
     if(p.start>best.start) best=p;
     else if(p.start===best.start && (p.updatedAt||'')>(best.updatedAt||'')) best=p;
   });
   return best;
+}
+/* Register a scraped plan payload onto the in-memory FV_3D_* maps (no redeploy needed). */
+function fv3dRegisterDropPlan(drop){
+  if(!drop||!drop._uid||!drop.plan||!drop.plan.tables||!drop.plan.tables.length) return null;
+  var tableKey='drop:'+drop._uid;
+  FV_3D_TABLES[tableKey]=drop.plan.tables;
+  FV_3D_HOTSPOTS[tableKey]=drop.plan.hotspots||{};
+  var modelKey=drop.plan.modelKey||fv3dKeyForVenue(drop.venue)||null;
+  return {
+    modelKey:modelKey,
+    tableKey:tableKey,
+    modelUrl:drop.plan.modelUrl||drop.modelUrl||null,
+    label:drop.label||drop.plan.label||null,
+    badge:drop.plan.badge||drop.label||'Custom floor plan',
+    badgeColor:drop.plan.badgeColor||'#c2410c',
+    source:'drop-grab',
+    drop:drop
+  };
 }
 function fv3dPresetFor(presetKey){
   if(!presetKey) return null;
@@ -460,10 +509,14 @@ function fv3dResolvePlan(modelKey, dateStr){
       }
     }
   }
-  /* 2) Explicit ROI floor-plan drop (newest start wins) */
+  /* 2) Explicit ROI floor-plan drop (newest start wins). Prefer scraped plan payload. */
   if(venue){
     var drop=roiFloorPlanDropFor(venue, d);
     if(drop){
+      if(drop.plan&&drop.plan.tables&&drop.plan.tables.length){
+        var grabbed=fv3dRegisterDropPlan(drop);
+        if(grabbed) return grabbed;
+      }
       var dropPreset=fv3dPresetFor(drop.preset);
       if(dropPreset){
         return {
