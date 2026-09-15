@@ -329,13 +329,6 @@ function loadSavedRoiFloorPlans(){
     }
   }catch(e){}
 }
-function saveRoiFloorPlans(){
-  try{ localStorage.setItem('rdg_roi_floor_plans', JSON.stringify(ROI_FLOOR_PLANS)); }catch(e){}
-  if(window._fbSave) window._fbSave('roiFloorPlans', ROI_FLOOR_PLANS);
-  if(typeof renderFv3dFloorVisual==='function' && typeof curView!=='undefined' && curView==='3d'){
-    try{ renderFv3dFloorVisual(); renderFv3dReference(); }catch(e2){}
-  }
-}
 function ensureDefaultRoiFloorPlans(){
   var hasCnlNew=Object.keys(ROI_FLOOR_PLANS||{}).some(function(uid){
     var p=ROI_FLOOR_PLANS[uid];
@@ -354,7 +347,19 @@ function ensureDefaultRoiFloorPlans(){
       updatedAt:'2026-09-15T00:00:00.000Z',
       seeded:true
     };
+    return true;
   }
+  return false;
+}
+function saveRoiFloorPlans(){
+  try{ localStorage.setItem('rdg_roi_floor_plans', JSON.stringify(ROI_FLOOR_PLANS)); }catch(e){}
+  if(window._fbSave) window._fbSave('roiFloorPlans', ROI_FLOOR_PLANS);
+  try{
+    if(typeof curView!=='undefined' && curView==='3d'){
+      if(typeof setFv3dDate==='function') setFv3dDate(getFv3dDate());
+      else { renderFv3dFloorVisual(); renderFv3dReference(); }
+    }
+  }catch(e2){}
 }
 function roiFloorPlanDropFor(venue, dateStr){
   if(!venue||!dateStr||!ROI_FLOOR_PLANS) return null;
@@ -566,17 +571,15 @@ function calcTierPricesForShow(venue, dateStr, fee){
       return t;
     });
   }
+  var plan=fv3dResolvePlan(key, dateStr);
   return {
     modelKey:key,
-    tableKey:fv3dEffectiveTableKey(key, dateStr),
+    tableKey:plan.tableKey||key,
     venue:venue,
     date:dateStr||null,
-    summer:venue==='Casa Neos Beach Club' && isCnbcSummerFloor(dateStr),
-    remodel:venue==='Casa Neos Lounge' && isCnlNewFloor(dateStr),
-    label: (function(){
-      var plan=fv3dResolvePlan(key, dateStr);
-      return plan.label||plan.badge||null;
-    })(),
+    summer:plan.tableKey==='casa-neos-beach-club-summer',
+    remodel:plan.tableKey==='casa-neos-lounge-new',
+    label: plan.label||plan.badge||null,
     fee:+fee||0,
     bsTarget: tgt && tgt.bs_m!=null ? tgt.bs_m : null,
     roiTarget: tgt && tgt.roi_t!=null ? tgt.roi_t : null,
@@ -1351,16 +1354,26 @@ function venueRoiLookup(venue, dateStr, fee){
 }
 
 
-/* Live BS Target / ROI Tgt from Venue ROI rules (same for 2026/2027+). Falls back to generic FEE_TIERS. */
+/* Live BS Target / ROI Tgt from Venue ROI rules (same for 2026/2027+). Falls back to generic FEE_TIERS.
+   Explicit fee $0 → no BS target, ROI target 0. Empty/unset fee leaves stored targets alone. */
 function showTargets(r){
   var v=r.v||r.venue;
-  var fee=r.fee||r.cost||0;
-  if(!v||!r.d||!fee) return {bs_m:r.bs_m||null, roi_t:r.roi_t||null};
+  var feeRaw=r.fee!=null?r.fee:r.cost;
+  if(!v||!r.d) return {bs_m:r.bs_m!=null?r.bs_m:null, roi_t:r.roi_t!=null?r.roi_t:null};
+  if(feeRaw==null||feeRaw==='') return {bs_m:r.bs_m!=null?r.bs_m:null, roi_t:r.roi_t!=null?r.roi_t:null};
+  var fee=+feeRaw;
+  if(!(fee>0)) return {bs_m:null, roi_t:0};
   var look=venueRoiLookup(v, r.d, fee);
   if(look) return {bs_m:look.bsTarget, roi_t:look.roiTarget};
   return {bs_m:bsMinFor(fee), roi_t:roiTFor(fee)};
 }
 function applyShowTargets(r){
+  var feeRaw=r.fee!=null?r.fee:r.cost;
+  if(feeRaw!=null&&feeRaw!==''&&!(+feeRaw>0)){
+    r.bs_m=null;
+    r.roi_t=0;
+    return r;
+  }
   var t=showTargets(r);
   if(t.bs_m!=null) r.bs_m=t.bs_m;
   if(t.roi_t!=null) r.roi_t=t.roi_t;
@@ -1369,7 +1382,8 @@ function applyShowTargets(r){
 function recalcAllSchedTargets(){
   SCHED.forEach(function(r){
     if(!r||r._s==='empty') return;
-    if(!(r.fee||r.cost)) return;
+    var feeRaw=r.fee!=null?r.fee:r.cost;
+    if(feeRaw==null||feeRaw==='') return;
     applyShowTargets(r);
   });
 }

@@ -1348,16 +1348,29 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     if(data.venueRoiRules) VENUE_ROI_RULES = data.venueRoiRules;
     if(typeof ensureCnbcSummerRoofRules==='function') ensureCnbcSummerRoofRules();
     if(data.roiSpecialEvents) ROI_SPECIAL_EVENTS = data.roiSpecialEvents;
-    if(data.roiFloorPlans){
-      ROI_FLOOR_PLANS = data.roiFloorPlans;
-      if(typeof ensureDefaultRoiFloorPlans==='function') ensureDefaultRoiFloorPlans();
+    if(Object.prototype.hasOwnProperty.call(data, 'roiFloorPlans')){
+      ROI_FLOOR_PLANS = data.roiFloorPlans && typeof data.roiFloorPlans==='object' ? data.roiFloorPlans : {};
     }
-    var roiSig=JSON.stringify({v:data.venueRoiRules||null,s:data.roiSpecialEvents||null,f:data.roiFloorPlans||null});
+    if(typeof ensureDefaultRoiFloorPlans==='function'){
+      var seededFp=ensureDefaultRoiFloorPlans();
+      if(seededFp && window._fbSave){
+        try{ window._fbSave('roiFloorPlans', ROI_FLOOR_PLANS); }catch(eFp){}
+      }
+    }
+    var roiSig=JSON.stringify({v:data.venueRoiRules||null,s:data.roiSpecialEvents||null,f:ROI_FLOOR_PLANS||null});
     var roiChanged=(roiSig!==window._lastRoiSig);
     if(roiChanged) window._lastRoiSig=roiSig;
     if(roiChanged&&window._fbReady){
       if(typeof recalcAllSchedTargets==='function') recalcAllSchedTargets();
       if(typeof refreshForecastRoiCache==='function') refreshForecastRoiCache();
+      try{
+        if(typeof curView!=='undefined' && curView==='3d' && typeof setFv3dDate==='function'){
+          setFv3dDate(typeof getFv3dDate==='function'?getFv3dDate():null);
+        }
+        if(typeof curView!=='undefined' && curView==='roi-rules' && typeof _roiPageTab!=='undefined' && _roiPageTab==='floors' && typeof renderRoiRulesPage==='function'){
+          renderRoiRulesPage();
+        }
+      }catch(eFpUi){}
     }
     /* CRITICAL: the live listener is on the whole `rdg` tree. Writing acctData /
        budget / toast must NOT rebuild SCHED from bake — that wiped in-flight

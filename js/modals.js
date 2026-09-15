@@ -46,9 +46,12 @@ function openEditModal(idx, uid){
   _editUid=ensureShowUid(r);
   var f=getFields();
   f.venue.value=r.v||r.venue||''; f.date.value=r.d||'';
-  f.dj.value=r.dj||''; f.fee.value=r.fee||r.cost||'';
-  f.bsm.value=r.bs_m||''; f.bsa.value=r.bs_a||'';
-  f.roit.value=r.roi_t||''; f.roia.value=r.roi_a||'';
+  f.dj.value=r.dj||'';
+  f.fee.value=(r.fee!=null&&r.fee!=='')?r.fee:((r.cost!=null&&r.cost!=='')?r.cost:'');
+  f.bsm.value=(r.bs_m!=null&&r.bs_m!=='')?r.bs_m:'';
+  f.bsa.value=(r.bs_a!=null&&r.bs_a!=='')?r.bs_a:'';
+  f.roit.value=(r.roi_t!=null&&r.roi_t!=='')?r.roi_t:'';
+  f.roia.value=(r.roi_a!=null&&r.roi_a!=='')?r.roi_a:'';
   f.ev.value=r.ev||''; if(f.tbd) if(f.tbd) f.tbd.checked=!!r.tbd; f.note.value=r.note||'';
   document.getElementById('modalTitle').textContent='Edit Show';
   document.getElementById('btnDelete').style.display='';
@@ -410,6 +413,12 @@ function useSuggestedFee(fee){
   updateFeeTargetsPreview();
   checkDjSuggestion();
 }
+function parseFeeInput(raw){
+  var s=String(raw==null?'':raw).trim().replace(/,/g,'');
+  if(s==='') return null;
+  var n=parseFloat(s);
+  return isNaN(n)?null:n;
+}
 function updateFeeTargetsPreview(){
   var box=document.getElementById('fldFeeTargets');
   var bsEl=document.getElementById('fldFeeBsTgt');
@@ -417,17 +426,26 @@ function updateFeeTargetsPreview(){
   var vipEl=document.getElementById('fldVipMinimums');
   if(!box||!bsEl||!roiEl) return;
   var f=getFields();
-  var fee=parseFloat(f.fee.value)||0;
+  var fee=parseFeeInput(f.fee.value);
   var venue=f.venue.value, dateStr=f.date.value;
-  if(!fee || !venue || !dateStr){
+  if(fee==null || !venue || !dateStr){
     box.style.display='none';
+    if(vipEl) vipEl.style.display='none';
+    return;
+  }
+  if(!(fee>0)){
+    box.style.display='block';
+    bsEl.textContent='\u2014';
+    roiEl.textContent='0';
+    if(f.bsm) f.bsm.value='';
+    if(f.roit) f.roit.value='0';
     if(vipEl) vipEl.style.display='none';
     return;
   }
   var tgt=showTargets({v:venue, venue:venue, d:dateStr, fee:fee, cost:fee});
   box.style.display='block';
-  bsEl.textContent = tgt.bs_m!=null ? $k(tgt.bs_m) : '?';
-  roiEl.textContent = tgt.roi_t!=null ? (Number(tgt.roi_t).toFixed(1)+'x') : '?';
+  bsEl.textContent = tgt.bs_m!=null ? $k(tgt.bs_m) : '\u2014';
+  roiEl.textContent = tgt.roi_t!=null ? (Number(tgt.roi_t).toFixed(1)+'x') : '\u2014';
   if(f.bsm) f.bsm.value = tgt.bs_m!=null ? tgt.bs_m : '';
   if(f.roit) f.roit.value = tgt.roi_t!=null ? tgt.roi_t : '';
   renderVipMinimumGuidance(venue,tgt.bs_m,vipEl);
@@ -1062,7 +1080,7 @@ function saveEvent(){
   }
   var f=getFields();
   var v=f.venue.value, d=f.date.value, dj=fixKnownAccents((f.dj.value||'').trim());
-  var fee=parseFloat(f.fee.value)||null;
+  var fee=parseFeeInput(f.fee.value);
   var ev=(f.ev.value||'').trim();
   var tbd=0; /* TBD/unconfirmed checkbox removed */
   if(!d){alert('Date required');return;}
@@ -1084,7 +1102,7 @@ function saveEvent(){
   }
   /* Hard rule: one show per venue|date. Fold into the existing night — never create a twin.
      Exception: fresh Add with blank DJ/fee must NOT fold onto bake (old fee resurrection). */
-  var isFreshBlankAdd=!!window._schedModalAdd && !dj && !fee;
+  var isFreshBlankAdd=!!window._schedModalAdd && !dj && fee==null;
   if(isFreshBlankAdd){
     for(var si=SCHED.length-1;si>=0;si--){
       var sx=SCHED[si];
@@ -1111,7 +1129,7 @@ function saveEvent(){
   var bsm=tgt.bs_m;
   var roit=tgt.roi_t;
   var past=d<=TODAY;
-  var _s=(!dj&&!fee)?'empty':(tbd?'tbd':(past?'nd':'fut'));
+  var _s=(!dj&&fee==null)?'empty':(tbd?'tbd':(past?'nd':'fut'));
   var note=(f.note.value||'').trim()||null;
   var beforeIndex=_editIdx;
   var before=_editIdx>=0?_clone(SCHED[_editIdx]):null;

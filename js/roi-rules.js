@@ -305,6 +305,8 @@ function _roiDateInspectHtml(){
     h+='<div class="roi-inspect-targets">Current targets → BS <b>$'+(look.bsTarget!=null?Math.round(look.bsTarget).toLocaleString():'—')+'</b> · ROI <b>'+(look.roiTarget!=null?look.roiTarget+'x':'—')+'</b> · season <b>'+look.season+'</b>'
       +(look.specialEvent?(' · via “'+_escRoi(look.specialEvent)+'”'):(' · calendar default '+natural))
       +'</div>';
+  }else if(fee===0){
+    h+='<div class="roi-inspect-targets">Fee <b>$0</b> → BS target <b>—</b> · ROI <b>0</b> (no target).</div>';
   }else if(fee<=0){
     h+='<div class="roi-page-hint">Add a DJ fee on Calendar to preview BS / ROI targets for this date.</div>';
   }else{
