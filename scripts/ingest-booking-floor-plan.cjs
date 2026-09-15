@@ -163,8 +163,8 @@ const TIER_COLORS = {
 const TIER_ORDER = ['DIAMOND', 'PRESTIGE', 'PLATINUM', 'GOLD', 'RIVERWALK', 'SLIP', 'LOUNGE'];
 
 function guessVenue(url) {
-  if (/lounge/i.test(url)) return 'Casa Neos Lounge';
-  if (/beach|casa-neos(?!.*lounge)/i.test(url)) return 'Casa Neos Beach Club';
+  if (/lounge\.casa-neos/i.test(url)) return 'Casa Neos Lounge';
+  if (/beachclub|beach.?club|casa-neos(?!.*lounge)/i.test(url)) return 'Casa Neos Beach Club';
   if (/mila/i.test(url)) return 'MILA Lounge';
   return 'Casa Neos Beach Club';
 }

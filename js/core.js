@@ -231,7 +231,8 @@ var FV_3D_PLAN_PRESETS = {
 /* Fixed booking-site URLs. Refresh scrapes these (same link every time → BOOK YOUR TABLE → 3D plan). */
 var FV_3D_BOOKING_SOURCES = {
   'Casa Neos Beach Club':{url:'https://beachclub.casa-neos.com/', modelKey:'casa-neos-beach-club'},
-  'Casa Neos Lounge':{url:'https://lounge.casa-neos.com/', modelKey:'casa-neos-lounge'}
+  'Casa Neos Lounge':{url:'https://lounge.casa-neos.com/', modelKey:'casa-neos-lounge'},
+  'MILA Lounge':{url:'https://mila-lounge.websfv.com/', modelKey:'mila-lounge'}
 };
 function fv3dBookingSourceFor(venueOrModelKey){
   if(!venueOrModelKey) return null;
@@ -777,7 +778,10 @@ function setFv3dModel(key){
   var meta=document.getElementById('fv3dPricingMeta');
   if(meta) meta.innerHTML='Enter a DJ cost to calculate table minimums needed to hit the ROI target.';
   var dateWrap=document.getElementById('fv3dDateWrap');
-  if(dateWrap) dateWrap.style.display=(m.key==='casa-neos-beach-club'||m.key==='casa-neos-lounge')?'flex':'none';
+  if(dateWrap) dateWrap.style.display=(typeof fv3dBookingSourceFor==='function'&&fv3dBookingSourceFor(m.key))?'flex':'none';
+  var refreshBtn=document.getElementById('fv3dRefreshBtn');
+  if(refreshBtn) refreshBtn.style.display=(typeof fv3dBookingSourceFor==='function'&&fv3dBookingSourceFor(m.key))?'inline-flex':'none';
+  if(typeof updateFv3dRefreshStatus==='function') updateFv3dRefreshStatus();
   if(!_fv3dDate) _fv3dDate=getFv3dDate();
   var dateInp=document.getElementById('fv3dDate');
   if(dateInp && !dateInp.value) dateInp.value=_fv3dDate;
@@ -928,7 +932,7 @@ function render3dView(){
   var dateInp=document.getElementById('fv3dDate');
   if(dateInp) dateInp.value=_fv3dDate;
   var dateWrap=document.getElementById('fv3dDateWrap');
-  if(dateWrap) dateWrap.style.display=(_fv3dModelKey==='casa-neos-beach-club'||_fv3dModelKey==='casa-neos-lounge')?'flex':'none';
+  if(dateWrap) dateWrap.style.display=(typeof fv3dBookingSourceFor==='function'&&fv3dBookingSourceFor(_fv3dModelKey))?'flex':'none';
   var refreshBtn=document.getElementById('fv3dRefreshBtn');
   if(refreshBtn){
     var canRefresh=!!(typeof fv3dBookingSourceFor==='function'&&fv3dBookingSourceFor(_fv3dModelKey));

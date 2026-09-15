@@ -895,7 +895,7 @@ function refreshFloorPlanFromBookingSite(venueOpt, dateOpt){
   var venue=venueOpt||(m&&m.venue)||'';
   var src=typeof fv3dBookingSourceFor==='function'?fv3dBookingSourceFor(venue):null;
   if(!src||!src.url){
-    alert('No fixed booking link for this venue. Refresh works for Casa Neos Beach Club and Casa Neos Lounge.');
+    alert('No fixed booking link for this venue yet.');
     return;
   }
   venue=src.venue||venue;
