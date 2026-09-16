@@ -59,11 +59,103 @@ function wireVenueRulesMoneyInputs(root){
     inp.addEventListener('blur',function(){
       var n=_vrParseMoney(inp.value);
       inp.value=n?_vrFmtMoney(n):'';
+      if(typeof roiRefreshVerifyBlocks==='function') roiRefreshVerifyBlocks(root);
     });
     inp.addEventListener('focus',function(){
       inp.value=String(_vrParseMoney(inp.value)||'');
       inp.select();
     });
+    inp.addEventListener('input',function(){
+      if(typeof roiRefreshVerifyBlocks==='function') roiRefreshVerifyBlocks(root);
+    });
+  });
+  if(typeof roiRefreshVerifyBlocks==='function') roiRefreshVerifyBlocks(root);
+}
+
+function _roiFmtUsd(n){
+  n=Math.round(+n||0);
+  return '$'+n.toLocaleString('en-US');
+}
+function _roiTierHeaderHtml(tableCats, counts){
+  var h='';
+  (tableCats||[]).forEach(function(c){
+    var n=typeof roiCountForCat==='function'?roiCountForCat(counts, c):0;
+    h+='<th class="vr-th-tier">'+_escRoi(c)+'<span class="vr-th-sub">×'+n+' tables · min $</span></th>';
+  });
+  return h;
+}
+function _roiVerifyBlockHtml(rules, countsMeta, tier, ti, days, seasons){
+  var counts=(countsMeta&&countsMeta.counts)||{};
+  var cats=rules.tableCats||[];
+  var h='<div class="vr-verify" data-verify-ti="'+ti+'">';
+  h+='<div class="vr-verify-hd">Verify · tables × min vs BS Target</div>';
+  if(countsMeta&&countsMeta.badge){
+    h+='<div class="vr-verify-plan">Floor plan: '+_escRoi(countsMeta.badge);
+    var bits=[];
+    cats.forEach(function(c){
+      bits.push(c+'×'+(typeof roiCountForCat==='function'?roiCountForCat(counts,c):0));
+    });
+    if(bits.length) h+=' <span class="roi-page-hint">('+_escRoi(bits.join(' · '))+')</span>';
+    h+='</div>';
+  }
+  h+='<table class="vr-verify-tbl"><thead><tr><th>Season</th><th>Day</th><th class="left">Capacity (Σ count×min)</th><th>BS Target</th><th>BS − Capacity</th><th>Status</th></tr></thead><tbody>';
+  (seasons||['High','Low']).forEach(function(season){
+    (days||[]).forEach(function(day){
+      var dayData=(tier[season]||{})[day]||{roi:0,sales:0,tables:{}};
+      var v=typeof roiVerifyCapacity==='function'
+        ? roiVerifyCapacity(dayData.sales, dayData.tables, cats, counts)
+        : {sum:0,bs:+dayData.sales||0,gap:0,hit:null};
+      var stCls=v.hit===true?'vr-verify-hit':(v.hit===false?'vr-verify-miss':'vr-verify-na');
+      var stLbl=v.hit===true?'HIT':(v.hit===false?'SHORT':'—');
+      h+='<tr class="'+stCls+'" data-verify-row data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'">';
+      h+='<td>'+season+'</td><td>'+day.slice(0,3)+'</td>';
+      h+='<td class="left vr-verify-cap">'+_roiFmtUsd(v.sum)+'</td>';
+      h+='<td class="vr-verify-bs">'+_roiFmtUsd(v.bs)+'</td>';
+      h+='<td class="vr-verify-gap">'+_roiFmtUsd(v.gap)+'</td>';
+      h+='<td class="vr-verify-status"><span class="vr-verify-pill">'+stLbl+'</span></td>';
+      h+='</tr>';
+    });
+  });
+  h+='</tbody></table>';
+  h+='<div class="vr-verify-hint">Green = capacity (all tiers × their mins) ≥ BS Target. Red = short. Gap = BS Target − capacity.</div>';
+  h+='</div>';
+  return h;
+}
+function roiRefreshVerifyBlocks(root){
+  root=root||document;
+  var counts={};
+  try{
+    var metaEl=root.querySelector('[data-roi-counts]');
+    if(metaEl) counts=JSON.parse(metaEl.getAttribute('data-roi-counts')||'{}');
+  }catch(e){ counts={}; }
+  root.querySelectorAll('[data-verify-row]').forEach(function(tr){
+    var ti=tr.getAttribute('data-ti');
+    var season=tr.getAttribute('data-season');
+    var day=tr.getAttribute('data-day');
+    var cats=[];
+    try{
+      var catsEl=root.querySelector('[data-roi-cats]');
+      if(catsEl) cats=JSON.parse(catsEl.getAttribute('data-roi-cats')||'[]');
+    }catch(e2){}
+    var salesInp=root.querySelector('.vr-target-inp[data-ti="'+ti+'"][data-season="'+season+'"][data-day="'+day+'"], .roi-sp-sales[data-ti="'+ti+'"][data-season="'+season+'"][data-day="'+day+'"]');
+    var bs=salesInp?_vrParseMoney(salesInp.value):0;
+    var tables={};
+    cats.forEach(function(c){
+      var inp=root.querySelector('.vr-cell-sm[data-ti="'+ti+'"][data-season="'+season+'"][data-day="'+day+'"][data-cat="'+c+'"], .roi-sp-tbl[data-ti="'+ti+'"][data-season="'+season+'"][data-day="'+day+'"][data-cat="'+c+'"]');
+      tables[c]=inp?_vrParseMoney(inp.value):0;
+    });
+    var v=typeof roiVerifyCapacity==='function'?roiVerifyCapacity(bs, tables, cats, counts):{sum:0,bs:bs,gap:bs,hit:null};
+    var cap=tr.querySelector('.vr-verify-cap');
+    var bsEl=tr.querySelector('.vr-verify-bs');
+    var gap=tr.querySelector('.vr-verify-gap');
+    var st=tr.querySelector('.vr-verify-status .vr-verify-pill');
+    if(cap) cap.textContent=_roiFmtUsd(v.sum);
+    if(bsEl) bsEl.textContent=_roiFmtUsd(v.bs);
+    if(gap) gap.textContent=_roiFmtUsd(v.gap);
+    tr.classList.remove('vr-verify-hit','vr-verify-miss','vr-verify-na');
+    if(v.hit===true){ tr.classList.add('vr-verify-hit'); if(st) st.textContent='HIT'; }
+    else if(v.hit===false){ tr.classList.add('vr-verify-miss'); if(st) st.textContent='SHORT'; }
+    else { tr.classList.add('vr-verify-na'); if(st) st.textContent='—'; }
   });
 }
 
@@ -540,7 +632,7 @@ function renderRoiSpecialForm(uid){
   h+='<div class="roi-section-title">'+(isNew?'New special performance':'Edit special performance')+'</div>';
   h+='<div class="roi-form-grid">';
   h+='<div class="fld"><label>Label</label><input id="roiSpLabel" type="text" value="'+_escRoi(ev.label)+'" placeholder="Labor Day Monday, NYE, Art Basel..."></div>';
-  h+='<div class="fld"><label>Venue</label><select id="roiSpVenue">'+venues.map(function(v){
+  h+='<div class="fld"><label>Venue</label><select id="roiSpVenue" onchange="roiSpFloorOrVenueChanged()">'+venues.map(function(v){
     return '<option value="'+v+'"'+(v===ev.venue?' selected':'')+'>'+v+'</option>';
   }).join('')+'</select></div>';
   h+='<div class="fld"><label>Start date</label><input id="roiSpStart" type="date" value="'+(ev.start||'')+'"></div>';
@@ -551,7 +643,7 @@ function renderRoiSpecialForm(uid){
     h+='<option value="'+o.v+'"'+((ev.forceSeason||'')===o.v?' selected':'')+'>'+o.l+'</option>';
   });
   h+='</select></div>';
-  h+='<div class="fld"><label>Floor plan</label><select id="roiSpFloor">';
+  h+='<div class="fld"><label>Floor plan</label><select id="roiSpFloor" onchange="roiSpFloorOrVenueChanged()">';
   [{v:'auto',l:'Auto (date / floor-plan drops)'},{v:'summer',l:'Sunset rooftop — 20 tables (BC)'},{v:'casa-neos-beach-club-new',l:'CNBC waterfront + slips (Oct 2026+)'},{v:'casa-neos-lounge-new',l:'CN Lounge remodel (Sep 2026+)'},{v:'casa-neos-lounge',l:'CN Lounge classic'},{v:'regular',l:'Regular / classic venue plan'}].forEach(function(o){
     h+='<option value="'+o.v+'"'+(ev.floorPlan===o.v?' selected':'')+'>'+o.l+'</option>';
   });
@@ -605,6 +697,15 @@ function toggleRoiSpCustom(){
     renderRoiSpCustomEditor(ev);
   }
 }
+function roiSpFloorOrVenueChanged(){
+  var wrap=document.getElementById('roiSpCustomWrap');
+  var sel=document.getElementById('roiSpTemplate');
+  if(wrap&&wrap.style.display!=='none'&&sel&&sel.value==='__custom__'){
+    var body=document.getElementById('roiSpCustomBody');
+    var ev={rules:(body&&body._roiSpRules)||null};
+    renderRoiSpCustomEditor(ev);
+  }
+}
 
 function wireRoiSpFormToggles(){
   document.querySelectorAll('.roi-sp-day').forEach(function(btn){
@@ -641,7 +742,14 @@ function renderRoiSpCustomEditor(ev){
   }
   var seasons=['High','Low'];
   if(dateStr&&typeof seasonFor==='function') seasons=[seasonFor(rules, dateStr)];
+  var venue=(document.getElementById('roiSpVenue')||{}).value||(ev.venue)||'Casa Neos Beach Club';
+  var floorPlan=(document.getElementById('roiSpFloor')||{}).value||ev.floorPlan||'auto';
+  var countsMeta=typeof roiTableCountsForRulesVenue==='function'
+    ? roiTableCountsForRulesVenue(venue, {dateStr:dateStr, floorPlan:floorPlan})
+    : {counts:{}, badge:''};
+  var counts=countsMeta.counts||{};
   var h='';
+  h+='<div hidden data-roi-counts=\''+JSON.stringify(counts).replace(/'/g,'&#39;')+'\' data-roi-cats=\''+JSON.stringify(rules.tableCats||[]).replace(/'/g,'&#39;')+'\'></div>';
   h+='<div class="vr-tiers vr-tiers--page">';
   rules.tiers.forEach(function(tier, ti){
     h+='<div class="vr-tier-block vr-tier-block--page"><div class="vr-tier-hd"><span class="vr-tier-fee-lbl">DJ Fee tier</span>';
@@ -651,9 +759,7 @@ function renderRoiSpCustomEditor(ev){
     }
     h+='</div>';
     h+='<div class="vr-tier-scroll"><table class="vr-tier-tbl vr-tier-tbl--page"><thead><tr><th>Season</th><th>Day</th><th>ROI</th><th>BS Target</th>';
-    (rules.tableCats||[]).forEach(function(c){
-      h+='<th class="vr-th-tier">'+c+'<span class="vr-th-sub">min $</span></th>';
-    });
+    h+=_roiTierHeaderHtml(rules.tableCats, counts);
     h+='</tr></thead><tbody>';
     showDays=rules.days||showDays;
     seasons.forEach(function(season){
@@ -671,7 +777,9 @@ function renderRoiSpCustomEditor(ev){
         h+='</tr>';
       });
     });
-    h+='</tbody></table></div></div>';
+    h+='</tbody></table></div>';
+    h+=_roiVerifyBlockHtml(rules, countsMeta, tier, ti, showDays, seasons);
+    h+='</div>';
   });
   h+='</div>';
   body.innerHTML=h;

@@ -2527,6 +2527,14 @@ function renderVenueRulesPanel(){
   h+='</div></div>';
 
   h+='<div class="vr-tiers vr-tiers--page">';
+  var countsMeta=typeof roiTableCountsForRulesVenue==='function'
+    ? roiTableCountsForRulesVenue(_vrEditVenue, {dateStr:(typeof miamiToday==='function'?miamiToday():'')})
+    : {counts:{}, badge:''};
+  var counts=countsMeta.counts||{};
+  h+='<div hidden data-roi-counts=\''+JSON.stringify(counts).replace(/'/g,'&#39;')+'\' data-roi-cats=\''+JSON.stringify(rules.tableCats||[]).replace(/'/g,'&#39;')+'\'></div>';
+  if(countsMeta.badge){
+    h+='<div class="vr-verify-plan" style="margin:0 0 10px">Table counts from: <b>'+(typeof _escRoi==='function'?_escRoi(countsMeta.badge):countsMeta.badge)+'</b></div>';
+  }
   rules.tiers.forEach(function(tier, ti){
     h+='<div class="vr-tier-block vr-tier-block--page">';
     h+='<div class="vr-tier-hd">';
@@ -2539,9 +2547,13 @@ function renderVenueRulesPanel(){
     h+='<button class="rules-del" data-action="remove-tier" data-ti="'+ti+'" title="Remove tier">&#10005;</button>';
     h+='</div>';
     h+='<div class="vr-tier-scroll"><table class="vr-tier-tbl vr-tier-tbl--page"><thead><tr><th>Season</th><th>Day</th><th>ROI</th><th>BS Target</th>';
-    (rules.tableCats||[]).forEach(function(c){
-      h+='<th class="vr-th-tier">'+c+'<span class="vr-th-sub">min $</span></th>';
-    });
+    if(typeof _roiTierHeaderHtml==='function'){
+      h+=_roiTierHeaderHtml(rules.tableCats, counts);
+    }else{
+      (rules.tableCats||[]).forEach(function(c){
+        h+='<th class="vr-th-tier">'+c+'<span class="vr-th-sub">min $</span></th>';
+      });
+    }
     h+='</tr></thead><tbody>';
     ['High','Low'].forEach(function(season){
       rules.days.forEach(function(day, di){
@@ -2566,7 +2578,11 @@ function renderVenueRulesPanel(){
         h+='</tr>';
       });
     });
-    h+='</tbody></table></div></div>';
+    h+='</tbody></table></div>';
+    if(typeof _roiVerifyBlockHtml==='function'){
+      h+=_roiVerifyBlockHtml(rules, countsMeta, tier, ti, rules.days, ['High','Low']);
+    }
+    h+='</div>';
   });
   h+='</div>';
   h+='<button class="btn-add" id="vrAddTierBtn">+ Add DJ fee tier</button>';

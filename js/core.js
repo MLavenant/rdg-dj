@@ -650,6 +650,73 @@ function fv3dKeyForVenue(venue){
   if(venue==='Casa Neos Beach Club') return 'casa-neos-beach-club';
   return null;
 }
+/* Normalize ROI / 3D tier names (Lounge rules use “Platinium”). */
+function roiNormTierName(s){
+  var u=String(s||'').trim().toUpperCase();
+  if(u==='PLATINIUM') u='PLATINUM';
+  return u;
+}
+function roiTableCountsFrom3dTiers(fvTiers){
+  var out={};
+  (fvTiers||[]).forEach(function(t){
+    var k=roiNormTierName(t.name);
+    out[k]=((t.tables&&t.tables.length)||0);
+  });
+  return out;
+}
+/* Table counts per VIP tier for a Venue ROI Rules key (or real venue + date / floor plan). */
+function roiTableCountsForRulesVenue(rulesVenue, opts){
+  opts=opts||{};
+  var dateStr=opts.dateStr||(typeof miamiToday==='function'?miamiToday():'');
+  var floorPlan=opts.floorPlan||'auto';
+  var venue=rulesVenue;
+  var tableKey=null;
+  var badge='';
+  if(typeof CNBC_SUMMER_ROOF_KEY!=='undefined' && rulesVenue===CNBC_SUMMER_ROOF_KEY){
+    venue='Casa Neos Beach Club';
+    tableKey='casa-neos-beach-club-summer';
+    badge='Summer rooftop floor plan';
+  }else{
+    var modelKey=typeof fv3dKeyForVenue==='function'?fv3dKeyForVenue(venue):null;
+    if(floorPlan && floorPlan!=='auto' && floorPlan!=='regular' && typeof fv3dPresetFor==='function'){
+      var pre=fv3dPresetFor(floorPlan);
+      if(pre&&pre.tableKey){ tableKey=pre.tableKey; badge=pre.badge||pre.label||floorPlan; }
+    }
+    if(!tableKey && modelKey && typeof fv3dEffectiveTableKey==='function'){
+      tableKey=fv3dEffectiveTableKey(modelKey, dateStr);
+      var plan=typeof fv3dResolvePlan==='function'?fv3dResolvePlan(modelKey, dateStr):null;
+      badge=(plan&&(plan.badge||plan.label))||tableKey||'';
+    }else if(!tableKey && modelKey){
+      tableKey=modelKey;
+    }
+  }
+  var counts=roiTableCountsFrom3dTiers((typeof FV_3D_TABLES!=='undefined'&&tableKey)?(FV_3D_TABLES[tableKey]||[]):[]);
+  if(!Object.keys(counts).length && tableKey==='casa-neos-beach-club-summer'){
+    counts={DIAMOND:5, PLATINUM:6, PRESTIGE:5, GOLD:4};
+  }
+  return {counts:counts, tableKey:tableKey||'', badge:badge||'', venue:venue};
+}
+function roiCountForCat(counts, cat){
+  if(!counts) return 0;
+  var n=counts[roiNormTierName(cat)];
+  return n!=null?+n:0;
+}
+/* BS Target − Σ(tables × min). Green when capacity ≥ BS (hitting target). */
+function roiVerifyCapacity(bsTarget, tables, tableCats, counts){
+  var lines=[];
+  var sum=0;
+  (tableCats||[]).forEach(function(c){
+    var n=roiCountForCat(counts, c);
+    var price=+((tables&&tables[c])||0);
+    var line=n*price;
+    sum+=line;
+    lines.push({cat:c, n:n, price:price, line:line});
+  });
+  var bs=+bsTarget||0;
+  var gap=bs-sum;
+  var hit=bs>0?(sum>=bs):null;
+  return {lines:lines, sum:sum, bs:bs, gap:gap, hit:hit};
+}
 function scaleTiersToBsTarget(modelKey, bsTarget, dateStr){
   var tableKey=fv3dEffectiveTableKey(modelKey, dateStr);
   var tiers = FV_3D_TABLES[tableKey] || FV_3D_TABLES[modelKey] || [];
