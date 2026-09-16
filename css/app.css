@@ -1120,7 +1120,26 @@ model-viewer{--min-hotspot-opacity:0}
 .vr-tier-tbl th{background:var(--card3);padding:8px 8px;font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);text-align:left;white-space:nowrap}
 .vr-tier-tbl--page th{padding:9px 10px;font-size:9px}
 .vr-th-tier{text-align:right}
+.vr-th-tier--count{min-width:72px}
+.vr-th-count{display:block;font-size:18px;font-weight:900;line-height:1.1;color:var(--ink);margin:2px 0}
 .vr-th-sub{display:block;font-size:7px;font-weight:600;color:var(--ink4);text-transform:none;letter-spacing:0;margin-top:1px}
+.vr-inventory{margin:0 0 14px;padding:14px 16px;border:1px solid var(--rule);border-radius:12px;background:linear-gradient(180deg,var(--card) 0%,var(--card2) 100%)}
+.vr-inventory-top{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.vr-inventory-total{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:88px;padding:10px 14px;border-radius:12px;background:#0f172a;color:#fff}
+.vr-inventory-total-n{font-size:32px;font-weight:900;line-height:1;letter-spacing:-.02em}
+.vr-inventory-total-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;opacity:.75;margin-top:4px}
+.vr-inventory-chips{display:flex;flex-wrap:wrap;gap:8px;flex:1}
+.vr-inventory-chip{display:flex;flex-direction:column;align-items:center;min-width:64px;padding:8px 10px;border-radius:10px;border:0.5px solid var(--rule);background:var(--card)}
+.vr-inventory-chip-n{font-size:22px;font-weight:900;line-height:1;color:var(--ink)}
+.vr-inventory-chip-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);margin-top:4px}
+.vr-inventory-source{margin-top:12px;padding-top:12px;border-top:0.5px solid var(--rule)}
+.vr-inventory-source-hd{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink2);margin-bottom:6px}
+.vr-inventory-source-list{margin:0;padding-left:18px;font-size:11px;line-height:1.55;color:var(--ink2)}
+.vr-inventory-source-list code{font-size:10px;background:var(--card3);padding:1px 5px;border-radius:4px}
+.vr-inventory-url{word-break:break-all}
+.vr-inventory-ids{margin-top:8px;font-size:10px;line-height:1.45;color:var(--ink3)}
+.vr-inventory-id-row{margin:3px 0}
+.vr-inventory-id-row b{color:var(--ink2)}
 .vr-verify{margin:10px 0 4px;padding:10px 12px;border:0.5px solid var(--rule);border-radius:10px;background:var(--card2)}
 .vr-verify-hd{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--ink2);margin-bottom:4px}
 .vr-verify-plan{font-size:10px;color:var(--ink3);margin-bottom:8px;line-height:1.4}

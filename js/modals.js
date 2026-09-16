@@ -2529,12 +2529,10 @@ function renderVenueRulesPanel(){
   h+='<div class="vr-tiers vr-tiers--page">';
   var countsMeta=typeof roiTableCountsForRulesVenue==='function'
     ? roiTableCountsForRulesVenue(_vrEditVenue, {dateStr:(typeof miamiToday==='function'?miamiToday():'')})
-    : {counts:{}, badge:''};
+    : {counts:{}, badge:'', total:0};
   var counts=countsMeta.counts||{};
   h+='<div hidden data-roi-counts=\''+JSON.stringify(counts).replace(/'/g,'&#39;')+'\' data-roi-cats=\''+JSON.stringify(rules.tableCats||[]).replace(/'/g,'&#39;')+'\'></div>';
-  if(countsMeta.badge){
-    h+='<div class="vr-verify-plan" style="margin:0 0 10px">Table counts from: <b>'+(typeof _escRoi==='function'?_escRoi(countsMeta.badge):countsMeta.badge)+'</b></div>';
-  }
+  if(typeof _roiTableInventoryHtml==='function') h+=_roiTableInventoryHtml(rules, countsMeta);
   rules.tiers.forEach(function(tier, ti){
     h+='<div class="vr-tier-block vr-tier-block--page">';
     h+='<div class="vr-tier-hd">';

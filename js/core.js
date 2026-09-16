@@ -691,10 +691,45 @@ function roiTableCountsForRulesVenue(rulesVenue, opts){
     }
   }
   var counts=roiTableCountsFrom3dTiers((typeof FV_3D_TABLES!=='undefined'&&tableKey)?(FV_3D_TABLES[tableKey]||[]):[]);
+  var source='3D floor plan inventory (FV_3D_TABLES)';
   if(!Object.keys(counts).length && tableKey==='casa-neos-beach-club-summer'){
     counts={DIAMOND:5, PLATINUM:6, PRESTIGE:5, GOLD:4};
+    source='Built-in Sunset Rituals rooftop counts (Diamond 5 · Platinum 6 · Prestige 5 · Gold 4)';
   }
-  return {counts:counts, tableKey:tableKey||'', badge:badge||'', venue:venue};
+  var total=0;
+  Object.keys(counts).forEach(function(k){ total+=(+counts[k]||0); });
+  var modelUrl='';
+  if(typeof FV_3D_PLAN_PRESETS!=='undefined'){
+    Object.keys(FV_3D_PLAN_PRESETS).forEach(function(pk){
+      var p=FV_3D_PLAN_PRESETS[pk];
+      if(p&&p.tableKey===tableKey&&p.modelUrl) modelUrl=p.modelUrl;
+    });
+  }
+  if(!modelUrl && typeof FV_3D_MODELS!=='undefined'){
+    var mk=FV_3D_MODELS.find(function(m){ return m.key===(tableKey||'').replace(/-summer$|-new$/,'')||m.key===tableKey; });
+    if(mk) modelUrl=mk.url||'';
+  }
+  var byCat=[];
+  if(typeof FV_3D_TABLES!=='undefined'&&tableKey&&FV_3D_TABLES[tableKey]){
+    FV_3D_TABLES[tableKey].forEach(function(t){
+      byCat.push({
+        name:t.name,
+        n:((t.tables&&t.tables.length)||0),
+        ids:(t.tables||[]).slice()
+      });
+    });
+  }
+  return {
+    counts:counts,
+    tableKey:tableKey||'',
+    badge:badge||'',
+    venue:venue,
+    total:total,
+    source:source,
+    modelUrl:modelUrl||'',
+    byCat:byCat,
+    dateStr:dateStr||''
+  };
 }
 function roiCountForCat(counts, cat){
   if(!counts) return 0;

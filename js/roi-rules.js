@@ -80,24 +80,59 @@ function _roiTierHeaderHtml(tableCats, counts){
   var h='';
   (tableCats||[]).forEach(function(c){
     var n=typeof roiCountForCat==='function'?roiCountForCat(counts, c):0;
-    h+='<th class="vr-th-tier">'+_escRoi(c)+'<span class="vr-th-sub">×'+n+' tables · min $</span></th>';
+    h+='<th class="vr-th-tier vr-th-tier--count">'+_escRoi(c)
+      +'<span class="vr-th-count">'+n+'</span>'
+      +'<span class="vr-th-sub">tables · min $</span></th>';
   });
+  return h;
+}
+/* Big inventory strip: total tables, per-tier chips, and where counts come from. */
+function _roiTableInventoryHtml(rules, countsMeta){
+  countsMeta=countsMeta||{};
+  var counts=countsMeta.counts||{};
+  var cats=rules.tableCats||[];
+  var total=countsMeta.total;
+  if(total==null){
+    total=0;
+    cats.forEach(function(c){ total+=(typeof roiCountForCat==='function'?roiCountForCat(counts,c):0); });
+  }
+  var h='<div class="vr-inventory">';
+  h+='<div class="vr-inventory-top">';
+  h+='<div class="vr-inventory-total"><span class="vr-inventory-total-n">'+total+'</span><span class="vr-inventory-total-lbl">total tables</span></div>';
+  h+='<div class="vr-inventory-chips">';
+  cats.forEach(function(c){
+    var n=typeof roiCountForCat==='function'?roiCountForCat(counts,c):0;
+    h+='<div class="vr-inventory-chip"><span class="vr-inventory-chip-n">'+n+'</span><span class="vr-inventory-chip-lbl">'+_escRoi(c)+'</span></div>';
+  });
+  h+='</div></div>';
+  h+='<div class="vr-inventory-source">';
+  h+='<div class="vr-inventory-source-hd">Where these numbers come from</div>';
+  h+='<ul class="vr-inventory-source-list">';
+  h+='<li><b>Floor plan:</b> '+_escRoi(countsMeta.badge||countsMeta.tableKey||'Default venue plan')+'</li>';
+  if(countsMeta.tableKey) h+='<li><b>Inventory key:</b> <code>'+_escRoi(countsMeta.tableKey)+'</code> (3D table map in the app)</li>';
+  h+='<li><b>Source:</b> '+_escRoi(countsMeta.source||'3D floor plan inventory (same counts as 3D View)')+'</li>';
+  if(countsMeta.dateStr) h+='<li><b>Resolved for date:</b> '+_escRoi(countsMeta.dateStr)+' (auto plans switch by date)</li>';
+  if(countsMeta.modelUrl) h+='<li><b>Model:</b> <code class="vr-inventory-url">'+_escRoi(countsMeta.modelUrl)+'</code></li>';
+  h+='</ul>';
+  if(countsMeta.byCat&&countsMeta.byCat.length){
+    h+='<div class="vr-inventory-ids">';
+    countsMeta.byCat.forEach(function(t){
+      h+='<div class="vr-inventory-id-row"><b>'+_escRoi(t.name)+' ×'+t.n+':</b> '
+        +_escRoi((t.ids||[]).join(', ')||'—')+'</div>';
+    });
+    h+='</div>';
+  }
+  h+='</div></div>';
   return h;
 }
 function _roiVerifyBlockHtml(rules, countsMeta, tier, ti, days, seasons){
   var counts=(countsMeta&&countsMeta.counts)||{};
   var cats=rules.tableCats||[];
+  var total=countsMeta&&countsMeta.total!=null?countsMeta.total:cats.reduce(function(s,c){
+    return s+(typeof roiCountForCat==='function'?roiCountForCat(counts,c):0);
+  },0);
   var h='<div class="vr-verify" data-verify-ti="'+ti+'">';
-  h+='<div class="vr-verify-hd">Verify · tables × min vs BS Target</div>';
-  if(countsMeta&&countsMeta.badge){
-    h+='<div class="vr-verify-plan">Floor plan: '+_escRoi(countsMeta.badge);
-    var bits=[];
-    cats.forEach(function(c){
-      bits.push(c+'×'+(typeof roiCountForCat==='function'?roiCountForCat(counts,c):0));
-    });
-    if(bits.length) h+=' <span class="roi-page-hint">('+_escRoi(bits.join(' · '))+')</span>';
-    h+='</div>';
-  }
+  h+='<div class="vr-verify-hd">Verify · '+total+' tables × min vs BS Target</div>';
   h+='<table class="vr-verify-tbl"><thead><tr><th>Season</th><th>Day</th><th class="left">Capacity (Σ count×min)</th><th>BS Target</th><th>BS − Capacity</th><th>Status</th></tr></thead><tbody>';
   (seasons||['High','Low']).forEach(function(season){
     (days||[]).forEach(function(day){
@@ -746,10 +781,11 @@ function renderRoiSpCustomEditor(ev){
   var floorPlan=(document.getElementById('roiSpFloor')||{}).value||ev.floorPlan||'auto';
   var countsMeta=typeof roiTableCountsForRulesVenue==='function'
     ? roiTableCountsForRulesVenue(venue, {dateStr:dateStr, floorPlan:floorPlan})
-    : {counts:{}, badge:''};
+    : {counts:{}, badge:'', total:0};
   var counts=countsMeta.counts||{};
   var h='';
   h+='<div hidden data-roi-counts=\''+JSON.stringify(counts).replace(/'/g,'&#39;')+'\' data-roi-cats=\''+JSON.stringify(rules.tableCats||[]).replace(/'/g,'&#39;')+'\'></div>';
+  h+=_roiTableInventoryHtml(rules, countsMeta);
   h+='<div class="vr-tiers vr-tiers--page">';
   rules.tiers.forEach(function(tier, ti){
     h+='<div class="vr-tier-block vr-tier-block--page"><div class="vr-tier-hd"><span class="vr-tier-fee-lbl">DJ Fee tier</span>';
