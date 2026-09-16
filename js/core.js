@@ -668,27 +668,35 @@ function roiTableCountsFrom3dTiers(fvTiers){
 function roiTableCountsForRulesVenue(rulesVenue, opts){
   opts=opts||{};
   var dateStr=opts.dateStr||(typeof miamiToday==='function'?miamiToday():'');
-  var floorPlan=opts.floorPlan||'auto';
-  var venue=rulesVenue;
+  var rulesObj=(typeof VENUE_ROI_RULES!=='undefined'&&VENUE_ROI_RULES[rulesVenue])?VENUE_ROI_RULES[rulesVenue]:null;
+  var venue=(rulesObj&&rulesObj.appliesTo)?rulesObj.appliesTo:rulesVenue;
+  var floorPlan=opts.floorPlan||(rulesObj&&rulesObj.floorPlan)||'auto';
   var tableKey=null;
   var badge='';
   if(typeof CNBC_SUMMER_ROOF_KEY!=='undefined' && rulesVenue===CNBC_SUMMER_ROOF_KEY){
     venue='Casa Neos Beach Club';
-    tableKey='casa-neos-beach-club-summer';
-    badge='Summer rooftop floor plan';
-  }else{
-    var modelKey=typeof fv3dKeyForVenue==='function'?fv3dKeyForVenue(venue):null;
-    if(floorPlan && floorPlan!=='auto' && floorPlan!=='regular' && typeof fv3dPresetFor==='function'){
+    if(!floorPlan||floorPlan==='auto') floorPlan='casa-neos-beach-club-summer';
+  }else if(typeof CNL_REMODEL_KEY!=='undefined' && rulesVenue===CNL_REMODEL_KEY){
+    venue='Casa Neos Lounge';
+    if(!floorPlan||floorPlan==='auto') floorPlan='casa-neos-lounge-new';
+  }
+  var modelKey=typeof fv3dKeyForVenue==='function'?fv3dKeyForVenue(venue):null;
+  if(floorPlan && floorPlan!=='auto' && floorPlan!=='regular'){
+    if(typeof fv3dPresetFor==='function'){
       var pre=fv3dPresetFor(floorPlan);
       if(pre&&pre.tableKey){ tableKey=pre.tableKey; badge=pre.badge||pre.label||floorPlan; }
     }
-    if(!tableKey && modelKey && typeof fv3dEffectiveTableKey==='function'){
-      tableKey=fv3dEffectiveTableKey(modelKey, dateStr);
-      var plan=typeof fv3dResolvePlan==='function'?fv3dResolvePlan(modelKey, dateStr):null;
-      badge=(plan&&(plan.badge||plan.label))||tableKey||'';
-    }else if(!tableKey && modelKey){
-      tableKey=modelKey;
+    if(!tableKey && FV_3D_TABLES&&FV_3D_TABLES[floorPlan]){ tableKey=floorPlan; badge=floorPlan; }
+    if(!badge && typeof FV_3D_PLAN_PRESETS!=='undefined'&&FV_3D_PLAN_PRESETS[floorPlan]){
+      badge=FV_3D_PLAN_PRESETS[floorPlan].label||floorPlan;
     }
+  }
+  if(!tableKey && modelKey && typeof fv3dEffectiveTableKey==='function' && (!floorPlan||floorPlan==='auto')){
+    tableKey=fv3dEffectiveTableKey(modelKey, dateStr);
+    var plan=typeof fv3dResolvePlan==='function'?fv3dResolvePlan(modelKey, dateStr):null;
+    badge=(plan&&(plan.badge||plan.label))||tableKey||'';
+  }else if(!tableKey && modelKey){
+    tableKey=modelKey;
   }
   var counts=roiTableCountsFrom3dTiers((typeof FV_3D_TABLES!=='undefined'&&tableKey)?(FV_3D_TABLES[tableKey]||[]):[]);
   var source='3D floor plan inventory (FV_3D_TABLES)';
@@ -1406,6 +1414,7 @@ var CNBC_SUMMER_ROOF_DEFAULT = (function(){
   return {
     label:'Sunset Rituals Rooftop Edition',
     appliesTo:'Casa Neos Beach Club',
+    floorPlan:'casa-neos-beach-club-summer',
     months:[8,9],
     days:['Saturday','Sunday'],
     tableCats:['Diamond','Platinum','Prestige','Gold'],
@@ -1423,16 +1432,167 @@ function ensureCnbcSummerRoofRules(){
   if(!VENUE_ROI_RULES[CNBC_SUMMER_ROOF_KEY]){
     VENUE_ROI_RULES[CNBC_SUMMER_ROOF_KEY]=JSON.parse(JSON.stringify(CNBC_SUMMER_ROOF_DEFAULT));
   }
+  var summer=VENUE_ROI_RULES[CNBC_SUMMER_ROOF_KEY];
+  if(summer&&!summer.floorPlan) summer.floorPlan='casa-neos-beach-club-summer';
+  if(summer&&!summer.appliesTo) summer.appliesTo='Casa Neos Beach Club';
+}
+
+/* Casa Neos Lounge remodel (After Dark) — from 2026-09-25. Different tiers than classic
+   (adds Prestige; Platinum replaces “Platinium”). */
+var CNL_REMODEL_KEY = 'Casa Neos Lounge Remodel';
+function _buildCnlRemodelDefaultFromClassic(){
+  var classic=VENUE_ROI_RULES['Casa Neos Lounge'];
+  if(!classic) return null;
+  var out=JSON.parse(JSON.stringify(classic));
+  out.label='After Dark remodel';
+  out.appliesTo='Casa Neos Lounge';
+  out.floorPlan='casa-neos-lounge-new';
+  out.fromDate='2026-09-25';
+  out.tableCats=['Diamond','Prestige','Platinum','Gold'];
+  (out.tiers||[]).forEach(function(tier){
+    ['High','Low'].forEach(function(season){
+      Object.keys(tier[season]||{}).forEach(function(day){
+        var t=(tier[season][day]&&tier[season][day].tables)||{};
+        var plat=t.Platinum!=null?+t.Platinum:(t.Platinium!=null?+t.Platinium:0);
+        var dia=+t.Diamond||0;
+        var prest=Math.round(((dia+plat)/2)/100)*100;
+        if(!prest) prest=2500;
+        tier[season][day].tables={
+          Diamond:dia,
+          Prestige:prest,
+          Platinum:plat,
+          Gold:+t.Gold||0
+        };
+      });
+    });
+  });
+  return out;
+}
+function ensureCnlRemodelRules(){
+  if(!VENUE_ROI_RULES[CNL_REMODEL_KEY]){
+    var seeded=_buildCnlRemodelDefaultFromClassic();
+    if(seeded) VENUE_ROI_RULES[CNL_REMODEL_KEY]=seeded;
+  }
+  var rem=VENUE_ROI_RULES[CNL_REMODEL_KEY];
+  if(rem){
+    if(!rem.floorPlan) rem.floorPlan='casa-neos-lounge-new';
+    if(!rem.appliesTo) rem.appliesTo='Casa Neos Lounge';
+    if(!rem.fromDate) rem.fromDate='2026-09-25';
+    if(!rem.tableCats||rem.tableCats.indexOf('Prestige')<0){
+      rem.tableCats=['Diamond','Prestige','Platinum','Gold'];
+    }
+  }
+}
+function ensureVenueRulesFloorPlanBindings(){
+  ensureCnbcSummerRoofRules();
+  ensureCnlRemodelRules();
+  var bc=VENUE_ROI_RULES['Casa Neos Beach Club'];
+  if(bc&&!bc.floorPlan){ bc.floorPlan='casa-neos-beach-club'; bc.appliesTo='Casa Neos Beach Club'; }
+  var cnl=VENUE_ROI_RULES['Casa Neos Lounge'];
+  if(cnl&&!cnl.floorPlan){ cnl.floorPlan='casa-neos-lounge'; cnl.appliesTo='Casa Neos Lounge'; }
+  var mila=VENUE_ROI_RULES['MILA Lounge'];
+  if(mila&&!mila.floorPlan){ mila.floorPlan='mila-lounge'; mila.appliesTo='MILA Lounge'; }
+}
+function roiFloorPlanOptionsForVenue(venue){
+  var v=venue||'';
+  var opts=[];
+  if(v==='Casa Neos Beach Club'||v===CNBC_SUMMER_ROOF_KEY){
+    opts=[
+      {v:'casa-neos-beach-club', l:'Classic beach club (Riverwalk)'},
+      {v:'casa-neos-beach-club-summer', l:'Sunset Rituals rooftop (Aug–Sep)'},
+      {v:'casa-neos-beach-club-new', l:'Sunset Rituals waterfront + slips (Oct 2026+)'}
+    ];
+  }else if(v==='Casa Neos Lounge'||v===CNL_REMODEL_KEY){
+    opts=[
+      {v:'casa-neos-lounge', l:'Classic lounge (pre–Sep 25)'},
+      {v:'casa-neos-lounge-new', l:'After Dark remodel (Sep 25+) — Prestige tier'}
+    ];
+  }else if(v==='MILA Lounge'){
+    opts=[{v:'mila-lounge', l:'MILA Lounge'}];
+  }
+  return opts;
+}
+function roiTableCatsFromFloorPlan(floorPlanKey){
+  var pre=typeof fv3dPresetFor==='function'?fv3dPresetFor(floorPlanKey):null;
+  var tableKey=(pre&&pre.tableKey)||floorPlanKey;
+  var tiers=(typeof FV_3D_TABLES!=='undefined'&&FV_3D_TABLES[tableKey])?FV_3D_TABLES[tableKey]:[];
+  if(!tiers.length) return null;
+  var order=['DIAMOND','PRESTIGE','PLATINUM','GOLD','RIVERWALK','SLIP','LOUNGE'];
+  var names=tiers.map(function(t){ return String(t.name||'').toUpperCase(); });
+  names.sort(function(a,b){
+    var ia=order.indexOf(a), ib=order.indexOf(b);
+    if(ia<0) ia=99; if(ib<0) ib=99;
+    return ia-ib||a.localeCompare(b);
+  });
+  var cats=names.map(function(u){
+    return u.charAt(0)+u.slice(1).toLowerCase();
+  });
+  /* Classic Lounge ROI spelling */
+  if(floorPlanKey==='casa-neos-lounge'){
+    cats=cats.map(function(c){ return c==='Platinum'?'Platinium':c; });
+  }
+  return cats;
+}
+/* Remap tier table mins when switching floor plans (e.g. classic Lounge → remodel adds Prestige). */
+function roiApplyFloorPlanToRules(rules, planKey){
+  if(!rules||!planKey) return false;
+  var oldCats=(rules.tableCats||[]).slice();
+  rules.floorPlan=planKey;
+  var newCats=roiTableCatsFromFloorPlan(planKey);
+  if(!newCats||!newCats.length) return true;
+  function lookupOld(nc, oldT){
+    var nn=roiNormTierName(nc);
+    var keys=Object.keys(oldT||{});
+    for(var i=0;i<keys.length;i++){
+      if(roiNormTierName(keys[i])===nn) return +oldT[keys[i]]||0;
+    }
+    if(nn==='PRESTIGE'){
+      var d=0, p=0;
+      keys.forEach(function(k){
+        var kn=roiNormTierName(k);
+        if(kn==='DIAMOND') d=+oldT[k]||0;
+        if(kn==='PLATINUM') p=+oldT[k]||0;
+      });
+      var mid=Math.round(((d+p)/2)/100)*100;
+      return mid||0;
+    }
+    return 0;
+  }
+  (rules.tiers||[]).forEach(function(tier){
+    ['High','Low'].forEach(function(season){
+      Object.keys(tier[season]||{}).forEach(function(day){
+        var dayData=tier[season][day];
+        if(!dayData) return;
+        var oldT=dayData.tables||{};
+        var next={};
+        newCats.forEach(function(nc){ next[nc]=lookupOld(nc, oldT); });
+        dayData.tables=next;
+      });
+    });
+  });
+  rules.tableCats=newCats;
+  return true;
 }
 function effectiveRoiVenue(venue, dateStr, fee){
-  if(venue!=='Casa Neos Beach Club') return venue;
-  if(typeof isCnbcSummerFloor!=='function' || !isCnbcSummerFloor(dateStr)) return venue;
-  ensureCnbcSummerRoofRules();
-  var summer=VENUE_ROI_RULES[CNBC_SUMMER_ROOF_KEY];
-  if(!summer||!summer.tiers||!summer.tiers.length) return venue;
-  var maxFee=summer.tiers[summer.tiers.length-1].fee;
-  if(fee && fee>maxFee) return venue; /* above rooftop ladder → regular Beach Club rules */
-  return CNBC_SUMMER_ROOF_KEY;
+  if(venue==='Casa Neos Beach Club'){
+    if(typeof isCnbcSummerFloor==='function' && isCnbcSummerFloor(dateStr)){
+      ensureCnbcSummerRoofRules();
+      var summer=VENUE_ROI_RULES[CNBC_SUMMER_ROOF_KEY];
+      if(summer&&summer.tiers&&summer.tiers.length){
+        var maxFee=summer.tiers[summer.tiers.length-1].fee;
+        if(!(fee&&fee>maxFee)) return CNBC_SUMMER_ROOF_KEY;
+      }
+    }
+    return venue;
+  }
+  if(venue==='Casa Neos Lounge'){
+    if(typeof isCnlNewFloor==='function' && isCnlNewFloor(dateStr)){
+      ensureCnlRemodelRules();
+      if(VENUE_ROI_RULES[CNL_REMODEL_KEY]&&VENUE_ROI_RULES[CNL_REMODEL_KEY].tiers) return CNL_REMODEL_KEY;
+    }
+    return venue;
+  }
+  return venue;
 }
 function loadSavedVenueRules(){
   try{
@@ -1442,10 +1602,10 @@ function loadSavedVenueRules(){
       if(parsed && typeof parsed==='object'){ VENUE_ROI_RULES=parsed; }
     }
   }catch(e){}
-  ensureCnbcSummerRoofRules();
+  ensureVenueRulesFloorPlanBindings();
 }
 function saveVenueRules(){
-  ensureCnbcSummerRoofRules();
+  ensureVenueRulesFloorPlanBindings();
   try{ localStorage.setItem('rdg_venue_roi_rules', JSON.stringify(VENUE_ROI_RULES)); }catch(e){}
   if(window._fbSave) window._fbSave('venueRoiRules', VENUE_ROI_RULES);
   refreshAllRoiDerivedData();

@@ -264,11 +264,13 @@ function _roiSpeList(){
 }
 
 function _roiRulesTemplateOptions(selected){
-  ensureCnbcSummerRoofRules();
+  if(typeof ensureVenueRulesFloorPlanBindings==='function') ensureVenueRulesFloorPlanBindings();
+  else if(typeof ensureCnbcSummerRoofRules==='function') ensureCnbcSummerRoofRules();
   var opts=[
     {v:'Casa Neos Beach Club', l:'Casa Neos Beach Club (regular)'},
     {v:CNBC_SUMMER_ROOF_KEY, l:'CNBC Sunset Rituals Rooftop (Aug–Sep)'},
-    {v:'Casa Neos Lounge', l:'Casa Neos Lounge'},
+    {v:'Casa Neos Lounge', l:'Casa Neos Lounge (classic)'},
+    {v:CNL_REMODEL_KEY, l:'CN Lounge Remodel (Sep 25+ Prestige)'},
     {v:'MILA Lounge', l:'MILA Lounge'},
     {v:'__custom__', l:'Custom (clone & edit tiers below)'}
   ];
@@ -306,6 +308,7 @@ function renderRoiSpecialSection(){
     list.forEach(function(ev){
       var rulesLbl=ev.forceSeason?('Season: '+ev.forceSeason):(ev.rules&&ev.rules.tiers?'Custom':(ev.rulesVenue||'Auto'));
       if(rulesLbl===CNBC_SUMMER_ROOF_KEY) rulesLbl='Sunset Rituals';
+      if(typeof CNL_REMODEL_KEY!=='undefined' && rulesLbl===CNL_REMODEL_KEY) rulesLbl='CNL Remodel';
       var days=(ev.days&&ev.days.length)?ev.days.map(function(d){return d.slice(0,3);}).join(', '):'All in range';
       if(ev.extraDays&&ev.extraDays.length){
         days+=(days?' + ':'')+ev.extraDays.map(function(d){return d.slice(0,3);}).join(', ')+' (extra)';
@@ -727,6 +730,10 @@ function toggleRoiSpCustom(){
   var sel=document.getElementById('roiSpTemplate');
   var wrap=document.getElementById('roiSpCustomWrap');
   if(wrap) wrap.style.display=(sel&&sel.value==='__custom__')?'':'none';
+  var fp=document.getElementById('roiSpFloor');
+  if(sel&&fp&&sel.value&&sel.value!=='__custom__'&&typeof VENUE_ROI_RULES!=='undefined'&&VENUE_ROI_RULES[sel.value]&&VENUE_ROI_RULES[sel.value].floorPlan){
+    fp.value=VENUE_ROI_RULES[sel.value].floorPlan;
+  }
   if(sel&&sel.value==='__custom__'){
     var ev={rules:null};
     renderRoiSpCustomEditor(ev);
@@ -779,8 +786,12 @@ function renderRoiSpCustomEditor(ev){
   if(dateStr&&typeof seasonFor==='function') seasons=[seasonFor(rules, dateStr)];
   var venue=(document.getElementById('roiSpVenue')||{}).value||(ev.venue)||'Casa Neos Beach Club';
   var floorPlan=(document.getElementById('roiSpFloor')||{}).value||ev.floorPlan||'auto';
+  var tmplEl=document.getElementById('roiSpTemplate');
+  var tmplKey=tmplEl?tmplEl.value:(ev.rulesVenue||'');
+  var countsKey=(tmplKey&&tmplKey!=='__custom__')?tmplKey:venue;
+  if(floorPlan==='auto' && rules.floorPlan) floorPlan=rules.floorPlan;
   var countsMeta=typeof roiTableCountsForRulesVenue==='function'
-    ? roiTableCountsForRulesVenue(venue, {dateStr:dateStr, floorPlan:floorPlan})
+    ? roiTableCountsForRulesVenue(countsKey, {dateStr:dateStr, floorPlan:floorPlan})
     : {counts:{}, badge:'', total:0};
   var counts=countsMeta.counts||{};
   var h='';

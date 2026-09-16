@@ -2471,23 +2471,30 @@ function selectVenueRuleTab(v){ _vrEditVenue = v; renderVenueRulesPanel(); }
 var MONTH_NAMES_SHORT=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 function renderVenueRulesPanel(){
-  ensureCnbcSummerRoofRules();
+  if(typeof ensureVenueRulesFloorPlanBindings==='function') ensureVenueRulesFloorPlanBindings();
+  else if(typeof ensureCnbcSummerRoofRules==='function') ensureCnbcSummerRoofRules();
   var venues=Object.keys(VENUE_ROI_RULES);
-  /* Keep Summer Roof next to Beach Club in the tab strip. */
+  /* Keep Summer Roof next to Beach Club; Remodel next to Lounge. */
   venues.sort(function(a,b){
     var rank=function(v){
       if(v==='Casa Neos Beach Club') return 1;
       if(v===CNBC_SUMMER_ROOF_KEY) return 2;
       if(v==='Casa Neos Lounge') return 3;
-      if(v==='MILA Lounge') return 4;
+      if(typeof CNL_REMODEL_KEY!=='undefined' && v===CNL_REMODEL_KEY) return 4;
+      if(v==='MILA Lounge') return 5;
       return 9;
     };
     return rank(a)-rank(b) || a.localeCompare(b);
   });
+  if(!_vrEditVenue || venues.indexOf(_vrEditVenue)<0) _vrEditVenue=venues[0]||null;
   var tabsHtml='<div class="vr-tabs vr-tabs--page">';
   venues.forEach(function(v){
-    var label=v===CNBC_SUMMER_ROOF_KEY ? 'CNBC Summer Roof' : v;
-    tabsHtml+='<button class="vr-tab'+(v===_vrEditVenue?' on':'')+'" data-vv="'+v+'" title="'+(v===CNBC_SUMMER_ROOF_KEY?'Sunset Rituals · Aug–Sep only':v)+'">'+label+'</button>';
+    var label=v;
+    var tip=v;
+    if(v===CNBC_SUMMER_ROOF_KEY){ label='CNBC Summer Roof'; tip='Sunset Rituals · Aug–Sep only'; }
+    else if(typeof CNL_REMODEL_KEY!=='undefined' && v===CNL_REMODEL_KEY){ label='CN Lounge Remodel'; tip='After Dark remodel · from Sep 25 (Prestige tier)'; }
+    else if(v==='Casa Neos Lounge'){ label='CN Lounge Classic'; tip='Pre–Sep 25 lounge (Diamond / Platinium / Gold)'; }
+    tabsHtml+='<button class="vr-tab'+(v===_vrEditVenue?' on':'')+'" data-vv="'+v+'" title="'+tip+'">'+label+'</button>';
   });
   tabsHtml+='</div>';
   document.getElementById('vrTabs').innerHTML=tabsHtml;
@@ -2503,6 +2510,26 @@ function renderVenueRulesPanel(){
     h+='<div class="vr-season-box" style="border-left:3px solid #0f766e">';
     h+='<div class="vr-season-lbl" style="color:#0f766e">Sunset Rituals Rooftop Edition</div>';
     h+='<div class="vr-season-hint">Applies automatically to <b>Casa Neos Beach Club</b> shows from <b>August 1 through September 30</b> only (ROI, BS Target, and table mins). Outside that window the regular Beach Club rules are used. Floor plan: Diamond 5 · Platinum 6 · Prestige 5 · Gold 4.</div>';
+    h+='</div>';
+  }
+  if(typeof CNL_REMODEL_KEY!=='undefined' && _vrEditVenue===CNL_REMODEL_KEY){
+    h+='<div class="vr-season-box" style="border-left:3px solid #7c3aed">';
+    h+='<div class="vr-season-lbl" style="color:#7c3aed">After Dark remodel</div>';
+    h+='<div class="vr-season-hint">Applies automatically to <b>Casa Neos Lounge</b> from <b>September 25, 2026</b> onward. Uses remodel tiers (<b>Diamond · Prestige · Platinum · Gold</b>) — separate from classic Lounge (<b>Diamond · Platinium · Gold</b>). Change the floor plan below if you need to retarget inventory.</div>';
+    h+='</div>';
+  }
+
+  var fpOpts=typeof roiFloorPlanOptionsForVenue==='function'?roiFloorPlanOptionsForVenue(_vrEditVenue):[];
+  if(fpOpts.length){
+    var curFp=rules.floorPlan||fpOpts[0].v;
+    h+='<div class="vr-season-box">';
+    h+='<div class="vr-season-lbl">3D floor plan for these ROI rules</div>';
+    h+='<select id="vrFloorPlanSel" class="vr-floor-plan-sel">';
+    fpOpts.forEach(function(o){
+      h+='<option value="'+o.v+'"'+(o.v===curFp?' selected':'')+'>'+o.l+'</option>';
+    });
+    h+='</select>';
+    h+='<div class="vr-season-hint">Inventory counts and VIP tier columns follow this floor plan. Switching plans remaps mins (e.g. remodel adds Prestige; classic Lounge keeps Platinium spelling).</div>';
     h+='</div>';
   }
 
@@ -2527,8 +2554,11 @@ function renderVenueRulesPanel(){
   h+='</div></div>';
 
   h+='<div class="vr-tiers vr-tiers--page">';
+  var countDate=(typeof miamiToday==='function'?miamiToday():'');
+  if(typeof CNL_REMODEL_KEY!=='undefined' && _vrEditVenue===CNL_REMODEL_KEY) countDate=rules.fromDate||'2026-09-25';
+  if(_vrEditVenue===CNBC_SUMMER_ROOF_KEY) countDate='2026-08-15';
   var countsMeta=typeof roiTableCountsForRulesVenue==='function'
-    ? roiTableCountsForRulesVenue(_vrEditVenue, {dateStr:(typeof miamiToday==='function'?miamiToday():'')})
+    ? roiTableCountsForRulesVenue(_vrEditVenue, {dateStr:countDate, floorPlan:rules.floorPlan||'auto'})
     : {counts:{}, badge:'', total:0};
   var counts=countsMeta.counts||{};
   h+='<div hidden data-roi-counts=\''+JSON.stringify(counts).replace(/'/g,'&#39;')+'\' data-roi-cats=\''+JSON.stringify(rules.tableCats||[]).replace(/'/g,'&#39;')+'\'></div>';
@@ -2599,6 +2629,12 @@ function wireVenueRulesEvents(){
   document.querySelectorAll('.vr-month-btn[data-day]').forEach(function(btn){
     btn.addEventListener('click',function(){ toggleOperatingDay(_vrEditVenue, btn.dataset.day); });
   });
+  var fpSel=document.getElementById('vrFloorPlanSel');
+  if(fpSel){
+    fpSel.addEventListener('change',function(){
+      setVenueRulesFloorPlan(_vrEditVenue, fpSel.value);
+    });
+  }
   document.querySelectorAll('[data-action="fee"]').forEach(function(inp){
     inp.addEventListener('change',function(){
       var val=(typeof _vrParseMoney==='function')?_vrParseMoney(inp.value):(parseFloat(inp.value)||0);
@@ -2622,6 +2658,15 @@ function wireVenueRulesEvents(){
   });
   var addBtn=document.getElementById('vrAddTierBtn');
   if(addBtn) addBtn.addEventListener('click',function(){ addNewTier(_vrEditVenue); });
+}
+
+function setVenueRulesFloorPlan(v, planKey){
+  var rules=VENUE_ROI_RULES[v]; if(!rules||!planKey) return;
+  if(rules.floorPlan===planKey) return;
+  _pushVenueRulesUndo('Change ROI floor plan');
+  if(typeof roiApplyFloorPlanToRules==='function') roiApplyFloorPlanToRules(rules, planKey);
+  else rules.floorPlan=planKey;
+  saveVenueRules(); renderVenueRulesPanel(); go();
 }
 
 function toggleHighSeasonMonth(v,m){

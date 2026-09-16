@@ -1346,7 +1346,12 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     data = data || {};
     // VENUE_ROI_RULES first so target recalc uses latest rules
     if(data.venueRoiRules) VENUE_ROI_RULES = data.venueRoiRules;
-    if(typeof ensureCnbcSummerRoofRules==='function') ensureCnbcSummerRoofRules();
+    var hadRemodel=typeof CNL_REMODEL_KEY!=='undefined' && !!(VENUE_ROI_RULES&&VENUE_ROI_RULES[CNL_REMODEL_KEY]);
+    if(typeof ensureVenueRulesFloorPlanBindings==='function') ensureVenueRulesFloorPlanBindings();
+    else if(typeof ensureCnbcSummerRoofRules==='function') ensureCnbcSummerRoofRules();
+    if(!hadRemodel && typeof CNL_REMODEL_KEY!=='undefined' && VENUE_ROI_RULES&&VENUE_ROI_RULES[CNL_REMODEL_KEY] && window._fbSave){
+      try{ window._fbSave('venueRoiRules', VENUE_ROI_RULES); }catch(eRem){}
+    }
     if(data.roiSpecialEvents) ROI_SPECIAL_EVENTS = data.roiSpecialEvents;
     if(Object.prototype.hasOwnProperty.call(data, 'roiFloorPlans')){
       ROI_FLOOR_PLANS = data.roiFloorPlans && typeof data.roiFloorPlans==='object' ? data.roiFloorPlans : {};

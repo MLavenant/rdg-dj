@@ -1104,6 +1104,7 @@ model-viewer{--min-hotspot-opacity:0}
 .vr-tabs--page .vr-tab.on{background:var(--card);box-shadow:0 1px 4px rgba(0,0,0,.08);color:var(--ink);font-weight:800}
 .vr-tab.on{background:var(--ink);color:#fff}
 .vr-season-box,.vr-days-box{background:var(--card2);border-radius:12px;padding:12px 14px;margin-bottom:12px;border:0.5px solid var(--hair)}
+.vr-floor-plan-sel{display:block;width:100%;max-width:520px;margin-top:8px;padding:8px 10px;border-radius:8px;border:0.5px solid var(--rule);background:var(--card);color:var(--ink);font-size:13px;font-weight:600}
 .vr-season-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);margin-bottom:6px}
 .vr-month-grid{display:flex;gap:4px;flex-wrap:wrap}
 .vr-month-btn{font-size:10px;font-weight:600;padding:5px 10px;border-radius:8px;border:0.5px solid var(--rule);background:var(--card);cursor:pointer;color:var(--ink3);font-family:inherit;transition:all .12s}
