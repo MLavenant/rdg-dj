@@ -27,6 +27,8 @@ function _roiSpFilterRulesForShow(rules, fee, dateStr, showDays){
   if(!tier) return rules;
   var out=JSON.parse(JSON.stringify(rules));
   out.tiers=[JSON.parse(JSON.stringify(tier))];
+  /* Anchor this special to the show's DJ fee so ROI stays as entered (BS = fee × ROI). */
+  out.tiers[0].fee=fee;
   if(showDays&&showDays.length){
     out.days=showDays.slice();
     out.days.sort(function(a,b){ return DOW_NAMES.indexOf(a)-DOW_NAMES.indexOf(b); });
@@ -770,7 +772,12 @@ function renderRoiSpCustomEditor(ev){
   }
   if(!rules){ body.innerHTML='<div class="roi-empty">Pick a template first.</div>'; return; }
   var fee=_roiSpResolveFee(ev);
-  var dateStr=ev.start||(_roiSpPrefill&&_roiSpPrefill.start)||'';
+  if(!(fee>0)){
+    var venueNow=(document.getElementById('roiSpVenue')||{}).value||(ev&&ev.venue)||'';
+    var startNow=(document.getElementById('roiSpStart')||{}).value||(ev&&ev.start)||'';
+    fee=_roiSpResolveFee({venue:venueNow,start:startNow,djFee:(ev&&ev.djFee)||0});
+  }
+  var dateStr=ev.start||(_roiSpPrefill&&_roiSpPrefill.start)||((document.getElementById('roiSpStart')||{}).value)||'';
   var days=rules.days||DOW_NAMES;
   var showDays=days;
   if(_roiSpPrefill&&_roiSpPrefill.days&&_roiSpPrefill.days.length) showDays=_roiSpPrefill.days;
@@ -779,8 +786,11 @@ function renderRoiSpCustomEditor(ev){
     rules=_roiSpFilterRulesForShow(rules, fee, dateStr, showDays);
     var hint=document.getElementById('roiSpTierHint');
     if(hint){
-      hint.textContent='DJ fee $'+fee.toLocaleString()+' → nearest tier $'+(rules._matchedTierFee||fee).toLocaleString()+'. Edit Target, ROI, and table mins for this performance only.';
+      hint.textContent='DJ fee $'+fee.toLocaleString()+' → nearest tier $'+(rules._matchedTierFee||fee).toLocaleString()+'. Set ROI and BS Target fills as fee × ROI.';
     }
+  }else{
+    var hint0=document.getElementById('roiSpTierHint');
+    if(hint0) hint0.textContent='No DJ fee found for this date — enter ROI after the show has a fee so BS Target can auto-fill (fee × ROI).';
   }
   var seasons=['High','Low'];
   if(dateStr&&typeof seasonFor==='function') seasons=[seasonFor(rules, dateStr)];
@@ -815,7 +825,7 @@ function renderRoiSpCustomEditor(ev){
         h+='<tr>';
         if(di===0) h+='<td rowspan="'+showDays.length+'" class="vr-season-cell vr-season-'+season.toLowerCase()+'">'+season+'</td>';
         h+='<td class="vr-day-cell">'+day.slice(0,3)+'</td>';
-        h+='<td><input type="number" step="0.1" class="vr-cell-inp vr-roi-inp roi-sp-roi" value="'+dayData.roi+'" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'"></td>';
+        h+='<td><input type="number" step="0.1" class="vr-cell-inp vr-roi-inp roi-sp-roi" value="'+dayData.roi+'" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" title="BS Target = DJ fee × ROI"></td>';
         h+='<td>'+_vrMoneyInputHtml(dayData.sales, 'vr-cell-inp vr-target-inp roi-sp-sales', 'data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'"')+'</td>';
         (rules.tableCats||[]).forEach(function(c){
           var tv=(dayData.tables||{})[c]||0;
@@ -831,13 +841,86 @@ function renderRoiSpCustomEditor(ev){
   h+='</div>';
   body.innerHTML=h;
   body._roiSpRules=rules;
+  body._roiSpDjFee=fee>0?fee:0;
   wireVenueRulesMoneyInputs(body);
+  wireRoiSpRoiToBs(body);
+}
+
+/* Special performance: editing ROI auto-fills BS Target = DJ fee × ROI. */
+function wireRoiSpRoiToBs(root){
+  root=root||document.getElementById('roiSpCustomBody');
+  if(!root) return;
+  root.querySelectorAll('.roi-sp-roi').forEach(function(inp){
+    if(inp._roiSpRoiWired) return;
+    inp._roiSpRoiWired=true;
+    var sync=function(){ _roiSpApplyBsFromRoi(inp, root); };
+    inp.addEventListener('input', sync);
+    inp.addEventListener('change', sync);
+    inp.addEventListener('blur', sync);
+  });
+  /* If BS Target is edited manually, keep ROI in sync (BS ÷ fee). */
+  root.querySelectorAll('.roi-sp-sales').forEach(function(inp){
+    if(inp._roiSpSalesWired) return;
+    inp._roiSpSalesWired=true;
+    var syncRoi=function(){ _roiSpApplyRoiFromBs(inp, root); };
+    inp.addEventListener('change', syncRoi);
+    inp.addEventListener('blur', syncRoi);
+  });
+}
+function _roiSpDjFeeForEditor(root){
+  root=root||document.getElementById('roiSpCustomBody');
+  if(root&&root._roiSpDjFee>0) return root._roiSpDjFee;
+  var venue=(document.getElementById('roiSpVenue')||{}).value||'';
+  var start=(document.getElementById('roiSpStart')||{}).value||'';
+  var fee=_roiSpResolveFee({venue:venue,start:start,djFee:0});
+  if(fee>0&&root) root._roiSpDjFee=fee;
+  return fee||0;
+}
+function _roiSpApplyBsFromRoi(roiInp, root){
+  root=root||document.getElementById('roiSpCustomBody');
+  if(!roiInp||!root) return;
+  var fee=_roiSpDjFeeForEditor(root);
+  if(!(fee>0)) return;
+  var roi=parseFloat(roiInp.value);
+  if(isNaN(roi)||roi<0) return;
+  var ti=roiInp.dataset.ti, season=roiInp.dataset.season, day=roiInp.dataset.day;
+  var salesInp=root.querySelector('.roi-sp-sales[data-ti="'+ti+'"][data-season="'+season+'"][data-day="'+day+'"]');
+  if(!salesInp) return;
+  var bs=Math.round(fee*roi);
+  salesInp.value=_vrFmtMoney(bs);
+  if(root._roiSpRules&&root._roiSpRules.tiers[ti]){
+    if(!root._roiSpRules.tiers[ti][season]) root._roiSpRules.tiers[ti][season]={};
+    if(!root._roiSpRules.tiers[ti][season][day]) root._roiSpRules.tiers[ti][season][day]={roi:0,sales:0,tables:{}};
+    root._roiSpRules.tiers[ti][season][day].roi=roi;
+    root._roiSpRules.tiers[ti][season][day].sales=bs;
+  }
+  if(typeof roiRefreshVerifyBlocks==='function') roiRefreshVerifyBlocks(root);
+}
+function _roiSpApplyRoiFromBs(salesInp, root){
+  root=root||document.getElementById('roiSpCustomBody');
+  if(!salesInp||!root) return;
+  var fee=_roiSpDjFeeForEditor(root);
+  if(!(fee>0)) return;
+  var bs=_vrParseMoney(salesInp.value);
+  var ti=salesInp.dataset.ti, season=salesInp.dataset.season, day=salesInp.dataset.day;
+  var roiInp=root.querySelector('.roi-sp-roi[data-ti="'+ti+'"][data-season="'+season+'"][data-day="'+day+'"]');
+  if(!roiInp) return;
+  var roi=+(bs/fee).toFixed(2);
+  roiInp.value=String(roi);
+  if(root._roiSpRules&&root._roiSpRules.tiers[ti]){
+    if(!root._roiSpRules.tiers[ti][season]) root._roiSpRules.tiers[ti][season]={};
+    if(!root._roiSpRules.tiers[ti][season][day]) root._roiSpRules.tiers[ti][season][day]={roi:0,sales:0,tables:{}};
+    root._roiSpRules.tiers[ti][season][day].roi=roi;
+    root._roiSpRules.tiers[ti][season][day].sales=bs;
+  }
+  if(typeof roiRefreshVerifyBlocks==='function') roiRefreshVerifyBlocks(root);
 }
 
 function _collectRoiSpCustomRules(){
   var body=document.getElementById('roiSpCustomBody');
   if(!body||!body._roiSpRules) return null;
   var rules=JSON.parse(JSON.stringify(body._roiSpRules));
+  var djFee=_roiSpDjFeeForEditor(body);
   document.querySelectorAll('.roi-sp-fee').forEach(function(inp){
     var ti=+inp.dataset.ti;
     if(rules.tiers[ti]) rules.tiers[ti].fee=_vrParseMoney(inp.value);
@@ -861,6 +944,20 @@ function _collectRoiSpCustomRules(){
     if(!rules.tiers[ti][season][day].tables) rules.tiers[ti][season][day].tables={};
     rules.tiers[ti][season][day].tables[cat]=_vrParseMoney(inp.value);
   });
+  /* Keep BS Target = DJ fee × ROI whenever ROI is set (special-performance contract). */
+  if(djFee>0){
+    (rules.tiers||[]).forEach(function(tier){
+      if(tier) tier.fee=djFee;
+      ['High','Low'].forEach(function(season){
+        Object.keys(tier[season]||{}).forEach(function(day){
+          var d=tier[season][day];
+          if(!d) return;
+          var roi=+d.roi||0;
+          if(roi>0) d.sales=Math.round(djFee*roi);
+        });
+      });
+    });
+  }
   rules.tiers.sort(function(a,b){ return a.fee-b.fee; });
   return rules;
 }

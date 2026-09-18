@@ -1728,6 +1728,11 @@ function venueRoiLookup(venue, dateStr, fee){
   if(!dayData) return null;
   var bsTarget=dayData.sales;
   var roiTarget = (fee===tier.fee) ? dayData.roi : (bsTarget && fee ? +(bsTarget/fee).toFixed(2) : dayData.roi);
+  /* Custom special performance: ROI is the source of truth → BS Target = fee × ROI. */
+  if(sp&&sp.rules&&sp.rules.tiers&&dayData.roi!=null&&+dayData.roi>0&&fee>0){
+    roiTarget=+dayData.roi;
+    bsTarget=Math.round(fee*roiTarget);
+  }
   return {
     bsTarget: bsTarget, roiTarget: roiTarget,
     tierFee: tier.fee, season: season, day: lookupDay,
