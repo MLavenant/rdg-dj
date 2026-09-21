@@ -3273,6 +3273,7 @@ var _FCAST_EMAIL_CC = [
   'g.moorefield@rivieradininggroup.com',
   'Perrine@rivieradininggroup.com',
   'j.costini@rivieradininggroup.com',
+  'gabrielle@rivieradininggroup.com',
   'w.fily@casa-neos.com',
   'anzou@casaneoslounge.com',
   'goran@milarestaurant.com'
