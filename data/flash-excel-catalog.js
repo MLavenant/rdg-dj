@@ -6,7 +6,7 @@ window.FLASH_EXCEL_CATALOG = [
       {
         name: 'RDG Sales - 2026.xlsx',
         path: 'data/excel/rdg-sales-2026.xlsx',
-        note: 'Weekly Actual + Budget · CASA NEOS / CN LOUNGE / MILA II daily tables · Upload via Weekly Flash → Upload Sales'
+        note: 'Weekly Actual + Budget · CASA NEOS / CN LOUNGE / MILA II daily tables · through Week 38 · Upload via Weekly Flash → Upload Sales'
       }
     ]
   },
@@ -16,7 +16,7 @@ window.FLASH_EXCEL_CATALOG = [
       {
         name: 'Live Entertainment Report - 2026.xlsx',
         path: 'data/excel/live-entertainment-report-2026.xlsx',
-        note: 'GL 6750 by week · through Week 36 · Upload via Weekly Flash → Upload Live Ent'
+        note: 'GL 6750 by week · through Week 38 · Upload via Weekly Flash → Upload Live Ent'
       }
     ]
   },
