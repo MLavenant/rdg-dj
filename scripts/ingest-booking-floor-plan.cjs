@@ -102,7 +102,9 @@ function parseMoney(text) {
 }
 
 function matchTiersToTables(nodes, hotspots) {
-  if (!nodes.length || !hotspots.length) return {};
+  if (!nodes.length || !hotspots.length) {
+    return { byTier: {}, hotspots: {}, assigned: 0, total: (nodes || []).length };
+  }
   const ids = nodes.map((n) => n.id);
   const minX = Math.min(...nodes.map((n) => n.t[0]));
   const maxX = Math.max(...nodes.map((n) => n.t[0]));

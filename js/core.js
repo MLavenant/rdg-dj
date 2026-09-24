@@ -212,7 +212,7 @@ function setView(v) {
    Dated drops in ROI_FLOOR_PLANS (Venue ROI Rules → 3D Floor plans) override built-ins. */
 var FV_CNBC_SUMMER_GLB = 'https://fvwebs-storage.fourvenues.com/casa-neos/rooftop.glb?v=1';
 var FV_CNL_NEW_GLB = 'https://fvwebs-storage.fourvenues.com/casa-neos/lounge/model-new.glb?v=1';
-var FV_CNBC_NEW_GLB = 'https://fvwebs-storage.fourvenues.com/casa-neos/new.glb?v=2';
+var FV_CNBC_NEW_GLB = 'https://fvwebs-storage.fourvenues.com/casa-neos/new.glb?v=7';
 var FV_3D_MODELS = [
   {key:'mila-lounge', venue:'MILA Lounge', label:'MILA Lounge', orbit:'45deg 60deg 72%', url:'https://fvwebs-storage.fourvenues.com/mila-lounge/model.glb?v=1'},
   {key:'casa-neos-lounge', venue:'Casa Neos Lounge', label:'Casa Neos Lounge', orbit:'45deg 60deg 86%', url:'https://fvwebs-storage.fourvenues.com/casa-neos/lounge/model.glb?v=3', newOrbit:'40deg 65deg 95%'},
@@ -226,7 +226,8 @@ var FV_3D_PLAN_PRESETS = {
   'casa-neos-lounge-new':{label:'CN Lounge — remodel (Sep 2026+)', modelKey:'casa-neos-lounge', tableKey:'casa-neos-lounge-new', modelUrl:FV_CNL_NEW_GLB, badge:'After Dark remodel', badgeColor:'#7c3aed'},
   'casa-neos-beach-club':{label:'CNBC — regular beach club', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club'},
   'casa-neos-beach-club-summer':{label:'CNBC — Sunset Rituals rooftop', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-summer', modelUrl:FV_CNBC_SUMMER_GLB, badge:'Sunset Rituals · Summer rooftop', badgeColor:'#0f766e'},
-  'casa-neos-beach-club-new':{label:'CNBC — Sunset Rituals waterfront (Oct 2026+)', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-new', modelUrl:FV_CNBC_NEW_GLB, badge:'Sunset Rituals · Waterfront + slips', badgeColor:'#c2410c', sourceUrl:'https://beachclub.casa-neos.com/'}
+  'casa-neos-beach-club-new':{label:'CNBC — Sunset Rituals waterfront (Oct 2026+)', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-new', modelUrl:FV_CNBC_NEW_GLB, badge:'Sunset Rituals · Waterfront + slips', badgeColor:'#c2410c', sourceUrl:'https://beachclub.casa-neos.com/'},
+  'casa-neos-beach-club-basel':{label:'CNBC — Casa Neos BC Basel (Art Basel Dec 4–6)', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-new', modelUrl:FV_CNBC_NEW_GLB, badge:'Art Basel Weekend · BC Basel', badgeColor:'#b45309', sourceUrl:'https://music.casa-neos.com/?id=hrol9f22635j7agg0c1nlgc3chv7kng6'}
 };
 /* Fixed booking-site URLs. Refresh scrapes these (same link every time → BOOK YOUR TABLE → 3D plan). */
 var FV_3D_BOOKING_SOURCES = {
@@ -408,6 +409,24 @@ function ensureDefaultRoiFloorPlans(){
       plan:_fv3dPlanPayloadFromPreset('casa-neos-beach-club-new'),
       createdAt:'2026-09-15T00:00:00.000Z',
       updatedAt:'2026-09-15T00:00:00.000Z',
+      seeded:true
+    };
+    added=true;
+  }
+  /* Art Basel Weekend — Casa Neos BC Basel (Fri Dec 4 – Sun Dec 6, 2026). Same waterfront+slips GLB as booking site. */
+  if(!hasPreset('Casa Neos Beach Club','casa-neos-beach-club-basel')){
+    ROI_FLOOR_PLANS.fp_cnbc_basel_20261204={
+      _uid:'fp_cnbc_basel_20261204',
+      label:'Casa Neos BC Basel',
+      venue:'Casa Neos Beach Club',
+      start:'2026-12-04',
+      end:'2026-12-06',
+      preset:'casa-neos-beach-club-basel',
+      sourceUrl:'https://music.casa-neos.com/?id=hrol9f22635j7agg0c1nlgc3chv7kng6',
+      status:'ready',
+      plan:_fv3dPlanPayloadFromPreset('casa-neos-beach-club-basel'),
+      createdAt:'2026-09-24T00:00:00.000Z',
+      updatedAt:'2026-09-24T00:00:00.000Z',
       seeded:true
     };
     added=true;
@@ -1500,7 +1519,8 @@ function roiFloorPlanOptionsForVenue(venue){
     opts=[
       {v:'casa-neos-beach-club', l:'Classic beach club (Riverwalk)'},
       {v:'casa-neos-beach-club-summer', l:'Sunset Rituals rooftop (Aug–Sep)'},
-      {v:'casa-neos-beach-club-new', l:'Sunset Rituals waterfront + slips (Oct 2026+)'}
+      {v:'casa-neos-beach-club-new', l:'Sunset Rituals waterfront + slips (Oct 2026+)'},
+      {v:'casa-neos-beach-club-basel', l:'Casa Neos BC Basel (Art Basel Dec 4–6)'}
     ];
   }else if(v==='Casa Neos Lounge'||v===CNL_REMODEL_KEY){
     opts=[
