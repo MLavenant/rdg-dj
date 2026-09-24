@@ -154,6 +154,11 @@ function matchTiersToTables(nodes, hotspots) {
 }
 
 const TIER_COLORS = {
+  GRAND: 'rgb(24,24,27)',
+  PREMIER: 'rgb(37,99,235)',
+  SIGNATURE: 'rgb(234,179,8)',
+  SELECT: 'rgb(147,51,234)',
+  RESERVE: 'rgb(220,38,38)',
   DIAMOND: 'rgb(3,169,244)',
   PRESTIGE: 'rgb(139,195,74)',
   PLATINUM: 'rgb(158,158,158)',
@@ -162,7 +167,7 @@ const TIER_COLORS = {
   SLIP: 'rgb(96,165,250)',
   LOUNGE: 'rgb(196,181,253)'
 };
-const TIER_ORDER = ['DIAMOND', 'PRESTIGE', 'PLATINUM', 'GOLD', 'RIVERWALK', 'SLIP', 'LOUNGE'];
+const TIER_ORDER = ['GRAND', 'PREMIER', 'SIGNATURE', 'SELECT', 'RESERVE', 'DIAMOND', 'PRESTIGE', 'PLATINUM', 'GOLD', 'RIVERWALK', 'SLIP', 'LOUNGE'];
 
 function guessVenue(url) {
   if (/lounge\.casa-neos/i.test(url)) return 'Casa Neos Lounge';

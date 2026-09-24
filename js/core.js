@@ -213,10 +213,11 @@ function setView(v) {
 var FV_CNBC_SUMMER_GLB = 'https://fvwebs-storage.fourvenues.com/casa-neos/rooftop.glb?v=1';
 var FV_CNL_NEW_GLB = 'https://fvwebs-storage.fourvenues.com/casa-neos/lounge/model-new.glb?v=1';
 var FV_CNBC_NEW_GLB = 'https://fvwebs-storage.fourvenues.com/casa-neos/new.glb?v=7';
+var FV_CNBC_BASEL_GLB = 'https://fvwebs-storage.fourvenues.com/casa-neos/neos-big.glb?v=2';
 var FV_3D_MODELS = [
   {key:'mila-lounge', venue:'MILA Lounge', label:'MILA Lounge', orbit:'45deg 60deg 72%', url:'https://fvwebs-storage.fourvenues.com/mila-lounge/model.glb?v=1'},
   {key:'casa-neos-lounge', venue:'Casa Neos Lounge', label:'Casa Neos Lounge', orbit:'45deg 60deg 86%', url:'https://fvwebs-storage.fourvenues.com/casa-neos/lounge/model.glb?v=3', newOrbit:'40deg 65deg 95%'},
-  {key:'casa-neos-beach-club', venue:'Casa Neos Beach Club', label:'Casa Neos Beach Club', orbit:'45deg 60deg 110%', url:'https://fvwebs-storage.fourvenues.com/casa-neos/model2.glb?v=1', summerOrbit:'55deg 65deg 125%', fallOrbit:'50deg 62deg 115%'}
+  {key:'casa-neos-beach-club', venue:'Casa Neos Beach Club', label:'Casa Neos Beach Club', orbit:'45deg 60deg 110%', url:'https://fvwebs-storage.fourvenues.com/casa-neos/model2.glb?v=1', summerOrbit:'55deg 65deg 125%', fallOrbit:'50deg 62deg 115%', baselOrbit:'48deg 62deg 130%'}
 ];
 /* Named plan presets selectable from Venue ROI Rules → 3D Floor plans.
    Starts = first date that date shows the plan on the booking site (e.g. BOOK YOUR TABLE on Oct 3). */
@@ -227,7 +228,7 @@ var FV_3D_PLAN_PRESETS = {
   'casa-neos-beach-club':{label:'CNBC — regular beach club', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club'},
   'casa-neos-beach-club-summer':{label:'CNBC — Sunset Rituals rooftop', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-summer', modelUrl:FV_CNBC_SUMMER_GLB, badge:'Sunset Rituals · Summer rooftop', badgeColor:'#0f766e'},
   'casa-neos-beach-club-new':{label:'CNBC — Sunset Rituals waterfront (Oct 2026+)', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-new', modelUrl:FV_CNBC_NEW_GLB, badge:'Sunset Rituals · Waterfront + slips', badgeColor:'#c2410c', sourceUrl:'https://beachclub.casa-neos.com/'},
-  'casa-neos-beach-club-basel':{label:'CNBC — Casa Neos BC Basel (Art Basel Dec 4–6)', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-new', modelUrl:FV_CNBC_NEW_GLB, badge:'Art Basel Weekend · BC Basel', badgeColor:'#b45309', sourceUrl:'https://music.casa-neos.com/?id=hrol9f22635j7agg0c1nlgc3chv7kng6'}
+  'casa-neos-beach-club-basel':{label:'CNBC — Casa Neos BC Basel (Art Basel Dec 4–6)', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-basel', modelUrl:FV_CNBC_BASEL_GLB, badge:'Art Basel Weekend · BC Basel', badgeColor:'#b45309', sourceUrl:'https://music.casa-neos.com/?id=hrol9f22635j7agg0c1nlgc3chv7kng6'}
 };
 /* Fixed booking-site URLs. Refresh scrapes these (same link every time → BOOK YOUR TABLE → 3D plan). */
 var FV_3D_BOOKING_SOURCES = {
@@ -287,6 +288,15 @@ var FV_3D_TABLES = {
     {name:'GOLD',color:'rgb(251,192,45)',minimum:3500,capacity:8,tables:['22','23','24','25','26','27']},
     {name:'RIVERWALK',color:'rgb(245,127,23)',minimum:1500,capacity:8,tables:['17','18','19','20','21']},
     {name:'SLIP',color:'rgb(96,165,250)',minimum:5000,capacity:8,tables:['D1','D2','D3']}
+  ],
+  /* Art Basel Weekend — Casa Neos BC Basel (neos-big.glb). Fri Dec 4 – Sun Dec 6, 2026.
+     Grand×2 · Premier×9 · Signature×16 · Select×16 · Reserve×7 (GA standing only). */
+  'casa-neos-beach-club-basel':[
+    {name:'GRAND',color:'rgb(24,24,27)',minimum:45000,capacity:15,tables:['P61','P62']},
+    {name:'PREMIER',color:'rgb(37,99,235)',minimum:15000,capacity:10,tables:['33','34','51','52','53','54','55','P67','P68']},
+    {name:'SIGNATURE',color:'rgb(234,179,8)',minimum:12500,capacity:8,tables:['28','29','31','32','35','36','41','44','45','46','P63','P64','P65','P66','P71','P72']},
+    {name:'SELECT',color:'rgb(147,51,234)',minimum:11000,capacity:8,tables:['24','25','26','27','42','43','P69','P70','P73','P74','P75','P76','P77','P78','P79','P80']},
+    {name:'RESERVE',color:'rgb(220,38,38)',minimum:8000,capacity:8,tables:['19','20','21','22','23','P81','P82']}
   ]
 };
 /* Model-space table centers read from each raw GLB. model-viewer hotspots use
@@ -351,6 +361,26 @@ var FV_3D_HOTSPOTS = {
     '53':[-2.551,1.02,-4.171],'54':[-3.817,1.02,-1.831],'55':[-4.948,1.02,0.159],
     '56':[-6.780,1.02,3.175],'D1':[-2.134,1.05,7.269],'D2':[7.631,1.05,7.827],
     'D3':[17.365,1.05,8.067]
+  },
+  /* Art Basel — node translations from neos-big.glb?v=2 (S_19…S_55, S_P61…S_P82). */
+  'casa-neos-beach-club-basel':{
+    '19':[16.302,1.00,5.522],'20':[14.090,1.00,5.533],'21':[11.923,1.00,5.530],
+    '22':[7.756,1.00,5.117],'23':[5.578,1.00,4.997],'24':[3.335,1.00,4.855],
+    '25':[0.286,1.00,4.590],'26':[-2.114,1.00,4.395],'27':[-4.322,1.00,4.126],
+    '28':[11.900,1.00,2.875],'29':[9.575,1.00,2.875],'31':[2.709,1.00,2.655],
+    '32':[0.790,1.00,2.655],'33':[0.442,1.00,0.545],'34':[0.442,1.00,-0.910],
+    '35':[3.156,1.00,-0.875],'36':[3.156,1.00,0.580],'41':[6.169,1.00,1.729],
+    '42':[5.707,1.00,-0.722],'43':[5.799,1.00,-3.350],'44':[3.093,1.00,-3.350],
+    '45':[0.226,1.00,-3.350],'46':[-3.217,1.00,1.729],'51':[4.848,1.00,-5.933],
+    '52':[2.756,1.00,-5.933],'53':[0.682,1.00,-5.933],'54':[-2.306,1.00,-4.775],
+    '55':[-6.658,1.00,3.806],'P61':[-8.239,1.00,-0.347],'P62':[-8.251,1.00,-1.912],
+    'P63':[-4.979,1.00,-4.940],'P64':[-4.684,1.00,-6.130],'P65':[-6.502,1.00,-6.130],
+    'P66':[-8.126,1.00,-6.130],'P67':[-11.765,1.00,-4.034],'P68':[-12.146,1.00,-2.090],
+    'P69':[-9.105,1.00,-4.340],'P70':[-7.276,1.00,-4.314],'P71':[-14.262,1.00,-2.446],
+    'P72':[-13.879,1.00,-4.160],'P73':[-14.133,1.00,-6.035],'P74':[-15.403,1.00,-6.035],
+    'P75':[-16.503,1.00,-6.035],'P76':[-17.460,1.00,-5.196],'P77':[-18.382,1.00,-2.395],
+    'P78':[-17.375,1.00,-1.585],'P79':[-16.121,1.00,-1.253],'P80':[-14.651,1.00,-0.864],
+    'P81':[-16.413,1.00,-2.940],'P82':[-15.973,1.00,-4.546]
   }
 };
 var _fv3dModelKey = 'mila-lounge';
@@ -413,7 +443,7 @@ function ensureDefaultRoiFloorPlans(){
     };
     added=true;
   }
-  /* Art Basel Weekend — Casa Neos BC Basel (Fri Dec 4 – Sun Dec 6, 2026). Same waterfront+slips GLB as booking site. */
+  /* Art Basel Weekend — Casa Neos BC Basel (Fri Dec 4 – Sun Dec 6, 2026). neos-big.glb + Grand/Premier/Signature/Select/Reserve. */
   if(!hasPreset('Casa Neos Beach Club','casa-neos-beach-club-basel')){
     ROI_FLOOR_PLANS.fp_cnbc_basel_20261204={
       _uid:'fp_cnbc_basel_20261204',
@@ -430,6 +460,18 @@ function ensureDefaultRoiFloorPlans(){
       seeded:true
     };
     added=true;
+  }else{
+    /* Refresh older Basel seeds that still pointed at waterfront new.glb. */
+    Object.keys(ROI_FLOOR_PLANS).forEach(function(uid){
+      var p=ROI_FLOOR_PLANS[uid];
+      if(!p||p.preset!=='casa-neos-beach-club-basel') return;
+      var url=(p.plan&&p.plan.modelUrl)||'';
+      if(/neos-big\.glb/i.test(url) && p.plan&&p.plan.tables&&p.plan.tables[0]&&p.plan.tables[0].name==='GRAND') return;
+      p.plan=_fv3dPlanPayloadFromPreset('casa-neos-beach-club-basel');
+      p.status='ready';
+      p.updatedAt=new Date().toISOString();
+      added=true;
+    });
   }
   /* Backfill scraped GLB+tables+tiers onto older drops that only stored a preset key. */
   Object.keys(ROI_FLOOR_PLANS).forEach(function(uid){
@@ -977,6 +1019,7 @@ function renderFv3dFloorVisual(){
     var orbit=m.orbit||'45deg 60deg 110%';
     if(plan.tableKey==='casa-neos-beach-club-summer' && m.summerOrbit) orbit=m.summerOrbit;
     if(plan.tableKey==='casa-neos-beach-club-new' && m.fallOrbit) orbit=m.fallOrbit;
+    if(plan.tableKey==='casa-neos-beach-club-basel' && m.baselOrbit) orbit=m.baselOrbit;
     if(plan.tableKey==='casa-neos-lounge-new' && m.newOrbit) orbit=m.newOrbit;
     mv.setAttribute('camera-orbit', orbit);
     if(mv.getAttribute('src')!==modelUrl) mv.setAttribute('src', modelUrl);
@@ -1537,7 +1580,7 @@ function roiTableCatsFromFloorPlan(floorPlanKey){
   var tableKey=(pre&&pre.tableKey)||floorPlanKey;
   var tiers=(typeof FV_3D_TABLES!=='undefined'&&FV_3D_TABLES[tableKey])?FV_3D_TABLES[tableKey]:[];
   if(!tiers.length) return null;
-  var order=['DIAMOND','PRESTIGE','PLATINUM','GOLD','RIVERWALK','SLIP','LOUNGE'];
+  var order=['GRAND','PREMIER','SIGNATURE','SELECT','RESERVE','DIAMOND','PRESTIGE','PLATINUM','GOLD','RIVERWALK','SLIP','LOUNGE'];
   var names=tiers.map(function(t){ return String(t.name||'').toUpperCase(); });
   names.sort(function(a,b){
     var ia=order.indexOf(a), ib=order.indexOf(b);

@@ -514,6 +514,7 @@ function openShow3dModal(idx){
     var tableKey=(typeof fv3dEffectiveTableKey==='function')?fv3dEffectiveTableKey(key, r.d):key;
     if(tableKey==='casa-neos-beach-club-summer' && model.summerOrbit) orbit=model.summerOrbit;
     if(tableKey==='casa-neos-beach-club-new' && model.fallOrbit) orbit=model.fallOrbit;
+    if(tableKey==='casa-neos-beach-club-basel' && model.baselOrbit) orbit=model.baselOrbit;
     if(tableKey==='casa-neos-lounge-new' && model.newOrbit) orbit=model.newOrbit;
     mv.setAttribute('camera-orbit', orbit);
     mv.style.cssText='width:100%;height:100%;background:transparent;--poster-color:transparent';
@@ -1768,7 +1769,7 @@ var TIER_TEXT = {
   Gold:"#7d5a00",Riverwalk:"#155724",Cabana:"#6c4f00",Deck:"#2d3436",
   Lounge:"#155724",Booths:"#6c4f00",Seating:"#2d3436"
 };
-var TIER_ORDER = ['Diamond','Prestige','Platinum','Gold','Riverwalk','Cabana','Deck','Lounge','Booths','Seating'];
+var TIER_ORDER = ['Grand','Premier','Signature','Select','Reserve','Diamond','Prestige','Platinum','Gold','Riverwalk','Cabana','Deck','Lounge','Booths','Seating'];
 /* Completed-week Toast tier actuals. Kept separate from per-show FourVenues
    pacing because Toast is the final source of truth for sold tables and sales. */
 var VIP_WEEK_TIER_ACTUALS = {
@@ -4305,9 +4306,9 @@ function renderForecast(venueIdx, view){
   // Enrich all forecast events with fee + bsTarget
   FORECAST_DATA.forEach(function(e){ _fcastEnrich(e, true); });
 
-  var TCOL = {DIAMOND:'#b9f2ff',PRESTIGE:'#c8b4e8',PLATINUM:'#e8e8e8',GOLD:'#ffe082',RIVERWALK:'#b2dfdb',SLIP:'#ffccbc',LOUNGE:'#c8e6c9',BOOTHS:'#fff9c4',SEATING:'#f0f4c3',Other:'#eeeeee'};
-  var TTXT = {DIAMOND:'#0a4a6e',PRESTIGE:'#4a1a7a',PLATINUM:'#2d2d2d',GOLD:'#7d5a00',RIVERWALK:'#00574b',SLIP:'#7d3000',LOUNGE:'#155724',BOOTHS:'#666000',SEATING:'#4a5400',Other:'#555'};
-  var TIER_ORDER_FC = ['DIAMOND','PRESTIGE','PLATINUM','GOLD','RIVERWALK','SLIP','LOUNGE','BOOTHS','SEATING','Other'];
+  var TCOL = {GRAND:'#e5e5e5',PREMIER:'#bfdbfe',SIGNATURE:'#fef08a',SELECT:'#e9d5ff',RESERVE:'#fecaca',DIAMOND:'#b9f2ff',PRESTIGE:'#c8b4e8',PLATINUM:'#e8e8e8',GOLD:'#ffe082',RIVERWALK:'#b2dfdb',SLIP:'#ffccbc',LOUNGE:'#c8e6c9',BOOTHS:'#fff9c4',SEATING:'#f0f4c3',Other:'#eeeeee'};
+  var TTXT = {GRAND:'#18181b',PREMIER:'#1e3a8a',SIGNATURE:'#713f12',SELECT:'#581c87',RESERVE:'#7f1d1d',DIAMOND:'#0a4a6e',PRESTIGE:'#4a1a7a',PLATINUM:'#2d2d2d',GOLD:'#7d5a00',RIVERWALK:'#00574b',SLIP:'#7d3000',LOUNGE:'#155724',BOOTHS:'#666000',SEATING:'#4a5400',Other:'#555'};
+  var TIER_ORDER_FC = ['GRAND','PREMIER','SIGNATURE','SELECT','RESERVE','DIAMOND','PRESTIGE','PLATINUM','GOLD','RIVERWALK','SLIP','LOUNGE','BOOTHS','SEATING','Other'];
   var now = new Date(); now.setHours(0,0,0,0);
   var todayStr = now.toISOString().split('T')[0];
 
