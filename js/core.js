@@ -253,7 +253,7 @@ var FV_3D_TABLES = {
   ],
   'casa-neos-lounge':[
     {name:'GOLD',color:'rgb(251,191,36)',minimum:500,capacity:8,tables:['803','804','805','806']},
-    {name:'PLATINUM',color:'rgb(161,161,170)',minimum:1000,capacity:10,tables:['807','810','901','905','906','909','910']},
+    {name:'PLATINUM',color:'rgb(161,161,170)',minimum:1000,capacity:10,tables:['807','810','811','901','905','906','909','910']},
     {name:'DIAMOND',color:'rgb(14,165,233)',minimum:1500,capacity:10,tables:['808','809','902','903','904','907','908']}
   ],
   /* Lounge remodel from lounge.casa-neos.com (model-new.glb) — active from 2026-09-25.
@@ -261,7 +261,7 @@ var FV_3D_TABLES = {
   'casa-neos-lounge-new':[
     {name:'DIAMOND',color:'rgb(14,165,233)',minimum:3000,capacity:8,tables:['803','804','805','806']},
     {name:'PRESTIGE',color:'rgb(139,195,74)',minimum:2500,capacity:8,tables:['807','808','902']},
-    {name:'PLATINUM',color:'rgb(161,161,170)',minimum:2000,capacity:8,tables:['809','810','903','904','905']},
+    {name:'PLATINUM',color:'rgb(161,161,170)',minimum:2000,capacity:8,tables:['809','810','811','903','904','905']},
     {name:'GOLD',color:'rgb(251,191,36)',minimum:1000,capacity:6,tables:['901','906','907','908']}
   ],
   'casa-neos-beach-club':[
@@ -313,7 +313,8 @@ var FV_3D_HOTSPOTS = {
   'casa-neos-lounge':{
     '803':[9.014,0.92,2.139],'804':[9.014,0.92,0.905],'805':[9.014,0.92,-0.349],
     '806':[9.014,0.92,-1.595],'807':[7.090,0.92,-2.864],'808':[3.946,0.92,-2.864],
-    '809':[-2.151,0.92,-2.864],'810':[-5.270,0.92,-2.864],'901':[5.785,0.92,0.062],
+    '809':[-2.151,0.92,-2.864],'810':[-5.270,0.92,-2.864],'811':[-6.800,0.92,-2.864],
+    '901':[5.785,0.92,0.062],
     '902':[4.686,0.92,0.062],'903':[2.176,0.92,0.886],'904':[-0.336,0.92,0.886],
     '905':[-3.237,0.92,0.886],'906':[-3.237,0.92,2.014],'907':[-0.336,0.92,1.976],
     '908':[2.176,0.92,1.976],'909':[4.686,0.92,2.795],'910':[5.785,0.92,2.795]
@@ -322,7 +323,8 @@ var FV_3D_HOTSPOTS = {
   'casa-neos-lounge-new':{
     '803':[9.014,0.92,2.139],'804':[9.014,0.92,0.319],'805':[9.014,0.92,-1.595],
     '806':[7.090,0.92,-2.864],'807':[3.946,0.92,-2.864],'808':[0.940,0.92,-2.864],
-    '809':[-2.151,0.92,-2.864],'810':[-5.270,0.92,-2.864],'901':[1.804,0.92,1.983],
+    '809':[-2.151,0.92,-2.864],'810':[-5.270,0.92,-2.864],'811':[-6.800,0.92,-2.864],
+    '901':[1.804,0.92,1.983],
     '902':[1.804,0.92,0.854],'903':[-0.715,0.92,0.062],'904':[-1.814,0.92,0.062],
     '905':[-4.324,0.92,0.886],'906':[-4.324,0.92,1.976],'907':[-1.814,0.92,2.795],
     '908':[-0.715,0.92,2.795]
@@ -424,6 +426,18 @@ function ensureDefaultRoiFloorPlans(){
       seeded:true
     };
     added=true;
+  }else{
+    /* Refresh remodel drops when Platinum inventory gains tables (e.g. #811). */
+    Object.keys(ROI_FLOOR_PLANS).forEach(function(uid){
+      var p=ROI_FLOOR_PLANS[uid];
+      if(!p||p.preset!=='casa-neos-lounge-new'||!p.plan||!p.plan.tables) return;
+      var plat=(p.plan.tables||[]).find(function(t){ return String(t.name||'').toUpperCase()==='PLATINUM'; });
+      var ids=plat&&plat.tables?plat.tables.map(String):[];
+      if(ids.indexOf('811')>=0) return;
+      p.plan=_fv3dPlanPayloadFromPreset('casa-neos-lounge-new');
+      p.updatedAt=new Date().toISOString();
+      added=true;
+    });
   }
   /* First booking date on beachclub.casa-neos.com that loads new.glb (Sunset Rituals waterfront). */
   if(!hasPreset('Casa Neos Beach Club','casa-neos-beach-club-new')){
