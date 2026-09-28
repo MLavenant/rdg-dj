@@ -434,11 +434,11 @@ function parseLive(wb, fileName) {
     console.log('  ', v, 'weeks', keys.length, 'last W' + last, '=', Math.round(by[String(last)] || 0));
   });
 
-  if (!(sales.week >= 36)) {
-    console.warn('WARNING: expected Sales week ≥ 36 for this update, got', sales.week);
+  if (!(sales.week >= 38)) {
+    console.warn('WARNING: expected Sales week ≥ 38 for this update, got', sales.week);
   }
   const lastLive = live.weeks[live.weeks.length - 1];
-  if (lastLive < 36) {
+  if (lastLive < 38) {
     console.warn('WARNING: Live Ent last week looks early:', lastLive);
   }
 
