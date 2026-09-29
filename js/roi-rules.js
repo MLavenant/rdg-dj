@@ -270,7 +270,7 @@ function _roiRulesTemplateOptions(selected){
   else if(typeof ensureCnbcSummerRoofRules==='function') ensureCnbcSummerRoofRules();
   var opts=[
     {v:'Casa Neos Beach Club', l:'Casa Neos Beach Club (regular)'},
-    {v:CNBC_SUMMER_ROOF_KEY, l:'CNBC Sunset Rituals Rooftop (Aug–Sep)'},
+    {v:CNBC_SUMMER_ROOF_KEY, l:'CNBC Sunset Rituals Rooftop (Aug 1–Oct 4)'},
     {v:'Casa Neos Lounge', l:'Casa Neos Lounge (classic)'},
     {v:CNL_REMODEL_KEY, l:'CN Lounge Remodel (Sep 25+ Prestige)'},
     {v:'MILA Lounge', l:'MILA Lounge'},
@@ -685,7 +685,7 @@ function renderRoiSpecialForm(uid){
   });
   h+='</select></div>';
   h+='<div class="fld"><label>Floor plan</label><select id="roiSpFloor" onchange="roiSpFloorOrVenueChanged()">';
-  [{v:'auto',l:'Auto (date / floor-plan drops)'},{v:'summer',l:'Sunset rooftop — 20 tables (BC)'},{v:'casa-neos-beach-club-new',l:'CNBC waterfront + slips (Oct 2026+)'},{v:'casa-neos-beach-club-basel',l:'Casa Neos BC Basel (Art Basel Dec 4–6)'},{v:'casa-neos-lounge-new',l:'CN Lounge remodel (Sep 2026+)'},{v:'casa-neos-lounge',l:'CN Lounge classic'},{v:'regular',l:'Regular / classic venue plan'}].forEach(function(o){
+  [{v:'auto',l:'Auto (date / floor-plan drops)'},{v:'summer',l:'Sunset rooftop — 20 tables (BC, Aug 1–Oct 4)'},{v:'casa-neos-beach-club-new',l:'CNBC waterfront + slips (Oct 5+)'},{v:'casa-neos-beach-club-basel',l:'Casa Neos BC Basel (Art Basel Dec 4–6)'},{v:'casa-neos-lounge-new',l:'CN Lounge remodel (Sep 2026+)'},{v:'casa-neos-lounge',l:'CN Lounge classic'},{v:'regular',l:'Regular / classic venue plan'}].forEach(function(o){
     h+='<option value="'+o.v+'"'+(ev.floorPlan===o.v?' selected':'')+'>'+o.l+'</option>';
   });
   h+='</select></div>';
@@ -1364,9 +1364,9 @@ function _roiFpGuessKnownPreset(venue, url, start){
   }
   if(/beachclub\.casa-neos|beach.?club|music\.casa-neos/i.test(u)||/Beach Club/i.test(venue)){
     if(start&&start>='2026-12-04'&&start<='2026-12-06') return 'casa-neos-beach-club-basel';
-    if(start&&start>='2026-10-03') return 'casa-neos-beach-club-new';
-    if(start&&start>='2026-08-01'&&start<='2026-09-30') return 'casa-neos-beach-club-summer';
-    if(!start||start>='2026-10-03') return 'casa-neos-beach-club-new';
+    if(start&&start>='2026-10-05') return 'casa-neos-beach-club-new';
+    if(start&&start>='2026-08-01'&&start<='2026-10-04') return 'casa-neos-beach-club-summer';
+    if(!start||start>='2026-10-05') return 'casa-neos-beach-club-new';
   }
   return null;
 }

@@ -2491,7 +2491,7 @@ function renderVenueRulesPanel(){
   venues.forEach(function(v){
     var label=v;
     var tip=v;
-    if(v===CNBC_SUMMER_ROOF_KEY){ label='CNBC Summer Roof'; tip='Sunset Rituals · Aug–Sep only'; }
+    if(v===CNBC_SUMMER_ROOF_KEY){ label='CNBC Summer Roof'; tip='Sunset Rituals · Aug 1–Oct 4 only'; }
     else if(typeof CNL_REMODEL_KEY!=='undefined' && v===CNL_REMODEL_KEY){ label='CN Lounge Remodel'; tip='After Dark remodel · from Sep 25 (Prestige tier)'; }
     else if(v==='Casa Neos Lounge'){ label='CN Lounge Classic'; tip='Pre–Sep 25 lounge (Diamond / Platinium / Gold)'; }
     tabsHtml+='<button class="vr-tab'+(v===_vrEditVenue?' on':'')+'" data-vv="'+v+'" title="'+tip+'">'+label+'</button>';

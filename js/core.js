@@ -206,7 +206,7 @@ function setView(v) {
 
 /* Standalone 3D floor plan — raw venue GLB via Google <model-viewer>
    (no FourVenues booking website / event carousel).
-   Casa Neos Beach Club: Aug–Sep uses rooftop.glb (summer rooftop experience);
+   Casa Neos Beach Club: Aug 1–Oct 4 uses rooftop.glb (summer rooftop experience);
    otherwise model2.glb (regular beach club).
    Casa Neos Lounge: from 2026-09-25 uses model-new.glb (After Dark remodel).
    Dated drops in ROI_FLOOR_PLANS (Venue ROI Rules → 3D Floor plans) override built-ins. */
@@ -220,14 +220,14 @@ var FV_3D_MODELS = [
   {key:'casa-neos-beach-club', venue:'Casa Neos Beach Club', label:'Casa Neos Beach Club', orbit:'45deg 60deg 110%', url:'https://fvwebs-storage.fourvenues.com/casa-neos/model2.glb?v=1', summerOrbit:'55deg 65deg 125%', fallOrbit:'50deg 62deg 115%', baselOrbit:'48deg 62deg 130%'}
 ];
 /* Named plan presets selectable from Venue ROI Rules → 3D Floor plans.
-   Starts = first date that date shows the plan on the booking site (e.g. BOOK YOUR TABLE on Oct 3). */
+   Starts = the first operational date for that plan (waterfront starts after rooftop methodology ends). */
 var FV_3D_PLAN_PRESETS = {
   'mila-lounge':{label:'MILA Lounge (default)', modelKey:'mila-lounge', tableKey:'mila-lounge'},
   'casa-neos-lounge':{label:'CN Lounge — classic', modelKey:'casa-neos-lounge', tableKey:'casa-neos-lounge'},
   'casa-neos-lounge-new':{label:'CN Lounge — remodel (Sep 2026+)', modelKey:'casa-neos-lounge', tableKey:'casa-neos-lounge-new', modelUrl:FV_CNL_NEW_GLB, badge:'After Dark remodel', badgeColor:'#7c3aed'},
   'casa-neos-beach-club':{label:'CNBC — regular beach club', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club'},
   'casa-neos-beach-club-summer':{label:'CNBC — Sunset Rituals rooftop', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-summer', modelUrl:FV_CNBC_SUMMER_GLB, badge:'Sunset Rituals · Summer rooftop', badgeColor:'#0f766e'},
-  'casa-neos-beach-club-new':{label:'CNBC — Sunset Rituals waterfront (Oct 2026+)', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-new', modelUrl:FV_CNBC_NEW_GLB, badge:'Sunset Rituals · Waterfront + slips', badgeColor:'#c2410c', sourceUrl:'https://beachclub.casa-neos.com/'},
+  'casa-neos-beach-club-new':{label:'CNBC — Sunset Rituals waterfront (Oct 5, 2026+)', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-new', modelUrl:FV_CNBC_NEW_GLB, badge:'Sunset Rituals · Waterfront + slips', badgeColor:'#c2410c', sourceUrl:'https://beachclub.casa-neos.com/'},
   'casa-neos-beach-club-basel':{label:'CNBC — Casa Neos BC Basel (Art Basel Dec 4–6)', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-basel', modelUrl:FV_CNBC_BASEL_GLB, badge:'Art Basel Weekend · BC Basel', badgeColor:'#b45309', sourceUrl:'https://music.casa-neos.com/?id=hrol9f22635j7agg0c1nlgc3chv7kng6'}
 };
 /* Fixed booking-site URLs. Refresh scrapes these (same link every time → BOOK YOUR TABLE → 3D plan). */
@@ -271,7 +271,7 @@ var FV_3D_TABLES = {
     {name:'PRESTIGE',color:'rgb(139,195,74)',minimum:2500,capacity:10,tables:['31','41']},
     {name:'DIAMOND',color:'rgb(3,169,244)',minimum:3000,capacity:10,tables:['34','51','52']}
   ],
-  /* Sunset Rituals rooftop (Aug–Sep) — New Rooftop Beach Club Floor Plan:
+  /* Sunset Rituals rooftop (Aug 1–Oct 4) — New Rooftop Beach Club Floor Plan:
      Diamond 5 · Platinum 6 · Prestige 5 · Gold 4 (no Riverwalk). */
   'casa-neos-beach-club-summer':[
     {name:'DIAMOND',color:'rgb(3,169,244)',minimum:3000,capacity:10,tables:['61','63','81','83','73']},
@@ -279,7 +279,7 @@ var FV_3D_TABLES = {
     {name:'PRESTIGE',color:'rgb(139,195,74)',minimum:2000,capacity:10,tables:['64','65','84','85','74']},
     {name:'GOLD',color:'rgb(251,192,45)',minimum:1000,capacity:10,tables:['91','92','93','94']}
   ],
-  /* Sunset Rituals waterfront from beachclub.casa-neos.com (new.glb) — first live date Oct 3, 2026.
+  /* Sunset Rituals waterfront from beachclub.casa-neos.com (new.glb) — operational from Oct 5, 2026.
      Diamond×3 · Prestige×4 · Platinum×10 · Gold×6 · Riverwalk×5 · Slip×3. */
   'casa-neos-beach-club-new':[
     {name:'DIAMOND',color:'rgb(3,169,244)',minimum:6000,capacity:10,tables:['34','51','52']},
@@ -439,13 +439,13 @@ function ensureDefaultRoiFloorPlans(){
       added=true;
     });
   }
-  /* First booking date on beachclub.casa-neos.com that loads new.glb (Sunset Rituals waterfront). */
+  /* Rooftop methodology runs through Oct 4; waterfront plan starts Oct 5. */
   if(!hasPreset('Casa Neos Beach Club','casa-neos-beach-club-new')){
-    ROI_FLOOR_PLANS.fp_cnbc_new_20261003={
-      _uid:'fp_cnbc_new_20261003',
+    ROI_FLOOR_PLANS.fp_cnbc_new_20261005={
+      _uid:'fp_cnbc_new_20261005',
       label:'CNBC Sunset Rituals waterfront',
       venue:'Casa Neos Beach Club',
-      start:'2026-10-03',
+      start:'2026-10-05',
       end:'',
       preset:'casa-neos-beach-club-new',
       sourceUrl:'https://beachclub.casa-neos.com/',
@@ -456,6 +456,16 @@ function ensureDefaultRoiFloorPlans(){
       seeded:true
     };
     added=true;
+  }else{
+    /* Correct older Oct 3 seeds/drops so rooftop remains active through Sunday Oct 4. */
+    Object.keys(ROI_FLOOR_PLANS).forEach(function(uid){
+      var p=ROI_FLOOR_PLANS[uid];
+      if(!p||p.venue!=='Casa Neos Beach Club'||p.preset!=='casa-neos-beach-club-new') return;
+      if(!p.start||p.start>='2026-10-05') return;
+      p.start='2026-10-05';
+      p.updatedAt=new Date().toISOString();
+      added=true;
+    });
   }
   /* Art Basel Weekend — Casa Neos BC Basel (Fri Dec 4 – Sun Dec 6, 2026). neos-big.glb + Grand/Premier/Signature/Select/Reserve. */
   if(!hasPreset('Casa Neos Beach Club','casa-neos-beach-club-basel')){
@@ -632,13 +642,10 @@ function fv3dResolvePlan(modelKey, dateStr){
   return {modelKey:modelKey, tableKey:modelKey, modelUrl:m?m.url:null, label:null, badge:null, source:'default'};
 }
 
-/* CNBC summer rooftop floor plan: Aug 1 – Sep 30 (inclusive). Outside = regular beach club GLB. */
+/* CNBC rooftop floor plan: Aug 1 – Oct 4 (inclusive). Outside = regular beach club GLB. */
 function isCnbcSummerFloor(dateStr){
   var d=dateStr||_fv3dDate||((typeof miamiToday==='function')?miamiToday():'');
-  var parts=String(d||'').split('-');
-  if(parts.length<2) return false;
-  var m=+parts[1];
-  return m>=8 && m<=9;
+  return !!(d && d>='2026-08-01' && d<='2026-10-04');
 }
 /* CN Lounge remodel: from 2026-09-25 inclusive (after the 24th). */
 function isCnlNewFloor(dateStr){
@@ -660,7 +667,7 @@ function fv3dPlanBadgeInfo(modelKey, dateStr){
   if(plan.badge) return {text:plan.badge, color:plan.badgeColor||'#334155', show:true};
   if(modelKey==='casa-neos-beach-club'){
     var summer=isCnbcSummerFloor(dateStr);
-    return {text:summer?'Sunset Rituals · Summer rooftop (Aug–Sep)':'Regular beach club plan', color:summer?'#0f766e':'#334155', show:true};
+    return {text:summer?'Sunset Rituals · Rooftop (Aug 1–Oct 4)':'Regular beach club plan', color:summer?'#0f766e':'#334155', show:true};
   }
   if(modelKey==='casa-neos-lounge'){
     var neu=isCnlNewFloor(dateStr);
@@ -689,7 +696,7 @@ function setFv3dDate(dateStr){
     badge.style.background=info.color||'#334155';
   }
 }
-/* VIP / fee-guidance floor plan for a venue on a given date (CNBC swaps to rooftop Aug–Sep;
+/* VIP / fee-guidance floor plan for a venue on a given date (CNBC swaps to rooftop Aug 1–Oct 4;
    CN Lounge swaps to remodel from 2026-09-25; ROI floor-plan drops override both). */
 function getVipFloorPlan(venue, dateStr){
   var key=fv3dKeyForVenue(venue);
@@ -1476,7 +1483,7 @@ var REV_CTX={bs:9604301, label:'2026 CN BC'};
                                                                    */
 var VENUE_ROI_RULES = {"Casa Neos Beach Club":{"days":["Saturday","Sunday"],"tableCats":["Diamond","Platinum","Prestige","Gold","Riverwalk"],"tiers":[{"fee":5000,"High":{"Saturday":{"roi":7.5,"sales":37500,"tables":{"Diamond":3000,"Platinum":1500,"Prestige":2000,"Gold":1000,"Riverwalk":500}},"Sunday":{"roi":10.0,"sales":50000,"tables":{"Diamond":3000,"Platinum":2000,"Prestige":2500,"Gold":1500,"Riverwalk":1000}}},"Low":{"Saturday":{"roi":7.5,"sales":37500,"tables":{"Diamond":3000,"Platinum":1500,"Prestige":2000,"Gold":1000,"Riverwalk":500}},"Sunday":{"roi":10.0,"sales":50000,"tables":{"Diamond":3000,"Platinum":2000,"Prestige":2500,"Gold":1500,"Riverwalk":1000}}}},{"fee":10000,"High":{"Saturday":{"roi":6.5,"sales":65000,"tables":{"Diamond":4000,"Platinum":3000,"Prestige":3500,"Gold":1500,"Riverwalk":500}},"Sunday":{"roi":8.5,"sales":85000,"tables":{"Diamond":5000,"Platinum":3500,"Prestige":4000,"Gold":2000,"Riverwalk":1500}}},"Low":{"Saturday":{"roi":5.0,"sales":50000,"tables":{"Diamond":3500,"Platinum":2000,"Prestige":2500,"Gold":1500,"Riverwalk":500}},"Sunday":{"roi":6.0,"sales":60000,"tables":{"Diamond":4000,"Platinum":2500,"Prestige":3000,"Gold":1500,"Riverwalk":500}}}},{"fee":15000,"High":{"Saturday":{"roi":5.5,"sales":82500,"tables":{"Diamond":5500,"Platinum":3000,"Prestige":4000,"Gold":2500,"Riverwalk":1500}},"Sunday":{"roi":7.0,"sales":105000,"tables":{"Diamond":6000,"Platinum":4500,"Prestige":5000,"Gold":3000,"Riverwalk":1500}}},"Low":{"Saturday":{"roi":3.5,"sales":52500,"tables":{"Diamond":3500,"Platinum":2000,"Prestige":2500,"Gold":1500,"Riverwalk":500}},"Sunday":{"roi":4.5,"sales":67500,"tables":{"Diamond":4000,"Platinum":3000,"Prestige":3500,"Gold":2000,"Riverwalk":500}}}},{"fee":25000,"High":{"Saturday":{"roi":3.7,"sales":92500,"tables":{"Diamond":5500,"Platinum":3500,"Prestige":4500,"Gold":3000,"Riverwalk":2000}},"Sunday":{"roi":5.0,"sales":125000,"tables":{"Diamond":7000,"Platinum":5000,"Prestige":5500,"Gold":4000,"Riverwalk":2500}}},"Low":{"Saturday":{"roi":3.0,"sales":75000,"tables":{"Diamond":4500,"Platinum":3000,"Prestige":3500,"Gold":2500,"Riverwalk":1000}},"Sunday":{"roi":4.0,"sales":100000,"tables":{"Diamond":6000,"Platinum":4000,"Prestige":5500,"Gold":3500,"Riverwalk":1000}}}},{"fee":35000,"High":{"Saturday":{"roi":3.0,"sales":105000,"tables":{"Diamond":6500,"Platinum":4000,"Prestige":5500,"Gold":3000,"Riverwalk":2000}},"Sunday":{"roi":4.0,"sales":140000,"tables":{"Diamond":8000,"Platinum":5500,"Prestige":6000,"Gold":4500,"Riverwalk":3000}}},"Low":{"Saturday":{"roi":2.5,"sales":87500,"tables":{"Diamond":5000,"Platinum":3500,"Prestige":4000,"Gold":3000,"Riverwalk":2000}},"Sunday":{"roi":3.2,"sales":112000,"tables":{"Diamond":6500,"Platinum":4500,"Prestige":5500,"Gold":3000,"Riverwalk":2000}}}},{"fee":45000,"High":{"Saturday":{"roi":2.5,"sales":112500,"tables":{"Diamond":6500,"Platinum":4500,"Prestige":5500,"Gold":3000,"Riverwalk":2000}},"Sunday":{"roi":3.5,"sales":157500,"tables":{"Diamond":8500,"Platinum":6500,"Prestige":7000,"Gold":4500,"Riverwalk":3000}}},"Low":{"Saturday":{"roi":2.2,"sales":99000,"tables":{"Diamond":5500,"Platinum":4000,"Prestige":4500,"Gold":3000,"Riverwalk":2000}},"Sunday":{"roi":3.0,"sales":135000,"tables":{"Diamond":8000,"Platinum":5500,"Prestige":6500,"Gold":4000,"Riverwalk":2000}}}},{"fee":55000,"High":{"Saturday":{"roi":2.2,"sales":121000,"tables":{"Diamond":7000,"Platinum":5000,"Prestige":6000,"Gold":3000,"Riverwalk":2000}},"Sunday":{"roi":3.0,"sales":165000,"tables":{"Diamond":8500,"Platinum":7000,"Prestige":7500,"Gold":5000,"Riverwalk":3000}}},"Low":{"Saturday":{"roi":2.0,"sales":110000,"tables":{"Diamond":7000,"Platinum":4500,"Prestige":5000,"Gold":3000,"Riverwalk":2000}},"Sunday":{"roi":2.6,"sales":143000,"tables":{"Diamond":8500,"Platinum":6000,"Prestige":6500,"Gold":4000,"Riverwalk":2500}}}},{"fee":65000,"High":{"Saturday":{"roi":2.0,"sales":130000,"tables":{"Diamond":7500,"Platinum":5500,"Prestige":6000,"Gold":3500,"Riverwalk":2000}},"Sunday":{"roi":2.8,"sales":182000,"tables":{"Diamond":9000,"Platinum":7000,"Prestige":7500,"Gold":6500,"Riverwalk":4500}}},"Low":{"Saturday":{"roi":2.0,"sales":130000,"tables":{"Diamond":7500,"Platinum":5500,"Prestige":6000,"Gold":3500,"Riverwalk":2000}},"Sunday":{"roi":2.4,"sales":156000,"tables":{"Diamond":8500,"Platinum":6500,"Prestige":7000,"Gold":5000,"Riverwalk":2500}}}},{"fee":75000,"High":{"Saturday":{"roi":2.0,"sales":150000,"tables":{"Diamond":8500,"Platinum":6000,"Prestige":6500,"Gold":4500,"Riverwalk":3000}},"Sunday":{"roi":2.5,"sales":187500,"tables":{"Diamond":9500,"Platinum":7500,"Prestige":8500,"Gold":6000,"Riverwalk":4000}}},"Low":{"Saturday":{"roi":2.0,"sales":150000,"tables":{"Diamond":8500,"Platinum":6000,"Prestige":6500,"Gold":4500,"Riverwalk":3000}},"Sunday":{"roi":2.2,"sales":165000,"tables":{"Diamond":9000,"Platinum":6500,"Prestige":7500,"Gold":5000,"Riverwalk":3500}}}},{"fee":85000,"High":{"Saturday":{"roi":2.0,"sales":170000,"tables":{"Diamond":10000,"Platinum":7000,"Prestige":8000,"Gold":4500,"Riverwalk":3000}}},"Low":{"Saturday":{"roi":2.0,"sales":170000,"tables":{"Diamond":10000,"Platinum":7000,"Prestige":8000,"Gold":5000,"Riverwalk":3000}},"Sunday":{"roi":2.0,"sales":170000,"tables":{"Diamond":10000,"Platinum":7000,"Prestige":8000,"Gold":5000,"Riverwalk":3000}}}}],"highSeasonMonths":[11,12,1,2,3,4]},"Casa Neos Lounge":{"days":["Thursday","Friday","Saturday","Sunday"],"tableCats":["Diamond","Platinium","Gold"],"tiers":[{"fee":5000,"High":{"Thursday":{"roi":5.5,"sales":27500,"tables":{"Diamond":2000,"Platinium":1000,"Gold":500}},"Friday":{"roi":9.0,"sales":45000,"tables":{"Diamond":3000,"Platinium":2000,"Gold":1500}},"Saturday":{"roi":9.0,"sales":45000,"tables":{"Diamond":3000,"Platinium":2000,"Gold":1500}},"Sunday":{"roi":4.0,"sales":20000,"tables":{"Diamond":1500,"Platinium":1000,"Gold":500}}},"Low":{"Thursday":{"roi":5.0,"sales":25000,"tables":{"Diamond":1500,"Platinium":1000,"Gold":750}},"Friday":{"roi":9.0,"sales":45000,"tables":{"Diamond":3000,"Platinium":2000,"Gold":1000}},"Saturday":{"roi":9.0,"sales":45000,"tables":{"Diamond":3000,"Platinium":2000,"Gold":1000}},"Sunday":{"roi":4.0,"sales":20000,"tables":{"Diamond":1500,"Platinium":1000,"Gold":500}}}},{"fee":15000,"High":{"Thursday":{"roi":2.5,"sales":37500,"tables":{"Diamond":2500,"Platinium":1500,"Gold":1000}},"Friday":{"roi":4.0,"sales":60000,"tables":{"Diamond":4000,"Platinium":2500,"Gold":2000}},"Saturday":{"roi":4.0,"sales":60000,"tables":{"Diamond":4000,"Platinium":2500,"Gold":2000}},"Sunday":{"roi":2.5,"sales":37500,"tables":{"Diamond":2500,"Platinium":1500,"Gold":1000}}},"Low":{"Thursday":{"roi":2.2,"sales":33000,"tables":{"Diamond":2000,"Platinium":1500,"Gold":1000}},"Friday":{"roi":3.5,"sales":52500,"tables":{"Diamond":4000,"Platinium":2000,"Gold":1000}},"Saturday":{"roi":3.5,"sales":52500,"tables":{"Diamond":4000,"Platinium":2000,"Gold":1000}},"Sunday":{"roi":2.2,"sales":33000,"tables":{"Diamond":2000,"Platinium":1500,"Gold":1000}}}},{"fee":25000,"High":{"Thursday":{"roi":2.5,"sales":62500,"tables":{"Diamond":4000,"Platinium":2500,"Gold":2000}},"Friday":{"roi":3.5,"sales":87500,"tables":{"Diamond":5000,"Platinium":4000,"Gold":3500}},"Saturday":{"roi":3.5,"sales":87500,"tables":{"Diamond":5000,"Platinium":4000,"Gold":3500}},"Sunday":{"roi":2.0,"sales":50000,"tables":{"Diamond":3000,"Platinium":2500,"Gold":1500}}},"Low":{"Thursday":{"roi":2.3,"sales":57500,"tables":{"Diamond":3500,"Platinium":2500,"Gold":2000}},"Friday":{"roi":3.3,"sales":82500,"tables":{"Diamond":5000,"Platinium":4000,"Gold":2500}},"Saturday":{"roi":3.3,"sales":82500,"tables":{"Diamond":5000,"Platinium":4000,"Gold":2500}},"Sunday":{"roi":2.0,"sales":50000,"tables":{"Diamond":3500,"Platinium":2000,"Gold":1500}}}},{"fee":35000,"High":{"Thursday":{"roi":2.3,"sales":80500,"tables":{"Diamond":5000,"Platinium":3500,"Gold":3000}},"Friday":{"roi":3.0,"sales":105000,"tables":{"Diamond":6000,"Platinium":5000,"Gold":4000}},"Saturday":{"roi":3.0,"sales":105000,"tables":{"Diamond":6000,"Platinium":5000,"Gold":4000}},"Sunday":{"roi":2.0,"sales":70000,"tables":{"Diamond":4500,"Platinium":3000,"Gold":2500}}},"Low":{"Thursday":{"roi":2.1,"sales":73500,"tables":{"Diamond":4500,"Platinium":3500,"Gold":2000}},"Friday":{"roi":2.4,"sales":84000,"tables":{"Diamond":5000,"Platinium":4000,"Gold":3000}},"Saturday":{"roi":2.4,"sales":84000,"tables":{"Diamond":5000,"Platinium":4000,"Gold":3000}},"Sunday":{"roi":2.0,"sales":70000,"tables":{"Diamond":4000,"Platinium":3500,"Gold":2500}}}},{"fee":45000,"High":{"Thursday":{"roi":2.0,"sales":90000,"tables":{"Diamond":5000,"Platinium":4500,"Gold":3500}},"Friday":{"roi":2.4,"sales":108000,"tables":{"Diamond":6000,"Platinium":5500,"Gold":4000}},"Saturday":{"roi":2.4,"sales":108000,"tables":{"Diamond":6000,"Platinium":5500,"Gold":4000}},"Sunday":{"roi":2.0,"sales":90000,"tables":{"Diamond":5000,"Platinium":4500,"Gold":3500}}},"Low":{"Thursday":{"roi":2.0,"sales":90000,"tables":{"Diamond":5000,"Platinium":4500,"Gold":3500}},"Friday":{"roi":2.0,"sales":90000,"tables":{"Diamond":5000,"Platinium":4500,"Gold":3500}},"Saturday":{"roi":2.0,"sales":90000,"tables":{"Diamond":5000,"Platinium":4500,"Gold":3500}},"Sunday":{"roi":2.0,"sales":90000,"tables":{"Diamond":5000,"Platinium":4500,"Gold":3500}}}},{"fee":55000,"High":{"Thursday":{"roi":2.0,"sales":110000,"tables":{"Diamond":7000,"Platinium":5000,"Gold":3500}},"Friday":{"roi":2.0,"sales":110000,"tables":{"Diamond":7000,"Platinium":5000,"Gold":3500}},"Saturday":{"roi":2.0,"sales":110000,"tables":{"Diamond":7000,"Platinium":5000,"Gold":3500}},"Sunday":{"roi":2.0,"sales":110000,"tables":{"Diamond":7000,"Platinium":5000,"Gold":3500}}},"Low":{"Thursday":{"roi":2.0,"sales":110000,"tables":{"Diamond":6500,"Platinium":5000,"Gold":4500}},"Friday":{"roi":2.0,"sales":110000,"tables":{"Diamond":6500,"Platinium":5000,"Gold":4500}},"Saturday":{"roi":2.0,"sales":110000,"tables":{"Diamond":6500,"Platinium":5000,"Gold":4500}},"Sunday":{"roi":2.0,"sales":110000,"tables":{"Diamond":6500,"Platinium":5000,"Gold":4500}}}}],"highSeasonMonths":[11,12,1,2,3,4]},"MILA Lounge":{"days":["Wednesday","Thursday","Friday","Saturday"],"tableCats":["Diamond","Prestige","Gold"],"tiers":[{"fee":5000,"High":{"Wednesday":{"roi":3.0,"sales":15000,"tables":{"Diamond":1500,"Prestige":500,"Gold":500}},"Thursday":{"roi":5.0,"sales":25000,"tables":{"Diamond":2000,"Prestige":1500,"Gold":1000}},"Friday":{"roi":9.0,"sales":45000,"tables":{"Diamond":3500,"Prestige":3000,"Gold":2000}},"Saturday":{"roi":9.0,"sales":45000,"tables":{"Diamond":3500,"Prestige":3000,"Gold":2000}}},"Low":{"Wednesday":{"roi":3.0,"sales":15000,"tables":{"Diamond":1500,"Prestige":500,"Gold":500}},"Thursday":{"roi":5.0,"sales":25000,"tables":{"Diamond":2000,"Prestige":1500,"Gold":1000}},"Friday":{"roi":8.0,"sales":40000,"tables":{"Diamond":3000,"Prestige":2500,"Gold":2000}},"Saturday":{"roi":8.0,"sales":40000,"tables":{"Diamond":3000,"Prestige":2500,"Gold":2000}}}},{"fee":15000,"High":{"Wednesday":{"roi":2.0,"sales":30000,"tables":{"Diamond":3000,"Prestige":2000,"Gold":750}},"Thursday":{"roi":2.5,"sales":37500,"tables":{"Diamond":3000,"Prestige":2500,"Gold":1500}},"Friday":{"roi":3.5,"sales":52500,"tables":{"Diamond":4000,"Prestige":3000,"Gold":2500}},"Saturday":{"roi":3.5,"sales":52500,"tables":{"Diamond":4000,"Prestige":3000,"Gold":2500}}},"Low":{"Wednesday":{"roi":2.0,"sales":30000,"tables":{"Diamond":3000,"Prestige":2000,"Gold":750}},"Thursday":{"roi":2.0,"sales":30000,"tables":{"Diamond":3000,"Prestige":2000,"Gold":750}},"Friday":{"roi":3.0,"sales":45000,"tables":{"Diamond":3500,"Prestige":3000,"Gold":2000}},"Saturday":{"roi":3.0,"sales":45000,"tables":{"Diamond":3500,"Prestige":3000,"Gold":2000}}}},{"fee":25000,"High":{"Wednesday":{"roi":2.0,"sales":50000,"tables":{"Diamond":4000,"Prestige":3000,"Gold":2500}},"Thursday":{"roi":2.0,"sales":50000,"tables":{"Diamond":4000,"Prestige":3000,"Gold":2500}},"Friday":{"roi":2.7,"sales":67500,"tables":{"Diamond":5000,"Prestige":4000,"Gold":3500}},"Saturday":{"roi":2.7,"sales":67500,"tables":{"Diamond":5000,"Prestige":4000,"Gold":3500}}},"Low":{"Wednesday":{"roi":2.0,"sales":50000,"tables":{"Diamond":4000,"Prestige":3000,"Gold":2500}},"Thursday":{"roi":2.0,"sales":50000,"tables":{"Diamond":4000,"Prestige":3000,"Gold":2500}},"Friday":{"roi":2.2,"sales":55000,"tables":{"Diamond":4500,"Prestige":3000,"Gold":2500}},"Saturday":{"roi":2.2,"sales":55000,"tables":{"Diamond":4500,"Prestige":3000,"Gold":2500}}}},{"fee":35000,"High":{"Wednesday":{"roi":2.0,"sales":70000,"tables":{"Diamond":5000,"Prestige":4500,"Gold":3500}},"Thursday":{"roi":2.0,"sales":80000,"tables":{"Diamond":6000,"Prestige":4500,"Gold":4000}},"Friday":{"roi":2.5,"sales":87500,"tables":{"Diamond":6500,"Prestige":5000,"Gold":4500}},"Saturday":{"roi":2.5,"sales":87500,"tables":{"Diamond":6500,"Prestige":5000,"Gold":4500}}},"Low":{"Wednesday":{"roi":2.0,"sales":70000,"tables":{"Diamond":5500,"Prestige":4000,"Gold":3500}},"Thursday":{"roi":2.0,"sales":70000,"tables":{"Diamond":5500,"Prestige":4000,"Gold":3500}},"Friday":{"roi":2.2,"sales":77000,"tables":{"Diamond":6000,"Prestige":5000,"Gold":3500}},"Saturday":{"roi":2.2,"sales":77000,"tables":{"Diamond":6000,"Prestige":5000,"Gold":3500}}}}],"highSeasonMonths":[11,12,1,2,3,4]}};
 
-/* Sunset Rituals Rooftop Edition — Casa Neos Beach Club Aug 1–Sep 30 only.
+/* Sunset Rituals Rooftop Edition — Casa Neos Beach Club Aug 1–Oct 4 only.
    Visible under Venue ROI Rules; applied automatically for Beach Club dates in that window. */
 var CNBC_SUMMER_ROOF_KEY = 'Casa Neos Beach Club Summer Roof';
 var CNBC_SUMMER_ROOF_DEFAULT = (function(){
@@ -1575,8 +1582,8 @@ function roiFloorPlanOptionsForVenue(venue){
   if(v==='Casa Neos Beach Club'||v===CNBC_SUMMER_ROOF_KEY){
     opts=[
       {v:'casa-neos-beach-club', l:'Classic beach club (Riverwalk)'},
-      {v:'casa-neos-beach-club-summer', l:'Sunset Rituals rooftop (Aug–Sep)'},
-      {v:'casa-neos-beach-club-new', l:'Sunset Rituals waterfront + slips (Oct 2026+)'},
+      {v:'casa-neos-beach-club-summer', l:'Sunset Rituals rooftop (Aug 1–Oct 4)'},
+      {v:'casa-neos-beach-club-new', l:'Sunset Rituals waterfront + slips (Oct 5+)'},
       {v:'casa-neos-beach-club-basel', l:'Casa Neos BC Basel (Art Basel Dec 4–6)'}
     ];
   }else if(v==='Casa Neos Lounge'||v===CNL_REMODEL_KEY){
@@ -1756,7 +1763,7 @@ function nearestTier(venueOrRules, fee){
    ROI Target = if fee matches the tier's own anchor fee exactly, use the table's stored ROI;
                 otherwise recompute as bsTarget / actualFee (so a cheaper DJ shows a higher req'd ROI,
                 a pricier one a lower ROI, while still owing the same $ target).
-   Casa Neos Beach Club Aug–Sep uses Sunset Rituals Summer Roof rules (not before/after). */
+   Casa Neos Beach Club Aug 1–Oct 4 uses Sunset Rituals Summer Roof rules (not before/after). */
 function venueRoiLookup(venue, dateStr, fee){
   var sp=roiSpecialEventFor(venue, dateStr);
   var rulesVenue, rules;
