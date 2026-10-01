@@ -272,7 +272,8 @@ function _roiRulesTemplateOptions(selected){
     {v:'Casa Neos Beach Club', l:'Casa Neos Beach Club (regular)'},
     {v:CNBC_SUMMER_ROOF_KEY, l:'CNBC Sunset Rituals Rooftop (Aug 1–Oct 4)'},
     {v:'Casa Neos Lounge', l:'Casa Neos Lounge (classic)'},
-    {v:CNL_REMODEL_KEY, l:'CN Lounge Remodel (Sep 25+ Prestige)'},
+    {v:CNL_REMODEL_KEY, l:'CN Lounge Remodel (Sep 25–30)'},
+    {v:CNL_OCT_KEY, l:'CN Lounge Oct 1 floor'},
     {v:'MILA Lounge', l:'MILA Lounge'},
     {v:'__custom__', l:'Custom (clone & edit tiers below)'}
   ];
@@ -311,6 +312,7 @@ function renderRoiSpecialSection(){
       var rulesLbl=ev.forceSeason?('Season: '+ev.forceSeason):(ev.rules&&ev.rules.tiers?'Custom':(ev.rulesVenue||'Auto'));
       if(rulesLbl===CNBC_SUMMER_ROOF_KEY) rulesLbl='Sunset Rituals';
       if(typeof CNL_REMODEL_KEY!=='undefined' && rulesLbl===CNL_REMODEL_KEY) rulesLbl='CNL Remodel';
+      if(typeof CNL_OCT_KEY!=='undefined' && rulesLbl===CNL_OCT_KEY) rulesLbl='CNL Oct 1';
       var days=(ev.days&&ev.days.length)?ev.days.map(function(d){return d.slice(0,3);}).join(', '):'All in range';
       if(ev.extraDays&&ev.extraDays.length){
         days+=(days?' + ':'')+ev.extraDays.map(function(d){return d.slice(0,3);}).join(', ')+' (extra)';
@@ -318,9 +320,10 @@ function renderRoiSpecialSection(){
       var fp=ev.floorPlan==='summer'?'Sunset 20'
         :(ev.floorPlan==='casa-neos-beach-club-new'?'CNBC waterfront'
         :(ev.floorPlan==='casa-neos-beach-club-basel'?'BC Basel'
+        :(ev.floorPlan==='casa-neos-lounge-oct'?'CNL Oct 1'
         :(ev.floorPlan==='casa-neos-lounge-new'?'CNL remodel'
         :(ev.floorPlan==='casa-neos-lounge'?'CNL classic'
-        :(ev.floorPlan==='regular'?'Regular':'Auto')))));
+        :(ev.floorPlan==='regular'?'Regular':'Auto'))))));
       h+='<tr>';
       h+='<td class="left" style="font-weight:800">'+_escRoi(ev.label||'Untitled')+'</td>';
       h+='<td class="left">'+_escRoi(ev.venue||'')+'</td>';
@@ -685,7 +688,7 @@ function renderRoiSpecialForm(uid){
   });
   h+='</select></div>';
   h+='<div class="fld"><label>Floor plan</label><select id="roiSpFloor" onchange="roiSpFloorOrVenueChanged()">';
-  [{v:'auto',l:'Auto (date / floor-plan drops)'},{v:'summer',l:'Sunset rooftop — 20 tables (BC, Aug 1–Oct 4)'},{v:'casa-neos-beach-club-new',l:'CNBC waterfront + slips (Oct 5+)'},{v:'casa-neos-beach-club-basel',l:'Casa Neos BC Basel (Art Basel Dec 4–6)'},{v:'casa-neos-lounge-new',l:'CN Lounge remodel (Sep 2026+)'},{v:'casa-neos-lounge',l:'CN Lounge classic'},{v:'regular',l:'Regular / classic venue plan'}].forEach(function(o){
+  [{v:'auto',l:'Auto (date / floor-plan drops)'},{v:'summer',l:'Sunset rooftop — 20 tables (BC, Aug 1–Oct 4)'},{v:'casa-neos-beach-club-new',l:'CNBC waterfront + slips (Oct 5+)'},{v:'casa-neos-beach-club-basel',l:'Casa Neos BC Basel (Art Basel Dec 4–6)'},{v:'casa-neos-lounge-oct',l:'CN Lounge Oct 1 floor'},{v:'casa-neos-lounge-new',l:'CN Lounge remodel (Sep 25–30)'},{v:'casa-neos-lounge',l:'CN Lounge classic'},{v:'regular',l:'Regular / classic venue plan'}].forEach(function(o){
     h+='<option value="'+o.v+'"'+(ev.floorPlan===o.v?' selected':'')+'>'+o.l+'</option>';
   });
   h+='</select></div>';
@@ -1360,6 +1363,7 @@ function roiFpRefreshPreview(){
 function _roiFpGuessKnownPreset(venue, url, start){
   var u=String(url||'').toLowerCase();
   if(/lounge\.casa-neos/.test(u)||(/Casa Neos Lounge/i.test(venue)&&!/beach/i.test(u))){
+    if(start&&start>='2026-10-01') return 'casa-neos-lounge-oct';
     if(!start||start>='2026-09-25') return 'casa-neos-lounge-new';
   }
   if(/beachclub\.casa-neos|beach.?club|music\.casa-neos/i.test(u)||/Beach Club/i.test(venue)){

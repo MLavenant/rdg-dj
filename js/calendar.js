@@ -462,6 +462,7 @@ function openShow3dModal(idx){
   var tgt=showTargets(r);
   var summer=!!(priced&&priced.summer);
   var remodel=!!(priced&&priced.remodel);
+  var oct=!!(priced&&priced.oct);
   var planLbl=priced&&priced.label?priced.label:(summer?'Sunset Rituals rooftop':(remodel?'After Dark remodel':''));
   var tiersHtml=(priced?priced.tiers:[]).map(function(t){
     var price=t.suggested!=null?t.suggested:t.minimum;
@@ -482,12 +483,13 @@ function openShow3dModal(idx){
     +'<div style="font-size:11px;color:var(--ink2);margin-bottom:8px"><b>'+(djLabel(r.dj)||'TBD')+'</b> \u00b7 '+r.d
       +' \u00b7 Fee <b>'+$k(fee)+'</b> \u00b7 BS Target <b>'+$k(tgt.bs_m)+'</b> \u00b7 ROI Target <b>'+rx(tgt.roi_t)+'</b>'
       +(summer?' \u00b7 <span style="color:#0f766e">Sunset Rituals · Aug\u2013Sep only</span>':'')
-      +(remodel?' \u00b7 <span style="color:#7c3aed">Lounge remodel · from Sep 25</span>':'')+'</div>'
+      +(oct?' \u00b7 <span style="color:#b45309">Lounge Oct 1 floor</span>':'')
+      +(remodel?' \u00b7 <span style="color:#7c3aed">Lounge remodel · Sep 25–30</span>':'')+'</div>'
     +'<div class="show3d-layout">'
     +'<div class="show3d-host" id="show3dHost"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cbb8e8;font-size:12px">Loading floor plan&hellip;</div></div>'
     +'<div class="show3d-side"><div class="fv3d-pricing-hd">Table minimums to hit ROI</div>'
     +'<div class="fv3d-tier-list">'+tiersHtml+'</div>'
-    +'<div class="fv3d-panel-note" style="margin-top:10px">'+(summer?'Exact Sunset Rituals rooftop table mins for this fee / day.':(remodel?'Remodel floor-plan tiers scaled to this show\'s BS target.':'Scaled from the static floor-plan configuration to this show\'s BS target.'))+' No booking or event data.</div></div>'
+    +'<div class="fv3d-panel-note" style="margin-top:10px">'+(summer?'Exact Sunset Rituals rooftop table mins for this fee / day.':(oct?'Oct 1 floor tiers for this fee / day.':(remodel?'Remodel floor-plan tiers scaled to this show\'s BS target.':'Scaled from the static floor-plan configuration to this show\'s BS target.')))+' No booking or event data.</div></div>'
     +'</div></div>'
     +'<div class="modal-foot"><button type="button" class="btn-pdf" onclick="closeShow3dModal()">Close</button>'
     +'<button type="button" class="btn-pdf" style="background:var(--ink);color:#fff;border-color:var(--ink)" onclick="closeShow3dModal();_fv3dModelKey=\''+key+'\';_fv3dDate=\''+r.d+'\';setView(\'3d\')">Open full 3D view</button></div>'
@@ -515,7 +517,7 @@ function openShow3dModal(idx){
     if(tableKey==='casa-neos-beach-club-summer' && model.summerOrbit) orbit=model.summerOrbit;
     if(tableKey==='casa-neos-beach-club-new' && model.fallOrbit) orbit=model.fallOrbit;
     if(tableKey==='casa-neos-beach-club-basel' && model.baselOrbit) orbit=model.baselOrbit;
-    if(tableKey==='casa-neos-lounge-new' && model.newOrbit) orbit=model.newOrbit;
+    if((tableKey==='casa-neos-lounge-new'||tableKey==='casa-neos-lounge-oct'||/lounge\/model-new/.test(modelUrl||'')) && model.newOrbit) orbit=model.newOrbit;
     mv.setAttribute('camera-orbit', orbit);
     mv.style.cssText='width:100%;height:100%;background:transparent;--poster-color:transparent';
     h.appendChild(mv);

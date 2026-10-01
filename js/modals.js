@@ -2481,7 +2481,8 @@ function renderVenueRulesPanel(){
       if(v===CNBC_SUMMER_ROOF_KEY) return 2;
       if(v==='Casa Neos Lounge') return 3;
       if(typeof CNL_REMODEL_KEY!=='undefined' && v===CNL_REMODEL_KEY) return 4;
-      if(v==='MILA Lounge') return 5;
+      if(typeof CNL_OCT_KEY!=='undefined' && v===CNL_OCT_KEY) return 5;
+      if(v==='MILA Lounge') return 6;
       return 9;
     };
     return rank(a)-rank(b) || a.localeCompare(b);
@@ -2492,7 +2493,8 @@ function renderVenueRulesPanel(){
     var label=v;
     var tip=v;
     if(v===CNBC_SUMMER_ROOF_KEY){ label='CNBC Summer Roof'; tip='Sunset Rituals · Aug 1–Oct 4 only'; }
-    else if(typeof CNL_REMODEL_KEY!=='undefined' && v===CNL_REMODEL_KEY){ label='CN Lounge Remodel'; tip='After Dark remodel · from Sep 25 (Prestige tier)'; }
+    else if(typeof CNL_REMODEL_KEY!=='undefined' && v===CNL_REMODEL_KEY){ label='CN Lounge Remodel'; tip='After Dark remodel · Sep 25–30'; }
+    else if(typeof CNL_OCT_KEY!=='undefined' && v===CNL_OCT_KEY){ label='CN Lounge Oct 1'; tip='Oct 1 floor · Diamond 7, Prestige 3, Platinum 3, Gold 2'; }
     else if(v==='Casa Neos Lounge'){ label='CN Lounge Classic'; tip='Pre–Sep 25 lounge (Diamond / Platinium / Gold)'; }
     tabsHtml+='<button class="vr-tab'+(v===_vrEditVenue?' on':'')+'" data-vv="'+v+'" title="'+tip+'">'+label+'</button>';
   });
@@ -2515,7 +2517,13 @@ function renderVenueRulesPanel(){
   if(typeof CNL_REMODEL_KEY!=='undefined' && _vrEditVenue===CNL_REMODEL_KEY){
     h+='<div class="vr-season-box" style="border-left:3px solid #7c3aed">';
     h+='<div class="vr-season-lbl" style="color:#7c3aed">After Dark remodel</div>';
-    h+='<div class="vr-season-hint">Applies automatically to <b>Casa Neos Lounge</b> from <b>September 25, 2026</b> onward. Uses remodel tiers (<b>Diamond · Prestige · Platinum · Gold</b>) — separate from classic Lounge (<b>Diamond · Platinium · Gold</b>). Change the floor plan below if you need to retarget inventory.</div>';
+    h+='<div class="vr-season-hint">Applies automatically to <b>Casa Neos Lounge</b> from <b>September 25 through September 30, 2026</b>. From <b>October 1</b> the Oct 1 floor rules replace this set. Tiers: <b>Diamond · Prestige · Platinum · Gold</b>.</div>';
+    h+='</div>';
+  }
+  if(typeof CNL_OCT_KEY!=='undefined' && _vrEditVenue===CNL_OCT_KEY){
+    h+='<div class="vr-season-box" style="border-left:3px solid #b45309">';
+    h+='<div class="vr-season-lbl" style="color:#b45309">Oct 1 floor</div>';
+    h+='<div class="vr-season-hint">Applies automatically to <b>Casa Neos Lounge</b> from <b>October 1, 2026</b> forward and replaces the remodel. Inventory: <b>Diamond 803–806, 901, 902, 907</b> ($3,500) · <b>Prestige 807, 903, 906</b> ($3,000) · <b>Platinum 808, 809, 810</b> ($2,500) · <b>Gold 904, 905</b> ($1,500). Tables 811 and 908 are off this plan. Minimums below the new floor price are raised to it; higher DJ-fee targets stay.</div>';
     h+='</div>';
   }
 
@@ -2556,6 +2564,7 @@ function renderVenueRulesPanel(){
   h+='<div class="vr-tiers vr-tiers--page">';
   var countDate=(typeof miamiToday==='function'?miamiToday():'');
   if(typeof CNL_REMODEL_KEY!=='undefined' && _vrEditVenue===CNL_REMODEL_KEY) countDate=rules.fromDate||'2026-09-25';
+  if(typeof CNL_OCT_KEY!=='undefined' && _vrEditVenue===CNL_OCT_KEY) countDate=rules.fromDate||'2026-10-01';
   if(_vrEditVenue===CNBC_SUMMER_ROOF_KEY) countDate='2026-08-15';
   var countsMeta=typeof roiTableCountsForRulesVenue==='function'
     ? roiTableCountsForRulesVenue(_vrEditVenue, {dateStr:countDate, floorPlan:rules.floorPlan||'auto'})
