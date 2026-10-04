@@ -3663,6 +3663,15 @@ function renderSystem(){
     + 'LIVE only updates when someone presses Refresh (Toast API to Firebase).'
     + '</div></div>';
 
+  h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid #1d4ed8">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">'
+    + '<div>'
+    + '<div style="font-size:13px;font-weight:800">Export calendar</div>'
+    + '<div style="margin-top:4px;font-size:11px;color:var(--ink3);line-height:1.45">2025 and 2026, one sheet each. Date, DJ fee, BS target, BS actual, ROI target, ROI actual.</div>'
+    + '</div>'
+    + '<button type="button" onclick="exportSanityCalendarExcel()" style="flex-shrink:0;font-size:12px;font-weight:800;padding:8px 14px;border-radius:8px;border:0;background:#1d4ed8;color:#fff;cursor:pointer">Export to Excel</button>'
+    + '</div></div>';
+
   h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid '+(fbOk?'#22c55e':'#f59e0b')+'">'
     + '<div style="display:flex;justify-content:space-between;align-items:center">'
     + '<div style="font-size:13px;font-weight:800">Firebase connection</div>'
@@ -3759,6 +3768,64 @@ function renderSystem(){
     + '</div></div>';
 
   el.innerHTML = h;
+}
+
+function _sanityCalendarSheetRows(year){
+  var rows=[['Venue','Date','DJ','DJ Fee','BS Target','BS Actual','ROI Target','ROI Actual']];
+  (SCHED||[]).filter(function(r){
+    return r && r._s!=='empty' && r.d && String(r.d).slice(0,4)===String(year);
+  }).sort(function(a,b){
+    var byDate=String(a.d).localeCompare(String(b.d));
+    if(byDate) return byDate;
+    return String(a.v||a.venue||'').localeCompare(String(b.v||b.venue||''));
+  }).forEach(function(r){
+    var feeRaw=r.fee!=null&&r.fee!==''?r.fee:(r.cost!=null&&r.cost!==''?r.cost:null);
+    var fee=feeRaw!=null&&!isNaN(+feeRaw)?+feeRaw:null;
+    var tgt=(typeof showTargets==='function')?showTargets(r):{bs_m:r.bs_m,roi_t:r.roi_t};
+    var bsTarget=tgt&&tgt.bs_m!=null&&!isNaN(+tgt.bs_m)?+tgt.bs_m:null;
+    var roiTarget=tgt&&tgt.roi_t!=null&&!isNaN(+tgt.roi_t)?+tgt.roi_t:null;
+    var bsActual=r.bs_a!=null&&r.bs_a!==''&&!isNaN(+r.bs_a)?+r.bs_a:null;
+    var roiActual=r.roi_a!=null&&r.roi_a!==''&&!isNaN(+r.roi_a)?+r.roi_a:null;
+    if(roiActual==null&&fee>0&&bsActual!=null) roiActual=Math.round((bsActual/fee)*10000)/10000;
+    rows.push([
+      r.v||r.venue||'',
+      r.d,
+      (typeof djLabel==='function'?djLabel(r.dj):(r.dj||''))||'',
+      fee,
+      bsTarget,
+      bsActual,
+      roiTarget,
+      roiActual
+    ]);
+  });
+  return rows;
+}
+function _sanityCalendarSheet(rows){
+  var ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[{wch:24},{wch:12},{wch:28},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14}];
+  ws['!autofilter']={ref:'A1:H'+rows.length};
+  for(var i=2;i<=rows.length;i++){
+    ['D','E','F'].forEach(function(col){
+      var cell=ws[col+i];
+      if(cell&&typeof cell.v==='number') cell.z='$#,##0';
+    });
+    ['G','H'].forEach(function(col){
+      var cell=ws[col+i];
+      if(cell&&typeof cell.v==='number') cell.z='0.00"x"';
+    });
+  }
+  return ws;
+}
+function exportSanityCalendarExcel(){
+  if(typeof XLSX==='undefined'||!XLSX.utils||!XLSX.writeFile){
+    alert('Excel export is still loading. Try again in a moment.');
+    return;
+  }
+  var wb=XLSX.utils.book_new();
+  [2025,2026].forEach(function(year){
+    XLSX.utils.book_append_sheet(wb, _sanityCalendarSheet(_sanityCalendarSheetRows(year)), String(year));
+  });
+  XLSX.writeFile(wb, 'RDG Calendar 2025-2026.xlsx');
 }
 
 
