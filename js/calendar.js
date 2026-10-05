@@ -3122,7 +3122,9 @@ function _ensurePdfLibs(){
   ]);
 }
 
-function _captureDomToCanvas(part, exportWidth){
+function _captureDomToCanvas(part, exportWidth, opts){
+  opts=opts||{};
+  var capScale=opts.scale||2;
   exportWidth=Math.max(1200,Math.ceil(part.scrollWidth||0),exportWidth||1200);
   var stage=document.createElement('div');
   stage.className='fcast-pdf-stage';
@@ -3138,7 +3140,7 @@ function _captureDomToCanvas(part, exportWidth){
   var fontsReady=document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve();
   return fontsReady.then(function(){
     return window.html2canvas(clone,{
-      scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff',
+      scale:capScale,useCORS:true,logging:false,backgroundColor:'#ffffff',
       windowWidth:Math.ceil(clone.getBoundingClientRect().width||exportWidth)
     });
   }).then(function(canvas){
@@ -3150,7 +3152,8 @@ function _captureDomToCanvas(part, exportWidth){
   });
 }
 
-function _pdfFromCanvases(canvases, filename, asBlob){
+function _pdfFromCanvases(canvases, filename, asBlob, jpegQuality){
+  var quality=jpegQuality||0.98;
   var pdf=new window.jspdf.jsPDF({unit:'in',format:'letter',orientation:'landscape',compress:true});
   var first=true;
   function addCanvasPaged(canvas){
@@ -3163,7 +3166,7 @@ function _pdfFromCanvases(canvases, filename, asBlob){
       if(!first) pdf.addPage('letter','landscape');
       first=false;
       var w=canvas.width*scale, h=canvas.height*scale;
-      pdf.addImage(canvas.toDataURL('image/jpeg',0.98),'JPEG',margin,margin,w,h,undefined,'FAST');
+      pdf.addImage(canvas.toDataURL('image/jpeg',quality),'JPEG',margin,margin,w,h,undefined,'FAST');
       return;
     }
     var y=0;
@@ -3179,13 +3182,24 @@ function _pdfFromCanvases(canvases, filename, asBlob){
       ctx.fillRect(0,0,slice.width,slice.height);
       ctx.drawImage(canvas, 0, y, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
       var sw=slice.width*scale, sh=slice.height*scale;
-      pdf.addImage(slice.toDataURL('image/jpeg',0.98),'JPEG',margin,margin,sw,sh,undefined,'FAST');
+      pdf.addImage(slice.toDataURL('image/jpeg',quality),'JPEG',margin,margin,sw,sh,undefined,'FAST');
       y+=sliceH;
     }
   }
   canvases.forEach(function(c){ addCanvasPaged(c); });
   if(asBlob){
-    return Promise.resolve(pdf.output('blob'));
+    var bytes=new Uint8Array(pdf.output('arraybuffer'));
+    var head=String.fromCharCode(bytes[0]||0,bytes[1]||0,bytes[2]||0,bytes[3]||0);
+    if(bytes.length<800 || head!=='%PDF'){
+      return Promise.reject(new Error('PDF attachment was empty'));
+    }
+    var tail='';
+    var tailStart=Math.max(0, bytes.length-16);
+    for(var ti=tailStart; ti<bytes.length; ti++) tail+=String.fromCharCode(bytes[ti]);
+    if(tail.indexOf('%%EOF')<0){
+      return Promise.reject(new Error('PDF attachment was cut off'));
+    }
+    return Promise.resolve(new Blob([bytes],{type:'application/pdf'}));
   }
   pdf.save(filename);
   return Promise.resolve(null);
@@ -3312,64 +3326,79 @@ function _downloadBlob(blob, filename){
 }
 function _openBlobInApp(blob, filename){
   var url=URL.createObjectURL(blob);
-  /* Always download .eml (reliable after async PDF work). Also try to open. */
+  /* Download only. A second tab on the blob URL shows the raw draft and hides the PDF. */
   var a=document.createElement('a');
   a.href=url; a.download=filename||'message.eml';
   document.body.appendChild(a); a.click();
-  setTimeout(function(){ if(a.parentNode) a.parentNode.removeChild(a); }, 1000);
-  try{ window.open(url, '_blank'); }catch(eOpen){}
-  setTimeout(function(){ try{ URL.revokeObjectURL(url); }catch(eRev){} }, 60000);
+  setTimeout(function(){
+    if(a.parentNode) a.parentNode.removeChild(a);
+    try{ URL.revokeObjectURL(url); }catch(eRev){}
+  }, 4000);
   return url;
 }
 
+function _emlPushB64(push, b64){
+  b64=String(b64||'').replace(/\s+/g,'');
+  while(b64.length%4) b64+='=';
+  for(var i=0;i<b64.length;i+=76) push(b64.slice(i,i+76));
+}
+function _emlUtf8B64(str){
+  return btoa(unescape(encodeURIComponent(String(str||''))));
+}
+
 function _buildForecastFlashEml(opts){
-  /* opts: {to,cc,subject,htmlBody,attachments:[{filename,contentType,base64}], inlines:[{cid,contentType,base64}]} */
-  var boundary='RDG_MIXED_'+Date.now().toString(36);
-  var related='RDG_REL_'+Date.now().toString(36);
+  /* opts: {to,cc,subject,htmlBody,attachments:[{filename,contentType,base64}], inlines:[{cid,contentType,base64}]}
+     Flat multipart/mixed. Outlook's unsent importer drops PDFs that sit outside a
+     nested multipart/related, so snapshots and PDFs are siblings of the HTML part. */
+  var boundary='----=_RDG_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);
   var lines=[];
   function push(s){ lines.push(s); }
-  push('To: '+opts.to.join(', '));
+  var atts=opts.attachments||[];
+  push('To: '+(opts.to||[]).join(', '));
   if(opts.cc && opts.cc.length) push('Cc: '+opts.cc.join(', '));
   push('Subject: '+opts.subject);
   push('X-Unsent: 1');
+  if(atts.length) push('X-MS-Has-Attach: yes');
   push('MIME-Version: 1.0');
   push('Content-Type: multipart/mixed; boundary="'+boundary+'"');
   push('');
   push('--'+boundary);
-  push('Content-Type: multipart/related; boundary="'+related+'"');
-  push('');
-  push('--'+related);
   push('Content-Type: text/html; charset="UTF-8"');
-  push('Content-Transfer-Encoding: 7bit');
+  push('Content-Transfer-Encoding: base64');
   push('');
-  push(opts.htmlBody);
+  _emlPushB64(push, _emlUtf8B64(opts.htmlBody||''));
   push('');
   (opts.inlines||[]).forEach(function(img){
-    push('--'+related);
-    push('Content-Type: '+(img.contentType||'image/jpeg'));
+    var name=img.filename||'image.jpg';
+    push('--'+boundary);
+    push('Content-Type: '+(img.contentType||'image/jpeg')+'; name="'+name+'"');
     push('Content-Transfer-Encoding: base64');
     push('Content-ID: <'+img.cid+'>');
-    push('Content-Disposition: inline; filename="'+img.filename+'"');
+    push('Content-Disposition: inline; filename="'+name+'"');
     push('');
-    var b64=img.base64||'';
-    for(var i=0;i<b64.length;i+=76) push(b64.slice(i,i+76));
+    _emlPushB64(push, img.base64);
     push('');
   });
-  push('--'+related+'--');
-  push('');
-  (opts.attachments||[]).forEach(function(att){
+  atts.forEach(function(att){
+    var name=att.filename||'attachment.pdf';
+    var b64=String(att.base64||'').replace(/\s+/g,'');
+    if(b64.indexOf('JVBERi')!==0) throw new Error('PDF attachment '+name+' is not a valid PDF');
     push('--'+boundary);
-    push('Content-Type: '+(att.contentType||'application/pdf')+'; name="'+att.filename+'"');
+    push('Content-Type: '+(att.contentType||'application/pdf')+'; name="'+name+'"');
     push('Content-Transfer-Encoding: base64');
-    push('Content-Disposition: attachment; filename="'+att.filename+'"');
+    push('Content-Disposition: attachment; filename="'+name+'"');
     push('');
-    var b64=att.base64||'';
-    for(var j=0;j<b64.length;j+=76) push(b64.slice(j,j+76));
+    _emlPushB64(push, b64);
     push('');
   });
   push('--'+boundary+'--');
   push('');
-  return new Blob([lines.join('\r\n')],{type:'message/rfc822'});
+  var parts=[];
+  for(var li=0; li<lines.length; li++){
+    parts.push(lines[li]);
+    parts.push('\r\n');
+  }
+  return new Blob(parts,{type:'application/octet-stream'});
 }
 
 function prepareForecastFlashEmail(){
@@ -3394,7 +3423,7 @@ function prepareForecastFlashEmail(){
     console.warn('Forecast email prepare failed', err);
     document.body.classList.remove('printing-forecast');
     if(btn){ btn.disabled=false; btn.textContent='Send all emails'; }
-    alert('Could not prepare the email. Check your network and try again.');
+    alert('Could not prepare the email. '+(err&&err.message?err.message:'Check your network and try again.'));
   });
 }
 
@@ -3441,13 +3470,14 @@ function _buildForecastFlashEmailPack(opts){
         var p2=el&&el.querySelector('.fcast-print-page2');
         if(!p1||!p2) throw new Error('Forecast sections missing for '+venue);
         var width=Math.max(1200,Math.ceil(el.getBoundingClientRect().width||0));
-        return _captureDomToCanvas(p1,width).then(function(c1){
-          return _captureDomToCanvas(p2,width).then(function(c2){
+        var capOpts={scale:1.35};
+        return _captureDomToCanvas(p1,width,capOpts).then(function(c1){
+          return _captureDomToCanvas(p2,width,capOpts).then(function(c2){
             document.body.classList.remove('printing-forecast');
-            var snapJpeg=c1.toDataURL('image/jpeg',0.92);
+            var snapJpeg=c1.toDataURL('image/jpeg',0.8);
             var short=_fcastVenueShortFile(venue);
             var pdfName='RDG-Booking-Performance-'+short+'-W'+weekNum+'.pdf';
-            return _pdfFromCanvases([c1,c2], pdfName, true).then(function(pdfBlob){
+            return _pdfFromCanvases([c1,c2], pdfName, true, 0.82).then(function(pdfBlob){
               return _blobToBase64(pdfBlob).then(function(pdfB64){
                 results.push({
                   venue:venue, short:short, pdfName:pdfName, pdfB64:pdfB64,
@@ -3483,6 +3513,7 @@ function _buildForecastFlashEmailPack(opts){
   });
 }
 window._buildForecastFlashEmailPack = _buildForecastFlashEmailPack;
+window._buildForecastFlashEml = _buildForecastFlashEml;
 
 var _VIP_EMAIL_TO = [
   'Salesteam@rivieradininggroup.com',
@@ -3531,9 +3562,10 @@ function prepareVipFlashEmail(){
     var width=Math.max(1200,Math.ceil(el.getBoundingClientRect().width||0));
     var canvases=[];
     var chain=Promise.resolve();
+    var capOpts={scale:1.35};
     pages.forEach(function(page){
       chain=chain.then(function(){
-        return _captureDomToCanvas(page,width).then(function(c){ canvases.push(c); });
+        return _captureDomToCanvas(page,width,capOpts).then(function(c){ canvases.push(c); });
       });
     });
     return chain.then(function(){
@@ -3541,8 +3573,8 @@ function prepareVipFlashEmail(){
       var snapResults=[];
       snaps.forEach(function(snap, si){
         snapChain=snapChain.then(function(){
-          return _captureDomToCanvas(snap, width).then(function(c){
-            var jpeg=c.toDataURL('image/jpeg',0.92);
+          return _captureDomToCanvas(snap, width, capOpts).then(function(c){
+            var jpeg=c.toDataURL('image/jpeg',0.8);
             var venue=(venues[si]&&venues[si].venue)||('Venue '+(si+1));
             snapResults.push({
               venue:venue,
@@ -3556,7 +3588,7 @@ function prepareVipFlashEmail(){
       });
       return snapChain.then(function(){
         var pdfName='RDG-DJ-ROI-Performance-W'+weekNum+'.pdf';
-        return _pdfFromCanvases(canvases, pdfName, true).then(function(pdfBlob){
+        return _pdfFromCanvases(canvases, pdfName, true, 0.82).then(function(pdfBlob){
           return _blobToBase64(pdfBlob).then(function(pdfB64){
             document.body.classList.remove('printing-vip');
             var html='<div style="font-family:Segoe UI,Arial,sans-serif;font-size:14px;color:#1c1c1e;line-height:1.55">';
@@ -3590,7 +3622,7 @@ function prepareVipFlashEmail(){
     console.warn('VIP flash email prepare failed', err);
     document.body.classList.remove('printing-vip');
     restore();
-    alert('Could not prepare the Weekly Flash email. Check your network and try again.');
+    alert('Could not prepare the Weekly Flash email. '+(err&&err.message?err.message:'Check your network and try again.'));
   });
 }
 
