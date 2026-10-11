@@ -1354,6 +1354,10 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       try{ window._fbSave('venueRoiRules', VENUE_ROI_RULES); }catch(eRem){}
     }
     if(data.roiSpecialEvents) ROI_SPECIAL_EVENTS = data.roiSpecialEvents;
+    if(Object.prototype.hasOwnProperty.call(data, 'showTargetLocks')){
+      window._showTargetLocks = (data.showTargetLocks && typeof data.showTargetLocks==='object') ? data.showTargetLocks : {};
+      window._showTargetLocksReady = true;
+    }
     if(Object.prototype.hasOwnProperty.call(data, 'roiFloorPlans')){
       ROI_FLOOR_PLANS = data.roiFloorPlans && typeof data.roiFloorPlans==='object' ? data.roiFloorPlans : {};
     }
@@ -1387,6 +1391,12 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     if(schedChanged){
       _lastSchedOvSig = schedSig;
       window._fbApplySched(data.schedOverrides);
+    }
+    if(typeof freezeElapsedShowTargets==='function'){
+      try{
+        var lockedN=freezeElapsedShowTargets();
+        if(lockedN && window._fbReady && typeof go==='function' && typeof curView!=='undefined' && curView==='calendar') go();
+      }catch(eFreeze){}
     }
     // FEE_TIERS
     if(data.feeTiers){
@@ -1510,6 +1520,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       _setSyncDot('#22c55e', 'Live sync active');
     }
     try{
+      if(path==='schedOverrides') window._fbSchedLiveReady=true;
       window._fbApply(window._fbLiveBundle);
       if(path==='schedOverrides'){
         window._fbSchedError=null;
@@ -1541,6 +1552,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     'venueRoiRules',
     'roiSpecialEvents',
     'roiFloorPlans',
+    'showTargetLocks',
     'feeTiers',
     'monthlyDjBudget',
     'bgtPlan',

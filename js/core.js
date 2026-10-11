@@ -1941,9 +1941,22 @@ function venueRoiLookup(venue, dateStr, fee){
 }
 
 
-/* Live BS Target / ROI Tgt from Venue ROI rules (same for 2026/2027+). Falls back to generic FEE_TIERS.
-   Explicit fee $0 → no BS target, ROI target 0. Empty/unset fee leaves stored targets alone. */
-function showTargets(r){
+/* A performance date is frozen once that Miami day is over. Today still follows the rules. */
+function isPastPerformanceDate(dateStr){
+  if(!dateStr) return false;
+  var today=(typeof miamiToday==='function')?miamiToday():(typeof TODAY!=='undefined'?TODAY:'');
+  return !!(today && String(dateStr)<String(today));
+}
+function _showTargetLockFor(r){
+  if(!r||!isPastPerformanceDate(r.d)) return null;
+  var uid=(typeof ensureShowUid==='function')?ensureShowUid(r):(r._uid||'');
+  var map=window._showTargetLocks;
+  if(!uid||!map||!map[uid]) return null;
+  return map[uid];
+}
+/* Live BS Target / ROI Tgt from Venue ROI rules. Used for today and future, and as the
+   one-time snapshot when a day first becomes past. */
+function _liveShowTargets(r){
   var v=r.v||r.venue;
   var feeRaw=r.fee!=null?r.fee:r.cost;
   if(!v||!r.d) return {bs_m:r.bs_m!=null?r.bs_m:null, roi_t:r.roi_t!=null?r.roi_t:null};
@@ -1954,14 +1967,26 @@ function showTargets(r){
   if(look) return {bs_m:look.bsTarget, roi_t:look.roiTarget};
   return {bs_m:bsMinFor(fee), roi_t:roiTFor(fee)};
 }
+/* Past nights return the locked snapshot. Today and future follow Venue ROI Rules. */
+function showTargets(r){
+  var lock=_showTargetLockFor(r);
+  if(lock){
+    return {
+      bs_m:lock.bs_m!=null?lock.bs_m:null,
+      roi_t:lock.roi_t!=null?lock.roi_t:null
+    };
+  }
+  return _liveShowTargets(r);
+}
 function applyShowTargets(r){
+  if(r && isPastPerformanceDate(r.d)) return r;
   var feeRaw=r.fee!=null?r.fee:r.cost;
   if(feeRaw!=null&&feeRaw!==''&&!(+feeRaw>0)){
     r.bs_m=null;
     r.roi_t=0;
     return r;
   }
-  var t=showTargets(r);
+  var t=_liveShowTargets(r);
   if(t.bs_m!=null) r.bs_m=t.bs_m;
   if(t.roi_t!=null) r.roi_t=t.roi_t;
   return r;
@@ -1969,10 +1994,65 @@ function applyShowTargets(r){
 function recalcAllSchedTargets(){
   SCHED.forEach(function(r){
     if(!r||r._s==='empty') return;
+    if(isPastPerformanceDate(r.d)) return;
     var feeRaw=r.fee!=null?r.fee:r.cost;
     if(feeRaw==null||feeRaw==='') return;
     applyShowTargets(r);
   });
+}
+/* Snapshot BS Target / ROI for every elapsed show that is not locked yet.
+   Later Venue ROI Rules edits do not rewrite these. */
+function freezeElapsedShowTargets(){
+  if(!window._showTargetLocksReady||!window._fbSchedLiveReady) return 0;
+  if(typeof SCHED==='undefined'||!SCHED||!SCHED.length) return 0;
+  var today=(typeof miamiToday==='function')?miamiToday():TODAY;
+  var map=window._showTargetLocks||{};
+  var add={};
+  var n=0;
+  SCHED.forEach(function(r){
+    if(!r||!r.d||r._s==='empty'||String(r.d)>=String(today)) return;
+    var uid=ensureShowUid(r);
+    if(!uid) return;
+    var lock=map[uid];
+    if(lock){
+      if(lock.bs_m!=null) r.bs_m=lock.bs_m;
+      if(lock.roi_t!=null) r.roi_t=lock.roi_t;
+      return;
+    }
+    var live=_liveShowTargets(r);
+    lock={bs_m:live.bs_m!=null?live.bs_m:null, roi_t:live.roi_t!=null?live.roi_t:null, d:r.d};
+    map[uid]=lock;
+    add[uid]=lock;
+    r.bs_m=lock.bs_m;
+    r.roi_t=lock.roi_t;
+    n++;
+  });
+  window._showTargetLocks=map;
+  if(n && window._fbRef){
+    try{ window._fbRef.child('showTargetLocks').update(add); }catch(eLock){}
+  }
+  return n;
+}
+function saveShowTargetLock(r, roiTarget){
+  if(!r||!isPastPerformanceDate(r.d)) return;
+  var uid=ensureShowUid(r);
+  if(!uid) return;
+  var prev=_showTargetLockFor(r);
+  var live=prev||_liveShowTargets(r);
+  var lock={
+    bs_m:live.bs_m!=null?live.bs_m:(r.bs_m!=null?r.bs_m:null),
+    roi_t:roiTarget,
+    roiManual:1,
+    d:r.d
+  };
+  if(!window._showTargetLocks) window._showTargetLocks={};
+  window._showTargetLocks[uid]=lock;
+  r.bs_m=lock.bs_m;
+  r.roi_t=lock.roi_t;
+  r.roiManual=1;
+  if(window._fbRef){
+    try{ window._fbRef.child('showTargetLocks/'+uid).set(lock); }catch(eSet){}
+  }
 }
 /* Recompute ROI-derived targets everywhere (calendar SCHED, forecast cache, open views). */
 function refreshAllRoiDerivedData(){

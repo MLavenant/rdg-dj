@@ -183,7 +183,8 @@ function renderCal(){
         h+='<td class="sc-num">'+$k(bsM)+'</td>';
         h+='<td class="sc-num '+bCls+'"'+(tSty?' style="'+tSty+'"':'')+'><b>'+$k(r.bs_a)+'</b>'
           +(bCls?'<div class="sc-beat-icon">'+bsToneIcon(bCls)+'</div>':'')+'</td>';
-        h+='<td class="sc-num">'+rx(roiT)+'</td>';
+        var pastRoi=typeof isPastPerformanceDate==='function' && isPastPerformanceDate(r.d);
+        h+='<td class="sc-num"'+(pastRoi?' data-action="editPastRoi" data-show-idx="'+idx+'" data-uid="'+showUid+'"':'')+'>'+rx(roiT)+'</td>';
         h+='<td class="sc-num '+rCls+'"'+(tSty?' style="'+tSty+'"':'')+'><b>'+rx(r.roi_a)+'</b>'
           +(rCls?'<div class="sc-beat-icon">'+roiToneIcon(rCls)+'</div>':'')+'</td>';
         if(ri===0){
@@ -225,11 +226,46 @@ function renderCal(){
 }
 
 /* Reliable click-to-edit (delegation). Avoids broken inline handlers and drag-vs-click fights. */
+var _PAST_ROI_EDIT_PASSWORD='lex';
+function editPastRoiTarget(idx, uid){
+  var r=null;
+  if(typeof _findSchedByUidOrIdx==='function') r=_findSchedByUidOrIdx(uid, idx);
+  if(!r && idx!=null && idx>=0 && idx<SCHED.length) r=SCHED[idx];
+  if(!r||typeof isPastPerformanceDate!=='function'||!isPastPerformanceDate(r.d)) return;
+  var pw=prompt('Password');
+  if(pw==null) return;
+  if(String(pw)!==_PAST_ROI_EDIT_PASSWORD){
+    alert('Incorrect password.');
+    return;
+  }
+  var cur=(typeof showTargets==='function')?showTargets(r):{roi_t:r.roi_t};
+  var shown=cur.roi_t!=null?String(cur.roi_t):'';
+  var entered=prompt('ROI target', shown);
+  if(entered==null) return;
+  var n=parseFloat(String(entered).replace(/x/ig,'').replace(/,/g,'').trim());
+  if(!isFinite(n)||n<0){
+    alert('Enter a ROI number.');
+    return;
+  }
+  n=Math.round(n*100)/100;
+  if(typeof saveShowTargetLock==='function') saveShowTargetLock(r, n);
+  else { r.roi_t=n; r.roiManual=1; }
+  if(typeof IDX!=='undefined' && typeof buildIdx==='function') IDX=buildIdx(SCHED);
+  if(typeof go==='function') go();
+}
 function wireCalEditClicks(){
   var body=document.getElementById('calBody');
-  if(!body || body._calEditWired===2) return;
-  body._calEditWired=2;
+  if(!body || body._calEditWired===3) return;
+  body._calEditWired=3;
   body.addEventListener('click', function(e){
+    var roiEl=e.target.closest('[data-action="editPastRoi"]');
+    if(roiEl && body.contains(roiEl)){
+      e.preventDefault();
+      e.stopPropagation();
+      var roiIdx=parseInt(roiEl.getAttribute('data-show-idx'),10);
+      editPastRoiTarget(isFinite(roiIdx)?roiIdx:-1, roiEl.getAttribute('data-uid')||'');
+      return;
+    }
     var addEl=e.target.closest('[data-action="addShow"]');
     if(addEl && body.contains(addEl)){
       e.preventDefault();
