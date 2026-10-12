@@ -1,6 +1,6 @@
 /* Venue ROI Rules — full-page editor (standard tiers + special-day performances) */
 
-var _roiPageTab = 'rules'; /* rules | special | floors */
+var _roiPageTab = 'summary'; /* summary | rules | special | floors */
 var _roiEditSpecialUid = null;
 var _roiSpForceCustom = false;
 var _roiSpPrefill = null;
@@ -216,12 +216,15 @@ function renderRoiRulesPage(){
   h+='</div></div>';
 
   h+='<div class="roi-subtabs">';
+  h+='<button type="button" class="roi-subtab'+(_roiPageTab==='summary'?' on':'')+'" onclick="setRoiPageTab(\'summary\')"><span class="roi-subtab-ic">&#9638;</span> Summary</button>';
   h+='<button type="button" class="roi-subtab'+(_roiPageTab==='rules'?' on':'')+'" onclick="setRoiPageTab(\'rules\')"><span class="roi-subtab-ic">&#9881;</span> Standard venue rules</button>';
   h+='<button type="button" class="roi-subtab'+(_roiPageTab==='special'?' on':'')+'" onclick="setRoiPageTab(\'special\')"><span class="roi-subtab-ic">&#9733;</span> Special performances</button>';
   h+='<button type="button" class="roi-subtab'+(_roiPageTab==='floors'?' on':'')+'" onclick="setRoiPageTab(\'floors\')"><span class="roi-subtab-ic">&#127760;</span> 3D Floor plans</button>';
   h+='</div>';
 
-  if(_roiPageTab==='rules'){
+  if(_roiPageTab==='summary'){
+    h+=renderRoiRulesSummary();
+  }else if(_roiPageTab==='rules'){
     h+='<div id="vrTabs"></div>';
     h+='<div id="vrBody" class="roi-rules-body"></div>';
   }else if(_roiPageTab==='floors'){
@@ -249,6 +252,103 @@ function setRoiPageTab(tab){
   _roiSpForceCustom=false;
   _roiSpPrefill=null;
   renderRoiRulesPage();
+}
+
+function _roiSummaryRuleKeys(){
+  if(typeof ensureVenueRulesFloorPlanBindings==='function') ensureVenueRulesFloorPlanBindings();
+  var keys=Object.keys(VENUE_ROI_RULES||{});
+  function rank(v){
+    if(v==='Casa Neos Beach Club') return 1;
+    if(typeof CNBC_SUMMER_ROOF_KEY!=='undefined'&&v===CNBC_SUMMER_ROOF_KEY) return 2;
+    if(typeof CNL_OCT_KEY!=='undefined'&&v===CNL_OCT_KEY) return 3;
+    if(v==='Casa Neos Lounge') return 4;
+    if(typeof CNL_REMODEL_KEY!=='undefined'&&v===CNL_REMODEL_KEY) return 5;
+    if(v==='MILA Lounge') return 6;
+    return 20;
+  }
+  return keys.sort(function(a,b){ return rank(a)-rank(b)||a.localeCompare(b); });
+}
+function _roiSummaryMeta(key, rules){
+  if(key==='Casa Neos Beach Club') return {name:'Casa Neos Beach Club', period:'Regular rules'};
+  if(typeof CNBC_SUMMER_ROOF_KEY!=='undefined'&&key===CNBC_SUMMER_ROOF_KEY) return {name:'CNBC Summer Rooftop',period:'Aug 1 – Oct 4'};
+  if(typeof CNL_OCT_KEY!=='undefined'&&key===CNL_OCT_KEY) return {name:'Casa Neos Lounge',period:'Oct 1 forward · current floor'};
+  if(key==='Casa Neos Lounge') return {name:'CN Lounge Classic',period:'Before Sep 25'};
+  if(typeof CNL_REMODEL_KEY!=='undefined'&&key===CNL_REMODEL_KEY) return {name:'CN Lounge Remodel',period:'Sep 25 – Sep 30'};
+  if(key==='MILA Lounge') return {name:'MILA Lounge',period:'Regular rules'};
+  return {name:key,period:(rules&&rules.fromDate?rules.fromDate:'Custom rules')};
+}
+function _roiSummaryMoney(n){
+  n=+n||0;
+  if(Math.abs(n)>=1000){
+    var k=n/1000;
+    return '$'+(Math.round(k*10)/10).toLocaleString('en-US',{maximumFractionDigits:1})+'k';
+  }
+  return '$'+Math.round(n).toLocaleString('en-US');
+}
+function _roiSummaryCell(dayData){
+  if(!dayData) return '<span class="roi-sum-na">—</span>';
+  return '<b>'+_roiSummaryMoney(dayData.sales)+'</b><span>'+(+dayData.roi||0).toFixed(2).replace(/\.?0+$/,'')+'x</span>';
+}
+function renderRoiRulesSummary(){
+  var keys=_roiSummaryRuleKeys();
+  var h='<div class="roi-summary-toolbar">'
+    +'<div><b>All venue targets at a glance</b><span> BS Target / ROI by DJ fee, season, and operating day</span></div>'
+    +'<button type="button" class="btn-pdf" onclick="exportRoiRulesSummaryPdf()">Export one-page PDF</button>'
+    +'</div>';
+  h+='<div id="roiSummarySheet" class="roi-summary-sheet">';
+  h+='<div class="roi-summary-print-head"><div><b>RDG Venue ROI Rules</b><span>BS Target / ROI Target by DJ fee tier</span></div>'
+    +'<div>As of '+_escRoi((typeof miamiToday==='function'?miamiToday():'').replace(/-/g,' / '))+'</div></div>';
+  h+='<div class="roi-summary-grid">';
+  keys.forEach(function(key){
+    var rules=VENUE_ROI_RULES[key];
+    if(!rules||!rules.tiers||!rules.tiers.length) return;
+    var meta=_roiSummaryMeta(key,rules);
+    var days=(rules.days||[]).slice();
+    var highMonths=(rules.highSeasonMonths||[]).map(function(m){return MONTH_NAMES_SHORT[m-1];}).join(', ');
+    h+='<section class="roi-summary-card">';
+    h+='<div class="roi-summary-card-hd"><div><b>'+_escRoi(meta.name)+'</b><span>'+_escRoi(meta.period)+'</span></div>'
+      +'<small>High: '+_escRoi(highMonths||'none')+'</small></div>';
+    h+='<table><thead><tr><th rowspan="2">DJ Fee</th><th colspan="'+days.length+'">High season</th><th colspan="'+days.length+'">Low season</th></tr><tr>';
+    days.forEach(function(day){ h+='<th>'+_escRoi(day.slice(0,3))+'</th>'; });
+    days.forEach(function(day){ h+='<th>'+_escRoi(day.slice(0,3))+'</th>'; });
+    h+='</tr></thead><tbody>';
+    rules.tiers.forEach(function(tier){
+      h+='<tr><td class="roi-summary-fee">'+_roiSummaryMoney(tier.fee)+'</td>';
+      days.forEach(function(day){ h+='<td>'+_roiSummaryCell((tier.High||{})[day])+'</td>'; });
+      days.forEach(function(day){ h+='<td>'+_roiSummaryCell((tier.Low||{})[day])+'</td>'; });
+      h+='</tr>';
+    });
+    h+='</tbody></table></section>';
+  });
+  h+='</div><div class="roi-summary-foot">Each target cell shows <b>BS Target</b> above <span>ROI Target</span>. Nearest DJ fee tier applies. Past performances retain their locked historical targets.</div>';
+  h+='</div>';
+  return h;
+}
+function exportRoiRulesSummaryPdf(){
+  var sheet=document.getElementById('roiSummarySheet');
+  if(!sheet){ alert('ROI Rules Summary is unavailable.'); return; }
+  var btn=document.querySelector('.roi-summary-toolbar .btn-pdf');
+  if(btn){ btn.disabled=true; btn.textContent='Preparing PDF…'; }
+  function done(){ if(btn){ btn.disabled=false; btn.textContent='Export one-page PDF'; } }
+  if(typeof _ensurePdfLibs!=='function'){
+    done(); alert('PDF library unavailable. Hard-refresh and try again.'); return;
+  }
+  _ensurePdfLibs().then(function(){
+    return (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){
+      return window.html2canvas(sheet,{scale:2,useCORS:true,logging:false,backgroundColor:'#ffffff',windowWidth:1600});
+    });
+  }).then(function(canvas){
+    var pdf=new window.jspdf.jsPDF({unit:'in',format:'letter',orientation:'landscape',compress:true});
+    var pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight(), margin=.2;
+    var scale=Math.min((pw-margin*2)/canvas.width,(ph-margin*2)/canvas.height);
+    var w=canvas.width*scale, h=canvas.height*scale;
+    pdf.addImage(canvas.toDataURL('image/jpeg',.94),'JPEG',(pw-w)/2,(ph-h)/2,w,h,undefined,'FAST');
+    pdf.save('RDG-Venue-ROI-Rules-Summary-'+(typeof miamiToday==='function'?miamiToday():'today')+'.pdf');
+    done();
+  }).catch(function(err){
+    try{ console.warn('ROI Summary PDF failed',err); }catch(e){}
+    done(); alert('Could not export the ROI Rules Summary PDF. Please try again.');
+  });
 }
 
 function _roiSpeUid(){
