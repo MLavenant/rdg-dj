@@ -256,7 +256,13 @@ function setRoiPageTab(tab){
 
 function _roiSummaryRuleKeys(){
   if(typeof ensureVenueRulesFloorPlanBindings==='function') ensureVenueRulesFloorPlanBindings();
-  var keys=Object.keys(VENUE_ROI_RULES||{});
+  var keys=Object.keys(VENUE_ROI_RULES||{}).filter(function(v){
+    if(typeof CNL_OCT_KEY!=='undefined'&&VENUE_ROI_RULES[CNL_OCT_KEY]){
+      if(v==='Casa Neos Lounge') return false;
+      if(typeof CNL_REMODEL_KEY!=='undefined'&&v===CNL_REMODEL_KEY) return false;
+    }
+    return true;
+  });
   function rank(v){
     if(v==='Casa Neos Beach Club') return 1;
     if(typeof CNBC_SUMMER_ROOF_KEY!=='undefined'&&v===CNBC_SUMMER_ROOF_KEY) return 2;
@@ -271,7 +277,7 @@ function _roiSummaryRuleKeys(){
 function _roiSummaryMeta(key, rules){
   if(key==='Casa Neos Beach Club') return {name:'Casa Neos Beach Club', period:'Regular rules'};
   if(typeof CNBC_SUMMER_ROOF_KEY!=='undefined'&&key===CNBC_SUMMER_ROOF_KEY) return {name:'CNBC Summer Rooftop',period:'Aug 1 – Oct 4'};
-  if(typeof CNL_OCT_KEY!=='undefined'&&key===CNL_OCT_KEY) return {name:'Casa Neos Lounge',period:'Oct 1 forward · current floor'};
+  if(typeof CNL_OCT_KEY!=='undefined'&&key===CNL_OCT_KEY) return {name:'Casa Neos Lounge',period:'Current floor plan'};
   if(key==='Casa Neos Lounge') return {name:'CN Lounge Classic',period:'Before Sep 25'};
   if(typeof CNL_REMODEL_KEY!=='undefined'&&key===CNL_REMODEL_KEY) return {name:'CN Lounge Remodel',period:'Sep 25 – Sep 30'};
   if(key==='MILA Lounge') return {name:'MILA Lounge',period:'Regular rules'};
@@ -299,23 +305,24 @@ function renderRoiRulesSummary(){
   h+='<div class="roi-summary-print-head"><div><b>RDG Venue ROI Rules</b><span>BS Target / ROI Target by DJ fee tier</span></div>'
     +'<div>As of '+_escRoi((typeof miamiToday==='function'?miamiToday():'').replace(/-/g,' / '))+'</div></div>';
   h+='<div class="roi-summary-grid">';
+  var cardIdx=0;
   keys.forEach(function(key){
     var rules=VENUE_ROI_RULES[key];
     if(!rules||!rules.tiers||!rules.tiers.length) return;
     var meta=_roiSummaryMeta(key,rules);
     var days=(rules.days||[]).slice();
     var highMonths=(rules.highSeasonMonths||[]).map(function(m){return MONTH_NAMES_SHORT[m-1];}).join(', ');
-    h+='<section class="roi-summary-card">';
+    h+='<section class="roi-summary-card roi-sum-acc-'+((cardIdx++%4)+1)+'">';
     h+='<div class="roi-summary-card-hd"><div><b>'+_escRoi(meta.name)+'</b><span>'+_escRoi(meta.period)+'</span></div>'
       +'<small>High: '+_escRoi(highMonths||'none')+'</small></div>';
-    h+='<table><thead><tr><th rowspan="2">DJ Fee</th><th colspan="'+days.length+'">High season</th><th colspan="'+days.length+'">Low season</th></tr><tr>';
-    days.forEach(function(day){ h+='<th>'+_escRoi(day.slice(0,3))+'</th>'; });
-    days.forEach(function(day){ h+='<th>'+_escRoi(day.slice(0,3))+'</th>'; });
+    h+='<table><thead><tr><th rowspan="2" class="roi-sum-fee-hd">DJ Fee</th><th colspan="'+days.length+'" class="roi-sum-high">High season</th><th colspan="'+days.length+'" class="roi-sum-low">Low season</th></tr><tr>';
+    days.forEach(function(day){ h+='<th class="roi-sum-day roi-sum-day-high">'+_escRoi(day.slice(0,3))+'</th>'; });
+    days.forEach(function(day){ h+='<th class="roi-sum-day roi-sum-day-low">'+_escRoi(day.slice(0,3))+'</th>'; });
     h+='</tr></thead><tbody>';
     rules.tiers.forEach(function(tier){
       h+='<tr><td class="roi-summary-fee">'+_roiSummaryMoney(tier.fee)+'</td>';
-      days.forEach(function(day){ h+='<td>'+_roiSummaryCell((tier.High||{})[day])+'</td>'; });
-      days.forEach(function(day){ h+='<td>'+_roiSummaryCell((tier.Low||{})[day])+'</td>'; });
+      days.forEach(function(day){ h+='<td class="roi-sum-cell-high">'+_roiSummaryCell((tier.High||{})[day])+'</td>'; });
+      days.forEach(function(day){ h+='<td class="roi-sum-cell-low">'+_roiSummaryCell((tier.Low||{})[day])+'</td>'; });
       h+='</tr>';
     });
     h+='</tbody></table></section>';

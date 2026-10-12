@@ -1378,7 +1378,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
           setFv3dDate(typeof getFv3dDate==='function'?getFv3dDate():null);
           if(typeof updateFv3dRefreshStatus==='function') updateFv3dRefreshStatus();
         }
-        if(typeof curView!=='undefined' && curView==='roi-rules' && typeof _roiPageTab!=='undefined' && _roiPageTab==='floors' && typeof renderRoiRulesPage==='function'){
+        if(typeof curView!=='undefined' && curView==='roi-rules' && typeof _roiPageTab!=='undefined' && (_roiPageTab==='floors' || _roiPageTab==='summary') && typeof renderRoiRulesPage==='function'){
           renderRoiRulesPage();
         }
       }catch(eFpUi){}
