@@ -1191,43 +1191,33 @@ model-viewer{--min-hotspot-opacity:0}
 .roi-summary-print-head>div:first-child{display:flex;align-items:baseline;gap:10px}
 .roi-summary-print-head b{font-size:20px;color:#0f2a4a;letter-spacing:-.3px}
 .roi-summary-print-head span{font-size:11px;color:#64748b}
-.roi-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:14px}
-.roi-summary-card{--acc:#0f2a4a;border:1px solid #cfd8e3;border-radius:10px;overflow:hidden;break-inside:avoid;background:#fff;box-shadow:0 1px 3px rgba(15,42,74,.08)}
-.roi-summary-card.roi-sum-acc-1{--acc:#0e7490}
-.roi-summary-card.roi-sum-acc-2{--acc:#c2410c}
-.roi-summary-card.roi-sum-acc-3{--acc:#7c3aed}
-.roi-summary-card.roi-sum-acc-4{--acc:#be185d}
-.roi-summary-card-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--acc);padding:8px 11px;color:#fff}
+.roi-summary-grid{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:14px;margin-top:14px;align-items:start}
+.roi-summary-grid>.roi-summary-card:first-child{grid-row:span 2}
+.roi-summary-card{border:1px solid #cfd8e3;border-radius:10px;overflow:hidden;break-inside:avoid;background:#fff}
+.roi-summary-card-hd{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#0f2a4a;padding:8px 11px;color:#fff}
 .roi-summary-card-hd>div{display:flex;align-items:baseline;gap:8px;min-width:0}
 .roi-summary-card-hd b{font-size:13px;color:#fff;white-space:nowrap;letter-spacing:-.1px}
-.roi-summary-card-hd span,.roi-summary-card-hd small{font-size:9px;color:rgba(255,255,255,.82);white-space:nowrap}
-.roi-summary-card-hd small{background:rgba(255,255,255,.18);padding:2px 7px;border-radius:999px;font-weight:700}
+.roi-summary-card-hd span,.roi-summary-card-hd small{font-size:9px;color:rgba(255,255,255,.75);white-space:nowrap}
 .roi-summary-card table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11px}
-.roi-summary-card th{padding:5px 3px;color:#fff;border-right:1px solid rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.04em;font-size:9.5px;font-weight:800}
-.roi-summary-card th.roi-sum-fee-hd{width:62px;background:#334155}
-.roi-summary-card th.roi-sum-high{background:#15803d}
-.roi-summary-card th.roi-sum-low{background:#1d4ed8}
-.roi-summary-card th.roi-sum-day-high{background:#dcfce7;color:#166534;border-right:1px solid #bbf7d0;border-bottom:2px solid #16a34a}
-.roi-summary-card th.roi-sum-day-low{background:#dbeafe;color:#1e40af;border-right:1px solid #bfdbfe;border-bottom:2px solid #2563eb}
-.roi-summary-card td{padding:6px 3px;text-align:center;border-right:1px solid #e2e8f0;border-bottom:1px solid #e8ecf2;line-height:1.15}
-.roi-summary-card td.roi-sum-cell-high{background:#f6fdf8}
-.roi-summary-card td.roi-sum-cell-low{background:#f5f8ff}
-.roi-summary-card tbody tr:nth-child(even) td.roi-sum-cell-high{background:#ecfbf1}
-.roi-summary-card tbody tr:nth-child(even) td.roi-sum-cell-low{background:#ecf2ff}
+.roi-summary-card th{padding:5px 3px;background:#e8edf3;color:#0f2a4a;border-right:1px solid #d5dde7;border-bottom:1px solid #cfd8e3;text-transform:uppercase;letter-spacing:.04em;font-size:9.5px;font-weight:800}
+.roi-summary-card th.roi-sum-fee-hd{width:62px}
+.roi-summary-card th.roi-sum-day{background:#f5f7fa;color:#475569;font-weight:700}
+.roi-summary-card th.roi-sum-low,.roi-summary-card .roi-sum-split{border-left:2px solid #94a3b8}
+.roi-summary-card td{padding:6px 3px;text-align:center;border-right:1px solid #e8ecf2;border-bottom:1px solid #e8ecf2;line-height:1.15}
+.roi-summary-card tbody tr:nth-child(even) td{background:#fafbfc}
 .roi-summary-card tr:last-child td{border-bottom:0}
 .roi-summary-card th:last-child,.roi-summary-card td:last-child{border-right:0}
 .roi-summary-card td b{display:block;font-size:11.5px;color:#172033}
-.roi-summary-card td span{display:block;margin-top:2px;font-size:10.5px;font-weight:800}
-.roi-summary-card td.roi-sum-cell-high span{color:#15803d}
-.roi-summary-card td.roi-sum-cell-low span{color:#1d4ed8}
-.roi-summary-card .roi-summary-fee{font-weight:900;font-size:11.5px;color:#fff;background:#475569}
-.roi-summary-card tbody tr:nth-child(even) .roi-summary-fee{background:#3f4c5f}
+.roi-summary-card td span{display:block;margin-top:2px;font-size:10.5px;font-weight:700;color:#475569}
+.roi-summary-card .roi-summary-fee{font-weight:900;font-size:11.5px;color:#0f2a4a;background:#f5f7fa}
+.roi-summary-card tbody tr:nth-child(even) .roi-summary-fee{background:#eef2f6}
 .roi-summary-card .roi-sum-na{font-size:10px;color:#94a3b8}
 .roi-summary-foot{padding:10px 2px 0;font-size:10px;color:#64748b;text-align:center}
-.roi-summary-foot span{color:#15803d;font-weight:800}
+.roi-summary-foot span{color:#475569;font-weight:700}
 @media(max-width:760px){
   .roi-summary-toolbar{align-items:flex-start;flex-direction:column}
   .roi-summary-grid{grid-template-columns:1fr}
+  .roi-summary-grid>.roi-summary-card:first-child{grid-row:auto}
   .roi-summary-sheet{overflow-x:auto}
   .roi-summary-card{min-width:600px}
 }
