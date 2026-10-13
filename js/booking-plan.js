@@ -154,7 +154,7 @@ function _bpVenueMonth(venue, m){
     running+=fee;
     var over=(budget!=null) ? Math.max(0, running-budget) : 0;
     var needs=budget!=null && over>0 && fee>0;
-    var row={uid:_bpUid(r), venue:venue, d:r.d, dj:r.dj||'', fee:fee, status:status, confirmed:isConf,
+    var row={uid:_bpUid(r), venue:venue, d:r.d, dj:r.dj||'', fee:fee, status:status, note:r.note||'', confirmed:isConf,
       bs_m:tgt&&tgt.bs_m!=null?+tgt.bs_m:null, roi_t:tgt&&tgt.roi_t!=null?+tgt.roi_t:null,
       runningAfter:running, overage:needs?Math.min(fee, over):0, needs:needs};
     row.approval=_bpApprovalState(row);
@@ -879,6 +879,7 @@ function _bpExceptionPageHtml(r, c, snap){
     h+=_bpField('DJ', '—')+_bpField('Date', '—')+_bpField('Fee', '—')+_bpField('Status', 'No show');
   }
   h+='</div></div></div>';
+  h+='<div class="bp-x-why"><span>Rationale</span><b>'+(String(r.note||'').trim()?_escHtml(r.note):'No note on this performance.')+'</b></div>';
   h+='<div class="bp-x-bud">'
     +'<div class="bp-x-yel"><span>Total budget</span><b>'+(c.budget!=null?$k(c.budget):'Not set')+'</b></div>'
     +'<div><span>Actual + forecast spend</span><b>'+$k(total)+'</b></div>'
@@ -895,8 +896,18 @@ function _bpExceptionPageHtml(r, c, snap){
     +'</div></div></div>';
 
   h+='<div class="bp-x-sec">3D floor plan'+(priced&&priced.label?' <span>'+_escHtml(priced.label)+'</span>':'')+'</div>';
-  h+='<div class="bp-x-snap">'+(snap?'<img src="'+snap+'" alt="3D floor plan">':'<span>3D snapshot unavailable</span>')+'</div>';
-  h+='</div>';
+  h+='<div class="bp-x-3drow"><div class="bp-x-snap">'+(snap?'<img src="'+snap+'" alt="3D floor plan">':'<span>3D snapshot unavailable</span>')+'</div>';
+  h+='<div class="bp-x-tiers">';
+  if(priced&&priced.tiers&&priced.tiers.length){
+    priced.tiers.forEach(function(t){
+      var price=t.suggested!=null?t.suggested:t.minimum;
+      var n=(t.tables||[]).length;
+      h+='<div class="bp-x-tier" style="--tier-color:'+_escHtml(t.color||'#64748b')+'"><div><b>'+_escHtml(t.name)+'</b><span>'+n+' table'+(n===1?'':'s')+(t.capacity?' · '+t.capacity+' guests':'')+(n?' · #'+t.tables.join(', #'):'')+'</span></div><strong>from '+_escHtml(formatFv3dMoney(price))+'</strong></div>';
+    });
+  } else {
+    h+='<div class="bp-empty">No tier pricing for this venue.</div>';
+  }
+  h+='</div></div></div>';
   return h;
 }
 /* Compact one-page version of the plan used only in the PDF. */
