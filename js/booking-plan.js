@@ -316,67 +316,67 @@ function _bpCardHtml(c){
   h+='</article>';
   return h;
 }
-function _bpRetBox(nowX, lyX){
-  function side(label, x){
-    return '<div><span>'+label+'</span><b>'+(x!=null?(+x).toFixed(1)+'x':'-')+'</b></div>';
-  }
-  return '<div class="bp-ret">'+side('This year', nowX)+side('Last year', lyX)+'</div>';
+function _bpMonthPosition(venue, dateStr){
+  if(!venue||!dateStr) return null;
+  var info=fiscalInfoForDate(dateStr);
+  var range=fiscalPeriodRange(info.year, info.monthIndex);
+  var spend=0;
+  _bpBookings(venue, {from:range.from, to:range.to}).forEach(function(r){
+    if(r.d<=dateStr) spend+=+(r.fee!=null?r.fee:(r.cost||0))||0;
+  });
+  var budget=getMonthlyBudget(venue, info.year, info.mm);
+  return {spend:spend, budget:budget, left:budget!=null?budget-spend:null};
 }
-function _bpLyBox(ly){
-  if(!ly) return '<div class="bp-ly bp-ly-empty">No show<br>same date last year</div>';
-  return '<div class="bp-ly"><b>'+_escHtml(ly.dj||'TBD')+'</b><span>Fee '+$k(ly.fee)+'</span><span>BS '+$k(ly.bs)+'</span></div>';
+function _bpPosHtml(pos){
+  if(!pos) return '-';
+  var h='<div>'+$k(pos.spend)+(pos.budget!=null?'<span class="bp-muted"> / '+$k(pos.budget)+'</span>':'')+'</div>';
+  if(pos.left!=null) h+='<div class="'+(pos.left>=0?'bp-pos':'bp-neg')+'">'+(pos.left>=0?'Under ':'Over ')+$k(Math.abs(pos.left))+'</div>';
+  return h;
 }
+function _bpRoiHtml(x){ return x!=null?(+x).toFixed(1)+'x':'-'; }
 function _bpRowsHtml(data, opts){
   opts=opts||{};
-  var cols=opts.noActions?11:12;
+  var cols=opts.noActions?9:10;
   var h='<div class="bp-list"><table class="bp-tbl"><thead><tr>'
-    +'<th class="l">Date</th><th class="l">Venue</th><th class="l">DJ</th><th>Fee</th><th class="l">Status</th>'
-    +'<th>BS Target</th><th>Return</th><th class="l">Same date last year</th><th>Month spend after</th><th>Over budget by</th><th class="l">Approval</th>'
+    +'<th class="l">Date</th><th class="l">Venue</th><th class="l">Artist</th><th>Fee</th><th class="l">Status</th>'
+    +'<th>BS</th><th>ROI</th><th>Position vs budget</th><th class="l">Approval</th>'
     +(opts.noActions?'':'<th></th>')+'</tr></thead><tbody>';
   var any=false;
-  var grand={fee:0, bs:0, hasBs:false, lyFee:0, lyBs:0, hasLyFee:false, hasLyBs:false, n:0};
-  function addTot(bucket, r, ly){
-    bucket.n++; bucket.fee+=r.fee||0;
-    if(r.bs_m!=null){ bucket.bs+=r.bs_m; bucket.hasBs=true; }
-    if(ly&&ly.fee!=null){ bucket.lyFee+=ly.fee; bucket.hasLyFee=true; }
-    if(ly&&ly.bs!=null){ bucket.lyBs+=ly.bs; bucket.hasLyBs=true; }
-  }
-  function totRow(label, bucket){
-    var nowX=bucket.fee>0&&bucket.hasBs?bucket.bs/bucket.fee:null;
-    var lyX=bucket.hasLyFee&&bucket.lyFee>0&&bucket.hasLyBs?bucket.lyBs/bucket.lyFee:null;
-    return '<tr class="bp-total-row"><td class="l" colspan="3"><b>'+_escHtml(label)+'</b> <span>'+bucket.n+' bookings</span></td>'
-      +'<td><b>'+$k(bucket.fee)+'</b></td><td></td><td><b>'+$k(bucket.hasBs?bucket.bs:null)+'</b></td>'
-      +'<td>'+_bpRetBox(nowX, lyX)+'</td>'
-      +'<td class="l"><div class="bp-ly"><span>Fees '+$k(bucket.hasLyFee?bucket.lyFee:null)+'</span><span>BS '+$k(bucket.hasLyBs?bucket.lyBs:null)+'</span></div></td>'
-      +'<td colspan="'+(opts.noActions?3:4)+'"></td></tr>';
-  }
+  var now={n:0, fee:0, bs:0, hasBs:false};
+  var lyTot={n:0, fee:0, bs:0, hasBs:false};
   data.months.forEach(function(m, mi){
     var monthRows=[];
     Object.keys(data.grid).forEach(function(v){
-      var c=data.grid[v][mi];
-      c.rows.forEach(function(r){ monthRows.push({r:r, c:c}); });
+      data.grid[v][mi].rows.forEach(function(r){ monthRows.push(r); });
     });
-    if(opts.onlyExceptions) monthRows=monthRows.filter(function(x){ return x.r.needs || x.r.approval==='pending' || x.r.approval==='rejected'; });
+    if(opts.onlyExceptions) monthRows=monthRows.filter(function(r){ return r.needs || r.approval==='pending' || r.approval==='rejected'; });
     if(!monthRows.length) return;
     any=true;
-    monthRows.sort(function(a,b){ return a.r.d<b.r.d?-1:(a.r.d>b.r.d?1:(a.r.venue<b.r.venue?-1:1)); });
+    monthRows.sort(function(a,b){ return a.d<b.d?-1:(a.d>b.d?1:(a.venue<b.venue?-1:1)); });
     h+='<tr class="bp-month-row"><td colspan="'+cols+'">'+_escHtml(m.label)+' <span>'+_escHtml(m.range)+'</span></td></tr>';
-    var monthTot={fee:0, bs:0, hasBs:false, lyFee:0, lyBs:0, hasLyFee:false, hasLyBs:false, n:0};
-    monthRows.forEach(function(x){
-      var r=x.r, c=x.c, ly=_bpLyShow(r.venue, r.d);
-      addTot(monthTot, r, ly); addTot(grand, r, ly);
-      var budgetTxt=c.budget!=null?' / '+$k(c.budget):'';
-      h+='<tr class="'+(r.violation?'bp-row-viol':(r.needs?'bp-row-over':''))+'">'
+    monthRows.forEach(function(r){
+      var ly=_bpLyShow(r.venue, r.d);
+      var lyPos=ly?_bpMonthPosition(r.venue, ly.d):null;
+      var bud=null;
+      Object.keys(data.grid).forEach(function(v){ if(v===r.venue) bud=data.grid[v][mi].budget; });
+      var nowPos={spend:r.runningAfter, budget:bud, left:bud!=null?bud-r.runningAfter:null};
+      now.n++; now.fee+=r.fee||0;
+      if(r.bs_m!=null){ now.bs+=r.bs_m; now.hasBs=true; }
+      if(ly){
+        lyTot.n++;
+        if(ly.fee!=null) lyTot.fee+=ly.fee;
+        if(ly.bs!=null){ lyTot.bs+=ly.bs; lyTot.hasBs=true; }
+      }
+      var cls=r.violation?'bp-row-viol':(r.needs?'bp-row-over':'');
+      h+='<tr class="bp-now '+cls+'">'
         +'<td class="l">'+_bpDay(r.d)+'</td>'
         +'<td class="l">'+_escHtml(BP_VENUE_SHORT[r.venue]||r.venue)+'</td>'
         +'<td class="l"><b>'+_escHtml(r.dj||'TBD')+'</b></td>'
         +'<td>'+$k(r.fee)+'</td>'
         +'<td class="l"><span class="bp-status '+(r.confirmed?'bp-status-conf':'bp-status-prop')+'">'+_escHtml(r.status||'No status')+'</span></td>'
-        +'<td>'+$k(r.bs_m)+'</td>'
-        +'<td>'+_bpRetBox(_bpThisReturn(r), ly&&ly.ret)+'</td>'
-        +'<td class="l">'+_bpLyBox(ly)+'</td>'
-        +'<td>'+$k(r.runningAfter)+'<span class="bp-muted">'+budgetTxt+'</span></td>'
-        +'<td>'+(r.overage?'<b class="bp-neg">'+$k(r.overage)+'</b>':'-')+'</td>'
+        +'<td>'+$k(r.bs_m)+'<div class="bp-muted">target</div></td>'
+        +'<td>'+_bpRoiHtml(_bpThisReturn(r))+'</td>'
+        +'<td>'+_bpPosHtml(nowPos)+'</td>'
         +'<td class="l">'+_bpBadge(r.approval)+(r.violation?'<span class="bp-badge bp-st-viol">Confirmed without approval</span>':'')+'</td>';
       if(!opts.noActions){
         var btn='';
@@ -385,11 +385,33 @@ function _bpRowsHtml(data, opts){
         h+='<td>'+btn+'</td>';
       }
       h+='</tr>';
+      if(ly){
+        h+='<tr class="bp-ly-row">'
+          +'<td class="l">'+_bpDay(ly.d)+' <span>last year</span></td>'
+          +'<td class="l">'+_escHtml(BP_VENUE_SHORT[r.venue]||r.venue)+'</td>'
+          +'<td class="l"><b>'+_escHtml(ly.dj||'TBD')+'</b></td>'
+          +'<td>'+$k(ly.fee)+'</td>'
+          +'<td class="l"><span class="bp-status bp-status-ly">Result</span></td>'
+          +'<td>'+$k(ly.bs)+'<div class="bp-muted">actual</div></td>'
+          +'<td>'+_bpRoiHtml(ly.ret)+'</td>'
+          +'<td>'+_bpPosHtml(lyPos)+'</td>'
+          +'<td'+(opts.noActions?'':' colspan="2"')+'></td></tr>';
+      } else {
+        h+='<tr class="bp-ly-row"><td class="l" colspan="'+cols+'"><span>No show on this date last year</span></td></tr>';
+      }
     });
-    if(data.months.length>1) h+=totRow(m.short+' total', monthTot);
   });
   if(!any) h+='<tr><td colspan="'+cols+'" class="bp-empty">'+(opts.onlyExceptions?'No bookings above budget in this period.':'No bookings on the calendar for this period.')+'</td></tr>';
-  else h+=totRow('Total', grand);
+  else {
+    var nowRoi=now.fee>0&&now.hasBs?now.bs/now.fee:null;
+    var lyRoi=lyTot.fee>0&&lyTot.hasBs?lyTot.bs/lyTot.fee:null;
+    h+='<tr class="bp-total-row"><td class="l" colspan="3"><b>Total this year</b> <span>'+now.n+' bookings</span></td>'
+      +'<td><b>'+$k(now.fee)+'</b></td><td></td><td><b>'+$k(now.hasBs?now.bs:null)+'</b><div class="bp-muted">target</div></td>'
+      +'<td><b>'+_bpRoiHtml(nowRoi)+'</b></td><td colspan="'+(cols-7)+'"></td></tr>';
+    h+='<tr class="bp-total-row bp-total-ly"><td class="l" colspan="3"><b>Total last year</b> <span>'+lyTot.n+' same dates</span></td>'
+      +'<td><b>'+$k(lyTot.n?lyTot.fee:null)+'</b></td><td></td><td><b>'+$k(lyTot.hasBs?lyTot.bs:null)+'</b><div class="bp-muted">actual</div></td>'
+      +'<td><b>'+_bpRoiHtml(lyRoi)+'</b></td><td colspan="'+(cols-7)+'"></td></tr>';
+  }
   h+='</tbody></table></div>';
   return h;
 }
@@ -402,7 +424,7 @@ function _bpPlanHtml(data){
   var h='<div id="bpSheet" class="bp-sheet">';
   h+=_bpSheetHead(data, 'Entertainment Booking Plan vs Budget');
   h+=_bpSummaryHtml(data);
-  h+='<div class="bp-sec-hd">Bookings <span>Status, fee and targets come from the calendar. Over-budget bookings need Finance plus Mika or Greg approval before they are confirmed.</span></div>';
+  h+='<div class="bp-sec-hd">Bookings <span>Each date shows this year’s artist, then the same date last year with BS Actual, ROI, and position vs budget.</span></div>';
   h+=_bpRowsHtml(data);
   h+='</div>';
   return h;
