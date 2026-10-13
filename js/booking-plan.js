@@ -254,7 +254,7 @@ function _bpAddTotals(t, c){
 function _bpBlankTot(){ return {budget:0,hasB:false,confirmed:0,proposed:0,bsT:0,pyFee:0,hasPyFee:false,pyBs:0,hasPyBs:false}; }
 function _bpSummaryHtml(data){
   var venues=Object.keys(data.grid);
-  var h='<div class="bp-summary">';
+  var h='<div class="bp-summary'+(data.months.length===1?' bp-summary-1m':'')+'">';
   venues.forEach(function(v){
     h+='<div class="bp-venue-block"><div class="bp-venue-name">'+_escHtml(v)+'</div><div class="bp-cards">';
     var tot=_bpBlankTot();
@@ -336,30 +336,38 @@ function _bpPosHtml(pos){
 function _bpRoiHtml(x){ return x!=null?(+x).toFixed(1)+'x':'-'; }
 function _bpRowsHtml(data, opts){
   opts=opts||{};
-  var cols=opts.noActions?9:10;
-  var h='<div class="bp-list"><table class="bp-tbl"><thead><tr>'
-    +'<th class="l">Date</th><th class="l">Venue</th><th class="l">Artist</th><th>Fee</th><th class="l">Status</th>'
-    +'<th>BS</th><th>ROI</th><th>Position vs budget</th><th class="l">Approval</th>'
-    +(opts.noActions?'':'<th></th>')+'</tr></thead><tbody>';
+  var h='<div class="bp-bk">';
+  h+='<div class="bp-bk-hd"><span>Date</span><div class="bp-bk-cols"><span></span><span>Artist</span><span class="r">Fee</span><span>Status</span><span class="r">BS</span><span class="r">ROI</span><span class="r">Month DJ spend vs budget</span></div><span>Approval</span></div>';
   var any=false;
   var now={n:0, fee:0, bs:0, hasBs:false};
   var lyTot={n:0, fee:0, bs:0, hasBs:false};
+  function line(kind, tag, artist, fee, statusHtml, bs, bsLbl, roi, posHtml){
+    return '<div class="bp-bk-cols bp-bk-line bp-bk-'+kind+'">'
+      +'<span class="bp-bk-tag">'+tag+'</span>'
+      +'<span class="bp-bk-artist">'+artist+'</span>'
+      +'<span class="r">'+fee+'</span>'
+      +'<span>'+statusHtml+'</span>'
+      +'<span class="r">'+bs+(bsLbl?'<em>'+bsLbl+'</em>':'')+'</span>'
+      +'<span class="r">'+roi+'</span>'
+      +'<span class="r">'+posHtml+'</span>'
+      +'</div>';
+  }
   data.months.forEach(function(m, mi){
     var monthRows=[];
     Object.keys(data.grid).forEach(function(v){
-      data.grid[v][mi].rows.forEach(function(r){ monthRows.push(r); });
+      var c=data.grid[v][mi];
+      c.rows.forEach(function(r){ monthRows.push({r:r, budget:c.budget}); });
     });
-    if(opts.onlyExceptions) monthRows=monthRows.filter(function(r){ return r.needs || r.approval==='pending' || r.approval==='rejected'; });
+    if(opts.onlyExceptions) monthRows=monthRows.filter(function(x){ return x.r.needs || x.r.approval==='pending' || x.r.approval==='rejected'; });
     if(!monthRows.length) return;
     any=true;
-    monthRows.sort(function(a,b){ return a.d<b.d?-1:(a.d>b.d?1:(a.venue<b.venue?-1:1)); });
-    h+='<tr class="bp-month-row"><td colspan="'+cols+'">'+_escHtml(m.label)+' <span>'+_escHtml(m.range)+'</span></td></tr>';
-    monthRows.forEach(function(r){
+    monthRows.sort(function(a,b){ return a.r.d<b.r.d?-1:(a.r.d>b.r.d?1:(a.r.venue<b.r.venue?-1:1)); });
+    h+='<div class="bp-bk-month">'+_escHtml(m.label)+' <span>'+_escHtml(m.range)+'</span></div>';
+    monthRows.forEach(function(x){
+      var r=x.r;
       var ly=_bpLyShow(r.venue, r.d);
       var lyPos=ly?_bpMonthPosition(r.venue, ly.d):null;
-      var bud=null;
-      Object.keys(data.grid).forEach(function(v){ if(v===r.venue) bud=data.grid[v][mi].budget; });
-      var nowPos={spend:r.runningAfter, budget:bud, left:bud!=null?bud-r.runningAfter:null};
+      var nowPos={spend:r.runningAfter, budget:x.budget, left:x.budget!=null?x.budget-r.runningAfter:null};
       now.n++; now.fee+=r.fee||0;
       if(r.bs_m!=null){ now.bs+=r.bs_m; now.hasBs=true; }
       if(ly){
@@ -367,52 +375,39 @@ function _bpRowsHtml(data, opts){
         if(ly.fee!=null) lyTot.fee+=ly.fee;
         if(ly.bs!=null){ lyTot.bs+=ly.bs; lyTot.hasBs=true; }
       }
-      var cls=r.violation?'bp-row-viol':(r.needs?'bp-row-over':'');
-      h+='<tr class="bp-now '+cls+'">'
-        +'<td class="l">'+_bpDay(r.d)+'</td>'
-        +'<td class="l">'+_escHtml(BP_VENUE_SHORT[r.venue]||r.venue)+'</td>'
-        +'<td class="l"><b>'+_escHtml(r.dj||'TBD')+'</b></td>'
-        +'<td>'+$k(r.fee)+'</td>'
-        +'<td class="l"><span class="bp-status '+(r.confirmed?'bp-status-conf':'bp-status-prop')+'">'+_escHtml(r.status||'No status')+'</span></td>'
-        +'<td>'+$k(r.bs_m)+'<div class="bp-muted">target</div></td>'
-        +'<td>'+_bpRoiHtml(_bpThisReturn(r))+'</td>'
-        +'<td>'+_bpPosHtml(nowPos)+'</td>'
-        +'<td class="l">'+_bpBadge(r.approval)+(r.violation?'<span class="bp-badge bp-st-viol">Confirmed without approval</span>':'')+'</td>';
-      if(!opts.noActions){
-        var btn='';
-        if(r.approval==='needed'||r.approval==='reapproval') btn='<button type="button" class="bp-act bp-act-main" onclick="bpOpenRequest(\''+r.uid+'\')">Request approval</button>';
-        else if(r.approval!=='none' && r.approval!=='past') btn='<button type="button" class="bp-act" onclick="bpOpenRequest(\''+r.uid+'\')">Open</button>';
-        h+='<td>'+btn+'</td>';
-      }
-      h+='</tr>';
+      var cls=r.violation?' bp-bk-viol':(r.needs?' bp-bk-over':'');
+      h+='<div class="bp-bk-box'+cls+'">';
+      h+='<div class="bp-bk-date"><b>'+_bpDay(r.d)+'</b><span>'+_escHtml(BP_VENUE_SHORT[r.venue]||r.venue)+'</span></div>';
+      h+='<div class="bp-bk-lines">';
+      h+=line('now', 'This year', '<b>'+_escHtml(r.dj||'TBD')+'</b>', $k(r.fee),
+        '<span class="bp-status '+(r.confirmed?'bp-status-conf':'bp-status-prop')+'">'+_escHtml(r.status||'No status')+'</span>',
+        $k(r.bs_m), 'target', _bpRoiHtml(_bpThisReturn(r)), _bpPosHtml(nowPos));
       if(ly){
-        h+='<tr class="bp-ly-row">'
-          +'<td class="l">'+_bpDay(ly.d)+' <span>last year</span></td>'
-          +'<td class="l">'+_escHtml(BP_VENUE_SHORT[r.venue]||r.venue)+'</td>'
-          +'<td class="l"><b>'+_escHtml(ly.dj||'TBD')+'</b></td>'
-          +'<td>'+$k(ly.fee)+'</td>'
-          +'<td class="l"><span class="bp-status bp-status-ly">Result</span></td>'
-          +'<td>'+$k(ly.bs)+'<div class="bp-muted">actual</div></td>'
-          +'<td>'+_bpRoiHtml(ly.ret)+'</td>'
-          +'<td>'+_bpPosHtml(lyPos)+'</td>'
-          +'<td'+(opts.noActions?'':' colspan="2"')+'></td></tr>';
+        h+=line('ly', 'Last year<em>'+_bpDay(ly.d)+'</em>', _escHtml(ly.dj||'TBD'), $k(ly.fee),
+          '<span class="bp-status bp-status-ly">Result</span>', $k(ly.bs), 'actual', _bpRoiHtml(ly.ret), _bpPosHtml(lyPos));
       } else {
-        h+='<tr class="bp-ly-row"><td class="l" colspan="'+cols+'"><span>No show on this date last year</span></td></tr>';
+        h+='<div class="bp-bk-cols bp-bk-line bp-bk-ly bp-bk-none"><span class="bp-bk-tag">Last year</span><span class="bp-bk-artist">No show on this date last year</span></div>';
       }
+      h+='</div>';
+      h+='<div class="bp-bk-appr">'+_bpBadge(r.approval)+(r.violation?'<span class="bp-badge bp-st-viol">Confirmed without approval</span>':'');
+      if(!opts.noActions){
+        if(r.approval==='needed'||r.approval==='reapproval') h+='<button type="button" class="bp-act bp-act-main" onclick="bpOpenRequest(\''+r.uid+'\')">Request approval</button>';
+        else if(r.approval!=='none' && r.approval!=='past') h+='<button type="button" class="bp-act" onclick="bpOpenRequest(\''+r.uid+'\')">Open</button>';
+      }
+      h+='</div></div>';
     });
   });
-  if(!any) h+='<tr><td colspan="'+cols+'" class="bp-empty">'+(opts.onlyExceptions?'No bookings above budget in this period.':'No bookings on the calendar for this period.')+'</td></tr>';
-  else {
+  if(!any){
+    h+='<div class="bp-empty">'+(opts.onlyExceptions?'No bookings above budget in this period.':'No bookings on the calendar for this period.')+'</div>';
+  } else {
     var nowRoi=now.fee>0&&now.hasBs?now.bs/now.fee:null;
     var lyRoi=lyTot.fee>0&&lyTot.hasBs?lyTot.bs/lyTot.fee:null;
-    h+='<tr class="bp-total-row"><td class="l" colspan="3"><b>Total this year</b> <span>'+now.n+' bookings</span></td>'
-      +'<td><b>'+$k(now.fee)+'</b></td><td></td><td><b>'+$k(now.hasBs?now.bs:null)+'</b><div class="bp-muted">target</div></td>'
-      +'<td><b>'+_bpRoiHtml(nowRoi)+'</b></td><td colspan="'+(cols-7)+'"></td></tr>';
-    h+='<tr class="bp-total-row bp-total-ly"><td class="l" colspan="3"><b>Total last year</b> <span>'+lyTot.n+' same dates</span></td>'
-      +'<td><b>'+$k(lyTot.n?lyTot.fee:null)+'</b></td><td></td><td><b>'+$k(lyTot.hasBs?lyTot.bs:null)+'</b><div class="bp-muted">actual</div></td>'
-      +'<td><b>'+_bpRoiHtml(lyRoi)+'</b></td><td colspan="'+(cols-7)+'"></td></tr>';
+    h+='<div class="bp-bk-box bp-bk-total"><div class="bp-bk-date"><b>Total</b><span>All bookings</span></div><div class="bp-bk-lines">';
+    h+=line('now', 'This year', '<b>'+now.n+' bookings</b>', '<b>'+$k(now.fee)+'</b>', '', '<b>'+$k(now.hasBs?now.bs:null)+'</b>', 'target', '<b>'+_bpRoiHtml(nowRoi)+'</b>', '');
+    h+=line('ly', 'Last year', lyTot.n+' same dates', $k(lyTot.n?lyTot.fee:null), '', $k(lyTot.hasBs?lyTot.bs:null), 'actual', _bpRoiHtml(lyRoi), '');
+    h+='</div><div class="bp-bk-appr"></div></div>';
   }
-  h+='</tbody></table></div>';
+  h+='</div>';
   return h;
 }
 function _bpSheetHead(data, title){
@@ -422,9 +417,9 @@ function _bpSheetHead(data, title){
 }
 function _bpPlanHtml(data){
   var h='<div id="bpSheet" class="bp-sheet">';
-  h+=_bpSheetHead(data, 'Entertainment Booking Plan vs Budget');
+  h+=_bpSheetHead(data, data.months.length>1?'Three Month Booking Plan':'Entertainment Booking Plan vs Budget');
   h+=_bpSummaryHtml(data);
-  h+='<div class="bp-sec-hd">Bookings <span>Each date shows this year’s artist, then the same date last year with BS Actual, ROI, and position vs budget.</span></div>';
+  h+='<div class="bp-sec-hd">Bookings <span>One box per performance: this year on top, the same date last year below.</span></div>';
   h+=_bpRowsHtml(data);
   h+='</div>';
   return h;
@@ -685,10 +680,301 @@ function _bpPdfName(){
   var ms=_bpMonths();
   return 'RDG-Entertainment-Booking-Plan-'+ms[0].key+(ms.length>1?'-to-'+ms[ms.length-1].key:'')+'.pdf';
 }
+/* Every PDF page is a fixed landscape-letter frame (11 x 8.5). */
+var BP_PAGE_W=1600, BP_PAGE_H=1236;
+function _bpBusy(on, msg){
+  var el=document.getElementById('bpBusy');
+  if(!on){ if(el) el.remove(); return; }
+  if(!el){
+    el=document.createElement('div');
+    el.id='bpBusy';
+    el.className='bp-busy';
+    document.body.appendChild(el);
+  }
+  el.innerHTML='<div><b>Preparing PDF</b><span>'+_escHtml(msg||'')+'</span></div>';
+}
+function _bpCoverHtml(title, sub){
+  return '<div class="bp-page bp-cover">'
+    +'<img class="bp-cover-logo" src="assets/rdg-logo.png" alt="RDG">'
+    +'<div class="bp-cover-box">'+_escHtml(title)+'</div>'
+    +(sub?'<div class="bp-cover-sub">'+_escHtml(sub)+'</div>':'')
+    +'</div>';
+}
+function _bpStatSel(lbl, val, cls){
+  return '<div class="bp-x-stat'+(cls?' '+cls:'')+'"><span>'+lbl+'</span><b>'+val+'</b></div>';
+}
+function _bp3dOrbit(model, tableKey, url){
+  var orbit=model.orbit||'45deg 60deg 110%';
+  if(tableKey==='casa-neos-beach-club-summer' && model.summerOrbit) orbit=model.summerOrbit;
+  if(tableKey==='casa-neos-beach-club-new' && model.fallOrbit) orbit=model.fallOrbit;
+  if(tableKey==='casa-neos-beach-club-basel' && model.baselOrbit) orbit=model.baselOrbit;
+  if((tableKey==='casa-neos-lounge-new'||tableKey==='casa-neos-lounge-oct'||/lounge\/model-new/.test(url||'')) && model.newOrbit) orbit=model.newOrbit;
+  return orbit;
+}
+var _bpSnapCache={};
+/* WebGL is invisible to html2canvas, so the 3D plan is rendered on screen
+   (under the busy overlay) and captured with model-viewer's own toBlob(). */
+function _bpSnap3d(venue, date){
+  var key=(typeof fv3dKeyForVenue==='function')?fv3dKeyForVenue(venue):null;
+  var model=key&&typeof FV_3D_MODELS!=='undefined'?FV_3D_MODELS.find(function(m){ return m.key===key; }):null;
+  if(!model || typeof _ensureModelViewerScript!=='function') return Promise.resolve(null);
+  var url=(typeof fv3dEffectiveModelUrl==='function'?fv3dEffectiveModelUrl(key, date):null)||model.url;
+  var tableKey=(typeof fv3dEffectiveTableKey==='function')?fv3dEffectiveTableKey(key, date):key;
+  var orbit=_bp3dOrbit(model, tableKey, url);
+  var ck=url+'|'+orbit;
+  if(_bpSnapCache[ck]) return _bpSnapCache[ck];
+  var p=new Promise(function(resolve){
+    var done=false, host=null;
+    function finish(v){
+      if(done) return;
+      done=true;
+      if(host) host.remove();
+      resolve(v);
+    }
+    setTimeout(function(){ finish(null); }, 60000);
+    _ensureModelViewerScript(function(){
+      host=document.createElement('div');
+      host.className='bp-snap-host';
+      var mv=document.createElement('model-viewer');
+      mv.setAttribute('src', url);
+      mv.setAttribute('camera-orbit', orbit);
+      mv.setAttribute('interaction-prompt','none');
+      mv.setAttribute('shadow-intensity','1');
+      mv.setAttribute('exposure','1.1');
+      mv.style.cssText='width:100%;height:100%;background:#ffffff';
+      host.appendChild(mv);
+      document.body.appendChild(host);
+      mv.addEventListener('error', function(){ finish(null); });
+      mv.addEventListener('load', function(){
+        setTimeout(function(){
+          try{
+            mv.toBlob({mimeType:'image/png'}).then(function(blob){
+              var fr=new FileReader();
+              fr.onload=function(){ finish(fr.result); };
+              fr.onerror=function(){ finish(null); };
+              fr.readAsDataURL(blob);
+            }, function(){ finish(null); });
+          }catch(e){ finish(null); }
+        }, 1500);
+      });
+    });
+  });
+  _bpSnapCache[ck]=p;
+  p.then(function(v){ if(!v) delete _bpSnapCache[ck]; });
+  return p;
+}
+function _bpExceptionPageHtml(r, c, snap){
+  var today=_bpToday();
+  var actual=0, forecast=0;
+  c.rows.forEach(function(x){ if(x.d<today) actual+=x.fee||0; else forecast+=x.fee||0; });
+  var total=actual+forecast;
+  var left=c.budget!=null?c.budget-total:null;
+  var ly=_bpLyShow(r.venue, r.d);
+  var yr=c.month.year, mm=c.month.mm;
+  var salesPlan=typeof getBgtPlan==='function'?getBgtPlan(r.venue, yr, mm, 'sales'):null;
+  var salesLy=typeof getBgtActual==='function'?getBgtActual(r.venue, yr-1, mm, 'sales'):null;
+  var priced=typeof calcTierPricesForShow==='function'?calcTierPricesForShow(r.venue, r.d, r.fee):null;
+  function diff(a, b){
+    if(a==null||b==null||!b) return '';
+    var pct=(a-b)/b*100;
+    return '<em class="'+(pct>=0?'bp-pos':'bp-neg')+'">'+(pct>=0?'+':'')+pct.toFixed(0)+'% vs last year</em>';
+  }
+  var h='<div class="bp-page bp-x">';
+  h+='<div class="bp-x-hd"><div><b>Budget Exception</b><span>'+_escHtml(r.venue)+' · '+_escHtml(c.month.label)+' ('+_escHtml(c.month.range)+')</span></div>'
+    +'<img src="assets/rdg-logo.png" alt="RDG"></div>';
+
+  h+='<div class="bp-x-sec">Performance &amp; budget</div><div class="bp-x-grid">'
+    +_bpStatSel('DJ', _escHtml(r.dj||'TBD'), 'bp-x-wide')
+    +_bpStatSel('Date', _bpDay(r.d))
+    +_bpStatSel('Fee', $k(r.fee))
+    +_bpStatSel('Status', _escHtml(r.status||'No status'))
+    +'</div><div class="bp-x-grid">'
+    +_bpStatSel('Total budget for the month', c.budget!=null?$k(c.budget):'Not set', 'bp-x-budget')
+    +_bpStatSel('Actual DJ fees (played)', $k(actual))
+    +_bpStatSel('Forecast DJ fees (upcoming)', $k(forecast))
+    +_bpStatSel('Actual + forecast', $k(total), 'bp-x-strong')
+    +_bpStatSel('vs budget', left==null?'-':'<span class="'+(left>=0?'bp-pos':'bp-neg')+'">'+(left>=0?'Under ':'Over ')+$k(Math.abs(left))+'</span>')
+    +'</div>';
+
+  h+='<div class="bp-x-sec">Sales: what we plan vs what we did last year</div><div class="bp-x-sales">'
+    +'<div class="bp-x-sbox"><div class="bp-x-shd">This night</div>'
+    +'<div class="bp-x-srow"><span>Planned BS (target)</span><b>'+$k(r.bs_m)+'</b></div>'
+    +'<div class="bp-x-srow"><span>Last year same date'+(ly?' ('+_bpDay(ly.d)+(ly.dj?', '+_escHtml(ly.dj):'')+')':'')+'</span><b>'+(ly?$k(ly.bs):'No show')+'</b></div>'
+    +'<div class="bp-x-srow bp-x-sfoot">'+diff(r.bs_m, ly&&ly.bs)+'</div></div>'
+    +'<div class="bp-x-sbox"><div class="bp-x-shd">Whole month: bottle service</div>'
+    +'<div class="bp-x-srow"><span>Planned BS (all bookings)</span><b>'+$k(c.bsT||null)+'</b></div>'
+    +'<div class="bp-x-srow"><span>Last year BS actual</span><b>'+$k(c.py&&c.py.bs!=null?c.py.bs:null)+'</b></div>'
+    +'<div class="bp-x-srow bp-x-sfoot">'+diff(c.bsT, c.py&&c.py.bs)+'</div></div>'
+    +'<div class="bp-x-sbox"><div class="bp-x-shd">Whole month: total sales</div>'
+    +'<div class="bp-x-srow"><span>Sales budget</span><b>'+$k(salesPlan!=null?+salesPlan:null)+'</b></div>'
+    +'<div class="bp-x-srow"><span>Last year sales actual</span><b>'+$k(salesLy)+'</b></div>'
+    +'<div class="bp-x-srow bp-x-sfoot">'+diff(salesPlan!=null?+salesPlan:null, salesLy)+'</div></div>'
+    +'</div>';
+
+  h+='<div class="bp-x-sec">3D floor plan &amp; table tiers'+(priced&&priced.label?' <span>'+_escHtml(priced.label)+'</span>':'')+'</div><div class="bp-x-3d">';
+  h+='<div class="bp-x-snap">'+(snap?'<img src="'+snap+'" alt="3D floor plan">':'<span>3D snapshot unavailable</span>')+'</div>';
+  h+='<div class="bp-x-tiers">';
+  if(priced&&priced.tiers&&priced.tiers.length){
+    priced.tiers.forEach(function(t){
+      var price=t.suggested!=null?t.suggested:t.minimum;
+      var n=(t.tables||[]).length;
+      h+='<div class="bp-x-tier" style="--tier-color:'+_escHtml(t.color||'#64748b')+'"><div><b>'+_escHtml(t.name)+'</b><span>'+n+' table'+(n===1?'':'s')+(t.capacity?' · '+t.capacity+' guests':'')+'</span>'
+        +(n?'<small>#'+t.tables.join(', #')+'</small>':'')+'</div><strong>'+_escHtml(formatFv3dMoney(price))+'</strong></div>';
+    });
+  } else {
+    h+='<div class="bp-empty">No tier pricing for this venue.</div>';
+  }
+  h+='</div></div></div>';
+  return h;
+}
+/* Compact one-page version of the plan used only in the PDF. */
+function _bpPrintSheetHtml(data, onlyMonth){
+  var ms=data.months, venues=Object.keys(data.grid);
+  var showSummary=onlyMonth==null||onlyMonth===0;
+  function rem(v){ return v==null?'<span class="bp-muted">-</span>':'<span class="'+(v>=0?'bp-pos':'bp-neg')+'">'+(v>=0?'Under ':'Over ')+$k(Math.abs(v))+'</span>'; }
+  function cells(c){
+    return '<td class="bp-p-bud">'+(c.budget!=null?$k(c.budget):'Not set')+'</td><td>'+$k(c.confirmed)+'</td><td>'+$k(c.proposed)+'</td><td><b>'+$k(c.planned)+'</b></td><td>'+rem(c.remaining)+'</td><td>'+$k(c.bsT||null)+'</td><td class="bp-p-end">'+$k(c.py&&c.py.bs!=null?c.py.bs:null)+'</td>';
+  }
+  var h='<div class="bp-print">';
+  h+=_bpSheetHead(data, ms.length>1?'Three Month Booking Plan'+(onlyMonth!=null?' · '+ms[onlyMonth].label+' ('+(onlyMonth+1)+' of '+ms.length+')':''):'Entertainment Booking Plan vs Budget');
+  if(showSummary){
+  h+='<div class="bp-p-sec">Budget vs pipeline</div><table class="bp-p-tbl bp-p-sum"><thead><tr><th rowspan="2" class="l">Venue</th>';
+  ms.forEach(function(m){ h+='<th colspan="7" class="bp-p-end">'+_escHtml(m.label)+' <span>'+_escHtml(m.range)+'</span></th>'; });
+  h+='</tr><tr>';
+  ms.forEach(function(){ h+='<th>Budget</th><th>Confirmed</th><th>Proposed</th><th>Total</th><th>vs budget</th><th>BS Target</th><th class="bp-p-end">PY BS</th>'; });
+  h+='</tr></thead><tbody>';
+  venues.forEach(function(v){
+    h+='<tr><td class="l"><b>'+_escHtml(BP_VENUE_SHORT[v]||v)+'</b></td>';
+    data.grid[v].forEach(function(c){ h+=cells(c); });
+    h+='</tr>';
+  });
+  if(venues.length>1){
+    h+='<tr class="bp-p-all"><td class="l"><b>All venues</b></td>';
+    ms.forEach(function(m, i){
+      var t=_bpBlankTot();
+      venues.forEach(function(v){ _bpAddTotals(t, data.grid[v][i]); });
+      h+=cells(_bpTotCard(t, m.label));
+    });
+    h+='</tr>';
+  }
+  h+='</tbody></table>';
+  }
+
+  var rows=[];
+  ms.forEach(function(m, mi){
+    if(onlyMonth!=null && mi!==onlyMonth) return;
+    venues.forEach(function(v){ var c=data.grid[v][mi]; c.rows.forEach(function(r){ rows.push({r:r, budget:c.budget}); }); });
+  });
+  rows.sort(function(a,b){ return a.r.d<b.r.d?-1:(a.r.d>b.r.d?1:(a.r.venue<b.r.venue?-1:1)); });
+  h+='<div class="bp-p-sec">Bookings'+(onlyMonth!=null?' · '+_escHtml(ms[onlyMonth].label):'')+': this year vs same date last year</div>';
+  h+='<table class="bp-p-tbl bp-p-bk"><thead><tr><th colspan="2" class="l"></th><th colspan="5" class="bp-p-now bp-p-end">This year</th><th colspan="5" class="bp-p-ly bp-p-end">Last year (same date)</th><th colspan="2"></th></tr>'
+    +'<tr><th class="l">Date</th><th class="l">Venue</th><th class="l">Artist</th><th>Fee</th><th class="l">Status</th><th>BS target</th><th class="bp-p-end">ROI</th>'
+    +'<th class="l">Date</th><th class="l">Artist</th><th>Fee</th><th>BS actual</th><th class="bp-p-end">ROI</th><th>Month vs budget</th><th class="l">Approval</th></tr></thead><tbody>';
+  var t={n:0,fee:0,bs:0,hb:false}, lt={n:0,fee:0,bs:0,hb:false};
+  rows.forEach(function(x){
+    var r=x.r, ly=_bpLyShow(r.venue, r.d);
+    var pos={spend:r.runningAfter, budget:x.budget, left:x.budget!=null?x.budget-r.runningAfter:null};
+    t.n++; t.fee+=r.fee||0; if(r.bs_m!=null){ t.bs+=r.bs_m; t.hb=true; }
+    if(ly){ lt.n++; lt.fee+=ly.fee||0; if(ly.bs!=null){ lt.bs+=ly.bs; lt.hb=true; } }
+    h+='<tr class="'+(r.violation?'bp-p-viol':(r.needs?'bp-p-over':''))+'"><td class="l"><b>'+_bpDay(r.d)+'</b></td><td class="l">'+_escHtml(BP_VENUE_SHORT[r.venue]||r.venue)+'</td>'
+      +'<td class="l"><b>'+_escHtml(r.dj||'TBD')+'</b></td><td>'+$k(r.fee)+'</td><td class="l"><span class="bp-status '+(r.confirmed?'bp-status-conf':'bp-status-prop')+'">'+_escHtml(r.status||'No status')+'</span></td><td>'+$k(r.bs_m)+'</td><td class="bp-p-end">'+_bpRoiHtml(_bpThisReturn(r))+'</td>';
+    if(ly) h+='<td class="l bp-p-lyc">'+_bpDay(ly.d)+'</td><td class="l bp-p-lyc">'+_escHtml(ly.dj||'TBD')+'</td><td class="bp-p-lyc">'+$k(ly.fee)+'</td><td class="bp-p-lyc">'+$k(ly.bs)+'</td><td class="bp-p-lyc bp-p-end">'+_bpRoiHtml(ly.ret)+'</td>';
+    else h+='<td colspan="5" class="l bp-p-lyc bp-p-end bp-muted">No show on this date last year</td>';
+    h+='<td>'+_bpPosHtml(pos)+'</td><td class="l">'+_bpBadge(r.approval)+'</td></tr>';
+  });
+  if(!rows.length) h+='<tr><td colspan="14" class="bp-muted">No bookings on the calendar for this period.</td></tr>';
+  else h+='<tr class="bp-p-all"><td class="l" colspan="2"><b>Total</b></td><td class="l"><b>'+t.n+' bookings</b></td><td><b>'+$k(t.fee)+'</b></td><td></td><td><b>'+$k(t.hb?t.bs:null)+'</b></td><td class="bp-p-end"><b>'+_bpRoiHtml(t.fee>0&&t.hb?t.bs/t.fee:null)+'</b></td>'
+    +'<td class="l bp-p-lyc" colspan="2">'+lt.n+' same dates</td><td class="bp-p-lyc">'+$k(lt.n?lt.fee:null)+'</td><td class="bp-p-lyc">'+$k(lt.hb?lt.bs:null)+'</td><td class="bp-p-lyc bp-p-end">'+_bpRoiHtml(lt.fee>0&&lt.hb?lt.bs/lt.fee:null)+'</td><td colspan="2"></td></tr>';
+  h+='</tbody></table></div>';
+  return h;
+}
+function _bpPdfCanvas(el){
+  var big=el.classList&&el.classList.contains('bp-print');
+  return window.html2canvas(el,{scale:big?2:1.25,useCORS:true,logging:false,backgroundColor:'#ffffff',windowWidth:BP_PAGE_W});
+}
+function _bpRenderPage(html){
+  var stage=document.createElement('div');
+  stage.className='bp-pdf-stage';
+  stage.innerHTML=html;
+  document.body.appendChild(stage);
+  var imgs=Array.prototype.slice.call(stage.querySelectorAll('img'));
+  return Promise.all(imgs.map(function(im){
+    return im.complete?null:new Promise(function(res){ im.onload=im.onerror=res; });
+  })).then(function(){ return _bpPdfCanvas(stage.firstChild); }).then(function(cv){
+    stage.remove();
+    return cv;
+  }, function(err){ stage.remove(); throw err; });
+}
+/* One canvas per page, scaled down to fit the whole page. */
+function _bpPdfFit(canvases){
+  var pdf=new window.jspdf.jsPDF({orientation:'landscape', unit:'pt', format:'letter'});
+  var pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight(), m=18;
+  canvases.forEach(function(cv, i){
+    if(i) pdf.addPage();
+    var s=Math.min((pw-2*m)/cv.width, (ph-2*m)/cv.height);
+    var w=cv.width*s, h=cv.height*s;
+    pdf.addImage(cv.toDataURL('image/jpeg', 0.88), 'JPEG', (pw-w)/2, m, w, h);
+  });
+  return pdf;
+}
+function _bpExceptionRows(data){
+  if(data.months.length!==1) return [];
+  var out=[], today=_bpToday();
+  Object.keys(data.grid).forEach(function(v){
+    var c=data.grid[v][0];
+    c.rows.forEach(function(r){ if(!r.confirmed && r.d>=today) out.push({r:r, c:c}); });
+  });
+  out.sort(function(a,b){ return a.r.d<b.r.d?-1:(a.r.d>b.r.d?1:(a.r.venue<b.r.venue?-1:1)); });
+  return out;
+}
+function _bpBuildPdf(data){
+  var ms=data.months;
+  var period=ms.length>1?(ms[0].label+' – '+ms[ms.length-1].label):ms[0].label;
+  var sub=(ms.length>1?'Three Month Booking Plan':'Monthly Booking Plan')+' · '+period+' · '+(_bpVenue==='all'?'All venues':_bpVenue);
+  var canvases=[];
+  var exc=_bpExceptionRows(data);
+  _bpBusy(true, 'Cover page');
+  return _ensurePdfLibs().then(function(){
+    return document.fonts&&document.fonts.ready?document.fonts.ready:null;
+  }).then(function(){
+    return _bpRenderPage(_bpCoverHtml('Entertainment Approval', sub));
+  }).then(function(cv){
+    canvases.push(cv);
+    _bpBusy(true, 'Booking plan');
+    if(_bpPanel==='meeting') return _bpCaptureSheet().then(function(cv){ canvases.push(cv); });
+    if(ms.length===1) return _bpRenderPage(_bpPrintSheetHtml(data)).then(function(cv){ canvases.push(cv); });
+    var chain=Promise.resolve();
+    ms.forEach(function(m, mi){
+      chain=chain.then(function(){ return _bpRenderPage(_bpPrintSheetHtml(data, mi)); }).then(function(cv){ canvases.push(cv); });
+    });
+    return chain;
+  }).then(function(){
+    if(!exc.length) return null;
+    var chain=_bpRenderPage(_bpCoverHtml('Budget Exceptions', exc.length+' upcoming performance'+(exc.length===1?'':'s')+' not confirmed · '+period)).then(function(cv){ canvases.push(cv); });
+    exc.forEach(function(x, i){
+      chain=chain.then(function(){
+        _bpBusy(true, 'Budget exception '+(i+1)+' of '+exc.length+' · 3D floor plan');
+        return _bpSnap3d(x.r.venue, x.r.d);
+      }).then(function(snap){
+        _bpBusy(true, 'Budget exception '+(i+1)+' of '+exc.length);
+        return _bpRenderPage(_bpExceptionPageHtml(x.r, x.c, snap));
+      }).then(function(cv){ canvases.push(cv); });
+    });
+    return chain;
+  }).then(function(){
+    return _bpPdfFit(canvases);
+  }).then(function(pdf){
+    _bpBusy(false);
+    return pdf;
+  }, function(err){
+    _bpBusy(false);
+    throw err;
+  });
+}
 function bpExportPdf(){
   if(_bpPanel==='history'){ alert('Switch to Plan or Meeting to export.'); return; }
-  _bpCaptureSheet().then(function(canvas){
-    return _pdfFromCanvases([canvas], _bpPdfName(), false, 0.85);
+  _bpBuildPdf(_bpCompute()).then(function(pdf){
+    pdf.save(_bpPdfName());
   }).catch(function(err){
     alert('Could not export the PDF. '+(err&&err.message?err.message:''));
   });
@@ -728,8 +1014,8 @@ function bpGenerateMonthlyPlan(){
   btns.forEach(function(b){ b.disabled=true; b.textContent='Preparing…'; });
   var ms=data.months;
   var pdfName=_bpPdfName();
-  _bpCaptureSheet().then(function(canvas){
-    return _pdfFromCanvases([canvas], pdfName, true, 0.85);
+  _bpBuildPdf(data).then(function(pdf){
+    return pdf.output('blob');
   }).then(function(blob){
     return _blobToBase64(blob);
   }).then(function(b64){
