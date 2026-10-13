@@ -207,7 +207,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .pill{font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;display:inline-block}
 .p-beat{background:var(--beat-bg);color:var(--beat)}.p-miss{background:var(--miss-bg);color:var(--miss)}.p-nd{background:var(--card3);color:var(--ink3)}
 /* Modal */
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.35);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:250}
 .modal-bg.hidden{display:none}
 .session-gate{position:fixed;inset:0;background:rgba(12,16,24,.72);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:400}
 .session-gate.hidden{display:none}
