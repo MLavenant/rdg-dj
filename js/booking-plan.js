@@ -1,0 +1,659 @@
+/* Budget > Booking Plan & Approvals.
+   Read-only on the calendar: reads SCHED / showTargets / MONTHLY_DJ_BUDGET and never
+   writes to schedOverrides or calls any calendar save path. Its own data lives in
+   rdg/bookingApprovals, rdg/budgetConfirmations, rdg/bookingPlans, rdg/bookingMeetings
+   and is loaded by dedicated listeners that do not go through _fbApply. */
+
+var BP_VENUES=['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'];
+var BP_VENUE_SHORT={'Casa Neos Beach Club':'Beach Club','Casa Neos Lounge':'CN Lounge','MILA Lounge':'MILA'};
+var BP_CONFIRMED=['Confirmed','Invoice + Contract Signed','Contract + invoice received'];
+var BP_EXECS=['Mika','Greg'];
+var _bpMode='3m';
+var _bpVenue='all';
+var _bpOffset=0;
+var _bpPanel='plan';
+var _bpData={approvals:{}, confirms:{}, plans:{}, meetings:{}};
+
+(function _bpListen(){
+  if(!window._fbDb) return;
+  function bind(path, key){
+    window._fbDb.ref('rdg/'+path).on('value', function(snap){
+      _bpData[key]=snap.val()||{};
+      _bpMaybeRerender();
+    }, function(err){ try{ console.warn('Booking plan listener failed', path, err); }catch(e){} });
+  }
+  bind('bookingApprovals','approvals');
+  bind('budgetConfirmations','confirms');
+  bind('bookingPlans','plans');
+  bind('bookingMeetings','meetings');
+})();
+
+function _bpMaybeRerender(){
+  if(typeof curView==='undefined' || curView!=='budget') return;
+  if(typeof budgetSubTab==='undefined' || budgetSubTab!=='plan') return;
+  if(document.getElementById('bpModal')) return;
+  var ae=document.activeElement;
+  if(ae && ae.closest && ae.closest('#budgetBookingPlan') && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;
+  renderBookingPlan();
+}
+
+function _bpSave(path, value, cb){
+  if(!window._fbRef){ alert('Not connected to the live database. Refresh and try again.'); return; }
+  window._fbRef.child(path).set(value===undefined?null:value, function(err){
+    if(err){ alert('Save failed: '+(err.message||err)); return; }
+    if(cb) cb();
+  });
+}
+function _bpWho(){
+  var n=(typeof _presenceName==='function')?_presenceName():'';
+  return n||'Unknown';
+}
+function _bpNow(){ return new Date().toISOString(); }
+function _bpFmtDate(iso){
+  if(!iso) return '';
+  var d=new Date(iso);
+  if(isNaN(d.getTime())) return String(iso).slice(0,10);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function _bpDay(ds){
+  var d=new Date(ds+'T12:00:00');
+  return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]+' '+(d.getMonth()+1)+'/'+d.getDate();
+}
+
+/* ---- Periods (fiscal 4-4-5 months, same as Budget) ---- */
+function _bpMonths(){
+  var today=(typeof TODAY!=='undefined'&&TODAY)?String(TODAY):miamiToday();
+  var info=fiscalInfoForDate(today);
+  var y=info.year, mi=info.monthIndex+_bpOffset;
+  while(mi<0){ mi+=12; y--; }
+  while(mi>11){ mi-=12; y++; }
+  var n=_bpMode==='1m'?1:3, out=[];
+  for(var i=0;i<n;i++){
+    var r=fiscalPeriodRange(y, mi);
+    out.push({year:y, mi:mi, mm:padMm(mi+1), key:y+'-'+padMm(mi+1), label:MN_FULL[mi]+' '+y, short:MNS[mi]+' '+y, from:r.from, to:r.to, range:fiscalPeriodShortRange(y, mi)});
+    mi++; if(mi>11){ mi=0; y++; }
+  }
+  return out;
+}
+
+/* ---- Calendar read (never mutates SCHED rows) ---- */
+function _bpUid(r){
+  return r._uid || stableShowUidForNight(r.v||r.venue||'', r.d||'');
+}
+function _bpStatus(r){
+  if(typeof getShowDjStatus==='function') return getShowDjStatus(r, r.d)||'';
+  return r.djStatus||'';
+}
+function _bpBookings(venue, m){
+  return (typeof SCHED!=='undefined'?SCHED:[]).filter(function(r){
+    if(!r || !r.d || r._s==='empty') return false;
+    if((r.v||r.venue)!==venue) return false;
+    if(r.d<m.from || r.d>m.to) return false;
+    var fee=r.fee!=null?r.fee:r.cost;
+    return (r.dj && String(r.dj).trim()) || (fee!=null && fee!=='');
+  }).slice().sort(function(a,b){ return a.d<b.d?-1:(a.d>b.d?1:0); });
+}
+function _bpToday(){ return (typeof TODAY!=='undefined'&&TODAY)?String(TODAY):miamiToday(); }
+function _bpApprovalState(row){
+  var rec=_bpData.approvals[row.uid];
+  if(!rec){
+    if(!row.needs) return 'none';
+    return row.d<_bpToday() ? 'past' : 'needed';
+  }
+  if(+rec.fee!==+row.fee || rec.d!==row.d || rec.venue!==row.venue) return row.needs ? 'reapproval' : 'none';
+  var f=rec.finance||{}, e=rec.exec||{};
+  if(f.decision==='rejected' || e.decision==='rejected') return 'rejected';
+  if(f.decision==='approved' && e.decision==='approved') return 'approved';
+  return 'pending';
+}
+function _bpVenueMonth(venue, m){
+  var budget=getMonthlyBudget(venue, m.year, m.mm);
+  var conf=(_bpData.confirms[venue]||{})[m.year]; conf=conf?conf[m.mm]:null;
+  var rows=[], confirmed=0, proposed=0, bsT=0, running=0;
+  _bpBookings(venue, m).forEach(function(r){
+    var fee=+(r.fee!=null?r.fee:(r.cost||0))||0;
+    var status=_bpStatus(r);
+    var isConf=BP_CONFIRMED.indexOf(status)>=0;
+    var tgt=(typeof showTargets==='function')?showTargets(r):{bs_m:r.bs_m, roi_t:r.roi_t};
+    running+=fee;
+    var over=(budget!=null) ? Math.max(0, running-budget) : 0;
+    var needs=budget!=null && over>0 && fee>0;
+    var row={uid:_bpUid(r), venue:venue, d:r.d, dj:r.dj||'', fee:fee, status:status, confirmed:isConf,
+      bs_m:tgt&&tgt.bs_m!=null?+tgt.bs_m:null, roi_t:tgt&&tgt.roi_t!=null?+tgt.roi_t:null,
+      runningAfter:running, overage:needs?Math.min(fee, over):0, needs:needs};
+    row.approval=_bpApprovalState(row);
+    row.violation=row.confirmed && row.needs && row.approval!=='approved' && row.approval!=='past';
+    if(isConf) confirmed+=fee; else proposed+=fee;
+    if(row.bs_m) bsT+=row.bs_m;
+    rows.push(row);
+  });
+  var planned=confirmed+proposed;
+  var exc={needed:0,pending:0,approved:0,rejected:0,violations:0};
+  rows.forEach(function(r){
+    if(r.approval==='needed'||r.approval==='reapproval') exc.needed++;
+    else if(r.approval==='pending') exc.pending++;
+    else if(r.approval==='approved' && r.needs) exc.approved++;
+    else if(r.approval==='rejected') exc.rejected++;
+    if(r.violation) exc.violations++;
+  });
+  return {venue:venue, month:m, budget:budget, confirm:conf||null,
+    confirmStale:!!(conf && budget!=null && +conf.amount!==+budget),
+    confirmed:confirmed, proposed:proposed, planned:planned,
+    remaining:budget!=null?budget-planned:null, bsT:bsT, roi:planned>0&&bsT>0?bsT/planned:null,
+    rows:rows, exc:exc};
+}
+function _bpVenueList(){ return _bpVenue==='all' ? BP_VENUES.slice() : [_bpVenue]; }
+function _bpCompute(){
+  var months=_bpMonths();
+  var grid={};
+  _bpVenueList().forEach(function(v){
+    grid[v]=months.map(function(m){ return _bpVenueMonth(v, m); });
+  });
+  return {months:months, grid:grid};
+}
+
+/* ---- Rendering ---- */
+var BP_APPROVAL_LABEL={none:'Within budget', past:'Over budget (past)', needed:'Needs approval', reapproval:'Changed — re-approve', pending:'Pending approval', approved:'Approved', rejected:'Rejected'};
+function _bpBadge(state){
+  return '<span class="bp-badge bp-st-'+state+'">'+BP_APPROVAL_LABEL[state]+'</span>';
+}
+function _bpMoneyVar(v){
+  if(v==null) return '<span class="bp-muted">No budget</span>';
+  return '<span class="'+(v>=0?'bp-pos':'bp-neg')+'">'+(v>=0?'Under ':'Over ')+$k(Math.abs(v))+'</span>';
+}
+
+function renderBookingPlan(){
+  var host=document.getElementById('budgetBookingPlan');
+  if(!host) return;
+  var titleEl=document.getElementById('budgetPageTitle');
+  if(titleEl) titleEl.textContent='Booking Plan & Approvals';
+  var meta=document.getElementById('budgetMeta');
+  var data=_bpCompute();
+  var ms=data.months;
+  if(meta) meta.textContent=(ms.length>1?(ms[0].short+' – '+ms[ms.length-1].short):ms[0].label)+' · reads the live calendar · approvals stored separately';
+
+  var h='<div class="bp-toolbar">';
+  h+='<div class="bp-seg">'
+    +'<button type="button" class="'+(_bpPanel==='plan'?'on':'')+'" onclick="bpSetPanel(\'plan\')">Plan</button>'
+    +'<button type="button" class="'+(_bpPanel==='meeting'?'on':'')+'" onclick="bpSetPanel(\'meeting\')">Meeting</button>'
+    +'<button type="button" class="'+(_bpPanel==='history'?'on':'')+'" onclick="bpSetPanel(\'history\')">Plan history</button>'
+    +'</div>';
+  h+='<div class="bp-seg">'
+    +'<button type="button" class="'+(_bpMode==='1m'?'on':'')+'" onclick="bpSetMode(\'1m\')">1 Month</button>'
+    +'<button type="button" class="'+(_bpMode==='3m'?'on':'')+'" onclick="bpSetMode(\'3m\')">3 Months</button>'
+    +'</div>';
+  h+='<div class="bp-nav"><button type="button" onclick="bpShift(-1)" title="Previous month">&#8249;</button>'
+    +'<button type="button" onclick="bpShift(0)"'+(_bpOffset===0?' class="on"':'')+'>Current</button>'
+    +'<button type="button" onclick="bpShift(1)" title="Next month">&#8250;</button></div>';
+  h+='<select class="bp-venue-sel" onchange="bpSetVenue(this.value)">'
+    +'<option value="all"'+(_bpVenue==='all'?' selected':'')+'>All venues</option>'
+    +BP_VENUES.map(function(v){ return '<option value="'+_escHtml(v)+'"'+(_bpVenue===v?' selected':'')+'>'+_escHtml(v)+'</option>'; }).join('')
+    +'</select>';
+  h+='<span class="bp-spacer"></span>';
+  h+='<button type="button" class="bp-btn" onclick="bpExportPdf()">Export PDF</button>';
+  h+='<button type="button" class="bp-btn bp-btn-dark" onclick="bpGenerateMonthlyPlan()">Generate monthly plan (PDF + email)</button>';
+  h+='</div>';
+
+  if(_bpPanel==='history') h+=_bpHistoryHtml();
+  else if(_bpPanel==='meeting') h+=_bpMeetingHtml(data);
+  else h+=_bpPlanHtml(data);
+  host.innerHTML=h;
+}
+
+function _bpSummaryHtml(data){
+  var ms=data.months;
+  var h='<div class="bp-summary"><table class="bp-sum-tbl"><thead><tr><th class="l">Venue</th>';
+  ms.forEach(function(m){ h+='<th colspan="1">'+_escHtml(m.label)+'<span>'+_escHtml(m.range)+'</span></th>'; });
+  if(ms.length>1) h+='<th>'+ms.length+'-month total</th>';
+  h+='</tr></thead><tbody>';
+  var grand=ms.map(function(){ return {budget:0,hasB:false,confirmed:0,proposed:0,bsT:0}; });
+  var gTot={budget:0,hasB:false,confirmed:0,proposed:0,bsT:0};
+  Object.keys(data.grid).forEach(function(v){
+    var cells=data.grid[v];
+    var tot={budget:0,hasB:false,confirmed:0,proposed:0,bsT:0};
+    h+='<tr><td class="l"><b>'+_escHtml(v)+'</b></td>';
+    cells.forEach(function(c, i){
+      h+='<td>'+_bpCellHtml(c)+'</td>';
+      [tot, grand[i], gTot].forEach(function(t){
+        if(c.budget!=null){ t.budget+=c.budget; t.hasB=true; }
+        t.confirmed+=c.confirmed; t.proposed+=c.proposed; t.bsT+=c.bsT;
+      });
+    });
+    if(ms.length>1) h+='<td class="bp-tot">'+_bpTotCellHtml(tot)+'</td>';
+    h+='</tr>';
+  });
+  if(Object.keys(data.grid).length>1){
+    h+='<tr class="bp-grand"><td class="l"><b>All venues</b></td>';
+    grand.forEach(function(t){ h+='<td>'+_bpTotCellHtml(t)+'</td>'; });
+    if(ms.length>1) h+='<td class="bp-tot">'+_bpTotCellHtml(gTot)+'</td>';
+    h+='</tr>';
+  }
+  h+='</tbody></table></div>';
+  return h;
+}
+function _bpCellHtml(c){
+  var m=c.month;
+  var conf=c.confirm
+    ? '<span class="bp-fin '+(c.confirmStale?'bp-fin-stale':'bp-fin-ok')+'" title="'+_escHtml('Confirmed by '+c.confirm.by+' on '+_bpFmtDate(c.confirm.at))+'">'+(c.confirmStale?'Budget changed since Finance confirmed':'Finance confirmed')+'</span>'
+    : '<button type="button" class="bp-fin bp-fin-btn" onclick="bpConfirmBudget(\''+_escHtml(c.venue).replace(/'/g,"\\'")+'\','+m.year+',\''+m.mm+'\')">Finance: confirm budget</button>';
+  var h='<div class="bp-cell">';
+  h+='<div class="bp-line"><span>Budget</span><b>'+(c.budget!=null?$k(c.budget):'Not set')+'</b></div>';
+  h+='<div class="bp-line"><span>Confirmed</span><b>'+$k(c.confirmed)+'</b></div>';
+  h+='<div class="bp-line"><span>Proposed</span><b>'+$k(c.proposed)+'</b></div>';
+  h+='<div class="bp-line bp-line-tot"><span>Total planned</span><b>'+$k(c.planned)+'</b></div>';
+  h+='<div class="bp-line"><span>Remaining</span><b>'+_bpMoneyVar(c.remaining)+'</b></div>';
+  h+='<div class="bp-line"><span>BS Target</span><b>'+$k(c.bsT||null)+'</b></div>';
+  h+='<div class="bp-line"><span>Expected ROI</span><b>'+(c.roi!=null?c.roi.toFixed(1)+'x':'-')+'</b></div>';
+  var e=c.exc, tags=[];
+  if(e.violations) tags.push('<span class="bp-tag bp-tag-red">'+e.violations+' confirmed w/o approval</span>');
+  if(e.needed) tags.push('<span class="bp-tag bp-tag-amb">'+e.needed+' need approval</span>');
+  if(e.pending) tags.push('<span class="bp-tag bp-tag-blue">'+e.pending+' pending</span>');
+  if(e.approved) tags.push('<span class="bp-tag bp-tag-green">'+e.approved+' approved</span>');
+  if(e.rejected) tags.push('<span class="bp-tag bp-tag-grey">'+e.rejected+' rejected</span>');
+  if(tags.length) h+='<div class="bp-tags">'+tags.join('')+'</div>';
+  h+='<div class="bp-fin-row">'+conf+'</div>';
+  h+='</div>';
+  return h;
+}
+function _bpTotCellHtml(t){
+  var planned=t.confirmed+t.proposed;
+  var rem=t.hasB?t.budget-planned:null;
+  return '<div class="bp-cell">'
+    +'<div class="bp-line"><span>Budget</span><b>'+(t.hasB?$k(t.budget):'Not set')+'</b></div>'
+    +'<div class="bp-line"><span>Confirmed</span><b>'+$k(t.confirmed)+'</b></div>'
+    +'<div class="bp-line"><span>Proposed</span><b>'+$k(t.proposed)+'</b></div>'
+    +'<div class="bp-line bp-line-tot"><span>Total planned</span><b>'+$k(planned)+'</b></div>'
+    +'<div class="bp-line"><span>Remaining</span><b>'+_bpMoneyVar(rem)+'</b></div>'
+    +'<div class="bp-line"><span>BS Target</span><b>'+$k(t.bsT||null)+'</b></div>'
+    +'<div class="bp-line"><span>Expected ROI</span><b>'+(planned>0&&t.bsT>0?(t.bsT/planned).toFixed(1)+'x':'-')+'</b></div>'
+    +'</div>';
+}
+function _bpRowsHtml(data, opts){
+  opts=opts||{};
+  var h='<div class="bp-list"><table class="bp-tbl"><thead><tr>'
+    +'<th class="l">Date</th><th class="l">Venue</th><th class="l">DJ</th><th>Fee</th><th class="l">Status</th>'
+    +'<th>BS Target</th><th>ROI Target</th><th>Month spend after</th><th>Over budget by</th><th class="l">Approval</th>'
+    +(opts.noActions?'':'<th></th>')+'</tr></thead><tbody>';
+  var any=false;
+  data.months.forEach(function(m, mi){
+    var monthRows=[];
+    Object.keys(data.grid).forEach(function(v){
+      var c=data.grid[v][mi];
+      c.rows.forEach(function(r){ monthRows.push({r:r, c:c}); });
+    });
+    if(opts.onlyExceptions) monthRows=monthRows.filter(function(x){ return x.r.needs || x.r.approval==='pending' || x.r.approval==='rejected'; });
+    if(!monthRows.length) return;
+    any=true;
+    monthRows.sort(function(a,b){ return a.r.d<b.r.d?-1:(a.r.d>b.r.d?1:(a.r.venue<b.r.venue?-1:1)); });
+    h+='<tr class="bp-month-row"><td colspan="'+(opts.noActions?10:11)+'">'+_escHtml(m.label)+' <span>'+_escHtml(m.range)+'</span></td></tr>';
+    monthRows.forEach(function(x){
+      var r=x.r, c=x.c;
+      var budgetTxt=c.budget!=null?' / '+$k(c.budget):'';
+      h+='<tr class="'+(r.violation?'bp-row-viol':(r.needs?'bp-row-over':''))+'">'
+        +'<td class="l">'+_bpDay(r.d)+'</td>'
+        +'<td class="l">'+_escHtml(BP_VENUE_SHORT[r.venue]||r.venue)+'</td>'
+        +'<td class="l"><b>'+_escHtml(r.dj||'TBD')+'</b></td>'
+        +'<td>'+$k(r.fee)+'</td>'
+        +'<td class="l"><span class="bp-status '+(r.confirmed?'bp-status-conf':'bp-status-prop')+'">'+_escHtml(r.status||'No status')+'</span></td>'
+        +'<td>'+$k(r.bs_m)+'</td>'
+        +'<td>'+(r.roi_t!=null?(+r.roi_t).toFixed(1)+'x':'-')+'</td>'
+        +'<td>'+$k(r.runningAfter)+'<span class="bp-muted">'+budgetTxt+'</span></td>'
+        +'<td>'+(r.overage?'<b class="bp-neg">'+$k(r.overage)+'</b>':'-')+'</td>'
+        +'<td class="l">'+_bpBadge(r.approval)+(r.violation?'<span class="bp-badge bp-st-viol">Confirmed without approval</span>':'')+'</td>';
+      if(!opts.noActions){
+        var btn='';
+        if(r.approval==='needed'||r.approval==='reapproval') btn='<button type="button" class="bp-act bp-act-main" onclick="bpOpenRequest(\''+r.uid+'\')">Request approval</button>';
+        else if(r.approval!=='none' && r.approval!=='past') btn='<button type="button" class="bp-act" onclick="bpOpenRequest(\''+r.uid+'\')">Open</button>';
+        h+='<td>'+btn+'</td>';
+      }
+      h+='</tr>';
+    });
+  });
+  if(!any) h+='<tr><td colspan="'+(opts.noActions?10:11)+'" class="bp-empty">'+(opts.onlyExceptions?'No bookings above budget in this period.':'No bookings on the calendar for this period.')+'</td></tr>';
+  h+='</tbody></table></div>';
+  return h;
+}
+function _bpSheetHead(data, title){
+  var ms=data.months;
+  return '<div class="bp-sheet-hd"><div><b>'+_escHtml(title)+'</b><span>'+_escHtml(ms.length>1?(ms[0].label+' – '+ms[ms.length-1].label):ms[0].label)+' · '+_escHtml(_bpVenue==='all'?'All venues':_bpVenue)+'</span></div>'
+    +'<div>Prepared '+_escHtml(_bpFmtDate(_bpNow()))+'</div></div>';
+}
+function _bpPlanHtml(data){
+  var h='<div id="bpSheet" class="bp-sheet">';
+  h+=_bpSheetHead(data, 'Entertainment Booking Plan vs Budget');
+  h+=_bpSummaryHtml(data);
+  h+='<div class="bp-sec-hd">Bookings <span>Status, fee and targets come from the calendar. Over-budget bookings need Finance plus Mika or Greg approval before they are confirmed.</span></div>';
+  h+=_bpRowsHtml(data);
+  h+='</div>';
+  return h;
+}
+
+/* ---- Toolbar actions ---- */
+function bpSetPanel(p){ _bpPanel=p; renderBookingPlan(); }
+function bpSetMode(m){ _bpMode=m; renderBookingPlan(); }
+function bpSetVenue(v){ _bpVenue=v; renderBookingPlan(); }
+function bpShift(d){ _bpOffset = d===0 ? 0 : _bpOffset+d; renderBookingPlan(); }
+
+function bpConfirmBudget(venue, year, mm){
+  var amt=getMonthlyBudget(venue, year, mm);
+  if(amt==null){ alert('No budget is set for '+venue+' in this month. Set it in Budget > Overview first.'); return; }
+  var mi=parseInt(mm,10)-1;
+  if(!confirm('Finance confirms the '+MN_FULL[mi]+' '+year+' DJ budget for '+venue+' at '+$k(amt)+'?\n\nRecorded as: '+_bpWho())) return;
+  _bpSave('budgetConfirmations/'+venue+'/'+year+'/'+mm, {amount:amt, by:_bpWho(), at:_bpNow()});
+}
+
+/* ---- Exception request / approvals ---- */
+function _bpFindRow(uid){
+  var data=_bpCompute();
+  for(var v in data.grid){
+    for(var i=0;i<data.grid[v].length;i++){
+      var c=data.grid[v][i];
+      for(var j=0;j<c.rows.length;j++) if(c.rows[j].uid===uid) return {row:c.rows[j], cell:c};
+    }
+  }
+  return null;
+}
+function _bpLyLine(row){
+  if(typeof _modalLySameDateShow!=='function') return '';
+  var ly=_modalLySameDateShow(row.venue, row.d);
+  if(!ly) return 'No show on the same date last year.';
+  var fee=ly.fee!=null?ly.fee:ly.cost;
+  return (ly.dj||'TBD')+' · fee '+$k(fee)+' · BS Actual '+$k(ly.bs_a)+' (vs target '+$k(ly.bs_m)+')';
+}
+function bpCloseModal(){
+  var el=document.getElementById('bpModal');
+  if(el) el.remove();
+}
+function bpOpenRequest(uid){
+  var hit=_bpFindRow(uid);
+  if(!hit){ alert('This booking is no longer in the selected period.'); return; }
+  var row=hit.row, cell=hit.cell, rec=_bpData.approvals[uid]||null;
+  var fresh=!rec || row.approval==='reapproval';
+  var spendBefore=row.runningAfter-row.fee;
+  var f=(rec&&rec.finance)||{}, e=(rec&&rec.exec)||{};
+  function ro(label, val){ return '<div class="bp-kv"><span>'+label+'</span><b>'+val+'</b></div>'; }
+  var h='<div class="modal bp-modal"><div class="modal-hd"><h3>'+(fresh?'Request budget exception':'Budget exception')+'</h3><button class="modal-close" onclick="bpCloseModal()">&#10005;</button></div>';
+  h+='<div class="modal-body">';
+  h+='<div class="bp-kv-grid">'
+    +ro('Venue', _escHtml(row.venue))
+    +ro('Date', _escHtml(_bpDay(row.d)+' '+row.d.slice(0,4)))
+    +ro('DJ', _escHtml(row.dj||'TBD'))
+    +ro('Fee', $k(row.fee))
+    +ro('Month budget', cell.budget!=null?$k(cell.budget):'Not set')
+    +ro('Spend before this booking', $k(spendBefore))
+    +ro('Over budget by', '<span class="bp-neg">'+$k(row.overage)+'</span>')
+    +ro('BS Target / ROI Target', $k(row.bs_m)+' / '+(row.roi_t!=null?row.roi_t.toFixed(1)+'x':'-'))
+    +'</div>';
+  h+='<div class="bp-kv bp-kv-wide"><span>Same date last year</span><b>'+_escHtml(_bpLyLine(row))+'</b></div>';
+  if(rec && row.approval==='reapproval'){
+    h+='<div class="bp-warn">Fee, date or venue changed since this was submitted ('+$k(rec.fee)+' on '+_escHtml(rec.d)+'). It must be approved again.</div>';
+  }
+  var dis=fresh?'':' disabled';
+  h+='<label class="bp-fld"><span>Rationale — why this DJ, why this date</span><textarea id="bpReqRationale" rows="3"'+dis+'>'+_escHtml(rec?rec.rationale:'')+'</textarea></label>';
+  h+='<label class="bp-fld"><span>Expected benefit — BS / ROI, event or brand value</span><textarea id="bpReqBenefit" rows="3"'+dis+'>'+_escHtml(rec?rec.benefit:'')+'</textarea></label>';
+  h+='<div class="bp-fld-row">';
+  h+='<label class="bp-fld"><span>Additional amount requested ($)</span><input id="bpReqAmount" type="number" min="0" step="100" value="'+(rec&&!fresh?(+rec.amount||0):row.overage)+'"'+dis+'></label>';
+  h+='<label class="bp-fld"><span>Discussed at entertainment meeting on</span><input id="bpReqMeeting" type="date" value="'+_escHtml(rec?rec.meetingDate||'':'')+'"'+dis+'></label>';
+  h+='</div>';
+  if(!fresh){
+    h+='<div class="bp-meta">Submitted by '+_escHtml(rec.requestedBy||'')+' on '+_escHtml(_bpFmtDate(rec.requestedAt))+'</div>';
+    h+='<div class="bp-appr-grid">';
+    h+=_bpApproverBlock('finance', 'Finance', f, null);
+    h+=_bpApproverBlock('exec', 'Mika or Greg', e, BP_EXECS);
+    h+='</div>';
+  }
+  h+='</div><div class="modal-foot">';
+  if(fresh) h+='<button type="button" class="bp-btn" onclick="bpCloseModal()">Cancel</button><button type="button" class="bp-btn bp-btn-dark" onclick="bpSubmitRequest(\''+uid+'\')">Submit for approval</button>';
+  else h+='<button type="button" class="bp-btn" onclick="bpCloseModal()">Close</button>';
+  h+='</div></div>';
+  var bg=document.createElement('div');
+  bg.className='modal-bg';
+  bg.id='bpModal';
+  bg.dataset.uid=uid;
+  bg.innerHTML=h;
+  bg.addEventListener('click', function(ev){ if(ev.target===bg) bpCloseModal(); });
+  document.body.appendChild(bg);
+}
+function _bpApproverBlock(role, title, d, names){
+  var h='<div class="bp-appr"><div class="bp-appr-hd">'+title+'</div>';
+  if(d.decision){
+    h+='<div class="bp-appr-dec bp-appr-'+d.decision+'">'+(d.decision==='approved'?'Approved':'Rejected')+'</div>'
+      +'<div class="bp-meta">'+_escHtml(d.name||'')+' · '+_escHtml(_bpFmtDate(d.at))+(d.recordedBy&&d.recordedBy!==d.name?' · recorded by '+_escHtml(d.recordedBy):'')+'</div>';
+    if(d.comment) h+='<div class="bp-appr-note">'+_escHtml(d.comment)+'</div>';
+    if(d.evidence) h+='<div class="bp-appr-note"><b>Written approval:</b> '+_escHtml(d.evidence)+'</div>';
+    h+='</div>';
+    return h;
+  }
+  if(names) h+='<label class="bp-fld"><span>Approver</span><select id="bpAp_'+role+'_name">'+names.map(function(n){ return '<option>'+n+'</option>'; }).join('')+'</select></label>';
+  else h+='<label class="bp-fld"><span>Approver name</span><input id="bpAp_'+role+'_name" type="text" value="'+_escHtml(_bpWho()==='Unknown'?'':_bpWho())+'"></label>';
+  h+='<label class="bp-fld"><span>Written approval (email subject, date or link)</span><input id="bpAp_'+role+'_evidence" type="text" placeholder="e.g. RE: Guy Gerber Oct 10 — approved, Oct 2"></label>';
+  h+='<label class="bp-fld"><span>Comment</span><input id="bpAp_'+role+'_comment" type="text"></label>';
+  h+='<div class="bp-appr-btns"><button type="button" class="bp-btn bp-btn-green" onclick="bpDecide(\''+role+'\',\'approved\')">Approve</button>'
+    +'<button type="button" class="bp-btn bp-btn-red" onclick="bpDecide(\''+role+'\',\'rejected\')">Reject</button></div>';
+  h+='</div>';
+  return h;
+}
+var _bpOpenUid='';
+function bpSubmitRequest(uid){
+  var hit=_bpFindRow(uid);
+  if(!hit){ alert('This booking is no longer in the selected period.'); return; }
+  var row=hit.row, cell=hit.cell;
+  var rationale=(document.getElementById('bpReqRationale').value||'').trim();
+  var benefit=(document.getElementById('bpReqBenefit').value||'').trim();
+  var amount=parseFloat(document.getElementById('bpReqAmount').value);
+  var meeting=document.getElementById('bpReqMeeting').value||'';
+  if(!rationale || !benefit){ alert('Rationale and expected benefit are required.'); return; }
+  if(!(amount>0)){ alert('Enter the additional amount requested.'); return; }
+  var rec={uid:uid, venue:row.venue, d:row.d, dj:row.dj, fee:row.fee, month:cell.month.key,
+    monthBudget:cell.budget, overage:row.overage, amount:amount, bs_m:row.bs_m, roi_t:row.roi_t,
+    rationale:rationale, benefit:benefit, meetingDate:meeting,
+    requestedBy:_bpWho(), requestedAt:_bpNow(), finance:null, exec:null};
+  var prev=_bpData.approvals[uid];
+  if(prev){
+    var hist=(prev.history||[]).slice();
+    hist.push({fee:prev.fee, d:prev.d, venue:prev.venue, amount:prev.amount, finance:prev.finance||null, exec:prev.exec||null, requestedAt:prev.requestedAt, supersededAt:_bpNow()});
+    rec.history=hist;
+  }
+  _bpSave('bookingApprovals/'+uid, rec, function(){ bpCloseModal(); renderBookingPlan(); });
+}
+function bpDecide(role, decision){
+  var modal=document.getElementById('bpModal');
+  var uid=modal && modal.dataset.uid;
+  if(!uid) return;
+  var rec=_bpData.approvals[uid];
+  if(!rec){ alert('Request not found. Refresh and try again.'); return; }
+  var name=(document.getElementById('bpAp_'+role+'_name').value||'').trim();
+  var evidence=(document.getElementById('bpAp_'+role+'_evidence').value||'').trim();
+  var comment=(document.getElementById('bpAp_'+role+'_comment').value||'').trim();
+  if(!name){ alert('Enter the approver name.'); return; }
+  if(decision==='approved' && !evidence){ alert('Written approval is required. Enter the approval email subject, date or link.'); return; }
+  var d={decision:decision, name:name, evidence:evidence, comment:comment, at:_bpNow(), recordedBy:_bpWho()};
+  _bpSave('bookingApprovals/'+uid+'/'+role, d, function(){
+    bpCloseModal();
+    setTimeout(function(){ bpOpenRequest(uid); }, 50);
+  });
+}
+
+/* ---- Meeting view ---- */
+function _bpMeetingHtml(data){
+  var m=data.months[0];
+  var mt=_bpData.meetings[m.key]||{};
+  var h='<div id="bpSheet" class="bp-sheet">';
+  h+=_bpSheetHead(data, 'Entertainment Meeting — Plan vs Budget');
+  h+='<div class="bp-meeting-hd"><div><b>'+_escHtml(m.label)+' meeting</b><span>'+(mt.lockedAt?'Baseline locked by '+_escHtml(mt.lockedBy||'')+' on '+_escHtml(_bpFmtDate(mt.lockedAt)):'Baseline not locked yet')+'</span></div>';
+  h+='<button type="button" class="bp-btn bp-btn-dark" onclick="bpLockBaseline()">'+(mt.lockedAt?'Re-lock baseline':'Lock baseline')+'</button></div>';
+  h+='<div class="bp-sec-hd">1 · Budget vs total planned</div>';
+  h+=_bpSummaryHtml(data);
+  if(mt.baseline){
+    h+='<div class="bp-sec-hd">Changes since baseline <span>'+_escHtml(_bpFmtDate(mt.lockedAt))+'</span></div>';
+    h+=_bpBaselineDiffHtml(data, mt.baseline);
+  }
+  h+='<div class="bp-sec-hd">2 · Over budget and exceptions</div>';
+  h+=_bpRowsHtml(data, {onlyExceptions:true});
+  h+='<div class="bp-sec-hd">3 · Decisions and notes <span>Saved for '+_escHtml(m.label)+'</span></div>';
+  h+='<textarea id="bpMeetingNotes" class="bp-notes" rows="5" placeholder="Decisions: drop / re-price / submit for approval…">'+_escHtml(mt.notes||'')+'</textarea>';
+  h+='<div class="bp-notes-foot"><span class="bp-muted">'+(mt.notesAt?'Last saved by '+_escHtml(mt.notesBy||'')+' on '+_escHtml(_bpFmtDate(mt.notesAt)):'')+'</span><button type="button" class="bp-btn" onclick="bpSaveNotes()">Save notes</button></div>';
+  h+='</div>';
+  return h;
+}
+function _bpBaselineDiffHtml(data, base){
+  var h='<table class="bp-tbl bp-diff"><thead><tr><th class="l">Venue</th><th class="l">Month</th><th>Baseline planned</th><th>Now planned</th><th>Change</th><th>Budget</th></tr></thead><tbody>';
+  var any=false;
+  Object.keys(data.grid).forEach(function(v){
+    data.grid[v].forEach(function(c){
+      var b=((base[v]||{})[c.month.key])||null;
+      if(!b) return;
+      any=true;
+      var diff=c.planned-(+b.planned||0);
+      h+='<tr><td class="l">'+_escHtml(BP_VENUE_SHORT[v]||v)+'</td><td class="l">'+_escHtml(c.month.short)+'</td><td>'+$k(+b.planned||0)+'</td><td>'+$k(c.planned)+'</td>'
+        +'<td class="'+(diff>0?'bp-neg':(diff<0?'bp-pos':''))+'">'+(diff?$kv(diff):'-')+'</td><td>'+(c.budget!=null?$k(c.budget):'-')+'</td></tr>';
+    });
+  });
+  if(!any) h+='<tr><td colspan="6" class="bp-empty">No baseline for these months.</td></tr>';
+  h+='</tbody></table>';
+  return h;
+}
+function bpSaveNotes(){
+  var m=_bpMonths()[0];
+  var el=document.getElementById('bpMeetingNotes');
+  if(!el) return;
+  var cur=Object.assign({}, _bpData.meetings[m.key]||{});
+  cur.notes=el.value||'';
+  cur.notesBy=_bpWho();
+  cur.notesAt=_bpNow();
+  _bpSave('bookingMeetings/'+m.key, cur, function(){ renderBookingPlan(); });
+}
+function bpLockBaseline(){
+  var data=_bpCompute();
+  var m=data.months[0];
+  if(!confirm('Lock the agreed plan for '+m.label+' as the baseline?\n\nLater changes will be compared against it.')) return;
+  var base={};
+  Object.keys(data.grid).forEach(function(v){
+    base[v]={};
+    data.grid[v].forEach(function(c){
+      base[v][c.month.key]={budget:c.budget, confirmed:c.confirmed, proposed:c.proposed, planned:c.planned};
+    });
+  });
+  var notes=document.getElementById('bpMeetingNotes');
+  var cur=Object.assign({}, _bpData.meetings[m.key]||{});
+  if(notes) cur.notes=notes.value||'';
+  cur.baseline=base;
+  cur.lockedBy=_bpWho();
+  cur.lockedAt=_bpNow();
+  _bpSave('bookingMeetings/'+m.key, cur, function(){ renderBookingPlan(); });
+}
+
+/* ---- Plan history ---- */
+function _bpHistoryHtml(){
+  var keys=Object.keys(_bpData.plans||{}).sort().reverse();
+  var h='<div class="bp-sheet"><div class="bp-sec-hd">Monthly plans sent <span>Saved each time a monthly plan is generated</span></div>';
+  if(!keys.length) return h+'<div class="bp-empty">No plans generated yet. Use “Generate monthly plan” on the 1st of the month.</div></div>';
+  h+='<table class="bp-tbl"><thead><tr><th class="l">Generated</th><th class="l">By</th><th class="l">Period</th><th>Budget</th><th>Confirmed</th><th>Proposed</th><th>Total planned</th><th>Exceptions</th><th>vs previous plan</th></tr></thead><tbody>';
+  keys.forEach(function(k, i){
+    var p=_bpData.plans[k]||{}, t=p.totals||{};
+    var prev=keys[i+1]?(_bpData.plans[keys[i+1]]||{}).totals||null:null;
+    var diff=prev?((+t.planned||0)-(+prev.planned||0)):null;
+    h+='<tr><td class="l">'+_escHtml(_bpFmtDate(p.at))+'</td><td class="l">'+_escHtml(p.by||'')+'</td><td class="l">'+_escHtml(p.period||'')+'</td>'
+      +'<td>'+$k(t.budget)+'</td><td>'+$k(t.confirmed)+'</td><td>'+$k(t.proposed)+'</td><td><b>'+$k(t.planned)+'</b></td>'
+      +'<td>'+(+p.exceptions||0)+'</td><td class="'+(diff>0?'bp-neg':(diff<0?'bp-pos':''))+'">'+(diff==null?'-':(diff?$kv(diff):'No change'))+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+
+/* ---- PDF / email ---- */
+function _bpCaptureSheet(){
+  var sheet=document.getElementById('bpSheet');
+  if(!sheet) return Promise.reject(new Error('Nothing to export'));
+  return _ensurePdfLibs().then(function(){
+    return (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve());
+  }).then(function(){
+    sheet.classList.add('bp-exporting');
+    return window.html2canvas(sheet,{scale:1.4,useCORS:true,logging:false,backgroundColor:'#ffffff',windowWidth:1500});
+  }).then(function(canvas){
+    sheet.classList.remove('bp-exporting');
+    return canvas;
+  }, function(err){
+    sheet.classList.remove('bp-exporting');
+    throw err;
+  });
+}
+function _bpPdfName(){
+  var ms=_bpMonths();
+  return 'RDG-Entertainment-Booking-Plan-'+ms[0].key+(ms.length>1?'-to-'+ms[ms.length-1].key:'')+'.pdf';
+}
+function bpExportPdf(){
+  if(_bpPanel==='history'){ alert('Switch to Plan or Meeting to export.'); return; }
+  _bpCaptureSheet().then(function(canvas){
+    return _pdfFromCanvases([canvas], _bpPdfName(), false, 0.85);
+  }).catch(function(err){
+    alert('Could not export the PDF. '+(err&&err.message?err.message:''));
+  });
+}
+function _bpEmailHtml(data){
+  var ms=data.months;
+  var h='<div style="font-family:Arial,sans-serif;font-size:13px;color:#172033">';
+  h+='<p>Hi all,</p><p>Please find attached the rolling three-month entertainment booking plan ('+_escHtml(ms[0].label+' – '+ms[ms.length-1].label)+'), showing confirmed commitments, proposed bookings, totals by venue and month, and exceptions requiring approval.</p>';
+  h+='<p><b>Finance:</b> please confirm the budget available for each venue and month.</p>';
+  h+='<table cellpadding="6" cellspacing="0" style="border-collapse:collapse;font-size:12px"><tr style="background:#0f2a4a;color:#fff"><th align="left">Venue</th><th align="left">Month</th><th align="right">Budget</th><th align="right">Confirmed</th><th align="right">Proposed</th><th align="right">Total</th><th align="right">Remaining</th></tr>';
+  Object.keys(data.grid).forEach(function(v){
+    data.grid[v].forEach(function(c){
+      var rem=c.remaining;
+      h+='<tr style="border-bottom:1px solid #e2e8f0"><td>'+_escHtml(v)+'</td><td>'+_escHtml(c.month.short)+'</td><td align="right">'+(c.budget!=null?$k(c.budget):'Not set')+'</td><td align="right">'+$k(c.confirmed)+'</td><td align="right">'+$k(c.proposed)+'</td><td align="right"><b>'+$k(c.planned)+'</b></td>'
+        +'<td align="right" style="color:'+(rem==null?'#64748b':(rem>=0?'#15803d':'#b91c1c'))+'">'+(rem==null?'-':(rem>=0?'Under ':'Over ')+$k(Math.abs(rem)))+'</td></tr>';
+    });
+  });
+  h+='</table>';
+  var exc=[];
+  Object.keys(data.grid).forEach(function(v){ data.grid[v].forEach(function(c){ c.rows.forEach(function(r){ if(r.needs) exc.push(r); }); }); });
+  if(exc.length){
+    h+='<p style="margin-top:16px"><b>Exceptions requiring approval ('+exc.length+')</b></p><ul>';
+    exc.forEach(function(r){ h+='<li>'+_escHtml(_bpDay(r.d)+' · '+(BP_VENUE_SHORT[r.venue]||r.venue)+' · '+(r.dj||'TBD')+' · fee '+$k(r.fee)+' · over by '+$k(r.overage)+' · '+BP_APPROVAL_LABEL[r.approval])+'</li>'; });
+    h+='</ul>';
+  } else {
+    h+='<p style="margin-top:16px">No exceptions requiring approval this period.</p>';
+  }
+  h+='<p>Thank you,<br>'+_escHtml(_bpWho()==='Unknown'?'Entertainment':_bpWho())+'</p></div>';
+  return h;
+}
+function bpGenerateMonthlyPlan(){
+  var savedMode=_bpMode, savedPanel=_bpPanel, savedOffset=_bpOffset;
+  _bpMode='3m'; _bpPanel='plan'; _bpOffset=0;
+  renderBookingPlan();
+  var data=_bpCompute();
+  var btns=document.querySelectorAll('#budgetBookingPlan .bp-btn-dark');
+  btns.forEach(function(b){ b.disabled=true; b.textContent='Preparing…'; });
+  var ms=data.months;
+  var pdfName=_bpPdfName();
+  _bpCaptureSheet().then(function(canvas){
+    return _pdfFromCanvases([canvas], pdfName, true, 0.85);
+  }).then(function(blob){
+    return _blobToBase64(blob);
+  }).then(function(b64){
+    var eml=_buildForecastFlashEml({
+      to:[], cc:[],
+      subject:'Entertainment 3-Month Booking Plan — '+ms[0].short+' to '+ms[ms.length-1].short,
+      htmlBody:_bpEmailHtml(data),
+      attachments:[{filename:pdfName, contentType:'application/pdf', base64:b64}]
+    });
+    _openBlobInApp(eml, pdfName.replace(/\.pdf$/,'.eml'));
+    var totals={budget:0,confirmed:0,proposed:0,planned:0}, byVenue={}, exceptions=0;
+    Object.keys(data.grid).forEach(function(v){
+      byVenue[v]={};
+      data.grid[v].forEach(function(c){
+        byVenue[v][c.month.key]={budget:c.budget, confirmed:c.confirmed, proposed:c.proposed, planned:c.planned};
+        if(c.budget!=null) totals.budget+=c.budget;
+        totals.confirmed+=c.confirmed; totals.proposed+=c.proposed; totals.planned+=c.planned;
+        c.rows.forEach(function(r){ if(r.needs) exceptions++; });
+      });
+    });
+    var key=_bpNow().replace(/[:.]/g,'-');
+    _bpSave('bookingPlans/'+key, {at:_bpNow(), by:_bpWho(), period:ms[0].short+' – '+ms[ms.length-1].short,
+      venues:_bpVenue, totals:totals, byVenue:byVenue, exceptions:exceptions});
+  }).catch(function(err){
+    alert('Could not prepare the monthly plan. '+(err&&err.message?err.message:''));
+  }).then(function(){
+    _bpMode=savedMode; _bpPanel=savedPanel; _bpOffset=savedOffset;
+    renderBookingPlan();
+  });
+}

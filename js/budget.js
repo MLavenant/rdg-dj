@@ -1,4 +1,17 @@
 function renderBudget(){
+  var planOn=budgetSubTab==='plan';
+  var view=document.getElementById('view-budget');
+  if(view) view.classList.toggle('bgt-plan-mode', planOn);
+  var planHost=document.getElementById('budgetBookingPlan');
+  if(planHost) planHost.style.display=planOn?'':'none';
+  if(planOn){
+    setBudgetExecVisible(false);
+    ['budgetNarrative','budgetSpendTracker','budgetMonths'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.innerHTML='';
+    });
+    if(typeof renderBookingPlan==='function') renderBookingPlan();
+    return;
+  }
   if(bgtMonth) renderMonthDrill(bgtMonth);
   else renderYearGrid();
 }

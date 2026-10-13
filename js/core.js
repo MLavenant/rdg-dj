@@ -1278,7 +1278,7 @@ function renderKPIs() {
     if(curView==='leaderboard'){
       document.getElementById('pgSub').innerHTML = '<span>ROI Ranking · '+(typeof _lbFilterLabel==='function'?_lbFilterLabel():'all venues')+'</span>';
     } else {
-      document.getElementById('pgSub').innerHTML = '<span>'+(budgetSubTab==='planner'?'Budget Planner':'Overview')+'</span>';
+      document.getElementById('pgSub').innerHTML = '<span>'+(budgetSubTab==='planner'?'Budget Planner':(budgetSubTab==='plan'?'Booking Plan &amp; Approvals':'Overview'))+'</span>';
     }
     return;
   }
@@ -2251,15 +2251,18 @@ function leaderboardSuggestedFee(avgBS, avgFeePaid, beatRatePct){
   return Math.max(floor, Math.min(paid, fair));
 }
 function setBudgetSubTab(tab){
-  budgetSubTab = tab==='planner' ? 'planner' : 'overview';
+  budgetSubTab = (tab==='planner'||tab==='plan') ? tab : 'overview';
   var tO=document.getElementById('bgtTabOverview');
   var tP=document.getElementById('bgtTabPlanner');
+  var tB=document.getElementById('bgtTabPlan');
   if(tO) tO.classList.toggle('on', budgetSubTab==='overview');
   if(tP) tP.classList.toggle('on', budgetSubTab==='planner');
+  if(tB) tB.classList.toggle('on', budgetSubTab==='plan');
+  var label=budgetSubTab==='planner'?'Budget Planner':(budgetSubTab==='plan'?'Booking Plan & Approvals':'Overview');
   var titleEl=document.getElementById('budgetPageTitle');
-  if(titleEl) titleEl.textContent=budgetSubTab==='planner'?'Budget Planner':'Overview';
+  if(titleEl) titleEl.textContent=label;
   var sub=document.getElementById('pgSub');
-  if(sub && curView==='budget') sub.innerHTML='<span>'+(budgetSubTab==='planner'?'Budget Planner':'Overview')+'</span>';
+  if(sub && curView==='budget') sub.innerHTML='<span>'+label.replace('&','&amp;')+'</span>';
   bgtMonth=null;
   if(_budgetInited) renderBudget();
 }
