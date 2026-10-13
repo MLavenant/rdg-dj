@@ -75,6 +75,42 @@ function _bpMonths(){
   }
   return out;
 }
+function _bpMonthAt(offset){
+  var today=(typeof TODAY!=='undefined'&&TODAY)?String(TODAY):miamiToday();
+  var info=fiscalInfoForDate(today);
+  var y=info.year, mi=info.monthIndex+(+offset||0);
+  while(mi<0){ mi+=12; y--; }
+  while(mi>11){ mi-=12; y++; }
+  return {year:y, mi:mi, label:MN_FULL[mi]+' '+y};
+}
+function _bpPriorMonth(m){
+  var y=m.year-1;
+  var r=fiscalPeriodRange(y, m.mi);
+  return {year:y, mi:m.mi, mm:m.mm, from:r.from, to:r.to, short:MNS[m.mi]+' '+y};
+}
+function _bpPriorTotals(venue, m){
+  var pm=_bpPriorMonth(m);
+  var fee=0, bs=0, hasBs=false, n=0;
+  _bpBookings(venue, pm).forEach(function(r){
+    fee+=+(r.fee!=null?r.fee:(r.cost||0))||0;
+    n++;
+    if(r.bs_a!=null){ bs+=+r.bs_a; hasBs=true; }
+  });
+  return {fee:n?fee:null, bs:hasBs?bs:null, n:n, label:pm.short};
+}
+function _bpLyShow(venue, dateStr){
+  var show=(typeof _modalLySameDateShow==='function')?_modalLySameDateShow(venue, dateStr):null;
+  if(!show) return null;
+  var fee=show.fee!=null?show.fee:(show.cost!=null?show.cost:null);
+  fee=fee!=null&&fee!==''?+fee:null;
+  var bs=show.bs_a!=null?+show.bs_a:null;
+  return {dj:show.dj||'', fee:fee, bs:bs, ret:(fee>0&&bs!=null)?bs/fee:null, d:show.d};
+}
+function _bpThisReturn(row){
+  if(row.roi_t!=null) return +row.roi_t;
+  if(row.fee>0 && row.bs_m!=null) return row.bs_m/row.fee;
+  return null;
+}
 
 /* ---- Calendar read (never mutates SCHED rows) ---- */
 function _bpUid(r){
@@ -139,7 +175,7 @@ function _bpVenueMonth(venue, m){
   return {venue:venue, month:m, budget:budget, confirm:conf||null,
     confirmStale:!!(conf && budget!=null && +conf.amount!==+budget),
     confirmed:confirmed, proposed:proposed, planned:planned,
-    remaining:budget!=null?budget-planned:null, bsT:bsT, roi:planned>0&&bsT>0?bsT/planned:null,
+    remaining:budget!=null?budget-planned:null, bsT:bsT, py:_bpPriorTotals(venue, m),
     rows:rows, exc:exc};
 }
 function _bpVenueList(){ return _bpVenue==='all' ? BP_VENUES.slice() : [_bpVenue]; }
@@ -183,8 +219,15 @@ function renderBookingPlan(){
     +'<button type="button" class="'+(_bpMode==='3m'?'on':'')+'" onclick="bpSetMode(\'3m\')">3 Months</button>'
     +'</div>';
   h+='<div class="bp-nav"><button type="button" onclick="bpShift(-1)" title="Previous month">&#8249;</button>'
-    +'<button type="button" onclick="bpShift(0)"'+(_bpOffset===0?' class="on"':'')+'>Current</button>'
+    +'<button type="button" onclick="bpShift(0)"'+(_bpOffset===0?' class="on"':'')+'>Today</button>'
     +'<button type="button" onclick="bpShift(1)" title="Next month">&#8250;</button></div>';
+  h+='<label class="bp-month-lbl">'+(_bpMode==='1m'?'Month':'Start month')
+    +'<select class="bp-venue-sel" onchange="bpSetStart(this.value)">';
+  for(var off=-12; off<=18; off++){
+    var opt=_bpMonthAt(off);
+    h+='<option value="'+off+'"'+(off===_bpOffset?' selected':'')+'>'+_escHtml(opt.label)+'</option>';
+  }
+  h+='</select></label>';
   h+='<select class="bp-venue-sel" onchange="bpSetVenue(this.value)">'
     +'<option value="all"'+(_bpVenue==='all'?' selected':'')+'>All venues</option>'
     +BP_VENUES.map(function(v){ return '<option value="'+_escHtml(v)+'"'+(_bpVenue===v?' selected':'')+'>'+_escHtml(v)+'</option>'; }).join('')
@@ -200,81 +243,113 @@ function renderBookingPlan(){
   host.innerHTML=h;
 }
 
-function _bpSummaryHtml(data){
-  var ms=data.months;
-  var h='<div class="bp-summary"><table class="bp-sum-tbl"><thead><tr><th class="l">Venue</th>';
-  ms.forEach(function(m){ h+='<th colspan="1">'+_escHtml(m.label)+'<span>'+_escHtml(m.range)+'</span></th>'; });
-  if(ms.length>1) h+='<th>'+ms.length+'-month total</th>';
-  h+='</tr></thead><tbody>';
-  var grand=ms.map(function(){ return {budget:0,hasB:false,confirmed:0,proposed:0,bsT:0}; });
-  var gTot={budget:0,hasB:false,confirmed:0,proposed:0,bsT:0};
-  Object.keys(data.grid).forEach(function(v){
-    var cells=data.grid[v];
-    var tot={budget:0,hasB:false,confirmed:0,proposed:0,bsT:0};
-    h+='<tr><td class="l"><b>'+_escHtml(v)+'</b></td>';
-    cells.forEach(function(c, i){
-      h+='<td>'+_bpCellHtml(c)+'</td>';
-      [tot, grand[i], gTot].forEach(function(t){
-        if(c.budget!=null){ t.budget+=c.budget; t.hasB=true; }
-        t.confirmed+=c.confirmed; t.proposed+=c.proposed; t.bsT+=c.bsT;
-      });
-    });
-    if(ms.length>1) h+='<td class="bp-tot">'+_bpTotCellHtml(tot)+'</td>';
-    h+='</tr>';
-  });
-  if(Object.keys(data.grid).length>1){
-    h+='<tr class="bp-grand"><td class="l"><b>All venues</b></td>';
-    grand.forEach(function(t){ h+='<td>'+_bpTotCellHtml(t)+'</td>'; });
-    if(ms.length>1) h+='<td class="bp-tot">'+_bpTotCellHtml(gTot)+'</td>';
-    h+='</tr>';
+function _bpAddTotals(t, c){
+  if(c.budget!=null){ t.budget=(t.budget||0)+c.budget; t.hasB=true; }
+  t.confirmed+=c.confirmed; t.proposed+=c.proposed; t.bsT+=c.bsT;
+  if(c.py){
+    if(c.py.fee!=null){ t.pyFee=(t.pyFee||0)+c.py.fee; t.hasPyFee=true; }
+    if(c.py.bs!=null){ t.pyBs=(t.pyBs||0)+c.py.bs; t.hasPyBs=true; }
   }
-  h+='</tbody></table></div>';
-  return h;
 }
-function _bpCellHtml(c){
-  var m=c.month;
-  var conf=c.confirm
-    ? '<span class="bp-fin '+(c.confirmStale?'bp-fin-stale':'bp-fin-ok')+'" title="'+_escHtml('Confirmed by '+c.confirm.by+' on '+_bpFmtDate(c.confirm.at))+'">'+(c.confirmStale?'Budget changed since Finance confirmed':'Finance confirmed')+'</span>'
-    : '<button type="button" class="bp-fin bp-fin-btn" onclick="bpConfirmBudget(\''+_escHtml(c.venue).replace(/'/g,"\\'")+'\','+m.year+',\''+m.mm+'\')">Finance: confirm budget</button>';
-  var h='<div class="bp-cell">';
-  h+='<div class="bp-line"><span>Budget</span><b>'+(c.budget!=null?$k(c.budget):'Not set')+'</b></div>';
-  h+='<div class="bp-line"><span>Confirmed</span><b>'+$k(c.confirmed)+'</b></div>';
-  h+='<div class="bp-line"><span>Proposed</span><b>'+$k(c.proposed)+'</b></div>';
-  h+='<div class="bp-line bp-line-tot"><span>Total planned</span><b>'+$k(c.planned)+'</b></div>';
-  h+='<div class="bp-line"><span>Remaining</span><b>'+_bpMoneyVar(c.remaining)+'</b></div>';
-  h+='<div class="bp-line"><span>BS Target</span><b>'+$k(c.bsT||null)+'</b></div>';
-  h+='<div class="bp-line"><span>Expected ROI</span><b>'+(c.roi!=null?c.roi.toFixed(1)+'x':'-')+'</b></div>';
-  var e=c.exc, tags=[];
-  if(e.violations) tags.push('<span class="bp-tag bp-tag-red">'+e.violations+' confirmed w/o approval</span>');
-  if(e.needed) tags.push('<span class="bp-tag bp-tag-amb">'+e.needed+' need approval</span>');
-  if(e.pending) tags.push('<span class="bp-tag bp-tag-blue">'+e.pending+' pending</span>');
-  if(e.approved) tags.push('<span class="bp-tag bp-tag-green">'+e.approved+' approved</span>');
-  if(e.rejected) tags.push('<span class="bp-tag bp-tag-grey">'+e.rejected+' rejected</span>');
-  if(tags.length) h+='<div class="bp-tags">'+tags.join('')+'</div>';
-  h+='<div class="bp-fin-row">'+conf+'</div>';
+function _bpBlankTot(){ return {budget:0,hasB:false,confirmed:0,proposed:0,bsT:0,pyFee:0,hasPyFee:false,pyBs:0,hasPyBs:false}; }
+function _bpSummaryHtml(data){
+  var venues=Object.keys(data.grid);
+  var h='<div class="bp-summary">';
+  venues.forEach(function(v){
+    h+='<div class="bp-venue-block"><div class="bp-venue-name">'+_escHtml(v)+'</div><div class="bp-cards">';
+    var tot=_bpBlankTot();
+    data.grid[v].forEach(function(c){ h+=_bpCardHtml(c); _bpAddTotals(tot, c); });
+    if(data.months.length>1) h+=_bpCardHtml(_bpTotCard(tot, data.months.length+'-month total'));
+    h+='</div></div>';
+  });
+  if(venues.length>1){
+    h+='<div class="bp-venue-block"><div class="bp-venue-name">All venues</div><div class="bp-cards">';
+    var gTot=_bpBlankTot();
+    data.months.forEach(function(m, i){
+      var bucket=_bpBlankTot();
+      venues.forEach(function(v){ _bpAddTotals(bucket, data.grid[v][i]); });
+      h+=_bpCardHtml(_bpTotCard(bucket, m.label, m.range));
+      _bpAddTotals(gTot, {budget:bucket.hasB?bucket.budget:null, confirmed:bucket.confirmed, proposed:bucket.proposed, bsT:bucket.bsT, py:{fee:bucket.hasPyFee?bucket.pyFee:null, bs:bucket.hasPyBs?bucket.pyBs:null}});
+    });
+    if(data.months.length>1) h+=_bpCardHtml(_bpTotCard(gTot, data.months.length+'-month total'));
+    h+='</div></div>';
+  }
   h+='</div>';
   return h;
 }
-function _bpTotCellHtml(t){
+function _bpTotCard(t, label, range){
   var planned=t.confirmed+t.proposed;
-  var rem=t.hasB?t.budget-planned:null;
-  return '<div class="bp-cell">'
-    +'<div class="bp-line"><span>Budget</span><b>'+(t.hasB?$k(t.budget):'Not set')+'</b></div>'
-    +'<div class="bp-line"><span>Confirmed</span><b>'+$k(t.confirmed)+'</b></div>'
-    +'<div class="bp-line"><span>Proposed</span><b>'+$k(t.proposed)+'</b></div>'
-    +'<div class="bp-line bp-line-tot"><span>Total planned</span><b>'+$k(planned)+'</b></div>'
-    +'<div class="bp-line"><span>Remaining</span><b>'+_bpMoneyVar(rem)+'</b></div>'
-    +'<div class="bp-line"><span>BS Target</span><b>'+$k(t.bsT||null)+'</b></div>'
-    +'<div class="bp-line"><span>Expected ROI</span><b>'+(planned>0&&t.bsT>0?(t.bsT/planned).toFixed(1)+'x':'-')+'</b></div>'
-    +'</div>';
+  return {venue:'', month:{label:label, range:range||'', year:0, mm:''}, budget:t.hasB?t.budget:null,
+    confirmed:t.confirmed, proposed:t.proposed, planned:planned,
+    remaining:t.hasB?t.budget-planned:null, bsT:t.bsT,
+    py:{fee:t.hasPyFee?t.pyFee:null, bs:t.hasPyBs?t.pyBs:null, label:'prior year'},
+    exc:null, confirm:null, isTotal:true};
+}
+function _bpCardHtml(c){
+  var m=c.month;
+  var h='<article class="bp-card'+(c.isTotal?' bp-card-total':'')+'">';
+  h+='<div class="bp-card-hd"><b>'+_escHtml(m.label)+'</b>'+(m.range?'<span>'+_escHtml(m.range)+'</span>':'')+'</div>';
+  h+='<div class="bp-budget-box"><span>Budget</span><b>'+(c.budget!=null?$k(c.budget):'Not set')+'</b></div>';
+  h+='<div class="bp-pipe"><div class="bp-pipe-hd">In the pipeline</div>';
+  h+='<div class="bp-line"><span>Confirmed</span><b>'+$k(c.confirmed)+'</b></div>';
+  h+='<div class="bp-line"><span>Proposed</span><b>'+$k(c.proposed)+'</b></div>';
+  h+='<div class="bp-line bp-line-tot"><span>Total planned</span><b>'+$k(c.planned)+'</b></div>';
+  h+='<div class="bp-line"><span>vs budget</span><b>'+_bpMoneyVar(c.remaining)+'</b></div></div>';
+  h+='<div class="bp-targets">';
+  h+='<div class="bp-line"><span>BS Target</span><b>'+$k(c.bsT||null)+'</b></div>';
+  h+='<div class="bp-line"><span>PY BS Actual</span><b>'+$k(c.py&&c.py.bs!=null?c.py.bs:null)+'</b></div>';
+  h+='<div class="bp-line"><span>PY DJ fees</span><b>'+$k(c.py&&c.py.fee!=null?c.py.fee:null)+'</b></div>';
+  h+='</div>';
+  if(!c.isTotal){
+    var e=c.exc||{}, tags=[];
+    if(e.violations) tags.push('<span class="bp-tag bp-tag-red">'+e.violations+' confirmed w/o approval</span>');
+    if(e.needed) tags.push('<span class="bp-tag bp-tag-amb">'+e.needed+' need approval</span>');
+    if(e.pending) tags.push('<span class="bp-tag bp-tag-blue">'+e.pending+' pending</span>');
+    if(e.approved) tags.push('<span class="bp-tag bp-tag-green">'+e.approved+' approved</span>');
+    if(e.rejected) tags.push('<span class="bp-tag bp-tag-grey">'+e.rejected+' rejected</span>');
+    if(tags.length) h+='<div class="bp-tags">'+tags.join('')+'</div>';
+    var conf=c.confirm
+      ? '<span class="bp-fin '+(c.confirmStale?'bp-fin-stale':'bp-fin-ok')+'" title="'+_escHtml('Confirmed by '+c.confirm.by+' on '+_bpFmtDate(c.confirm.at))+'">'+(c.confirmStale?'Budget changed since Finance confirmed':'Finance confirmed')+'</span>'
+      : '<button type="button" class="bp-fin bp-fin-btn" onclick="bpConfirmBudget(\''+_escHtml(c.venue).replace(/'/g,"\\'")+'\','+m.year+',\''+m.mm+'\')">Finance: confirm budget</button>';
+    h+='<div class="bp-fin-row">'+conf+'</div>';
+  }
+  h+='</article>';
+  return h;
+}
+function _bpRetBox(nowX, lyX){
+  function side(label, x){
+    return '<div><span>'+label+'</span><b>'+(x!=null?(+x).toFixed(1)+'x':'-')+'</b></div>';
+  }
+  return '<div class="bp-ret">'+side('This year', nowX)+side('Last year', lyX)+'</div>';
+}
+function _bpLyBox(ly){
+  if(!ly) return '<div class="bp-ly bp-ly-empty">No show<br>same date last year</div>';
+  return '<div class="bp-ly"><b>'+_escHtml(ly.dj||'TBD')+'</b><span>Fee '+$k(ly.fee)+'</span><span>BS '+$k(ly.bs)+'</span></div>';
 }
 function _bpRowsHtml(data, opts){
   opts=opts||{};
+  var cols=opts.noActions?11:12;
   var h='<div class="bp-list"><table class="bp-tbl"><thead><tr>'
     +'<th class="l">Date</th><th class="l">Venue</th><th class="l">DJ</th><th>Fee</th><th class="l">Status</th>'
-    +'<th>BS Target</th><th>ROI Target</th><th>Month spend after</th><th>Over budget by</th><th class="l">Approval</th>'
+    +'<th>BS Target</th><th>Return</th><th class="l">Same date last year</th><th>Month spend after</th><th>Over budget by</th><th class="l">Approval</th>'
     +(opts.noActions?'':'<th></th>')+'</tr></thead><tbody>';
   var any=false;
+  var grand={fee:0, bs:0, hasBs:false, lyFee:0, lyBs:0, hasLyFee:false, hasLyBs:false, n:0};
+  function addTot(bucket, r, ly){
+    bucket.n++; bucket.fee+=r.fee||0;
+    if(r.bs_m!=null){ bucket.bs+=r.bs_m; bucket.hasBs=true; }
+    if(ly&&ly.fee!=null){ bucket.lyFee+=ly.fee; bucket.hasLyFee=true; }
+    if(ly&&ly.bs!=null){ bucket.lyBs+=ly.bs; bucket.hasLyBs=true; }
+  }
+  function totRow(label, bucket){
+    var nowX=bucket.fee>0&&bucket.hasBs?bucket.bs/bucket.fee:null;
+    var lyX=bucket.hasLyFee&&bucket.lyFee>0&&bucket.hasLyBs?bucket.lyBs/bucket.lyFee:null;
+    return '<tr class="bp-total-row"><td class="l" colspan="3"><b>'+_escHtml(label)+'</b> <span>'+bucket.n+' bookings</span></td>'
+      +'<td><b>'+$k(bucket.fee)+'</b></td><td></td><td><b>'+$k(bucket.hasBs?bucket.bs:null)+'</b></td>'
+      +'<td>'+_bpRetBox(nowX, lyX)+'</td>'
+      +'<td class="l"><div class="bp-ly"><span>Fees '+$k(bucket.hasLyFee?bucket.lyFee:null)+'</span><span>BS '+$k(bucket.hasLyBs?bucket.lyBs:null)+'</span></div></td>'
+      +'<td colspan="'+(opts.noActions?3:4)+'"></td></tr>';
+  }
   data.months.forEach(function(m, mi){
     var monthRows=[];
     Object.keys(data.grid).forEach(function(v){
@@ -285,9 +360,11 @@ function _bpRowsHtml(data, opts){
     if(!monthRows.length) return;
     any=true;
     monthRows.sort(function(a,b){ return a.r.d<b.r.d?-1:(a.r.d>b.r.d?1:(a.r.venue<b.r.venue?-1:1)); });
-    h+='<tr class="bp-month-row"><td colspan="'+(opts.noActions?10:11)+'">'+_escHtml(m.label)+' <span>'+_escHtml(m.range)+'</span></td></tr>';
+    h+='<tr class="bp-month-row"><td colspan="'+cols+'">'+_escHtml(m.label)+' <span>'+_escHtml(m.range)+'</span></td></tr>';
+    var monthTot={fee:0, bs:0, hasBs:false, lyFee:0, lyBs:0, hasLyFee:false, hasLyBs:false, n:0};
     monthRows.forEach(function(x){
-      var r=x.r, c=x.c;
+      var r=x.r, c=x.c, ly=_bpLyShow(r.venue, r.d);
+      addTot(monthTot, r, ly); addTot(grand, r, ly);
       var budgetTxt=c.budget!=null?' / '+$k(c.budget):'';
       h+='<tr class="'+(r.violation?'bp-row-viol':(r.needs?'bp-row-over':''))+'">'
         +'<td class="l">'+_bpDay(r.d)+'</td>'
@@ -296,7 +373,8 @@ function _bpRowsHtml(data, opts){
         +'<td>'+$k(r.fee)+'</td>'
         +'<td class="l"><span class="bp-status '+(r.confirmed?'bp-status-conf':'bp-status-prop')+'">'+_escHtml(r.status||'No status')+'</span></td>'
         +'<td>'+$k(r.bs_m)+'</td>'
-        +'<td>'+(r.roi_t!=null?(+r.roi_t).toFixed(1)+'x':'-')+'</td>'
+        +'<td>'+_bpRetBox(_bpThisReturn(r), ly&&ly.ret)+'</td>'
+        +'<td class="l">'+_bpLyBox(ly)+'</td>'
         +'<td>'+$k(r.runningAfter)+'<span class="bp-muted">'+budgetTxt+'</span></td>'
         +'<td>'+(r.overage?'<b class="bp-neg">'+$k(r.overage)+'</b>':'-')+'</td>'
         +'<td class="l">'+_bpBadge(r.approval)+(r.violation?'<span class="bp-badge bp-st-viol">Confirmed without approval</span>':'')+'</td>';
@@ -308,8 +386,10 @@ function _bpRowsHtml(data, opts){
       }
       h+='</tr>';
     });
+    if(data.months.length>1) h+=totRow(m.short+' total', monthTot);
   });
-  if(!any) h+='<tr><td colspan="'+(opts.noActions?10:11)+'" class="bp-empty">'+(opts.onlyExceptions?'No bookings above budget in this period.':'No bookings on the calendar for this period.')+'</td></tr>';
+  if(!any) h+='<tr><td colspan="'+cols+'" class="bp-empty">'+(opts.onlyExceptions?'No bookings above budget in this period.':'No bookings on the calendar for this period.')+'</td></tr>';
+  else h+=totRow('Total', grand);
   h+='</tbody></table></div>';
   return h;
 }
@@ -333,6 +413,7 @@ function bpSetPanel(p){ _bpPanel=p; renderBookingPlan(); }
 function bpSetMode(m){ _bpMode=m; renderBookingPlan(); }
 function bpSetVenue(v){ _bpVenue=v; renderBookingPlan(); }
 function bpShift(d){ _bpOffset = d===0 ? 0 : _bpOffset+d; renderBookingPlan(); }
+function bpSetStart(v){ _bpOffset=+v||0; renderBookingPlan(); }
 
 function bpConfirmBudget(venue, year, mm){
   var amt=getMonthlyBudget(venue, year, mm);
