@@ -104,7 +104,7 @@ function _bpLyShow(venue, dateStr){
   var fee=show.fee!=null?show.fee:(show.cost!=null?show.cost:null);
   fee=fee!=null&&fee!==''?+fee:null;
   var bs=show.bs_a!=null?+show.bs_a:null;
-  return {dj:show.dj||'', fee:fee, bs:bs, ret:(fee>0&&bs!=null)?bs/fee:null, d:show.d};
+  return {dj:show.dj||'', fee:fee, bs:bs, ret:(fee>0&&bs!=null)?bs/fee:null, d:show.d, status:_bpStatus(show)};
 }
 function _bpThisReturn(row){
   if(row.roi_t!=null) return +row.roi_t;
@@ -693,15 +693,16 @@ function _bpBusy(on, msg){
   }
   el.innerHTML='<div><b>Preparing PDF</b><span>'+_escHtml(msg||'')+'</span></div>';
 }
-function _bpCoverHtml(title, sub){
+function _bpCoverHtml(title, sub, location){
   return '<div class="bp-page bp-cover">'
     +'<img class="bp-cover-logo" src="assets/rdg-logo.png" alt="RDG">'
+    +(location?'<div class="bp-cover-loc">'+_escHtml(location)+'</div>':'')
     +'<div class="bp-cover-box">'+_escHtml(title)+'</div>'
     +(sub?'<div class="bp-cover-sub">'+_escHtml(sub)+'</div>':'')
     +'</div>';
 }
-function _bpStatSel(lbl, val, cls){
-  return '<div class="bp-x-stat'+(cls?' '+cls:'')+'"><span>'+lbl+'</span><b>'+val+'</b></div>';
+function _bpField(lbl, val){
+  return '<div class="bp-x-field"><span>'+lbl+'</span><b>'+val+'</b></div>';
 }
 function _bp3dOrbit(model, tableKey, url){
   var orbit=model.orbit||'45deg 60deg 110%';
@@ -712,16 +713,96 @@ function _bp3dOrbit(model, tableKey, url){
   return orbit;
 }
 var _bpSnapCache={};
+function _bpPriceKey(priced){
+  if(!priced||!priced.tiers) return '';
+  return priced.tiers.map(function(t){ return t.name+':'+(t.suggested!=null?t.suggested:t.minimum); }).join('|');
+}
+/* Price tags sit on the model as HTML, which toBlob() does not include.
+   They are measured, then drawn onto the snapshot. */
+function _bpCompositeSnap(mv, blob){
+  return new Promise(function(resolve){
+    var obj=URL.createObjectURL(blob);
+    var img=new Image();
+    img.onload=function(){
+      var rect=mv.getBoundingClientRect();
+      var scale=2;
+      var cv=document.createElement('canvas');
+      cv.width=Math.max(2, Math.round(rect.width*scale));
+      cv.height=Math.max(2, Math.round(rect.height*scale));
+      var ctx=cv.getContext('2d');
+      ctx.fillStyle='#12141a';
+      ctx.fillRect(0,0,cv.width,cv.height);
+      ctx.drawImage(img,0,0,cv.width,cv.height);
+      mv.querySelectorAll('.fv3d-hotspot').forEach(function(btn){
+        var b=btn.getBoundingClientRect();
+        if(b.width<4||b.height<4) return;
+        var x=(b.left-rect.left)*scale, y=(b.top-rect.top)*scale, w=b.width*scale, h=b.height*scale;
+        if(x+w<0||y+h<0||x>cv.width||y>cv.height) return;
+        var color=btn.style.getPropertyValue('--tier-color')||'#e2e8f0';
+        var rad=7*scale;
+        ctx.beginPath();
+        ctx.moveTo(x+rad,y);
+        ctx.arcTo(x+w,y,x+w,y+h,rad);
+        ctx.arcTo(x+w,y+h,x,y+h,rad);
+        ctx.arcTo(x,y+h,x,y,rad);
+        ctx.arcTo(x,y,x+w,y,rad);
+        ctx.closePath();
+        ctx.fillStyle='rgba(14,14,18,.92)';
+        ctx.fill();
+        ctx.lineWidth=Math.max(2, 1.6*scale);
+        ctx.strokeStyle=color;
+        ctx.stroke();
+        var tier=(btn.querySelector('.fv3d-hotspot-tier')||{}).textContent||'';
+        var price=(btn.querySelector('.fv3d-hotspot-price')||{}).textContent||'';
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        ctx.fillStyle=color;
+        ctx.font='900 '+(9*scale)+'px Arial,sans-serif';
+        ctx.fillText(String(tier).toUpperCase(), x+w/2, y+h*0.34);
+        ctx.fillStyle='#ffffff';
+        ctx.font='800 '+(10*scale)+'px Arial,sans-serif';
+        ctx.fillText(price?('FROM '+price):'', x+w/2, y+h*0.7);
+      });
+      URL.revokeObjectURL(obj);
+      resolve(cv.toDataURL('image/jpeg',0.86));
+    };
+    img.onerror=function(){ URL.revokeObjectURL(obj); resolve(null); };
+    img.src=obj;
+  });
+}
+function _bpAddSnapHotspots(mv, tableKey, tiers){
+  if(typeof FV_3D_HOTSPOTS==='undefined') return;
+  var anchors=FV_3D_HOTSPOTS[tableKey]||{};
+  (tiers||[]).forEach(function(t){
+    var price=t.suggested!=null?t.suggested:t.minimum;
+    (t.tables||[]).forEach(function(id){
+      var p=anchors[id];
+      if(!p) return;
+      var btn=document.createElement('button');
+      btn.type='button';
+      btn.className='fv3d-hotspot';
+      btn.slot='hotspot-'+tableKey+'-'+id;
+      btn.dataset.position=p[0]+' '+p[1]+' '+p[2];
+      btn.dataset.normal='0 1 0';
+      btn.style.setProperty('--tier-color', t.color||'#e2e8f0');
+      btn.innerHTML='<span class="fv3d-hotspot-tier">'+_escHtml(t.name)+'</span><span class="fv3d-hotspot-price">'+_escHtml(formatFv3dMoney(price))+'</span>';
+      mv.appendChild(btn);
+    });
+  });
+}
 /* WebGL is invisible to html2canvas, so the 3D plan is rendered on screen
    (under the busy overlay) and captured with model-viewer's own toBlob(). */
-function _bpSnap3d(venue, date){
+function _bpSnap3d(venue, date, fee){
   var key=(typeof fv3dKeyForVenue==='function')?fv3dKeyForVenue(venue):null;
   var model=key&&typeof FV_3D_MODELS!=='undefined'?FV_3D_MODELS.find(function(m){ return m.key===key; }):null;
   if(!model || typeof _ensureModelViewerScript!=='function') return Promise.resolve(null);
   var url=(typeof fv3dEffectiveModelUrl==='function'?fv3dEffectiveModelUrl(key, date):null)||model.url;
   var tableKey=(typeof fv3dEffectiveTableKey==='function')?fv3dEffectiveTableKey(key, date):key;
   var orbit=_bp3dOrbit(model, tableKey, url);
-  var ck=url+'|'+orbit;
+  /* Closer than the on-screen orbit so the floor and its price tags fill the page. */
+  orbit=orbit.replace(/(\d+(?:\.\d+)?)%\s*$/, function(m, n){ return Math.max(40, Math.round(+n*0.55))+'%'; });
+  var priced=(typeof calcTierPricesForShow==='function')?calcTierPricesForShow(venue, date, fee):null;
+  var ck=url+'|'+orbit+'|'+tableKey+'|'+_bpPriceKey(priced);
   if(_bpSnapCache[ck]) return _bpSnapCache[ck];
   var p=new Promise(function(resolve){
     var done=false, host=null;
@@ -738,24 +819,29 @@ function _bpSnap3d(venue, date){
       var mv=document.createElement('model-viewer');
       mv.setAttribute('src', url);
       mv.setAttribute('camera-orbit', orbit);
+      mv.setAttribute('field-of-view', '24deg');
       mv.setAttribute('interaction-prompt','none');
       mv.setAttribute('shadow-intensity','1');
       mv.setAttribute('exposure','1.1');
-      mv.style.cssText='width:100%;height:100%;background:#ffffff';
+      mv.style.cssText='width:100%;height:100%;background:#12141a';
       host.appendChild(mv);
       document.body.appendChild(host);
       mv.addEventListener('error', function(){ finish(null); });
       mv.addEventListener('load', function(){
+        try{
+          mv.interpolationDecay=0;
+          mv.cameraOrbit=orbit;
+          mv.fieldOfView='22deg';
+          if(mv.jumpCameraToGoal) mv.jumpCameraToGoal();
+        }catch(e){}
+        _bpAddSnapHotspots(mv, tableKey, priced&&priced.tiers);
         setTimeout(function(){
           try{
             mv.toBlob({mimeType:'image/png'}).then(function(blob){
-              var fr=new FileReader();
-              fr.onload=function(){ finish(fr.result); };
-              fr.onerror=function(){ finish(null); };
-              fr.readAsDataURL(blob);
-            }, function(){ finish(null); });
+              return _bpCompositeSnap(mv, blob);
+            }).then(finish, function(){ finish(null); });
           }catch(e){ finish(null); }
-        }, 1500);
+        }, 1600);
       });
     });
   });
@@ -770,61 +856,47 @@ function _bpExceptionPageHtml(r, c, snap){
   var total=actual+forecast;
   var left=c.budget!=null?c.budget-total:null;
   var ly=_bpLyShow(r.venue, r.d);
-  var yr=c.month.year, mm=c.month.mm;
-  var salesPlan=typeof getBgtPlan==='function'?getBgtPlan(r.venue, yr, mm, 'sales'):null;
-  var salesLy=typeof getBgtActual==='function'?getBgtActual(r.venue, yr-1, mm, 'sales'):null;
   var priced=typeof calcTierPricesForShow==='function'?calcTierPricesForShow(r.venue, r.d, r.fee):null;
-  function diff(a, b){
-    if(a==null||b==null||!b) return '';
-    var pct=(a-b)/b*100;
-    return '<em class="'+(pct>=0?'bp-pos':'bp-neg')+'">'+(pct>=0?'+':'')+pct.toFixed(0)+'% vs last year</em>';
-  }
+  var pos=left==null?'-':'<span class="'+(left>=0?'bp-pos':'bp-neg')+'">'+(left>=0?'Under ':'Over ')+$k(Math.abs(left))+'</span>';
   var h='<div class="bp-page bp-x">';
   h+='<div class="bp-x-hd"><div><b>Budget Exception</b><span>'+_escHtml(r.venue)+' · '+_escHtml(c.month.label)+' ('+_escHtml(c.month.range)+')</span></div>'
     +'<img src="assets/rdg-logo.png" alt="RDG"></div>';
 
-  h+='<div class="bp-x-sec">Performance &amp; budget</div><div class="bp-x-grid">'
-    +_bpStatSel('DJ', _escHtml(r.dj||'TBD'), 'bp-x-wide')
-    +_bpStatSel('Date', _bpDay(r.d))
-    +_bpStatSel('Fee', $k(r.fee))
-    +_bpStatSel('Status', _escHtml(r.status||'No status'))
-    +'</div><div class="bp-x-grid">'
-    +_bpStatSel('Total budget for the month', c.budget!=null?$k(c.budget):'Not set', 'bp-x-budget')
-    +_bpStatSel('Actual DJ fees (played)', $k(actual))
-    +_bpStatSel('Forecast DJ fees (upcoming)', $k(forecast))
-    +_bpStatSel('Actual + forecast', $k(total), 'bp-x-strong')
-    +_bpStatSel('vs budget', left==null?'-':'<span class="'+(left>=0?'bp-pos':'bp-neg')+'">'+(left>=0?'Under ':'Over ')+$k(Math.abs(left))+'</span>')
-    +'</div>';
-
-  h+='<div class="bp-x-sec">Sales: what we plan vs what we did last year</div><div class="bp-x-sales">'
-    +'<div class="bp-x-sbox"><div class="bp-x-shd">This night</div>'
-    +'<div class="bp-x-srow"><span>Planned BS (target)</span><b>'+$k(r.bs_m)+'</b></div>'
-    +'<div class="bp-x-srow"><span>Last year same date'+(ly?' ('+_bpDay(ly.d)+(ly.dj?', '+_escHtml(ly.dj):'')+')':'')+'</span><b>'+(ly?$k(ly.bs):'No show')+'</b></div>'
-    +'<div class="bp-x-srow bp-x-sfoot">'+diff(r.bs_m, ly&&ly.bs)+'</div></div>'
-    +'<div class="bp-x-sbox"><div class="bp-x-shd">Whole month: bottle service</div>'
-    +'<div class="bp-x-srow"><span>Planned BS (all bookings)</span><b>'+$k(c.bsT||null)+'</b></div>'
-    +'<div class="bp-x-srow"><span>Last year BS actual</span><b>'+$k(c.py&&c.py.bs!=null?c.py.bs:null)+'</b></div>'
-    +'<div class="bp-x-srow bp-x-sfoot">'+diff(c.bsT, c.py&&c.py.bs)+'</div></div>'
-    +'<div class="bp-x-sbox"><div class="bp-x-shd">Whole month: total sales</div>'
-    +'<div class="bp-x-srow"><span>Sales budget</span><b>'+$k(salesPlan!=null?+salesPlan:null)+'</b></div>'
-    +'<div class="bp-x-srow"><span>Last year sales actual</span><b>'+$k(salesLy)+'</b></div>'
-    +'<div class="bp-x-srow bp-x-sfoot">'+diff(salesPlan!=null?+salesPlan:null, salesLy)+'</div></div>'
-    +'</div>';
-
-  h+='<div class="bp-x-sec">3D floor plan &amp; table tiers'+(priced&&priced.label?' <span>'+_escHtml(priced.label)+'</span>':'')+'</div><div class="bp-x-3d">';
-  h+='<div class="bp-x-snap">'+(snap?'<img src="'+snap+'" alt="3D floor plan">':'<span>3D snapshot unavailable</span>')+'</div>';
-  h+='<div class="bp-x-tiers">';
-  if(priced&&priced.tiers&&priced.tiers.length){
-    priced.tiers.forEach(function(t){
-      var price=t.suggested!=null?t.suggested:t.minimum;
-      var n=(t.tables||[]).length;
-      h+='<div class="bp-x-tier" style="--tier-color:'+_escHtml(t.color||'#64748b')+'"><div><b>'+_escHtml(t.name)+'</b><span>'+n+' table'+(n===1?'':'s')+(t.capacity?' · '+t.capacity+' guests':'')+'</span>'
-        +(n?'<small>#'+t.tables.join(', #')+'</small>':'')+'</div><strong>'+_escHtml(formatFv3dMoney(price))+'</strong></div>';
-    });
+  h+='<div class="bp-x-sec">Budget &amp; performance</div><div class="bp-x-pair">';
+  h+='<div class="bp-x-col"><div class="bp-x-col-hd">This year</div><div class="bp-x-fields">'
+    +_bpField('DJ', _escHtml(r.dj||'TBD'))
+    +_bpField('Date', _bpDay(r.d))
+    +_bpField('Fee', $k(r.fee))
+    +_bpField('Status', _escHtml(r.status||'No status'))
+    +'</div></div>';
+  h+='<div class="bp-x-col bp-x-ly"><div class="bp-x-col-hd">Last year'+(ly?' · '+_bpDay(ly.d):'')+'</div><div class="bp-x-fields">';
+  if(ly){
+    h+=_bpField('DJ', _escHtml(ly.dj||'TBD'))
+      +_bpField('Date', _bpDay(ly.d))
+      +_bpField('Fee', $k(ly.fee))
+      +_bpField('Status', _escHtml(ly.status||'Result'));
   } else {
-    h+='<div class="bp-empty">No tier pricing for this venue.</div>';
+    h+=_bpField('DJ', '—')+_bpField('Date', '—')+_bpField('Fee', '—')+_bpField('Status', 'No show');
   }
   h+='</div></div></div>';
+  h+='<div class="bp-x-bud">'
+    +'<div class="bp-x-yel"><span>Total budget</span><b>'+(c.budget!=null?$k(c.budget):'Not set')+'</b></div>'
+    +'<div><span>Actual + forecast spend</span><b>'+$k(total)+'</b></div>'
+    +'<div><span>Position vs budget</span><b>'+pos+'</b></div>'
+    +'</div>';
+
+  h+='<div class="bp-x-sec">Sales · projected this year vs last year</div><div class="bp-x-pair">';
+  h+='<div class="bp-x-col"><div class="bp-x-col-hd">This year · projected</div><div class="bp-x-fields bp-x-fields-2">'
+    +_bpField('BS Target', $k(r.bs_m))
+    +_bpField('ROI', _bpRoiHtml(_bpThisReturn(r)))
+    +'</div></div>';
+  h+='<div class="bp-x-col bp-x-ly"><div class="bp-x-col-hd">Last year · same date</div><div class="bp-x-fields bp-x-fields-2">'
+    +(ly?_bpField('BS Actual', $k(ly.bs))+_bpField('ROI', _bpRoiHtml(ly.ret)):_bpField('BS Actual', 'No show')+_bpField('ROI', '—'))
+    +'</div></div></div>';
+
+  h+='<div class="bp-x-sec">3D floor plan'+(priced&&priced.label?' <span>'+_escHtml(priced.label)+'</span>':'')+'</div>';
+  h+='<div class="bp-x-snap">'+(snap?'<img src="'+snap+'" alt="3D floor plan">':'<span>3D snapshot unavailable</span>')+'</div>';
+  h+='</div>';
   return h;
 }
 /* Compact one-page version of the plan used only in the PDF. */
@@ -927,22 +999,40 @@ function _bpExceptionRows(data){
   out.sort(function(a,b){ return a.r.d<b.r.d?-1:(a.r.d>b.r.d?1:(a.r.venue<b.r.venue?-1:1)); });
   return out;
 }
+/* 1-month PDF uses the same cards and booking boxes as the screen. */
+function _bpScreenPlanCanvas(){
+  var sheet=document.getElementById('bpSheet');
+  if(!sheet) return Promise.reject(new Error('Nothing to export'));
+  var stage=document.createElement('div');
+  stage.className='bp-pdf-stage';
+  var clone=sheet.cloneNode(true);
+  clone.removeAttribute('id');
+  clone.classList.add('bp-exporting','bp-pdf-sheet');
+  stage.appendChild(clone);
+  document.body.appendChild(stage);
+  return window.html2canvas(clone,{scale:1.5,useCORS:true,logging:false,backgroundColor:'#ffffff',windowWidth:1600}).then(function(cv){
+    stage.remove();
+    return cv;
+  }, function(err){ stage.remove(); throw err; });
+}
 function _bpBuildPdf(data){
   var ms=data.months;
-  var period=ms.length>1?(ms[0].label+' – '+ms[ms.length-1].label):ms[0].label;
-  var sub=(ms.length>1?'Three Month Booking Plan':'Monthly Booking Plan')+' · '+period+' · '+(_bpVenue==='all'?'All venues':_bpVenue);
+  var one=ms.length===1;
+  var period=one?ms[0].label:(ms[0].label+' – '+ms[ms.length-1].label);
+  var loc=one?(_bpVenue==='all'?'All Venues':_bpVenue):'';
+  var sub=one?(ms[0].label+' · '+ms[0].range):('Three Month Booking Plan · '+period+(_bpVenue==='all'?' · All venues':' · '+_bpVenue));
   var canvases=[];
   var exc=_bpExceptionRows(data);
   _bpBusy(true, 'Cover page');
   return _ensurePdfLibs().then(function(){
     return document.fonts&&document.fonts.ready?document.fonts.ready:null;
   }).then(function(){
-    return _bpRenderPage(_bpCoverHtml('Entertainment Approval', sub));
+    return _bpRenderPage(_bpCoverHtml('Entertainment Approval', sub, loc));
   }).then(function(cv){
     canvases.push(cv);
     _bpBusy(true, 'Booking plan');
     if(_bpPanel==='meeting') return _bpCaptureSheet().then(function(cv){ canvases.push(cv); });
-    if(ms.length===1) return _bpRenderPage(_bpPrintSheetHtml(data)).then(function(cv){ canvases.push(cv); });
+    if(one) return _bpScreenPlanCanvas().then(function(cv){ canvases.push(cv); });
     var chain=Promise.resolve();
     ms.forEach(function(m, mi){
       chain=chain.then(function(){ return _bpRenderPage(_bpPrintSheetHtml(data, mi)); }).then(function(cv){ canvases.push(cv); });
@@ -950,11 +1040,11 @@ function _bpBuildPdf(data){
     return chain;
   }).then(function(){
     if(!exc.length) return null;
-    var chain=_bpRenderPage(_bpCoverHtml('Budget Exceptions', exc.length+' upcoming performance'+(exc.length===1?'':'s')+' not confirmed · '+period)).then(function(cv){ canvases.push(cv); });
+    var chain=_bpRenderPage(_bpCoverHtml('Budget Exceptions', exc.length+' upcoming performance'+(exc.length===1?'':'s')+' not confirmed · '+period, loc)).then(function(cv){ canvases.push(cv); });
     exc.forEach(function(x, i){
       chain=chain.then(function(){
         _bpBusy(true, 'Budget exception '+(i+1)+' of '+exc.length+' · 3D floor plan');
-        return _bpSnap3d(x.r.venue, x.r.d);
+        return _bpSnap3d(x.r.venue, x.r.d, x.r.fee);
       }).then(function(snap){
         _bpBusy(true, 'Budget exception '+(i+1)+' of '+exc.length);
         return _bpRenderPage(_bpExceptionPageHtml(x.r, x.c, snap));
