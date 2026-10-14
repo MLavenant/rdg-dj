@@ -3320,6 +3320,7 @@ var _FCAST_EMAIL_TO = [
 var _FCAST_EMAIL_CC = [
   'Salesteam@rivieradininggroup.com',
   'matthias@rivieradininggroup.com',
+  'marissa@rivieradininggroup.com',
   'takuma@rivieradininggroup.com',
   'VIP@rivieradininggroup.com',
   'yulyana@rivieradininggroup.com',
