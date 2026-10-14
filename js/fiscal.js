@@ -249,6 +249,34 @@ function buildPyMapForMonth(venue, yr, mm){
     if(best && bestDist<=10*86400000) claim(ds, best);
   });
 
+  /* Casa Neos Beach Club 2025: Blondish played Dec 30 and Carlita Dec 31.
+     The next fiscal January starts a day earlier, so index matching shows
+     them one day too soon. Keep those two results on the 30th and the 31st. */
+  if(venue==='Casa Neos Beach Club'){
+    function parkOn(md, nameRe){
+      var src=null;
+      SCHED.forEach(function(r){
+        if((r.v||r.venue)!==venue || r._s==='empty' || !r.d) return;
+        if(!dateInFiscalPeriod(r.d, yr-1, mi)) return;
+        if(r.d.slice(5)!==md || !nameRe.test(r.dj||'')) return;
+        src=r;
+      });
+      if(!src) return;
+      var dest=null;
+      dates.forEach(function(ds){ if(ds.slice(5)===md) dest=ds; });
+      if(!dest) return;
+      var from=null;
+      dates.forEach(function(ds){
+        if(map[ds] && nameRe.test(map[ds].py_dj||'')) from=ds;
+      });
+      if(from && from!==dest) map[from]=null;
+      map[dest]=_pyFieldsFromShow(src);
+      used[_pyShowKey(src)]=true;
+    }
+    parkOn('12-31', /carlita/i);
+    parkOn('12-30', /blondish/i);
+  }
+
   dates.forEach(function(ds){ if(!map[ds]) map[ds]=empty; });
   _pyMapCache={key:cacheKey, map:map};
   return map;
