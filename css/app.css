@@ -1591,9 +1591,8 @@ body.mobile-mode .sb-btn{min-height:44px}
   opacity:0.72;
 }
 
-/* Budget > Booking Plan & Approvals */
-#view-budget.bgt-plan-mode .bgt-hide-in-plan{display:none!important}
-#budgetBookingPlan{padding:0 16px 24px}
+/* Three Month Rolling Average */
+#rollingBookingPlan{padding:0 16px 24px}
 .bp-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0 12px}
 .bp-seg,.bp-nav{display:inline-flex;border:0.5px solid var(--rule);border-radius:10px;overflow:hidden;background:var(--card)}
 .bp-seg button,.bp-nav button{font:inherit;font-size:11px;font-weight:700;padding:6px 12px;border:0;background:transparent;color:var(--ink2);cursor:pointer}

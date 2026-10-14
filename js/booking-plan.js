@@ -1,4 +1,4 @@
-/* Budget > Booking Plan & Approvals.
+/* Three Month Rolling Average (sidebar, below Budget).
    Read-only on the calendar: reads SCHED / showTargets / MONTHLY_DJ_BUDGET and never
    writes to schedOverrides or calls any calendar save path. Its own data lives in
    rdg/bookingApprovals, rdg/budgetConfirmations, rdg/bookingPlans, rdg/bookingMeetings
@@ -29,11 +29,10 @@ var _bpData={approvals:{}, confirms:{}, plans:{}, meetings:{}};
 })();
 
 function _bpMaybeRerender(){
-  if(typeof curView==='undefined' || curView!=='budget') return;
-  if(typeof budgetSubTab==='undefined' || budgetSubTab!=='plan') return;
+  if(typeof curView==='undefined' || curView!=='rolling') return;
   if(document.getElementById('bpModal')) return;
   var ae=document.activeElement;
-  if(ae && ae.closest && ae.closest('#budgetBookingPlan') && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;
+  if(ae && ae.closest && ae.closest('#rollingBookingPlan') && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;
   renderBookingPlan();
 }
 
@@ -199,11 +198,9 @@ function _bpMoneyVar(v){
 }
 
 function renderBookingPlan(){
-  var host=document.getElementById('budgetBookingPlan');
+  var host=document.getElementById('rollingBookingPlan');
   if(!host) return;
-  var titleEl=document.getElementById('budgetPageTitle');
-  if(titleEl) titleEl.textContent='Booking Plan & Approvals';
-  var meta=document.getElementById('budgetMeta');
+  var meta=document.getElementById('rollingMeta');
   var data=_bpCompute();
   var ms=data.months;
   if(meta) meta.textContent=(ms.length>1?(ms[0].short+' – '+ms[ms.length-1].short):ms[0].label)+' · reads the live calendar · approvals stored separately';
@@ -1111,7 +1108,7 @@ function bpGenerateMonthlyPlan(){
   _bpMode='3m'; _bpPanel='plan'; _bpOffset=0;
   renderBookingPlan();
   var data=_bpCompute();
-  var btns=document.querySelectorAll('#budgetBookingPlan .bp-btn-dark');
+  var btns=document.querySelectorAll('#rollingBookingPlan .bp-btn-dark');
   btns.forEach(function(b){ b.disabled=true; b.textContent='Preparing…'; });
   var ms=data.months;
   var pdfName=_bpPdfName();

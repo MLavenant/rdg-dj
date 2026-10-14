@@ -55,6 +55,7 @@ function buildSidebar() {
     {id:'allshows',   ic:'&#9776;',  lb:'All Shows'},
     {id:'leaderboard',ic:'&#9650;',  lb:'ROI Ranking'},
     {id:'budget',     ic:'&#36;',    lb:'Budget'},
+    {id:'rolling',    ic:'&#9776;',  lb:'Three Month Rolling Average'},
     {id:'accounting', ic:'&#9998;',  lb:'Accounting'},
   ].forEach(function(b) {
     html += '<button class="sb-btn" data-view="'+b.id+'" onclick="setView(\''+b.id+'\')">'
@@ -142,7 +143,7 @@ function setView(v) {
   try{
     if(_presenceRef) _presenceRef.update({view:v,lastSeen:firebase.database.ServerValue.TIMESTAMP});
   }catch(ePresence){}
-  ['calendar','summary','allshows','leaderboard','budget','accounting','vip','forecast','roi-rules','system','ebitda','3d'].forEach(function(id){
+  ['calendar','summary','allshows','leaderboard','budget','rolling','accounting','vip','forecast','roi-rules','system','ebitda','3d'].forEach(function(id){
     var el = document.getElementById('view-'+id);
     if (!el) return;
     var on = id===v;
@@ -163,6 +164,13 @@ function setView(v) {
       if (ys) ys.value = bgtYear;
       renderBudget();
     }
+    return;
+  }
+  if (v === 'rolling') {
+    clearGlobalCalChrome();
+    var rollSub=document.getElementById('pgSub');
+    if(rollSub) rollSub.innerHTML='<span>Three Month Rolling Average</span>';
+    if(typeof renderBookingPlan==='function') renderBookingPlan();
     return;
   }
   if (v === 'accounting') {
@@ -1258,6 +1266,7 @@ function go() {
     if(ys) ys.value=bgtYear;
     if(_budgetInited) renderBudget();
   }
+  else if (curView==='rolling' && typeof renderBookingPlan==='function') renderBookingPlan();
 }
 
 /* Hide calendar-only chrome (KPI strip + monthly budget banner) on other pages */
@@ -1273,12 +1282,14 @@ function clearGlobalCalChrome(){
 function renderKPIs() {
   var kpiEl=document.getElementById('kpis');
   var banner=document.getElementById('calBudgetBanner');
-  if(curView==='leaderboard'||curView==='budget'){
+  if(curView==='leaderboard'||curView==='budget'||curView==='rolling'){
     clearGlobalCalChrome();
     if(curView==='leaderboard'){
       document.getElementById('pgSub').innerHTML = '<span>ROI Ranking · '+(typeof _lbFilterLabel==='function'?_lbFilterLabel():'all venues')+'</span>';
+    } else if(curView==='rolling'){
+      document.getElementById('pgSub').innerHTML = '<span>Three Month Rolling Average</span>';
     } else {
-      document.getElementById('pgSub').innerHTML = '<span>'+(budgetSubTab==='planner'?'Budget Planner':(budgetSubTab==='plan'?'Booking Plan &amp; Approvals':'Overview'))+'</span>';
+      document.getElementById('pgSub').innerHTML = '<span>'+(budgetSubTab==='planner'?'Budget Planner':'Overview')+'</span>';
     }
     return;
   }
@@ -2063,6 +2074,7 @@ function refreshAllRoiDerivedData(){
   if(curView==='vip'&&typeof renderVIP==='function') renderVIP();
   if(curView==='accounting'&&typeof renderAccounting==='function') renderAccounting();
   if(curView==='budget'&&_budgetInited&&typeof renderBudget==='function') renderBudget();
+  if(curView==='rolling'&&typeof renderBookingPlan==='function') renderBookingPlan();
   if(curView==='roi-rules'&&typeof renderRoiRulesPage==='function') renderRoiRulesPage();
 }
 
@@ -2251,14 +2263,12 @@ function leaderboardSuggestedFee(avgBS, avgFeePaid, beatRatePct){
   return Math.max(floor, Math.min(paid, fair));
 }
 function setBudgetSubTab(tab){
-  budgetSubTab = (tab==='planner'||tab==='plan') ? tab : 'overview';
+  budgetSubTab = tab==='planner' ? 'planner' : 'overview';
   var tO=document.getElementById('bgtTabOverview');
   var tP=document.getElementById('bgtTabPlanner');
-  var tB=document.getElementById('bgtTabPlan');
   if(tO) tO.classList.toggle('on', budgetSubTab==='overview');
   if(tP) tP.classList.toggle('on', budgetSubTab==='planner');
-  if(tB) tB.classList.toggle('on', budgetSubTab==='plan');
-  var label=budgetSubTab==='planner'?'Budget Planner':(budgetSubTab==='plan'?'Booking Plan & Approvals':'Overview');
+  var label=budgetSubTab==='planner'?'Budget Planner':'Overview';
   var titleEl=document.getElementById('budgetPageTitle');
   if(titleEl) titleEl.textContent=label;
   var sub=document.getElementById('pgSub');
