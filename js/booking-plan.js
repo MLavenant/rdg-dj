@@ -8,7 +8,6 @@ var BP_VENUES=['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'];
 var BP_VENUE_SHORT={'Casa Neos Beach Club':'Beach Club','Casa Neos Lounge':'CN Lounge','MILA Lounge':'MILA'};
 var BP_CONFIRMED=['Confirmed','Invoice + Contract Signed','Contract + invoice received'];
 var BP_EXECS=['Mika','Greg'];
-var _bpMode='3m';
 var _bpVenue='all';
 var _bpOffset=0;
 var _bpPanel='plan';
@@ -66,7 +65,7 @@ function _bpMonths(){
   var y=info.year, mi=info.monthIndex+_bpOffset;
   while(mi<0){ mi+=12; y--; }
   while(mi>11){ mi-=12; y++; }
-  var n=_bpMode==='1m'?1:3, out=[];
+  var n=3, out=[];
   for(var i=0;i<n;i++){
     var r=fiscalPeriodRange(y, mi);
     out.push({year:y, mi:mi, mm:padMm(mi+1), key:y+'-'+padMm(mi+1), label:MN_FULL[mi]+' '+y, short:MNS[mi]+' '+y, from:r.from, to:r.to, range:fiscalPeriodShortRange(y, mi)});
@@ -211,14 +210,10 @@ function renderBookingPlan(){
     +'<button type="button" class="'+(_bpPanel==='meeting'?'on':'')+'" onclick="bpSetPanel(\'meeting\')">Meeting</button>'
     +'<button type="button" class="'+(_bpPanel==='history'?'on':'')+'" onclick="bpSetPanel(\'history\')">Plan history</button>'
     +'</div>';
-  h+='<div class="bp-seg">'
-    +'<button type="button" class="'+(_bpMode==='1m'?'on':'')+'" onclick="bpSetMode(\'1m\')">1 Month</button>'
-    +'<button type="button" class="'+(_bpMode==='3m'?'on':'')+'" onclick="bpSetMode(\'3m\')">3 Months</button>'
-    +'</div>';
   h+='<div class="bp-nav"><button type="button" onclick="bpShift(-1)" title="Previous month">&#8249;</button>'
     +'<button type="button" onclick="bpShift(0)"'+(_bpOffset===0?' class="on"':'')+'>Today</button>'
     +'<button type="button" onclick="bpShift(1)" title="Next month">&#8250;</button></div>';
-  h+='<label class="bp-month-lbl">'+(_bpMode==='1m'?'Month':'Start month')
+  h+='<label class="bp-month-lbl">Start month'
     +'<select class="bp-venue-sel" onchange="bpSetStart(this.value)">';
   for(var off=-12; off<=18; off++){
     var opt=_bpMonthAt(off);
@@ -251,7 +246,7 @@ function _bpAddTotals(t, c){
 function _bpBlankTot(){ return {budget:0,hasB:false,confirmed:0,proposed:0,bsT:0,pyFee:0,hasPyFee:false,pyBs:0,hasPyBs:false}; }
 function _bpSummaryHtml(data){
   var venues=Object.keys(data.grid);
-  var h='<div class="bp-summary'+(data.months.length===1?' bp-summary-1m':'')+'">';
+  var h='<div class="bp-summary">';
   venues.forEach(function(v){
     h+='<div class="bp-venue-block"><div class="bp-venue-name">'+_escHtml(v)+'</div><div class="bp-cards">';
     var tot=_bpBlankTot();
@@ -424,7 +419,6 @@ function _bpPlanHtml(data){
 
 /* ---- Toolbar actions ---- */
 function bpSetPanel(p){ _bpPanel=p; renderBookingPlan(); }
-function bpSetMode(m){ _bpMode=m; renderBookingPlan(); }
 function bpSetVenue(v){ _bpVenue=v; renderBookingPlan(); }
 function bpShift(d){ _bpOffset = d===0 ? 0 : _bpOffset+d; renderBookingPlan(); }
 function bpSetStart(v){ _bpOffset=+v||0; renderBookingPlan(); }
@@ -701,152 +695,7 @@ function _bpCoverHtml(title, sub, location){
 function _bpField(lbl, val){
   return '<div class="bp-x-field"><span>'+lbl+'</span><b>'+val+'</b></div>';
 }
-function _bp3dOrbit(model, tableKey, url){
-  var orbit=model.orbit||'45deg 60deg 110%';
-  if(tableKey==='casa-neos-beach-club-summer' && model.summerOrbit) orbit=model.summerOrbit;
-  if(tableKey==='casa-neos-beach-club-new' && model.fallOrbit) orbit=model.fallOrbit;
-  if(tableKey==='casa-neos-beach-club-basel' && model.baselOrbit) orbit=model.baselOrbit;
-  if((tableKey==='casa-neos-lounge-new'||tableKey==='casa-neos-lounge-oct'||/lounge\/model-new/.test(url||'')) && model.newOrbit) orbit=model.newOrbit;
-  return orbit;
-}
-var _bpSnapCache={};
-function _bpPriceKey(priced){
-  if(!priced||!priced.tiers) return '';
-  return priced.tiers.map(function(t){ return t.name+':'+(t.suggested!=null?t.suggested:t.minimum); }).join('|');
-}
-/* Price tags sit on the model as HTML, which toBlob() does not include.
-   They are measured, then drawn onto the snapshot. */
-function _bpCompositeSnap(mv, blob){
-  return new Promise(function(resolve){
-    var obj=URL.createObjectURL(blob);
-    var img=new Image();
-    img.onload=function(){
-      var rect=mv.getBoundingClientRect();
-      var scale=2;
-      var cv=document.createElement('canvas');
-      cv.width=Math.max(2, Math.round(rect.width*scale));
-      cv.height=Math.max(2, Math.round(rect.height*scale));
-      var ctx=cv.getContext('2d');
-      ctx.fillStyle='#12141a';
-      ctx.fillRect(0,0,cv.width,cv.height);
-      ctx.drawImage(img,0,0,cv.width,cv.height);
-      mv.querySelectorAll('.fv3d-hotspot').forEach(function(btn){
-        var b=btn.getBoundingClientRect();
-        if(b.width<4||b.height<4) return;
-        var x=(b.left-rect.left)*scale, y=(b.top-rect.top)*scale, w=b.width*scale, h=b.height*scale;
-        if(x+w<0||y+h<0||x>cv.width||y>cv.height) return;
-        var color=btn.style.getPropertyValue('--tier-color')||'#e2e8f0';
-        var rad=7*scale;
-        ctx.beginPath();
-        ctx.moveTo(x+rad,y);
-        ctx.arcTo(x+w,y,x+w,y+h,rad);
-        ctx.arcTo(x+w,y+h,x,y+h,rad);
-        ctx.arcTo(x,y+h,x,y,rad);
-        ctx.arcTo(x,y,x+w,y,rad);
-        ctx.closePath();
-        ctx.fillStyle='rgba(14,14,18,.92)';
-        ctx.fill();
-        ctx.lineWidth=Math.max(2, 1.6*scale);
-        ctx.strokeStyle=color;
-        ctx.stroke();
-        var tier=(btn.querySelector('.fv3d-hotspot-tier')||{}).textContent||'';
-        var price=(btn.querySelector('.fv3d-hotspot-price')||{}).textContent||'';
-        ctx.textAlign='center';
-        ctx.textBaseline='middle';
-        ctx.fillStyle=color;
-        ctx.font='900 '+(9*scale)+'px Arial,sans-serif';
-        ctx.fillText(String(tier).toUpperCase(), x+w/2, y+h*0.34);
-        ctx.fillStyle='#ffffff';
-        ctx.font='800 '+(10*scale)+'px Arial,sans-serif';
-        ctx.fillText(price?('FROM '+price):'', x+w/2, y+h*0.7);
-      });
-      URL.revokeObjectURL(obj);
-      resolve(cv.toDataURL('image/jpeg',0.86));
-    };
-    img.onerror=function(){ URL.revokeObjectURL(obj); resolve(null); };
-    img.src=obj;
-  });
-}
-function _bpAddSnapHotspots(mv, tableKey, tiers){
-  if(typeof FV_3D_HOTSPOTS==='undefined') return;
-  var anchors=FV_3D_HOTSPOTS[tableKey]||{};
-  (tiers||[]).forEach(function(t){
-    var price=t.suggested!=null?t.suggested:t.minimum;
-    (t.tables||[]).forEach(function(id){
-      var p=anchors[id];
-      if(!p) return;
-      var btn=document.createElement('button');
-      btn.type='button';
-      btn.className='fv3d-hotspot';
-      btn.slot='hotspot-'+tableKey+'-'+id;
-      btn.dataset.position=p[0]+' '+p[1]+' '+p[2];
-      btn.dataset.normal='0 1 0';
-      btn.style.setProperty('--tier-color', t.color||'#e2e8f0');
-      btn.innerHTML='<span class="fv3d-hotspot-tier">'+_escHtml(t.name)+'</span><span class="fv3d-hotspot-price">'+_escHtml(formatFv3dMoney(price))+'</span>';
-      mv.appendChild(btn);
-    });
-  });
-}
-/* WebGL is invisible to html2canvas, so the 3D plan is rendered on screen
-   (under the busy overlay) and captured with model-viewer's own toBlob(). */
-function _bpSnap3d(venue, date, fee){
-  var key=(typeof fv3dKeyForVenue==='function')?fv3dKeyForVenue(venue):null;
-  var model=key&&typeof FV_3D_MODELS!=='undefined'?FV_3D_MODELS.find(function(m){ return m.key===key; }):null;
-  if(!model || typeof _ensureModelViewerScript!=='function') return Promise.resolve(null);
-  var url=(typeof fv3dEffectiveModelUrl==='function'?fv3dEffectiveModelUrl(key, date):null)||model.url;
-  var tableKey=(typeof fv3dEffectiveTableKey==='function')?fv3dEffectiveTableKey(key, date):key;
-  var orbit=_bp3dOrbit(model, tableKey, url);
-  /* Closer than the on-screen orbit so the floor and its price tags fill the page. */
-  orbit=orbit.replace(/(\d+(?:\.\d+)?)%\s*$/, function(m, n){ return Math.max(40, Math.round(+n*0.55))+'%'; });
-  var priced=(typeof calcTierPricesForShow==='function')?calcTierPricesForShow(venue, date, fee):null;
-  var ck=url+'|'+orbit+'|'+tableKey+'|'+_bpPriceKey(priced);
-  if(_bpSnapCache[ck]) return _bpSnapCache[ck];
-  var p=new Promise(function(resolve){
-    var done=false, host=null;
-    function finish(v){
-      if(done) return;
-      done=true;
-      if(host) host.remove();
-      resolve(v);
-    }
-    setTimeout(function(){ finish(null); }, 60000);
-    _ensureModelViewerScript(function(){
-      host=document.createElement('div');
-      host.className='bp-snap-host';
-      var mv=document.createElement('model-viewer');
-      mv.setAttribute('src', url);
-      mv.setAttribute('camera-orbit', orbit);
-      mv.setAttribute('field-of-view', '24deg');
-      mv.setAttribute('interaction-prompt','none');
-      mv.setAttribute('shadow-intensity','1');
-      mv.setAttribute('exposure','1.1');
-      mv.style.cssText='width:100%;height:100%;background:#12141a';
-      host.appendChild(mv);
-      document.body.appendChild(host);
-      mv.addEventListener('error', function(){ finish(null); });
-      mv.addEventListener('load', function(){
-        try{
-          mv.interpolationDecay=0;
-          mv.cameraOrbit=orbit;
-          mv.fieldOfView='22deg';
-          if(mv.jumpCameraToGoal) mv.jumpCameraToGoal();
-        }catch(e){}
-        _bpAddSnapHotspots(mv, tableKey, priced&&priced.tiers);
-        setTimeout(function(){
-          try{
-            mv.toBlob({mimeType:'image/png'}).then(function(blob){
-              return _bpCompositeSnap(mv, blob);
-            }).then(finish, function(){ finish(null); });
-          }catch(e){ finish(null); }
-        }, 1600);
-      });
-    });
-  });
-  _bpSnapCache[ck]=p;
-  p.then(function(v){ if(!v) delete _bpSnapCache[ck]; });
-  return p;
-}
-function _bpExceptionPageHtml(r, c, snap){
+function _bpExceptionPageHtml(r, c){
   var today=_bpToday();
   var actual=0, forecast=0;
   c.rows.forEach(function(x){ if(x.d<today) actual+=x.fee||0; else forecast+=x.fee||0; });
@@ -892,8 +741,7 @@ function _bpExceptionPageHtml(r, c, snap){
     +(ly?_bpField('BS Actual', $k(ly.bs))+_bpField('ROI', _bpRoiHtml(ly.ret)):_bpField('BS Actual', 'No show')+_bpField('ROI', '—'))
     +'</div></div></div>';
 
-  h+='<div class="bp-x-sec">3D floor plan'+(priced&&priced.label?' <span>'+_escHtml(priced.label)+'</span>':'')+'</div>';
-  h+='<div class="bp-x-3drow"><div class="bp-x-snap">'+(snap?'<img src="'+snap+'" alt="3D floor plan">':'<span>3D snapshot unavailable</span>')+'</div>';
+  h+='<div class="bp-x-sec">Table tiers &amp; pricing'+(priced&&priced.label?' <span>'+_escHtml(priced.label)+'</span>':'')+'</div>';
   h+='<div class="bp-x-tiers">';
   if(priced&&priced.tiers&&priced.tiers.length){
     priced.tiers.forEach(function(t){
@@ -904,7 +752,7 @@ function _bpExceptionPageHtml(r, c, snap){
   } else {
     h+='<div class="bp-empty">No tier pricing for this venue.</div>';
   }
-  h+='</div></div></div>';
+  h+='</div></div>';
   return h;
 }
 /* Compact one-page version of the plan used only in the PDF. */
@@ -998,37 +846,20 @@ function _bpPdfFit(canvases){
   return pdf;
 }
 function _bpExceptionRows(data){
-  if(data.months.length!==1) return [];
   var out=[], today=_bpToday();
   Object.keys(data.grid).forEach(function(v){
-    var c=data.grid[v][0];
-    c.rows.forEach(function(r){ if(!r.confirmed && r.d>=today) out.push({r:r, c:c}); });
+    data.grid[v].forEach(function(c){
+      c.rows.forEach(function(r){ if(!r.confirmed && r.d>=today) out.push({r:r, c:c}); });
+    });
   });
   out.sort(function(a,b){ return a.r.d<b.r.d?-1:(a.r.d>b.r.d?1:(a.r.venue<b.r.venue?-1:1)); });
   return out;
 }
-/* 1-month PDF uses the same cards and booking boxes as the screen. */
-function _bpScreenPlanCanvas(){
-  var sheet=document.getElementById('bpSheet');
-  if(!sheet) return Promise.reject(new Error('Nothing to export'));
-  var stage=document.createElement('div');
-  stage.className='bp-pdf-stage';
-  var clone=sheet.cloneNode(true);
-  clone.removeAttribute('id');
-  clone.classList.add('bp-exporting','bp-pdf-sheet');
-  stage.appendChild(clone);
-  document.body.appendChild(stage);
-  return window.html2canvas(clone,{scale:1.5,useCORS:true,logging:false,backgroundColor:'#ffffff',windowWidth:1600}).then(function(cv){
-    stage.remove();
-    return cv;
-  }, function(err){ stage.remove(); throw err; });
-}
 function _bpBuildPdf(data){
   var ms=data.months;
-  var one=ms.length===1;
-  var period=one?ms[0].label:(ms[0].label+' – '+ms[ms.length-1].label);
-  var loc=one?(_bpVenue==='all'?'All Venues':_bpVenue):'';
-  var sub=one?(ms[0].label+' · '+ms[0].range):('Three Month Booking Plan · '+period+(_bpVenue==='all'?' · All venues':' · '+_bpVenue));
+  var period=ms[0].label+' – '+ms[ms.length-1].label;
+  var loc=_bpVenue==='all'?'All Venues':_bpVenue;
+  var sub='Three Month Booking Plan · '+period;
   var canvases=[];
   var exc=_bpExceptionRows(data);
   _bpBusy(true, 'Cover page');
@@ -1040,7 +871,6 @@ function _bpBuildPdf(data){
     canvases.push(cv);
     _bpBusy(true, 'Booking plan');
     if(_bpPanel==='meeting') return _bpCaptureSheet().then(function(cv){ canvases.push(cv); });
-    if(one) return _bpScreenPlanCanvas().then(function(cv){ canvases.push(cv); });
     var chain=Promise.resolve();
     ms.forEach(function(m, mi){
       chain=chain.then(function(){ return _bpRenderPage(_bpPrintSheetHtml(data, mi)); }).then(function(cv){ canvases.push(cv); });
@@ -1051,11 +881,8 @@ function _bpBuildPdf(data){
     var chain=_bpRenderPage(_bpCoverHtml('Budget Exceptions', exc.length+' upcoming performance'+(exc.length===1?'':'s')+' not confirmed · '+period, loc)).then(function(cv){ canvases.push(cv); });
     exc.forEach(function(x, i){
       chain=chain.then(function(){
-        _bpBusy(true, 'Budget exception '+(i+1)+' of '+exc.length+' · 3D floor plan');
-        return _bpSnap3d(x.r.venue, x.r.d, x.r.fee);
-      }).then(function(snap){
         _bpBusy(true, 'Budget exception '+(i+1)+' of '+exc.length);
-        return _bpRenderPage(_bpExceptionPageHtml(x.r, x.c, snap));
+        return _bpRenderPage(_bpExceptionPageHtml(x.r, x.c));
       }).then(function(cv){ canvases.push(cv); });
     });
     return chain;
@@ -1104,8 +931,8 @@ function _bpEmailHtml(data){
   return h;
 }
 function bpGenerateMonthlyPlan(){
-  var savedMode=_bpMode, savedPanel=_bpPanel, savedOffset=_bpOffset;
-  _bpMode='3m'; _bpPanel='plan'; _bpOffset=0;
+  var savedPanel=_bpPanel, savedOffset=_bpOffset;
+  _bpPanel='plan'; _bpOffset=0;
   renderBookingPlan();
   var data=_bpCompute();
   var btns=document.querySelectorAll('#rollingBookingPlan .bp-btn-dark');
@@ -1140,7 +967,7 @@ function bpGenerateMonthlyPlan(){
   }).catch(function(err){
     alert('Could not prepare the monthly plan. '+(err&&err.message?err.message:''));
   }).then(function(){
-    _bpMode=savedMode; _bpPanel=savedPanel; _bpOffset=savedOffset;
+    _bpPanel=savedPanel; _bpOffset=savedOffset;
     renderBookingPlan();
   });
 }
