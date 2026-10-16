@@ -89,7 +89,7 @@ function renderCal(){
   h+='<th class="sc-date">Date</th>';
   h+='<th class="sc-dj">DJ Guest</th>';
   h+='<th class="acct-status-hd sc-dj-st">DJ Status</th>';
-  h+='<th class="sc-vip" title="VIP team notes">VIP</th>';
+  h+='<th class="sc-vip" title="Request approval">Request</th>';
   h+='<th class="sc-3d" title="Open 3D floor plan with tier pricing">3D</th>';
   h+='<th class="sc-fee">Fee</th>';
   h+='<th class="sc-num">BS Target</th>';
@@ -173,10 +173,10 @@ function renderCal(){
         h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
           +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status for this performance"')
           +'</div></td>';
-        var vipTxt=(r.vipNote||'').trim();
-        var vipEsc=vipTxt.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        var apprNote=(_bpData&&_bpData.notes&&_bpData.notes[showUid])||null;
+        var apprOn=!!(apprNote&&(String(apprNote.rationale||'').trim()||String(apprNote.benefits||'').trim()));
         h+='<td class="sc-vip" onclick="event.stopPropagation()">';
-        h+='<span class="vip-link'+(vipTxt?' has-note':'')+'" title="'+(vipTxt||'Add VIP note')+'" onclick="editVipNote('+idx+')">'+(vipTxt?vipEsc:'Add VIP note')+'</span>';
+        h+='<button type="button" class="sc-appr-btn'+(apprOn?' has-note':'')+'" title="Request approval" onclick="bpOpenShowApproval('+idx+')">Request</button>';
         h+='</td>';
         h+='<td class="sc-3d" onclick="event.stopPropagation()"><button type="button" class="sc-3d-btn" onclick="openShow3dModal('+idx+')" title="Open 3D floor plan and tier prices">3D</button></td>';
         h+='<td class="sc-num fee-cell '+(feeCls||'')+'" data-show-idx="'+idx+'" data-uid="'+showUid+'" data-action="editShow" style="cursor:pointer" title="Click to edit fee">'+$k(fee)+'</td>';
