@@ -223,6 +223,7 @@ var FV_CNBC_SUMMER_GLB = 'https://fvwebs-storage.fourvenues.com/casa-neos/roofto
 var FV_CNL_NEW_GLB = 'https://fvwebs-storage.fourvenues.com/casa-neos/lounge/model-new.glb?v=1';
 var FV_CNL_OCT_GLB = 'https://fvwebs-storage.fourvenues.com/casa-neos/lounge/model-new.glb?v=4';
 var FV_CNBC_NEW_GLB = 'https://fvwebs-storage.fourvenues.com/casa-neos/new.glb?v=7';
+var FV_CNBC_OCT17_GLB = 'https://fvwebs-storage.fourvenues.com/casa-neos/new.glb?v=8';
 var FV_CNBC_BASEL_GLB = 'https://fvwebs-storage.fourvenues.com/casa-neos/neos-big.glb?v=2';
 var FV_3D_MODELS = [
   {key:'mila-lounge', venue:'MILA Lounge', label:'MILA Lounge', orbit:'45deg 60deg 72%', url:'https://fvwebs-storage.fourvenues.com/mila-lounge/model.glb?v=1'},
@@ -239,6 +240,7 @@ var FV_3D_PLAN_PRESETS = {
   'casa-neos-beach-club':{label:'CNBC — regular beach club', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club'},
   'casa-neos-beach-club-summer':{label:'CNBC — Sunset Rituals rooftop', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-summer', modelUrl:FV_CNBC_SUMMER_GLB, badge:'Sunset Rituals · Summer rooftop', badgeColor:'#0f766e'},
   'casa-neos-beach-club-new':{label:'CNBC — Sunset Rituals waterfront (Oct 5, 2026+)', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-new', modelUrl:FV_CNBC_NEW_GLB, badge:'Sunset Rituals · Waterfront + slips', badgeColor:'#c2410c', sourceUrl:'https://beachclub.casa-neos.com/'},
+  'casa-neos-beach-club-oct17':{label:'CNBC — Current waterfront (Oct 17, 2026+)', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-oct17', modelUrl:FV_CNBC_OCT17_GLB, badge:'Current Beach Club · Waterfront + slips', badgeColor:'#c2410c', sourceUrl:'https://beachclub.casa-neos.com/'},
   'casa-neos-beach-club-basel':{label:'CNBC — Casa Neos BC Basel (Art Basel Dec 4–6)', modelKey:'casa-neos-beach-club', tableKey:'casa-neos-beach-club-basel', modelUrl:FV_CNBC_BASEL_GLB, badge:'Art Basel Weekend · BC Basel', badgeColor:'#b45309', sourceUrl:'https://music.casa-neos.com/?id=hrol9f22635j7agg0c1nlgc3chv7kng6'}
 };
 /* Fixed booking-site URLs. Refresh scrapes these (same link every time → BOOK YOUR TABLE → 3D plan). */
@@ -308,6 +310,16 @@ var FV_3D_TABLES = {
     {name:'GOLD',color:'rgb(251,192,45)',minimum:3500,capacity:8,tables:['22','23','24','25','26','27']},
     {name:'RIVERWALK',color:'rgb(245,127,23)',minimum:1500,capacity:8,tables:['17','18','19','20','21']},
     {name:'SLIP',color:'rgb(96,165,250)',minimum:5000,capacity:8,tables:['D1','D2','D3']}
+  ],
+  /* Current waterfront plan from beachclub.casa-neos.com/new.glb?v=8.
+     Active from Sat Oct 17, 2026. Capacities: Diamond 10 · Prestige 10 ·
+     Platinum 8 · Gold 8. Art Basel Dec 4–6 remains a separate dated plan. */
+  'casa-neos-beach-club-oct17':[
+    {name:'DIAMOND',color:'rgb(3,169,244)',minimum:6000,capacity:10,tables:['34','51','52']},
+    {name:'PRESTIGE',color:'rgb(139,195,74)',minimum:5000,capacity:10,tables:['31','35','36','41']},
+    {name:'PLATINUM',color:'rgb(158,158,158)',minimum:4000,capacity:8,tables:['32','33','42','43','46','47','53','54','55','56']},
+    {name:'GOLD',color:'rgb(251,192,45)',minimum:3000,capacity:8,tables:['17','18','19','20','21','22','23','24','25','26','27','28','29']},
+    {name:'SLIP',color:'rgb(96,165,250)',minimum:5000,capacity:8,tables:['D3','D4','D5']}
   ],
   /* Art Basel Weekend — Casa Neos BC Basel (neos-big.glb). Fri Dec 4 – Sun Dec 6, 2026.
      Grand×2 · Premier×9 · Signature×16 · Select×16 · Reserve×7 (GA standing only). */
@@ -392,6 +404,20 @@ var FV_3D_HOTSPOTS = {
     '53':[-2.551,1.02,-4.171],'54':[-3.817,1.02,-1.831],'55':[-4.948,1.02,0.159],
     '56':[-6.780,1.02,3.175],'D1':[-2.134,1.05,7.269],'D2':[7.631,1.05,7.827],
     'D3':[17.365,1.05,8.067]
+  },
+  /* Node translations from the current new.glb?v=8 plan. */
+  'casa-neos-beach-club-oct17':{
+    '17':[18.692,1.02,5.288],'18':[16.367,1.02,5.333],'19':[14.326,1.02,5.363],
+    '20':[12.114,1.02,5.374],'21':[9.947,1.02,5.371],'22':[7.756,1.02,5.117],
+    '23':[5.578,1.02,4.997],'24':[3.335,1.02,4.855],'25':[0.183,1.02,4.776],
+    '26':[-2.135,1.02,4.477],'27':[-4.332,1.02,4.322],'28':[12.273,1.02,3.594],
+    '29':[10.096,1.02,3.473],'31':[2.984,1.02,2.655],'32':[0.590,1.02,2.655],
+    '33':[0.442,1.02,0.545],'34':[0.442,1.02,-0.910],'35':[3.156,1.02,-0.875],
+    '36':[3.156,1.02,0.580],'41':[6.111,1.02,1.746],'42':[5.707,1.02,-0.722],
+    '43':[5.799,1.02,-3.039],'46':[-1.747,1.02,-0.722],'47':[-2.343,1.02,1.746],
+    '51':[5.935,1.02,-5.933],'52':[0.251,1.02,-5.933],'53':[-2.551,1.02,-4.171],
+    '54':[-3.817,1.02,-1.831],'55':[-4.948,1.02,0.159],'56':[-6.780,1.02,3.175],
+    'D3':[17.365,1.05,8.067],'D4':[7.631,1.05,7.827],'D5':[-2.134,1.05,7.269]
   },
   /* Art Basel — node translations from neos-big.glb?v=2 (S_19…S_55, S_P61…S_P82). */
   'casa-neos-beach-club-basel':{
@@ -522,6 +548,25 @@ function ensureDefaultRoiFloorPlans(){
       p.updatedAt=new Date().toISOString();
       added=true;
     });
+  }
+  /* The live Beach Club changed again for the Oct 17 weekend. Keep the prior
+     Oct 5 plan historical, then resume this plan after the Dec 4–6 Basel drop. */
+  if(!hasPreset('Casa Neos Beach Club','casa-neos-beach-club-oct17')){
+    ROI_FLOOR_PLANS.fp_cnbc_current_20261017={
+      _uid:'fp_cnbc_current_20261017',
+      label:'Current Casa Neos Beach Club',
+      venue:'Casa Neos Beach Club',
+      start:'2026-10-17',
+      end:'',
+      preset:'casa-neos-beach-club-oct17',
+      sourceUrl:'https://beachclub.casa-neos.com/',
+      status:'ready',
+      plan:_fv3dPlanPayloadFromPreset('casa-neos-beach-club-oct17'),
+      createdAt:'2026-10-16T20:00:00.000Z',
+      updatedAt:'2026-10-16T20:00:00.000Z',
+      seeded:true
+    };
+    added=true;
   }
   /* Art Basel Weekend — Casa Neos BC Basel (Fri Dec 4 – Sun Dec 6, 2026). neos-big.glb + Grand/Premier/Signature/Select/Reserve. */
   if(!hasPreset('Casa Neos Beach Club','casa-neos-beach-club-basel')){
@@ -824,6 +869,9 @@ function roiTableCountsForRulesVenue(rulesVenue, opts){
   if(typeof CNBC_SUMMER_ROOF_KEY!=='undefined' && rulesVenue===CNBC_SUMMER_ROOF_KEY){
     venue='Casa Neos Beach Club';
     if(!floorPlan||floorPlan==='auto') floorPlan='casa-neos-beach-club-summer';
+  }else if(typeof CNBC_CURRENT_KEY!=='undefined' && rulesVenue===CNBC_CURRENT_KEY){
+    venue='Casa Neos Beach Club';
+    if(!floorPlan||floorPlan==='auto') floorPlan='casa-neos-beach-club-oct17';
   }else if(typeof CNL_REMODEL_KEY!=='undefined' && rulesVenue===CNL_REMODEL_KEY){
     venue='Casa Neos Lounge';
     if(!floorPlan||floorPlan==='auto') floorPlan='casa-neos-lounge-new';
@@ -1594,6 +1642,54 @@ function ensureCnbcSummerRoofRules(){
   if(summer&&!summer.appliesTo) summer.appliesTo='Casa Neos Beach Club';
 }
 
+/* Current Beach Club rules from Oct 17 onward. ROI and BS anchors remain the
+   approved Beach Club rules; inventory follows the current four sellable tiers. */
+var CNBC_CURRENT_KEY = 'Casa Neos Beach Club Current';
+function _buildCnbcCurrentRules(){
+  var out=_cloneVenueRules('Casa Neos Beach Club');
+  if(!out) return null;
+  out.label='Casa Neos Beach Club Current';
+  out.appliesTo='Casa Neos Beach Club';
+  out.floorPlan='casa-neos-beach-club-oct17';
+  out.tableCats=['Diamond','Prestige','Platinum','Gold'];
+  (out.tiers||[]).forEach(function(tier){
+    ['High','Low'].forEach(function(season){
+      Object.keys(tier[season]||{}).forEach(function(day){
+        var old=(tier[season][day]&&tier[season][day].tables)||{};
+        tier[season][day].tables={
+          Diamond:+old.Diamond||0,
+          Prestige:+old.Prestige||0,
+          Platinum:+old.Platinum||0,
+          Gold:+old.Gold||0
+        };
+      });
+    });
+  });
+  return out;
+}
+function ensureCnbcCurrentRules(){
+  if(!VENUE_ROI_RULES[CNBC_CURRENT_KEY]){
+    var seeded=_buildCnbcCurrentRules();
+    if(seeded) VENUE_ROI_RULES[CNBC_CURRENT_KEY]=seeded;
+  }
+  var current=VENUE_ROI_RULES[CNBC_CURRENT_KEY];
+  if(!current) return;
+  current.label='Casa Neos Beach Club Current';
+  current.appliesTo='Casa Neos Beach Club';
+  current.floorPlan='casa-neos-beach-club-oct17';
+  if(!current.tableCats || current.tableCats.join('|')!=='Diamond|Prestige|Platinum|Gold'){
+    current.tableCats=['Diamond','Prestige','Platinum','Gold'];
+    (current.tiers||[]).forEach(function(tier){
+      ['High','Low'].forEach(function(season){
+        Object.keys(tier[season]||{}).forEach(function(day){
+          var old=(tier[season][day]&&tier[season][day].tables)||{};
+          tier[season][day].tables={Diamond:+old.Diamond||0,Prestige:+old.Prestige||0,Platinum:+old.Platinum||0,Gold:+old.Gold||0};
+        });
+      });
+    });
+  }
+}
+
 /* Casa Neos Lounge remodel (After Dark) — Sep 25–Sep 30, 2026. Different tiers than classic
    (adds Prestige; Platinum replaces “Platinium”). Oct 1 floor replaces it. */
 var CNL_REMODEL_KEY = 'Casa Neos Lounge Remodel';
@@ -1687,6 +1783,7 @@ function ensureCnlOctRules(){
 }
 function ensureVenueRulesFloorPlanBindings(){
   ensureCnbcSummerRoofRules();
+  ensureCnbcCurrentRules();
   ensureCnlRemodelRules();
   ensureCnlOctRules();
   var bc=VENUE_ROI_RULES['Casa Neos Beach Club'];
@@ -1699,11 +1796,12 @@ function ensureVenueRulesFloorPlanBindings(){
 function roiFloorPlanOptionsForVenue(venue){
   var v=venue||'';
   var opts=[];
-  if(v==='Casa Neos Beach Club'||v===CNBC_SUMMER_ROOF_KEY){
+  if(v==='Casa Neos Beach Club'||v===CNBC_SUMMER_ROOF_KEY||v===CNBC_CURRENT_KEY){
     opts=[
       {v:'casa-neos-beach-club', l:'Classic beach club (Riverwalk)'},
       {v:'casa-neos-beach-club-summer', l:'Sunset Rituals rooftop (Aug 1–Oct 4)'},
-      {v:'casa-neos-beach-club-new', l:'Sunset Rituals waterfront + slips (Oct 5+)'},
+      {v:'casa-neos-beach-club-new', l:'Sunset Rituals waterfront + slips (Oct 5–16)'},
+      {v:'casa-neos-beach-club-oct17', l:'Current waterfront (Oct 17+) — capacities 10/10/8/8'},
       {v:'casa-neos-beach-club-basel', l:'Casa Neos BC Basel (Art Basel Dec 4–6)'}
     ];
   }else if(v==='Casa Neos Lounge'||v===CNL_REMODEL_KEY||v===CNL_OCT_KEY){
@@ -1787,6 +1885,10 @@ function effectiveRoiVenue(venue, dateStr, fee){
         var maxFee=summer.tiers[summer.tiers.length-1].fee;
         if(!(fee&&fee>maxFee)) return CNBC_SUMMER_ROOF_KEY;
       }
+    }
+    if(dateStr>='2026-10-17'){
+      ensureCnbcCurrentRules();
+      if(VENUE_ROI_RULES[CNBC_CURRENT_KEY]&&VENUE_ROI_RULES[CNBC_CURRENT_KEY].tiers) return CNBC_CURRENT_KEY;
     }
     return venue;
   }

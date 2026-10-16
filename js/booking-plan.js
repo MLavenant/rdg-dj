@@ -741,7 +741,7 @@ function _bpExceptionPageHtml(r, c, notes){
   h+='<div class="bp-x-hd"><div><b>Budget Exception</b><span>'+_escHtml(r.venue)+' · '+_escHtml(c.month.label)+' ('+_escHtml(c.month.range)+')</span></div>'
     +'<img src="assets/rdg-logo.png" alt="RDG"></div>';
 
-  h+='<div class="bp-x-sec">Budget &amp; performance</div><div class="bp-x-pair">';
+  h+='<div class="bp-x-sec bp-x-band"><span>01</span><b>Booking &amp; performance</b><em>Current booking compared with the same date last year</em></div><div class="bp-x-pair">';
   h+='<div class="bp-x-col"><div class="bp-x-col-hd">This year</div><div class="bp-x-fields">'
     +_bpField('DJ', _escHtml(r.dj||'TBD'))
     +_bpField('Date', _bpDay(r.d))
@@ -760,17 +760,18 @@ function _bpExceptionPageHtml(r, c, notes){
   h+='</div></div></div>';
   var rationale=String(notes.rationale!=null?notes.rationale:(r.note||'')).trim();
   var benefits=String(notes.benefits||'').trim();
+  h+='<div class="bp-x-sec bp-x-band"><span>02</span><b>Approval case</b><em>Business rationale and expected benefits</em></div>';
   h+='<div class="bp-x-why"><span>Rationale</span><b>'+(rationale?_escHtml(rationale):'No rationale yet.')+'</b></div>';
   h+='<div class="bp-x-why"><span>Expected benefits</span><b>'+(benefits?_escHtml(benefits):'No expected benefits yet.')+'</b></div>';
   var signed=String(notes.approvedBy||'').trim();
-  h+='<div class="bp-x-sign"><span>Approved by</span><b>'+(signed?_escHtml(signed):'')+'</b><div class="bp-x-sign-line"></div></div>';
+  h+='<div class="bp-x-sec bp-x-band"><span>03</span><b>Budget position</b><em>Full-month confirmed plus proposed spend</em></div>';
   h+='<div class="bp-x-bud">'
     +'<div class="bp-x-yel"><span>Total budget</span><b>'+(c.budget!=null?$k(c.budget):'Not set')+'</b></div>'
     +'<div><span>Actual + forecast spend</span><b>'+$k(total)+'</b></div>'
     +'<div><span>Position vs budget</span><b>'+pos+'</b></div>'
     +'</div>';
 
-  h+='<div class="bp-x-sec">Sales · projected this year vs last year</div><div class="bp-x-pair">';
+  h+='<div class="bp-x-sec bp-x-band"><span>04</span><b>Sales performance</b><em>Projected this year compared with last year</em></div><div class="bp-x-pair">';
   h+='<div class="bp-x-col"><div class="bp-x-col-hd">This year · projected</div><div class="bp-x-fields bp-x-fields-2">'
     +_bpField('BS Target', $k(r.bs_m))
     +_bpField('ROI', _bpRoiHtml(_bpThisReturn(r)))
@@ -779,7 +780,7 @@ function _bpExceptionPageHtml(r, c, notes){
     +(ly?_bpField('BS Actual', $k(ly.bs))+_bpField('ROI', _bpRoiHtml(ly.ret)):_bpField('BS Actual', 'No show')+_bpField('ROI', '—'))
     +'</div></div></div>';
 
-  h+='<div class="bp-x-sec">Table tiers &amp; pricing'+(priced&&priced.label?' <span>'+_escHtml(priced.label)+'</span>':'')+'</div>';
+  h+='<div class="bp-x-sec bp-x-band"><span>05</span><b>Table tiers &amp; pricing</b><em>'+(priced&&priced.label?_escHtml(priced.label):'Venue pricing guidance')+'</em></div>';
   h+='<div class="bp-x-tiers">';
   if(priced&&priced.tiers&&priced.tiers.length){
     priced.tiers.forEach(function(t){
@@ -790,7 +791,10 @@ function _bpExceptionPageHtml(r, c, notes){
   } else {
     h+='<div class="bp-empty">No tier pricing for this venue.</div>';
   }
-  h+='</div></div>';
+  h+='</div>';
+  h+='<div class="bp-x-approval"><div class="bp-x-sec bp-x-band"><span>06</span><b>Approval</b><em>Executive or Finance authorization</em></div>'
+    +'<div class="bp-x-sign"><span>Approved by</span><b>'+(signed?_escHtml(signed):'')+'</b><div class="bp-x-sign-line"></div></div></div>';
+  h+='</div>';
   return h;
 }
 /* Compact one-page version of the plan used only in the PDF. */
