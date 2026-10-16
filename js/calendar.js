@@ -173,7 +173,8 @@ function renderCal(){
         h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
           +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status for this performance"')
           +'</div></td>';
-        var apprNote=(_bpData&&_bpData.notes&&_bpData.notes[showUid])||null;
+        var bpd=(typeof _bpData!=='undefined')?_bpData:null;
+        var apprNote=(bpd&&bpd.notes&&bpd.notes[showUid])||null;
         var apprOn=!!(apprNote&&(String(apprNote.rationale||'').trim()||String(apprNote.benefits||'').trim()));
         h+='<td class="sc-vip" onclick="event.stopPropagation()">';
         h+='<button type="button" class="sc-appr-btn'+(apprOn?' has-note':'')+'" title="Request approval" onclick="bpOpenShowApproval('+idx+')">Request</button>';
@@ -207,12 +208,18 @@ function renderCal(){
   wireCalEditClicks();
   initCalColResize();
   fitCalListRows(days);
+  window._calRenderRetries=0;
   }catch(eRender){
     try{ console.error('renderCal failed', eRender); }catch(eLog){}
     var calRootErr=document.getElementById('view-calendar');
     if(calRootErr) calRootErr.classList.add('view-on');
     var bodyErr=document.getElementById('calBody');
-    if(bodyErr){
+    var tries=window._calRenderRetries||0;
+    if(bodyErr && tries<8){
+      window._calRenderRetries=tries+1;
+      bodyErr.innerHTML='<div style="padding:28px 24px;color:#475569;font-size:13px;font-weight:600">Loading schedule…</div>';
+      setTimeout(function(){ if(typeof curView==='undefined'||curView==='calendar') renderCal(); }, 700);
+    }else if(bodyErr){
       bodyErr.innerHTML='<div style="padding:20px 24px;color:#991b1b;font-size:13px;line-height:1.5">'
         +'<b>Calendar failed to render.</b> Hard refresh (Ctrl+Shift+R). '
         +'If it persists, open DevTools (F12) and run:<br>'
