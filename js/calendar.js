@@ -128,7 +128,7 @@ function renderCal(){
 
     if(!shows.length){
       h+='<tr class="'+dc+'" data-cal-ds="'+ds+'" ondragover="swDragOver(event)" ondragleave="swDragLeave(event)" ondrop="swDropOnDate(event,\''+ds+'\')">';
-      h+='<td class="sc-ev-cell">'+_evLabelHtml(evLabel, ds)+'</td>';
+      h+='<td class="sc-ev-cell">'+_evCellHtml(evLabel, ds)+'</td>';
       h+='<td class="sc-date-cell">'+dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
       h+='<td colspan="9" class="sc-empty-day"><button type="button" class="sc-add-inline" data-action="addShow" data-ds="'+ds+'">+ Add show</button></td>';
       h+='<td class="sc-sep"></td>';
@@ -158,7 +158,7 @@ function renderCal(){
 
         h+='<tr class="'+dc+' sc-'+st+(bCls?' sc-tone-'+bCls:'')+(feeRowCls?' '+feeRowCls:'')+'" data-cal-ds="'+ds+'" ondragover="swDragOver(event)" ondragleave="swDragLeave(event)" ondrop="swDropOnDate(event,\''+ds+'\')">';
         if(ri===0){
-          h+='<td class="sc-ev-cell" rowspan="'+nrows+'">'+_evLabelHtml(evLabel, ds)+'</td>';
+          h+='<td class="sc-ev-cell" rowspan="'+nrows+'">'+_evCellHtml(evLabel, ds)+'</td>';
           h+='<td class="sc-date-cell" rowspan="'+nrows+'">'
             +dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
         }
@@ -279,6 +279,14 @@ function wireCalEditClicks(){
       e.stopPropagation();
       var ds=addEl.getAttribute('data-ds')||'';
       if(ds && typeof openAddModal==='function') openAddModal(ds);
+      return;
+    }
+    var addEv=e.target.closest('[data-action="addEvent"]');
+    if(addEv && body.contains(addEv)){
+      e.preventDefault();
+      e.stopPropagation();
+      var evDs=addEv.getAttribute('data-ds')||'';
+      if(evDs && typeof openAddSpecialWeek==='function') openAddSpecialWeek(evDs);
       return;
     }
     var el=e.target.closest('[data-action="editShow"]');
@@ -593,7 +601,8 @@ function renderCalGrid(yr,mo,mm,days,showMap){
 
     h+='<div class="'+dc+'" data-ds="'+ds+'" onclick="dayGridClick(this.dataset.ds)">';
     h+='<div class="cg-dn"><span>'+MN_SH[dObj.getMonth()]+' '+day+'</span>'+(isToday?'<span class="cg-today-dot"></span>':'')+'</div>';
-    if(evLabel) h+='<div class="cg-ev-banner">'+evLabel+'</div>';
+    if(evLabel) h+='<div class="cg-ev-banner">'+evLabel.replace(/</g,'&lt;')+'</div>';
+    else h+='<button type="button" class="cg-add-event" title="Add event" onclick="event.stopPropagation();openAddSpecialWeek(\''+ds+'\')">+ Event</button>';
 
     shows.forEach(function(r){
       var st=r._s||'nd';

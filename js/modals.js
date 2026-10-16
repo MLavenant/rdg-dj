@@ -1419,6 +1419,25 @@ function _swGroupSubtitle(g){
   return bits.join(' &nbsp;&#183;&nbsp; ') || 'No dates yet';
 }
 
+function _swStartNew(){
+  _swEditKey=null; _swEditLabel=null; _swEditSrc=null; _swEditCluster=null;
+  document.getElementById('swModalTitle').textContent = 'Add Event';
+  document.getElementById('swFormLabel').textContent  = 'New Period';
+  document.getElementById('swSaveBtn').textContent    = 'Add Period';
+  document.getElementById('swDeleteSelectedBtn').style.display='none';
+  document.getElementById('swLabel').value='';
+  var seed=window._swAddSeed;
+  if(seed){
+    document.getElementById('swStartDate').value=seed;
+    document.getElementById('swEndDate').value=seed;
+  } else {
+    var period=fiscalPeriodRange(curYr, curM);
+    document.getElementById('swStartDate').value=period.from;
+    document.getElementById('swEndDate').value=period.to;
+  }
+  _setSwCoverageNote('');
+  document.getElementById('swLabel').focus();
+}
 function _renderSwList(){
   var container = document.getElementById('swExistingList');
   if(!container) return;
@@ -1763,16 +1782,23 @@ function swDropOnDate(e, toDate){
   }
 }
 
-function openAddSpecialWeek(){
+function openAddSpecialWeek(ds){
   _swEditKey = null; _swEditLabel = null; _swEditSrc = null; _swEditCluster = null;
+  var seeded=typeof ds==='string' && /^\d{4}-\d{2}-\d{2}$/.test(ds);
+  window._swAddSeed=seeded?ds:null;
   document.getElementById('swModal').classList.remove('hidden');
-  document.getElementById('swModalTitle').textContent = 'Manage Special Periods';
+  document.getElementById('swModalTitle').textContent = seeded ? 'Add Event' : 'Manage Special Periods';
   document.getElementById('swFormLabel').textContent  = 'New Period';
   document.getElementById('swSaveBtn').textContent    = 'Add Period';
   document.getElementById('swDeleteSelectedBtn').style.display='none';
-  var period=fiscalPeriodRange(curYr, curM);
-  document.getElementById('swStartDate').value=period.from;
-  document.getElementById('swEndDate').value=period.to;
+  if(seeded){
+    document.getElementById('swStartDate').value=ds;
+    document.getElementById('swEndDate').value=ds;
+  } else {
+    var period=fiscalPeriodRange(curYr, curM);
+    document.getElementById('swStartDate').value=period.from;
+    document.getElementById('swEndDate').value=period.to;
+  }
   document.getElementById('swLabel').value='';
   _setSwCoverageNote('');
   _renderSwList();
@@ -1781,6 +1807,7 @@ function openAddSpecialWeek(){
 function closeSwModal(){
   document.getElementById('swModal').classList.add('hidden');
   _swEditKey = null; _swEditLabel = null; _swEditSrc = null; _swEditCluster = null;
+  window._swAddSeed=null;
   document.getElementById('swDeleteSelectedBtn').style.display='none';
   _setSwCoverageNote('');
 }
@@ -1952,14 +1979,7 @@ function saveSpecialWeek(){
     _syncSchedEvForPeriod(null, label, startStr, endStr, {start:startStr,end:endStr});
   }
 
-  _swEditKey=null; _swEditLabel=null; _swEditSrc=null; _swEditCluster=null;
-  document.getElementById('swLabel').value='';
-  document.getElementById('swModalTitle').textContent='Manage Special Periods';
-  document.getElementById('swFormLabel').textContent='New Period';
-  document.getElementById('swSaveBtn').textContent='Add Period';
-  document.getElementById('swDeleteSelectedBtn').style.display='none';
-  _setSwCoverageNote('');
-  _renderSwList();
+  closeSwModal();
   go();
 }
 

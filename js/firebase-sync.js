@@ -1842,6 +1842,10 @@ function _evLabelHtml(evLabel, ds){
     +'title="Click to edit or remove this period" style="cursor:pointer">'
     +evLabel.replace(/</g,'&lt;')+'</span>';
 }
+function _evCellHtml(evLabel, ds){
+  if(evLabel) return _evLabelHtml(evLabel, ds);
+  return '<button type="button" class="sc-add-event" data-action="addEvent" data-ds="'+_escAttr(ds)+'" title="Add event">+ Event</button>';
+}
 
 /*    month/year navigation                                       */
 function prevM(){ curM--; if(curM<0){curM=11;curYr--;buildYrPills();} go(); }

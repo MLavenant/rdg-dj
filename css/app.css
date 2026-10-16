@@ -147,6 +147,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .sc-ev-cell{border-right:1px solid var(--rule);vertical-align:top;padding:5px 6px!important;background:var(--card2)}
 .sc-ev-label{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#fff;background:var(--amb);padding:2px 5px;border-radius:3px;display:inline-block;white-space:nowrap;transition:opacity .15s;cursor:pointer}
 .sc-ev-label:hover{opacity:.75}
+.sc-add-event{display:inline-flex;align-items:center;font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:#9a3412;background:#fff7ed;border:1px dashed #fdba74;padding:1px 4px;border-radius:3px;cursor:pointer;font-family:inherit;white-space:nowrap;line-height:1.2}
+#swExistingList{max-height:220px;overflow-y:auto;margin-bottom:8px}
+.sw-add-event{display:block;width:100%;margin-bottom:8px;padding:7px 10px;border-radius:8px;border:1.5px dashed #fdba74;background:#fff7ed;color:#9a3412;font-size:11px;font-weight:800;cursor:pointer;font-family:inherit;text-align:center}
+.sw-add-event:hover{background:#f97316;color:#fff;border-color:#f97316}
+.sc-add-event:hover{background:#f97316;color:#fff;border-color:#f97316}
 .sc-row-drop td:not(.sc-sep){outline:2px dashed var(--blue);outline-offset:-2px}
 .sc-date-cell{white-space:nowrap;color:var(--ink2);border-right:0.5px solid var(--hair)}
 .dj-name{font-size:11px;font-weight:700}
@@ -833,6 +838,7 @@ body.session-locked .shell{pointer-events:none;user-select:none}
 .cg-dn{font-size:10px;font-weight:700;color:var(--ink3);display:flex;align-items:center;justify-content:space-between;margin-bottom:3px}
 .cg-today-dot{width:5px;height:5px;border-radius:50%;background:var(--amb)}
 .cg-ev-banner{font-size:7px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#fff;background:var(--amb);padding:2px 4px;border-radius:2px;margin-bottom:3px;display:inline-block}
+.cg-add-event{font-size:7px;font-weight:800;text-transform:uppercase;letter-spacing:.03em;color:#9a3412;background:#fff7ed;border:1px dashed #fdba74;border-radius:2px;padding:1px 4px;margin-bottom:3px;cursor:pointer;font-family:inherit}
 .cg-chip{border-radius:4px;margin-bottom:2px;padding:2px 4px;cursor:pointer;border:0.5px solid transparent}
 .cg-chip:hover{filter:brightness(.95)}
 .cg-chip-dj{font-size:9px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -963,6 +969,7 @@ body.session-locked .shell{pointer-events:none;user-select:none}
 #view-calendar.cal-list-fit .vip-link{font-size:var(--cal-mini-font,7px);line-height:1}
 #view-calendar.cal-list-fit .sc-3d-btn{height:var(--cal-control-h,16px);padding:0 4px;font-size:var(--cal-mini-font,7px);line-height:1}
 #view-calendar.cal-list-fit .sc-ev-label{box-sizing:border-box;height:var(--cal-control-h,16px);padding:0 3px;font-size:var(--cal-mini-font,7px);line-height:var(--cal-control-h,16px)}
+#view-calendar.cal-list-fit .sc-add-event{box-sizing:border-box;height:var(--cal-control-h,16px);padding:0 3px;font-size:var(--cal-mini-font,7px);line-height:1}
 #view-calendar.cal-list-fit .acct-status-wrap{gap:0;min-height:0}
 #view-calendar.cal-list-fit .acct-status-sel{height:var(--cal-control-h,16px);min-height:0;padding:0 3px;border-radius:4px;font-size:var(--cal-mini-font,7px);line-height:1}
 #view-calendar.cal-list-fit button,#view-calendar.cal-list-fit select{box-sizing:border-box}
