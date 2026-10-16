@@ -149,25 +149,27 @@ function _bpApprovalState(row){
 function _bpVenueMonth(venue, m){
   var budget=getMonthlyBudget(venue, m.year, m.mm);
   var conf=(_bpData.confirms[venue]||{})[m.year]; conf=conf?conf[m.mm]:null;
-  var rows=[], confirmed=0, proposed=0, bsT=0, running=0;
+  var rows=[], confirmed=0, proposed=0, bsT=0;
   _bpBookings(venue, m).forEach(function(r){
     var fee=+(r.fee!=null?r.fee:(r.cost||0))||0;
     var status=_bpStatus(r);
     var isConf=BP_CONFIRMED.indexOf(status)>=0;
     var tgt=(typeof showTargets==='function')?showTargets(r):{bs_m:r.bs_m, roi_t:r.roi_t};
-    running+=fee;
-    var over=(budget!=null) ? Math.max(0, running-budget) : 0;
-    var needs=budget!=null && over>0 && fee>0;
-    var row={uid:_bpUid(r), venue:venue, d:r.d, dj:r.dj||'', fee:fee, status:status, note:r.note||'', confirmed:isConf,
-      bs_m:tgt&&tgt.bs_m!=null?+tgt.bs_m:null, roi_t:tgt&&tgt.roi_t!=null?+tgt.roi_t:null,
-      runningAfter:running, overage:needs?Math.min(fee, over):0, needs:needs};
-    row.approval=_bpApprovalState(row);
-    row.violation=row.confirmed && row.needs && row.approval!=='approved' && row.approval!=='past';
+    rows.push({uid:_bpUid(r), venue:venue, d:r.d, dj:r.dj||'', fee:fee, status:status, note:r.note||'', confirmed:isConf,
+      bs_m:tgt&&tgt.bs_m!=null?+tgt.bs_m:null, roi_t:tgt&&tgt.roi_t!=null?+tgt.roi_t:null});
     if(isConf) confirmed+=fee; else proposed+=fee;
-    if(row.bs_m) bsT+=row.bs_m;
-    rows.push(row);
+    if(tgt&&tgt.bs_m) bsT+=+tgt.bs_m;
   });
   var planned=confirmed+proposed;
+  /* Every booking is judged on the whole month (confirmed + proposed vs budget), not a running total. */
+  var monthOver=budget!=null ? Math.max(0, planned-budget) : 0;
+  rows.forEach(function(row){
+    row.runningAfter=planned;
+    row.needs=budget!=null && monthOver>0 && row.fee>0;
+    row.overage=row.needs?monthOver:0;
+    row.approval=_bpApprovalState(row);
+    row.violation=row.confirmed && row.needs && row.approval!=='approved' && row.approval!=='past';
+  });
   var exc={needed:0,pending:0,approved:0,rejected:0,violations:0};
   rows.forEach(function(r){
     if(r.approval==='needed'||r.approval==='reapproval') exc.needed++;
@@ -327,7 +329,7 @@ function _bpMonthPosition(venue, dateStr){
   var range=fiscalPeriodRange(info.year, info.monthIndex);
   var spend=0;
   _bpBookings(venue, {from:range.from, to:range.to}).forEach(function(r){
-    if(r.d<=dateStr) spend+=+(r.fee!=null?r.fee:(r.cost||0))||0;
+    spend+=+(r.fee!=null?r.fee:(r.cost||0))||0;
   });
   var budget=getMonthlyBudget(venue, info.year, info.mm);
   return {spend:spend, budget:budget, left:budget!=null?budget-spend:null};
@@ -420,8 +422,22 @@ function _bpSheetHead(data, title){
   return '<div class="bp-sheet-hd"><div><b>'+_escHtml(title)+'</b><span>'+_escHtml(ms.length>1?(ms[0].label+' – '+ms[ms.length-1].label):ms[0].label)+' · '+_escHtml(_bpVenue)+'</span></div>'
     +'<div>Prepared '+_escHtml(_bpFmtDate(_bpNow()))+'</div></div>';
 }
-function _bpOnePagerHtml(data){
-  return _bpPlanHtml(data).replace('id="bpSheet"','');
+function _bpDeckSlideHtml(data, n, of){
+  var ms=data.months;
+  var h='<div class="bp-page bp-deck">';
+  h+='<div class="bp-deck-hd"><div><span class="bp-deck-kicker">Three Month Booking Plan · '+n+' of '+of+'</span>'
+    +'<b>'+_escHtml(_bpVenue)+'</b>'
+    +'<em>'+_escHtml(ms[0].label+' – '+ms[ms.length-1].label)+'</em></div>'
+    +'<img src="assets/rdg-logo.png" alt="RDG"></div>';
+  h+='<div class="bp-deck-body">';
+  h+='<div class="bp-deck-sec"><span>01</span>Budget vs pipeline<em>Confirmed + proposed for the whole month against the monthly budget</em></div>';
+  h+=_bpSummaryHtml(data);
+  h+='<div class="bp-deck-sec"><span>02</span>Bookings over $20K<em>Only months over budget · this year on top, same date last year below</em></div>';
+  h+=_bpRowsHtml(data, {noActions:true});
+  h+='</div>';
+  h+='<div class="bp-deck-ft"><span>Prepared '+_escHtml(_bpFmtDate(_bpNow()))+'</span><span>Riviera Dining Group · Entertainment</span></div>';
+  h+='</div>';
+  return h;
 }
 function _bpPlanHtml(data){
   var h='<div id="bpSheet" class="bp-sheet">';
@@ -474,7 +490,7 @@ function bpOpenRequest(uid){
   if(!hit){ alert('This booking is no longer in the selected period.'); return; }
   var row=hit.row, cell=hit.cell, rec=_bpData.approvals[uid]||null;
   var fresh=!rec || row.approval==='reapproval';
-  var spendBefore=row.runningAfter-row.fee;
+  var monthSpend=row.runningAfter;
   var f=(rec&&rec.finance)||{}, e=(rec&&rec.exec)||{};
   function ro(label, val){ return '<div class="bp-kv"><span>'+label+'</span><b>'+val+'</b></div>'; }
   var h='<div class="modal bp-modal"><div class="modal-hd"><h3>'+(fresh?'Request budget exception':'Budget exception')+'</h3><button class="modal-close" onclick="bpCloseModal()">&#10005;</button></div>';
@@ -485,8 +501,8 @@ function bpOpenRequest(uid){
     +ro('DJ', _escHtml(row.dj||'TBD'))
     +ro('Fee', $k(row.fee))
     +ro('Month budget', cell.budget!=null?$k(cell.budget):'Not set')
-    +ro('Spend before this booking', $k(spendBefore))
-    +ro('Over budget by', '<span class="bp-neg">'+$k(row.overage)+'</span>')
+    +ro('Month confirmed + proposed', $k(monthSpend))
+    +ro('Month over budget by', '<span class="bp-neg">'+$k(row.overage)+'</span>')
     +ro('BS Target / ROI Target', $k(row.bs_m)+' / '+(row.roi_t!=null?row.roi_t.toFixed(1)+'x':'-'))
     +'</div>';
   h+='<div class="bp-kv bp-kv-wide"><span>Same date last year</span><b>'+_escHtml(_bpLyLine(row))+'</b></div>';
@@ -839,7 +855,7 @@ function _bpPrintSheetHtml(data, onlyMonth){
   return h;
 }
 function _bpPdfCanvas(el){
-  var big=el.classList&&el.classList.contains('bp-print');
+  var big=el.classList&&(el.classList.contains('bp-print')||el.classList.contains('bp-deck'));
   return window.html2canvas(el,{scale:big?2:1.25,useCORS:true,logging:false,backgroundColor:'#ffffff',windowWidth:BP_PAGE_W});
 }
 function _bpRenderPage(html){
@@ -850,7 +866,22 @@ function _bpRenderPage(html){
   var imgs=Array.prototype.slice.call(stage.querySelectorAll('img'));
   return Promise.all(imgs.map(function(im){
     return im.complete?null:new Promise(function(res){ im.onload=im.onerror=res; });
-  })).then(function(){ return _bpPdfCanvas(stage.firstChild); }).then(function(cv){
+  })).then(function(){
+    var body=stage.querySelector('.bp-deck-body');
+    if(body){
+      var room=body.clientHeight, need=body.scrollHeight;
+      if(need>room && room>0){
+        var s=room/need*0.97;
+        var inner=document.createElement('div');
+        while(body.firstChild) inner.appendChild(body.firstChild);
+        inner.style.transformOrigin='top left';
+        inner.style.transform='scale('+s.toFixed(4)+')';
+        inner.style.width=(100/s).toFixed(2)+'%';
+        body.appendChild(inner);
+      }
+    }
+    return _bpPdfCanvas(stage.firstChild);
+  }).then(function(cv){
     stage.remove();
     return cv;
   }, function(err){ stage.remove(); throw err; });
@@ -941,7 +972,7 @@ function _bpEmailHtml(data){
   Object.keys(data.grid).forEach(function(v){ data.grid[v].forEach(function(c){ c.rows.forEach(function(r){ if(_bpHighlightRow(r, c)) exc.push(r); }); }); });
   if(exc.length){
     h+='<p style="margin-top:16px"><b>Bookings over $20K in months that exceed budget ('+exc.length+')</b></p><ul>';
-    exc.forEach(function(r){ h+='<li>'+_escHtml(_bpDay(r.d)+' · '+(BP_VENUE_SHORT[r.venue]||r.venue)+' · '+(r.dj||'TBD')+' · fee '+$k(r.fee)+' · over by '+$k(r.overage)+' · '+BP_APPROVAL_LABEL[r.approval])+'</li>'; });
+    exc.forEach(function(r){ h+='<li>'+_escHtml(_bpDay(r.d)+' · '+(BP_VENUE_SHORT[r.venue]||r.venue)+' · '+(r.dj||'TBD')+' · fee '+$k(r.fee)+' · month over budget by '+$k(r.overage)+' · '+BP_APPROVAL_LABEL[r.approval])+'</li>'; });
     h+='</ul>';
   } else {
     h+='<p style="margin-top:16px">No bookings over $20K in a month that exceeds its budget.</p>';
@@ -970,8 +1001,14 @@ function _bpBuildLocationPages(){
   var canvases=[];
   var saved=_bpVenue;
   var packets=[];
+  var period='';
   return _ensurePdfLibs().then(function(){
     return document.fonts&&document.fonts.ready?document.fonts.ready:null;
+  }).then(function(){
+    var ms=_bpMonths();
+    period=ms[0].label+' – '+ms[ms.length-1].label;
+    _bpBusy(true, 'Cover page');
+    return _bpRenderPage(_bpCoverHtml('Three Month Booking Plan', period+' · Beach Club · CN Lounge · MILA', '')).then(function(cv){ canvases.push(cv); });
   }).then(function(){
     var chain=Promise.resolve();
     BP_VENUES.forEach(function(v, i){
@@ -980,13 +1017,17 @@ function _bpBuildLocationPages(){
         _bpVenue=v;
         var data=_bpCompute();
         packets.push({venue:v, exc:_bpExceptionRows(data)});
-        return _bpRenderPage(_bpOnePagerHtml(data)).then(function(cv){ canvases.push(cv); });
+        return _bpRenderPage(_bpDeckSlideHtml(data, i+1, BP_VENUES.length)).then(function(cv){ canvases.push(cv); });
       });
     });
     return chain;
   }).then(function(){
     var chain=Promise.resolve();
     packets.forEach(function(pack){
+      if(!pack.exc.length) return;
+      chain=chain.then(function(){
+        return _bpRenderPage(_bpCoverHtml('Details', pack.exc.length+' booking'+(pack.exc.length===1?'':'s')+' over $20K · '+period, pack.venue)).then(function(cv){ canvases.push(cv); });
+      });
       pack.exc.forEach(function(x, i){
         chain=chain.then(function(){
           _bpBusy(true, pack.venue+' · booking '+(i+1)+' of '+pack.exc.length);
