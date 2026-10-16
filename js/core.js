@@ -311,14 +311,14 @@ var FV_3D_TABLES = {
     {name:'RIVERWALK',color:'rgb(245,127,23)',minimum:1500,capacity:8,tables:['17','18','19','20','21']},
     {name:'SLIP',color:'rgb(96,165,250)',minimum:5000,capacity:8,tables:['D1','D2','D3']}
   ],
-  /* Current waterfront plan from beachclub.casa-neos.com/new.glb?v=8.
-     Active from Sat Oct 17, 2026. Capacities: Diamond 10 · Prestige 10 ·
-     Platinum 8 · Gold 8. Art Basel Dec 4–6 remains a separate dated plan. */
+  /* Current waterfront plan from beachclub.casa-neos.com on Oct 17, 2026 (new.glb?v=8).
+     Live rate map: Diamond 51/52/53 · Prestige 41/47 · Platinum ×12 · Gold 19–29 · Slips D3–D5.
+     Legend capacities are Diamond 10, Prestige 10, Platinum 8, Gold 8. */
   'casa-neos-beach-club-oct17':[
-    {name:'DIAMOND',color:'rgb(3,169,244)',minimum:6000,capacity:10,tables:['34','51','52']},
-    {name:'PRESTIGE',color:'rgb(139,195,74)',minimum:5000,capacity:10,tables:['31','35','36','41']},
-    {name:'PLATINUM',color:'rgb(158,158,158)',minimum:4000,capacity:8,tables:['32','33','42','43','46','47','53','54','55','56']},
-    {name:'GOLD',color:'rgb(251,192,45)',minimum:3000,capacity:8,tables:['17','18','19','20','21','22','23','24','25','26','27','28','29']},
+    {name:'DIAMOND',color:'rgb(3,169,244)',minimum:5000,capacity:10,tables:['51','52','53']},
+    {name:'PRESTIGE',color:'rgb(139,195,74)',minimum:4000,capacity:10,tables:['41','47']},
+    {name:'PLATINUM',color:'rgb(158,158,158)',minimum:3500,capacity:8,tables:['31','32','33','34','35','36','42','43','46','54','55','56']},
+    {name:'GOLD',color:'rgb(251,192,45)',minimum:3000,capacity:8,tables:['19','20','21','22','23','24','25','26','27','28','29']},
     {name:'SLIP',color:'rgb(96,165,250)',minimum:5000,capacity:8,tables:['D3','D4','D5']}
   ],
   /* Art Basel Weekend — Casa Neos BC Basel (neos-big.glb). Fri Dec 4 – Sun Dec 6, 2026.
@@ -551,6 +551,14 @@ function ensureDefaultRoiFloorPlans(){
   }
   /* The live Beach Club changed again for the Oct 17 weekend. Keep the prior
      Oct 5 plan historical, then resume this plan after the Dec 4–6 Basel drop. */
+  function oct17PlanIsCurrent(plan){
+    if(!plan||!plan.tables||!/new\.glb\?v=8/.test(plan.modelUrl||'')) return false;
+    function ids(name){
+      var tier=(plan.tables||[]).find(function(t){ return String(t.name||'').toUpperCase()===name; });
+      return (tier&&tier.tables?tier.tables:[]).map(String).sort().join(',');
+    }
+    return ids('DIAMOND')==='51,52,53' && ids('PRESTIGE')==='41,47';
+  }
   if(!hasPreset('Casa Neos Beach Club','casa-neos-beach-club-oct17')){
     ROI_FLOOR_PLANS.fp_cnbc_current_20261017={
       _uid:'fp_cnbc_current_20261017',
@@ -567,6 +575,15 @@ function ensureDefaultRoiFloorPlans(){
       seeded:true
     };
     added=true;
+  }else{
+    Object.keys(ROI_FLOOR_PLANS).forEach(function(uid){
+      var p=ROI_FLOOR_PLANS[uid];
+      if(!p||p.preset!=='casa-neos-beach-club-oct17'||oct17PlanIsCurrent(p.plan)) return;
+      p.plan=_fv3dPlanPayloadFromPreset('casa-neos-beach-club-oct17');
+      p.status='ready';
+      p.updatedAt=new Date().toISOString();
+      added=true;
+    });
   }
   /* Art Basel Weekend — Casa Neos BC Basel (Fri Dec 4 – Sun Dec 6, 2026). neos-big.glb + Grand/Premier/Signature/Select/Reserve. */
   if(!hasPreset('Casa Neos Beach Club','casa-neos-beach-club-basel')){
@@ -1801,7 +1818,7 @@ function roiFloorPlanOptionsForVenue(venue){
       {v:'casa-neos-beach-club', l:'Classic beach club (Riverwalk)'},
       {v:'casa-neos-beach-club-summer', l:'Sunset Rituals rooftop (Aug 1–Oct 4)'},
       {v:'casa-neos-beach-club-new', l:'Sunset Rituals waterfront + slips (Oct 5–16)'},
-      {v:'casa-neos-beach-club-oct17', l:'Current waterfront (Oct 17+) — capacities 10/10/8/8'},
+      {v:'casa-neos-beach-club-oct17', l:'Current waterfront (Oct 17+) — live Beach Club map'},
       {v:'casa-neos-beach-club-basel', l:'Casa Neos BC Basel (Art Basel Dec 4–6)'}
     ];
   }else if(v==='Casa Neos Lounge'||v===CNL_REMODEL_KEY||v===CNL_OCT_KEY){
