@@ -1764,6 +1764,10 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-x-bud b .bp-neg{color:#b91c1c}
 .bp-x-field b .bp-pos,.bp-x-field b .bp-neg{font-size:inherit}
 .bp-x-why{margin-top:10px;border:1px solid #e2e8f0;border-radius:10px;padding:8px 14px;background:#f8fafc}
+.bp-x-sign{margin-top:10px;border:1px dashed #94a3b8;border-radius:12px;padding:10px 14px;background:#fff}
+.bp-x-sign span{display:block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#64748b}
+.bp-x-sign b{display:block;min-height:22px;margin-top:4px;font-size:16px;color:#0f2a4a}
+.bp-x-sign-line{margin-top:6px;border-bottom:1px solid #94a3b8;height:26px}
 .bp-x-why span{display:block;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#64748b}
 .bp-x-why b{display:block;font-size:15px;font-weight:650;color:#172033;margin-top:2px;white-space:normal;line-height:1.35}
 .bp-x-bud{display:grid;grid-template-columns:1fr 1.3fr 1fr;gap:12px;margin-top:10px}

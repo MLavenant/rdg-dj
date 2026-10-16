@@ -420,6 +420,9 @@ function _bpSheetHead(data, title){
   return '<div class="bp-sheet-hd"><div><b>'+_escHtml(title)+'</b><span>'+_escHtml(ms.length>1?(ms[0].label+' – '+ms[ms.length-1].label):ms[0].label)+' · '+_escHtml(_bpVenue)+'</span></div>'
     +'<div>Prepared '+_escHtml(_bpFmtDate(_bpNow()))+'</div></div>';
 }
+function _bpOnePagerHtml(data){
+  return _bpPlanHtml(data).replace('id="bpSheet"','');
+}
 function _bpPlanHtml(data){
   var h='<div id="bpSheet" class="bp-sheet">';
   h+=_bpSheetHead(data, data.months.length>1?'Three Month Booking Plan':'Entertainment Booking Plan vs Budget');
@@ -743,6 +746,8 @@ function _bpExceptionPageHtml(r, c, notes){
   var benefits=String(notes.benefits||'').trim();
   h+='<div class="bp-x-why"><span>Rationale</span><b>'+(rationale?_escHtml(rationale):'No rationale yet.')+'</b></div>';
   h+='<div class="bp-x-why"><span>Expected benefits</span><b>'+(benefits?_escHtml(benefits):'No expected benefits yet.')+'</b></div>';
+  var signed=String(notes.approvedBy||'').trim();
+  h+='<div class="bp-x-sign"><span>Approved by</span><b>'+(signed?_escHtml(signed):'')+'</b><div class="bp-x-sign-line"></div></div>';
   h+='<div class="bp-x-bud">'
     +'<div class="bp-x-yel"><span>Total budget</span><b>'+(c.budget!=null?$k(c.budget):'Not set')+'</b></div>'
     +'<div><span>Actual + forecast spend</span><b>'+$k(total)+'</b></div>'
@@ -911,7 +916,8 @@ function _bpBuildPdf(data){
 }
 function bpExportPdf(){
   if(_bpPanel==='history'){ alert('Switch to Plan or Meeting to export.'); return; }
-  _bpBuildPdf(_bpCompute()).then(function(pdf){
+  var build=_bpPanel==='meeting'?_bpBuildPdf(_bpCompute()):_bpBuildLocationPages();
+  build.then(function(pdf){
     pdf.save(_bpPdfName());
   }).catch(function(err){
     alert('Could not export the PDF. '+(err&&err.message?err.message:''));
@@ -963,31 +969,28 @@ function _bpCombinedPlan(){
 function _bpBuildLocationPages(){
   var canvases=[];
   var saved=_bpVenue;
+  var packets=[];
   return _ensurePdfLibs().then(function(){
     return document.fonts&&document.fonts.ready?document.fonts.ready:null;
   }).then(function(){
-    var probe=_bpComputeVenue(BP_VENUES[0]);
-    var period=probe.months[0].label+' – '+probe.months[probe.months.length-1].label;
-    _bpBusy(true, 'Cover page');
-    return _bpRenderPage(_bpCoverHtml('Entertainment Approval', 'One page per location · '+period, ''));
-  }).then(function(cv){
-    canvases.push(cv);
     var chain=Promise.resolve();
-    BP_VENUES.forEach(function(v){
+    BP_VENUES.forEach(function(v, i){
       chain=chain.then(function(){
-        _bpBusy(true, v);
-        var data=_bpComputeVenue(v);
-        return _bpRenderPage(_bpPrintSheetHtml(data, null)).then(function(sheet){
-          canvases.push(sheet);
-          var exc=_bpExceptionRows(data);
-          var inner=Promise.resolve();
-          exc.forEach(function(x, i){
-            inner=inner.then(function(){
-              _bpBusy(true, v+' · booking '+(i+1)+' of '+exc.length);
-              return _bpRenderPage(_bpExceptionPageHtml(x.r, x.c, _bpNotesFor(x.r.uid))).then(function(pg){ canvases.push(pg); });
-            });
-          });
-          return inner;
+        _bpBusy(true, 'Location '+(i+1)+' of 3 · '+v);
+        _bpVenue=v;
+        var data=_bpCompute();
+        packets.push({venue:v, exc:_bpExceptionRows(data)});
+        return _bpRenderPage(_bpOnePagerHtml(data)).then(function(cv){ canvases.push(cv); });
+      });
+    });
+    return chain;
+  }).then(function(){
+    var chain=Promise.resolve();
+    packets.forEach(function(pack){
+      pack.exc.forEach(function(x, i){
+        chain=chain.then(function(){
+          _bpBusy(true, pack.venue+' · booking '+(i+1)+' of '+pack.exc.length);
+          return _bpRenderPage(_bpExceptionPageHtml(x.r, x.c, _bpNotesFor(x.r.uid))).then(function(cv){ canvases.push(cv); });
         });
       });
     });
@@ -1074,16 +1077,18 @@ function bpOpenShowApproval(idx){
     +'<button type="button" class="bp-btn" id="bpApprClose">Close</button></div>'
     +'<div class="bp-appr-grid"><div><label>Rationale</label><textarea id="bpApprWhy">'+_escHtml(notes.rationale||row.note||'')+'</textarea>'
     +'<label>Expected benefits</label><textarea id="bpApprBen">'+_escHtml(notes.benefits||'')+'</textarea>'
+    +'<label>Approved by</label><textarea id="bpApprBy" placeholder="Name, signature, or a note">'+_escHtml(notes.approvedBy||'')+'</textarea>'
     +'<div class="bp-appr-actions"><button type="button" class="bp-btn bp-btn-dark" id="bpApprSend">Send</button></div>'
     +'<p style="font-size:12px;color:#64748b;margin-top:8px">Send opens an email to matthias@rivieradininggroup.com with this page as a snapshot and a PDF.</p></div>'
     +'<div class="bp-appr-preview" id="bpApprPreview"></div></div></div>';
   document.body.appendChild(wrap);
   function paint(){
-    var n={rationale:document.getElementById('bpApprWhy').value, benefits:document.getElementById('bpApprBen').value};
+    var n={rationale:document.getElementById('bpApprWhy').value, benefits:document.getElementById('bpApprBen').value, approvedBy:document.getElementById('bpApprBy').value};
     document.getElementById('bpApprPreview').innerHTML=_bpExceptionPageHtml(row, cell, n);
   }
   document.getElementById('bpApprWhy').addEventListener('input', paint);
   document.getElementById('bpApprBen').addEventListener('input', paint);
+  document.getElementById('bpApprBy').addEventListener('input', paint);
   document.getElementById('bpApprClose').onclick=bpCloseShowApproval;
   document.getElementById('bpApprSend').onclick=function(){ bpSendShowApproval(row, cell); };
   paint();
@@ -1091,9 +1096,10 @@ function bpOpenShowApproval(idx){
 function bpSendShowApproval(row, cell){
   var whyEl=document.getElementById('bpApprWhy');
   var benEl=document.getElementById('bpApprBen');
+  var byEl=document.getElementById('bpApprBy');
   var btn=document.getElementById('bpApprSend');
-  if(!whyEl||!benEl) return;
-  var notes={rationale:whyEl.value.trim(), benefits:benEl.value.trim(), d:row.d, venue:row.venue, dj:row.dj||'', at:_bpNow(), by:_bpWho()};
+  if(!whyEl||!benEl||!byEl) return;
+  var notes={rationale:whyEl.value.trim(), benefits:benEl.value.trim(), approvedBy:byEl.value.trim(), d:row.d, venue:row.venue, dj:row.dj||'', at:_bpNow(), by:_bpWho()};
   if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
   _bpSave('approvalNotes/'+row.uid, notes, function(){
     if(!_bpData.notes) _bpData.notes={};
@@ -1115,7 +1121,7 @@ function bpSendShowApproval(row, cell){
       _bpBusy(false);
       var file='Request-Approval-'+String(row.d)+'-'+String(row.venue||'venue').replace(/\s+/g,'-')+'.pdf';
       var body='<div style="font-family:Arial,sans-serif;font-size:14px;color:#172033"><p>Request approval for <b>'+_escHtml(row.dj||'TBD')+'</b> · '+_escHtml(row.venue)+' · '+_escHtml(_bpDay(row.d))+' · fee '+$k(row.fee)+'.</p>'
-        +'<p><b>Rationale</b><br>'+_escHtml(notes.rationale||'—')+'</p><p><b>Expected benefits</b><br>'+_escHtml(notes.benefits||'—')+'</p>'
+        +'<p><b>Rationale</b><br>'+_escHtml(notes.rationale||'—')+'</p><p><b>Expected benefits</b><br>'+_escHtml(notes.benefits||'—')+'</p><p><b>Approved by</b><br>'+_escHtml(notes.approvedBy||'—')+'</p>'
         +'<p><img src="cid:performance" alt="Performance" style="max-width:100%;height:auto"></p></div>';
       var eml=_buildForecastFlashEml({
         to:['matthias@rivieradininggroup.com'],
