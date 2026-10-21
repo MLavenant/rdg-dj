@@ -4471,11 +4471,19 @@ var BASEL_DAY_COLORS = [
   {bg:'#ea580c', soft:'#ffedd5', ink:'#7c2d12'}
 ];
 var BASEL_REF_COLORS = ['#0f766e','#db2777','#2563eb','#ca8a04','#7c3aed','#dc2626','#0891b2','#65a30d'];
+var BASEL_VENUE_SHORT = {casa_neos_bc:'Beach Club', mila_lounge:'MILA Lounge', casa_neos_lounge:'CN Lounge'};
+var BASEL_VENUE_COLORS = {casa_neos_bc:'#b45309', mila_lounge:'#be123c', casa_neos_lounge:'#0f766e'};
+window._baselVenueFilter = window._baselVenueFilter || 'all';
+
+function setBaselVenueFilter(key){
+  window._baselVenueFilter = key || 'all';
+  renderBaselTracker();
+}
 
 function renderBaselTracker(){
   var el = document.getElementById('baselBody');
   if(!el) return;
-  var data = window._baselTracker || null;
+  var raw = window._baselTracker || null;
   function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function money(n){
     if(n==null || !isFinite(+n)) return '\u2014';
@@ -4487,39 +4495,83 @@ function renderBaselTracker(){
     if(isNaN(d.getTime())) return dateStr;
     return d.toLocaleDateString('en-US', opts||{weekday:'short', month:'short', day:'numeric'});
   }
-  if(!data || !data.nights){
+  if(!raw || !raw.nights){
     el.innerHTML = '<div class="bsl-empty">Basel weekend sales have not synced yet.</div>';
     return;
   }
-  function artistLabel(n){
-    var raw = String(n.dj||'').trim();
-    if(raw && raw!=='...' && raw!=='TBD' && raw!=='-') return raw;
+  var venues = raw.venues && raw.venues.length ? raw.venues : [{
+    key:'casa_neos_bc', name:raw.venue||'Casa Neos Beach Club', totalRevenue:raw.totalRevenue,
+    totalBookings:raw.totalBookings, nights:raw.nights, referrers:raw.referrers
+  }];
+  var filter = window._baselVenueFilter;
+  var picked = venues.filter(function(v){ return v.key===filter; })[0] || null;
+  if(!picked) filter = 'all';
+  var isAll = filter==='all' && venues.length>1;
+  var data = isAll ? raw : (picked || venues[0]);
+  function venueShort(v){ return BASEL_VENUE_SHORT[v.key] || v.name; }
+  function venueCol(v){ return BASEL_VENUE_COLORS[v.key] || '#475569'; }
+  function artistLabel(dj, date, venueName){
+    var s = String(dj||'').trim();
+    if(s && s!=='...' && s!=='TBD' && s!=='-') return s;
     var sched = (typeof SCHED!=='undefined' ? SCHED : []).filter(function(r){
-      return r && r.d===n.date && /beach club/i.test(String(r.venue||r.v||'')) && r.dj;
+      return r && r.d===date && String(r.venue||r.v||'')===venueName && r.dj;
     })[0];
     return (sched && String(sched.dj).trim()) || 'TBD';
   }
-  var dates = data.dates || data.nights.map(function(n){ return n.date; });
+  var dates = raw.dates || data.nights.map(function(n){ return n.date; });
   var nightsByDate = {};
-  data.nights.forEach(function(n){ nightsByDate[n.date] = n; });
+  (data.nights||[]).forEach(function(n){ nightsByDate[n.date] = n; });
   var refs = (data.referrers || []).slice();
   var total = +data.totalRevenue || 0;
   var when = '';
-  try{ when = new Date(data.updatedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){}
+  try{ when = new Date(raw.updatedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){}
   var refColor = {};
   refs.forEach(function(r, i){ refColor[r.name] = r.name==='No referrer' ? '#94a3b8' : BASEL_REF_COLORS[i % BASEL_REF_COLORS.length]; });
 
-  var h = '<div class="bsl-print-page">';
+  var h = '';
+  if(venues.length>1){
+    h += '<div class="bsl-pills no-print">';
+    h += '<button type="button" class="bsl-pill'+(isAll?' on':'')+'" onclick="setBaselVenueFilter(\'all\')">All venues</button>';
+    venues.forEach(function(v){
+      var on = !isAll && data.key===v.key;
+      h += '<button type="button" class="bsl-pill'+(on?' on':'')+'" style="'+(on?'background:'+venueCol(v)+';border-color:'+venueCol(v):'border-left:3px solid '+venueCol(v))+'" onclick="setBaselVenueFilter(\''+v.key+'\')">'+esc(venueShort(v))+'</button>';
+    });
+    h += '</div>';
+  }
+
+  h += '<div class="bsl-print-page">';
+  var venueLine = isAll ? venues.map(venueShort).join(' · ') : (data.name||'Casa Neos Beach Club');
   h += '<div class="bsl-hero">'
     + '<div><div class="bsl-hero-kicker">Art Basel 2026</div>'
-    + '<div class="bsl-hero-title">BASEL Tracker</div>'
-    + '<div class="bsl-hero-sub">'+esc(data.venue||'Casa Neos Beach Club')+' · '
-    + dayLabel(dates[0],{weekday:'short',month:'short',day:'numeric'})+' – '+dayLabel(dates[dates.length-1],{weekday:'short',month:'short',day:'numeric'})
+    + '<div class="bsl-hero-title">BASEL Tracker'+(isAll?'':' · '+esc(venueShort(data)))+'</div>'
+    + '<div class="bsl-hero-sub">'+esc(venueLine)+' · '
+    + dayLabel(dates[0])+' – '+dayLabel(dates[dates.length-1])
     + '</div></div>'
     + '<div class="bsl-hero-right"><div class="bsl-hero-total">'+money(total)+'</div>'
     + '<div class="bsl-hero-sub">'+(data.totalBookings||0)+' tables · '+refs.length+' referrers</div>'
     + (when ? '<div class="bsl-hero-upd">FourVenues · updated '+esc(when)+'</div>' : '')
     + '</div></div>';
+
+  if(isAll){
+    h += '<div class="bsl-section-hd">By venue</div><div class="bsl-venue-grid">';
+    venues.forEach(function(v){
+      var col = venueCol(v);
+      var share = pct(+v.totalRevenue||0, total);
+      h += '<div class="bsl-venue" style="border-left-color:'+col+'">'
+        + '<div class="bsl-venue-name" style="color:'+col+'">'+esc(venueShort(v))+'</div>'
+        + '<div class="bsl-venue-total">'+money(v.totalRevenue)+'</div>'
+        + '<div class="bsl-day-meta">'+(v.totalBookings||0)+' tables · '+share+'% of weekend</div>'
+        + '<div class="bsl-bar"><span style="width:'+share+'%;background:'+col+'"></span></div>'
+        + '<div class="bsl-venue-days">';
+      dates.forEach(function(d, i){
+        var n = (v.nights||[]).filter(function(x){ return x.date===d; })[0] || {totalRevenue:0, bookings:0};
+        var c = BASEL_DAY_COLORS[i % BASEL_DAY_COLORS.length];
+        h += '<div class="bsl-venue-day" style="background:'+c.soft+'"><span style="color:'+c.ink+'">'+dayLabel(d,{weekday:'short'})+'</span><b>'+money(n.totalRevenue)+'</b><em>'+(n.bookings||0)+' tb</em></div>';
+      });
+      h += '</div></div>';
+    });
+    h += '</div>';
+  }
 
   h += '<div class="bsl-section-hd">By day</div>';
   h += '<div class="bsl-day-grid">';
@@ -4535,12 +4587,23 @@ function renderBaselTracker(){
     h += '<div class="bsl-day" style="border-top-color:'+c.bg+'">'
       + '<div class="bsl-day-hd" style="background:'+c.bg+'">'
       + '<span>'+dayLabel(d,{weekday:'long'})+'</span><span>'+dayLabel(d,{month:'short',day:'numeric'})+'</span></div>'
-      + '<div class="bsl-day-body">'
-      + '<div class="bsl-day-dj" style="color:'+c.ink+'">'+esc(artistLabel(n))+'</div>'
-      + '<div class="bsl-day-sales">'+money(n.totalRevenue)+'</div>'
+      + '<div class="bsl-day-body">';
+    if(!isAll) h += '<div class="bsl-day-dj" style="color:'+c.ink+'">'+esc(artistLabel(n.dj, d, data.name))+'</div>';
+    h += '<div class="bsl-day-sales">'+money(n.totalRevenue)+'</div>'
       + '<div class="bsl-day-meta">'+(n.bookings||0)+' tables · '+share+'% of weekend</div>'
-      + '<div class="bsl-bar"><span style="width:'+share+'%;background:'+c.bg+'"></span></div>'
-      + '<div class="bsl-day-refs-hd" style="color:'+c.ink+'">Referrers</div>';
+      + '<div class="bsl-bar"><span style="width:'+share+'%;background:'+c.bg+'"></span></div>';
+    if(isAll){
+      h += '<div class="bsl-day-refs-hd" style="color:'+c.ink+'">Venues</div>';
+      venues.forEach(function(v){
+        var vn = (n.byVenue && n.byVenue[v.key]) || {};
+        h += '<div class="bsl-day-ref"><span class="bsl-dot" style="background:'+venueCol(v)+'"></span>'
+          + '<span class="bsl-day-ref-name"><b>'+esc(venueShort(v))+'</b> <span class="bsl-day-ref-tb">'+esc(artistLabel(vn.dj, d, v.name))+'</span></span>'
+          + '<span class="bsl-day-ref-tb">'+(vn.bookings||0)+' tb</span>'
+          + '<b>'+money(vn.revenue||0)+'</b></div>';
+      });
+      h += '<div class="bsl-day-gap"></div>';
+    }
+    h += '<div class="bsl-day-refs-hd" style="color:'+c.ink+'">Referrers</div>';
     if(!dayRefs.length) h += '<div class="bsl-day-ref bsl-muted">No bookings yet</div>';
     dayRefs.forEach(function(x){
       h += '<div class="bsl-day-ref"><span class="bsl-dot" style="background:'+refColor[x.name]+'"></span>'
@@ -4559,23 +4622,29 @@ function renderBaselTracker(){
     var c = BASEL_DAY_COLORS[i % BASEL_DAY_COLORS.length];
     h += '<th style="background:'+c.bg+'">'+dayLabel(d)+'</th>';
   });
-  h += '<th class="bsl-th-dark">Total sales</th><th class="bsl-th-dark">Tables</th><th class="left bsl-th-dark" style="min-width:180px">Share of weekend</th></tr></thead><tbody>';
+  if(isAll) venues.forEach(function(v){ h += '<th style="background:'+venueCol(v)+'">'+esc(venueShort(v))+'</th>'; });
+  h += '<th class="bsl-th-dark">Total sales</th><th class="bsl-th-dark">Tables</th><th class="left bsl-th-dark" style="min-width:160px">Share of weekend</th></tr></thead><tbody>';
+  var colCount = dates.length + (isAll?venues.length:0) + 4;
   if(!refs.length){
-    h += '<tr><td class="left bsl-muted" colspan="'+(dates.length+4)+'">No referrer bookings yet.</td></tr>';
+    h += '<tr><td class="left bsl-muted" colspan="'+colCount+'">No referrer bookings yet.</td></tr>';
+  }
+  function cellHtml(cell, soft, ink){
+    if(cell && (cell.revenue || cell.bookings)){
+      return '<td style="background:'+soft+'"><b style="color:'+ink+'">'+money(cell.revenue)+'</b>'
+        + '<div class="bsl-cell-sub">'+cell.bookings+' table'+(cell.bookings===1?'':'s')+'</div></td>';
+    }
+    return '<td class="bsl-muted">\u2014</td>';
   }
   refs.forEach(function(r){
     var share = pct(+r.totalRevenue||0, total);
     var col = refColor[r.name];
     h += '<tr><td class="left bsl-ref-name"><span class="bsl-dot" style="background:'+col+'"></span>'+esc(r.name||'No referrer')+'</td>';
     dates.forEach(function(d, i){
-      var cell = r.byDate && r.byDate[d];
       var c = BASEL_DAY_COLORS[i % BASEL_DAY_COLORS.length];
-      if(cell && (cell.revenue || cell.bookings)){
-        h += '<td style="background:'+c.soft+'"><b style="color:'+c.ink+'">'+money(cell.revenue)+'</b>'
-          + '<div class="bsl-cell-sub">'+cell.bookings+' table'+(cell.bookings===1?'':'s')+'</div></td>';
-      } else {
-        h += '<td class="bsl-muted">\u2014</td>';
-      }
+      h += cellHtml(r.byDate && r.byDate[d], c.soft, c.ink);
+    });
+    if(isAll) venues.forEach(function(v){
+      h += cellHtml(r.byVenue && r.byVenue[v.key], '#f8fafc', venueCol(v));
     });
     h += '<td class="bsl-total-cell">'+money(r.totalRevenue)+'</td>';
     h += '<td>'+(r.bookings!=null?r.bookings:'\u2014')+'</td>';
@@ -4587,12 +4656,17 @@ function renderBaselTracker(){
       var n = nightsByDate[d];
       h += '<td>'+money(n?n.totalRevenue:0)+'<div class="bsl-cell-sub">'+(n?n.bookings||0:0)+' tables</div></td>';
     });
+    if(isAll) venues.forEach(function(v){
+      h += '<td>'+money(v.totalRevenue)+'<div class="bsl-cell-sub">'+(v.totalBookings||0)+' tables</div></td>';
+    });
     h += '<td>'+money(total)+'</td><td>'+(data.totalBookings||0)+'</td><td class="left">100%</td></tr>';
   }
   h += '</tbody></table></div>';
   h += '<div class="bsl-foot">Sales = FourVenues table price for accepted + not-completed bookings (same as Forecast). Referrer = FourVenues PPRR on the booking; “No referrer” when none is set.</div>';
   h += '</div>';
   el.innerHTML = h;
+  var meta = document.getElementById('baselMeta');
+  if(meta) meta.textContent = 'Friday–Sunday · '+(isAll ? venues.map(venueShort).join(', ') : (data.name||''))+' · same sales method as Forecast, plus referrer';
 }
 
 function renderForecast(venueIdx, view){
