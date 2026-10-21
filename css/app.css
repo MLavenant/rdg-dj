@@ -1691,8 +1691,17 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-budget-box{display:flex;align-items:center;justify-content:space-between;gap:10px;background:#fef3c7;border:1px solid #fcd34d;border-radius:12px;padding:14px 16px}
 .bp-budget-box span{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#92400e}
 .bp-budget-box b{font-size:26px;color:#78350f;letter-spacing:-.4px}
-.bp-pipe{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px}
-.bp-pipe-hd{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin-bottom:6px}
+.bp-planned-box{display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:12px;padding:14px 16px;border:2px solid #cbd5e1;background:#f8fafc}
+.bp-planned-main{display:flex;flex-direction:column;gap:2px}
+.bp-planned-main span{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#334155}
+.bp-planned-main b{font-size:26px;letter-spacing:-.4px;color:#0f172a}
+.bp-planned-var{font-size:16px;font-weight:900;text-align:right}
+.bp-planned-over{background:#fee2e2;border-color:#dc2626}
+.bp-planned-over .bp-planned-main span,.bp-planned-over .bp-planned-main b,.bp-planned-over .bp-planned-var{color:#991b1b}
+.bp-planned-under{background:#dcfce7;border-color:#16a34a}
+.bp-planned-under .bp-planned-main span,.bp-planned-under .bp-planned-main b,.bp-planned-under .bp-planned-var{color:#166534}
+.bp-pipe{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px 14px}
+.bp-pipe-hd{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin-bottom:4px}
 .bp-targets{padding:0 2px}
 .bp-sum-tbl{width:100%;border-collapse:collapse;font-size:11px}
 .bp-sum-tbl th{background:#0f2a4a;color:#fff;font-weight:800;padding:7px 8px;text-align:center;font-size:11px}
@@ -1856,8 +1865,12 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-deck .bp-budget-box{padding:10px 12px;border-radius:9px}
 .bp-deck .bp-budget-box span{font-size:11px}
 .bp-deck .bp-budget-box b{font-size:22px}
-.bp-deck .bp-pipe{padding:10px 12px;border-radius:9px}
-.bp-deck .bp-pipe-hd{font-size:10px;margin-bottom:4px}
+.bp-deck .bp-planned-box{padding:10px 12px;border-radius:9px}
+.bp-deck .bp-planned-main span{font-size:11px}
+.bp-deck .bp-planned-main b{font-size:22px}
+.bp-deck .bp-planned-var{font-size:14px}
+.bp-deck .bp-pipe{padding:8px 12px;border-radius:9px}
+.bp-deck .bp-pipe-hd{font-size:10px;margin-bottom:2px}
 .bp-deck .bp-line{padding:3px 0;font-size:13px}
 .bp-deck .bp-line b{font-size:13px}
 .bp-deck .bp-line-tot b{font-size:15px}

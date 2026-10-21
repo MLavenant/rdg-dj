@@ -299,12 +299,15 @@ function _bpCardHtml(c){
   var m=c.month;
   var h='<article class="bp-card'+(c.isTotal?' bp-card-total':'')+'">';
   h+='<div class="bp-card-hd"><b>'+_escHtml(m.label)+'</b>'+(m.range?'<span>'+_escHtml(m.range)+'</span>':'')+'</div>';
+  var over=c.remaining!=null && c.remaining<0;
+  var under=c.remaining!=null && c.remaining>=0;
   h+='<div class="bp-budget-box"><span>Budget</span><b>'+(c.budget!=null?$k(c.budget):'Not set')+'</b></div>';
-  h+='<div class="bp-pipe"><div class="bp-pipe-hd">In the pipeline</div>';
+  h+='<div class="bp-planned-box'+(over?' bp-planned-over':(under?' bp-planned-under':''))+'">'
+    +'<div class="bp-planned-main"><span>Total planned</span><b>'+$k(c.planned)+'</b></div>'
+    +'<div class="bp-planned-var">'+_bpMoneyVar(c.remaining)+'</div></div>';
+  h+='<div class="bp-pipe"><div class="bp-pipe-hd">Confirmed + proposed</div>';
   h+='<div class="bp-line"><span>Confirmed</span><b>'+$k(c.confirmed)+'</b></div>';
-  h+='<div class="bp-line"><span>Proposed</span><b>'+$k(c.proposed)+'</b></div>';
-  h+='<div class="bp-line bp-line-tot"><span>Total planned</span><b>'+$k(c.planned)+'</b></div>';
-  h+='<div class="bp-line"><span>vs budget</span><b>'+_bpMoneyVar(c.remaining)+'</b></div></div>';
+  h+='<div class="bp-line"><span>Proposed</span><b>'+$k(c.proposed)+'</b></div></div>';
   h+='<div class="bp-targets">';
   h+='<div class="bp-line"><span>BS Target</span><b>'+$k(c.bsT||null)+'</b></div>';
   h+='<div class="bp-line"><span>PY BS Actual</span><b>'+$k(c.py&&c.py.bs!=null?c.py.bs:null)+'</b></div>';
