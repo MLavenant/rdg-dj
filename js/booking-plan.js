@@ -135,6 +135,7 @@ function _bpBookings(venue, m){
 }
 function _bpToday(){ return (typeof TODAY!=='undefined'&&TODAY)?String(TODAY):miamiToday(); }
 function _bpApprovalState(row){
+  if(row.confirmed) return 'confirmed';
   var rec=_bpData.approvals[row.uid];
   if(!rec){
     if(!row.needs) return 'none';
@@ -165,10 +166,11 @@ function _bpVenueMonth(venue, m){
   var monthOver=budget!=null ? Math.max(0, planned-budget) : 0;
   rows.forEach(function(row){
     row.runningAfter=planned;
-    row.needs=budget!=null && monthOver>0 && row.fee>0;
-    row.overage=row.needs?monthOver:0;
+    /* Confirmed shows are committed spend, never budget exceptions. */
+    row.needs=!row.confirmed && budget!=null && monthOver>0 && row.fee>0;
+    row.overage=budget!=null && monthOver>0 && row.fee>0 ? monthOver : 0;
     row.approval=_bpApprovalState(row);
-    row.violation=row.confirmed && row.needs && row.approval!=='approved' && row.approval!=='past';
+    row.violation=false;
   });
   var exc={needed:0,pending:0,approved:0,rejected:0,violations:0};
   rows.forEach(function(r){
@@ -189,6 +191,7 @@ function _bpVenueList(){
 }
 function _bpMonthOverBudget(c){ return !!(c && c.budget!=null && c.planned>c.budget); }
 function _bpHighlightRow(r, c){ return !!r && (+r.fee||0)>20000 && _bpMonthOverBudget(c); }
+function _bpExceptionRow(r, c){ return _bpHighlightRow(r, c) && !r.confirmed; }
 function _bpNotesFor(uid){
   var n=(_bpData.notes&&uid)?_bpData.notes[uid]:null;
   return n&&typeof n==='object'?n:{};
@@ -203,7 +206,7 @@ function _bpCompute(){
 }
 
 /* ---- Rendering ---- */
-var BP_APPROVAL_LABEL={none:'Within budget', past:'Over budget (past)', needed:'Needs approval', reapproval:'Changed — re-approve', pending:'Pending approval', approved:'Approved', rejected:'Rejected'};
+var BP_APPROVAL_LABEL={confirmed:'Confirmed', none:'Within budget', past:'Over budget (past)', needed:'Needs approval', reapproval:'Changed — re-approve', pending:'Pending approval', approved:'Approved', rejected:'Rejected'};
 function _bpBadge(state){
   return '<span class="bp-badge bp-st-'+state+'">'+BP_APPROVAL_LABEL[state]+'</span>';
 }
@@ -309,7 +312,6 @@ function _bpCardHtml(c){
   h+='</div>';
   if(!c.isTotal){
     var e=c.exc||{}, tags=[];
-    if(e.violations) tags.push('<span class="bp-tag bp-tag-red">'+e.violations+' confirmed w/o approval</span>');
     if(e.needed) tags.push('<span class="bp-tag bp-tag-amb">'+e.needed+' need approval</span>');
     if(e.pending) tags.push('<span class="bp-tag bp-tag-blue">'+e.pending+' pending</span>');
     if(e.approved) tags.push('<span class="bp-tag bp-tag-green">'+e.approved+' approved</span>');
@@ -396,10 +398,10 @@ function _bpRowsHtml(data, opts){
         h+='<div class="bp-bk-cols bp-bk-line bp-bk-ly bp-bk-none"><span class="bp-bk-tag">Last year</span><span class="bp-bk-artist">No show on this date last year</span></div>';
       }
       h+='</div>';
-      h+='<div class="bp-bk-appr">'+_bpBadge(r.approval)+(r.violation?'<span class="bp-badge bp-st-viol">Confirmed without approval</span>':'');
+      h+='<div class="bp-bk-appr">'+_bpBadge(r.approval);
       if(!opts.noActions){
         if(r.approval==='needed'||r.approval==='reapproval') h+='<button type="button" class="bp-act bp-act-main" onclick="bpOpenRequest(\''+r.uid+'\')">Request approval</button>';
-        else if(r.approval!=='none' && r.approval!=='past') h+='<button type="button" class="bp-act" onclick="bpOpenRequest(\''+r.uid+'\')">Open</button>';
+        else if(r.approval!=='none' && r.approval!=='past' && r.approval!=='confirmed') h+='<button type="button" class="bp-act" onclick="bpOpenRequest(\''+r.uid+'\')">Open</button>';
       }
       h+='</div></div>';
     });
@@ -906,7 +908,7 @@ function _bpExceptionRows(data){
   var out=[];
   Object.keys(data.grid).forEach(function(v){
     data.grid[v].forEach(function(c){
-      c.rows.forEach(function(r){ if(_bpHighlightRow(r, c)) out.push({r:r, c:c}); });
+      c.rows.forEach(function(r){ if(_bpExceptionRow(r, c)) out.push({r:r, c:c}); });
     });
   });
   out.sort(function(a,b){ return a.r.d<b.r.d?-1:(a.r.d>b.r.d?1:(a.r.venue<b.r.venue?-1:1)); });
@@ -1079,7 +1081,7 @@ function bpGenerateMonthlyPlan(){
         byVenue[v][c.month.key]={budget:c.budget, confirmed:c.confirmed, proposed:c.proposed, planned:c.planned};
         if(c.budget!=null) totals.budget+=c.budget;
         totals.confirmed+=c.confirmed; totals.proposed+=c.proposed; totals.planned+=c.planned;
-        c.rows.forEach(function(r){ if(_bpHighlightRow(r, c)) exceptions++; });
+        c.rows.forEach(function(r){ if(_bpExceptionRow(r, c)) exceptions++; });
       });
     });
     var key=_bpNow().replace(/[:.]/g,'-');
