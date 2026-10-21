@@ -269,7 +269,7 @@ function _bpSummaryHtml(data){
     h+='<div class="bp-venue-block"><div class="bp-venue-name">'+_escHtml(v)+'</div><div class="bp-cards">';
     var tot=_bpBlankTot();
     data.grid[v].forEach(function(c){ h+=_bpCardHtml(c); _bpAddTotals(tot, c); });
-    if(data.months.length>1) h+=_bpCardHtml(_bpTotCard(tot, data.months.length+'-month total'));
+    if(data.months.length>1) h+=_bpCardHtml(_bpTotCard(tot, data.months.length+'-month total', _bpSpanRange(data.months)));
     h+='</div></div>';
   });
   if(venues.length>1){
@@ -281,11 +281,19 @@ function _bpSummaryHtml(data){
       h+=_bpCardHtml(_bpTotCard(bucket, m.label, m.range));
       _bpAddTotals(gTot, {budget:bucket.hasB?bucket.budget:null, confirmed:bucket.confirmed, proposed:bucket.proposed, bsT:bucket.bsT, py:{fee:bucket.hasPyFee?bucket.pyFee:null, bs:bucket.hasPyBs?bucket.pyBs:null}});
     });
-    if(data.months.length>1) h+=_bpCardHtml(_bpTotCard(gTot, data.months.length+'-month total'));
+    if(data.months.length>1) h+=_bpCardHtml(_bpTotCard(gTot, data.months.length+'-month total', _bpSpanRange(data.months)));
     h+='</div></div>';
   }
   h+='</div>';
   return h;
+}
+function _bpSpanRange(months){
+  if(!months || months.length<2) return '';
+  var a=String(months[0].range||'').split('\u2013')[0];
+  var parts=String(months[months.length-1].range||'').split('\u2013');
+  var b=parts[parts.length-1];
+  if(!a || !b) return '';
+  return a.trim()+'\u2013'+b.trim();
 }
 function _bpTotCard(t, label, range){
   var planned=t.confirmed+t.proposed;
@@ -298,7 +306,7 @@ function _bpTotCard(t, label, range){
 function _bpCardHtml(c){
   var m=c.month;
   var h='<article class="bp-card'+(c.isTotal?' bp-card-total':'')+'">';
-  h+='<div class="bp-card-hd"><b>'+_escHtml(m.label)+'</b>'+(m.range?'<span>'+_escHtml(m.range)+'</span>':'')+'</div>';
+  h+='<div class="bp-card-hd"><b>'+_escHtml(m.label)+'</b><span>'+(m.range?_escHtml(m.range):'&nbsp;')+'</span></div>';
   var over=c.remaining!=null && c.remaining<0;
   var under=c.remaining!=null && c.remaining>=0;
   h+='<div class="bp-budget-box"><span>Budget</span><b>'+(c.budget!=null?$k(c.budget):'Not set')+'</b></div>';
@@ -313,19 +321,20 @@ function _bpCardHtml(c){
   h+='<div class="bp-line"><span>PY BS Actual</span><b>'+$k(c.py&&c.py.bs!=null?c.py.bs:null)+'</b></div>';
   h+='<div class="bp-line"><span>PY DJ fees</span><b>'+$k(c.py&&c.py.fee!=null?c.py.fee:null)+'</b></div>';
   h+='</div>';
+  var foot='';
   if(!c.isTotal){
     var e=c.exc||{}, tags=[];
     if(e.needed) tags.push('<span class="bp-tag bp-tag-amb">'+e.needed+' need approval</span>');
     if(e.pending) tags.push('<span class="bp-tag bp-tag-blue">'+e.pending+' pending</span>');
     if(e.approved) tags.push('<span class="bp-tag bp-tag-green">'+e.approved+' approved</span>');
     if(e.rejected) tags.push('<span class="bp-tag bp-tag-grey">'+e.rejected+' rejected</span>');
-    if(tags.length) h+='<div class="bp-tags">'+tags.join('')+'</div>';
+    if(tags.length) foot+='<div class="bp-tags">'+tags.join('')+'</div>';
     var conf=c.confirm
       ? '<span class="bp-fin '+(c.confirmStale?'bp-fin-stale':'bp-fin-ok')+'" title="'+_escHtml('Confirmed by '+c.confirm.by+' on '+_bpFmtDate(c.confirm.at))+'">'+(c.confirmStale?'Budget changed since Finance confirmed':'Finance confirmed')+'</span>'
       : '<button type="button" class="bp-fin bp-fin-btn" onclick="bpConfirmBudget(\''+_escHtml(c.venue).replace(/'/g,"\\'")+'\','+m.year+',\''+m.mm+'\')">Finance: confirm budget</button>';
-    h+='<div class="bp-fin-row">'+conf+'</div>';
+    foot+='<div class="bp-fin-row">'+conf+'</div>';
   }
-  h+='</article>';
+  h+='<div class="bp-card-foot">'+foot+'</div></article>';
   return h;
 }
 function _bpMonthPosition(venue, dateStr){
@@ -378,7 +387,6 @@ function _bpRowsHtml(data, opts){
     monthRows.forEach(function(x){
       var r=x.r;
       var ly=_bpLyShow(r.venue, r.d);
-      var lyPos=ly?_bpMonthPosition(r.venue, ly.d):null;
       var nowPos={spend:r.runningAfter, budget:x.budget, left:x.budget!=null?x.budget-r.runningAfter:null};
       now.n++; now.fee+=r.fee||0;
       if(r.bs_m!=null){ now.bs+=r.bs_m; now.hasBs=true; }
@@ -396,7 +404,7 @@ function _bpRowsHtml(data, opts){
         $k(r.bs_m), 'target', _bpRoiHtml(_bpThisReturn(r)), _bpPosHtml(nowPos));
       if(ly){
         h+=line('ly', 'Last year<em>'+_bpDay(ly.d)+'</em>', _escHtml(ly.dj||'TBD'), $k(ly.fee),
-          '<span class="bp-status bp-status-ly">Actual</span>', $k(ly.bs), 'actual', _bpRoiHtml(ly.ret), _bpPosHtml(lyPos));
+          '<span class="bp-status bp-status-ly">Actual</span>', $k(ly.bs), 'actual', _bpRoiHtml(ly.ret), '');
       } else {
         h+='<div class="bp-bk-cols bp-bk-line bp-bk-ly bp-bk-none"><span class="bp-bk-tag">Last year</span><span class="bp-bk-artist">No show on this weekday last year</span></div>';
       }
