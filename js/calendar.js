@@ -4454,6 +4454,103 @@ function _fcastLastNightRecapHtml(){
   return h;
 }
 
+function renderBaselTracker(){
+  var el = document.getElementById('baselBody');
+  if(!el) return;
+  var data = window._baselTracker || null;
+  var meta = document.getElementById('baselMeta');
+  function money(n){
+    if(n==null || !isFinite(+n)) return '\u2014';
+    return '$'+Math.round(+n).toLocaleString();
+  }
+  function dayLabel(dateStr){
+    var d = new Date(dateStr+'T12:00:00');
+    if(isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-US',{weekday:'short', month:'short', day:'numeric'});
+  }
+  if(!data || !data.nights){
+    if(meta) meta.textContent = 'Friday–Sunday · Casa Neos Beach Club · same sales method as Forecast, plus referrer';
+    el.innerHTML = '<div style="padding:18px;color:var(--ink3)">Basel weekend sales have not synced yet.</div>';
+    return;
+  }
+  if(meta){
+    var when = '';
+    try{ when = new Date(data.updatedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){}
+    meta.textContent = (data.venue||'Casa Neos Beach Club')+' · Fri–Sun'
+      +(when ? ' · updated '+when : '')
+      +' · '+(data.methodology||'same sales method as Forecast');
+  }
+  var dates = data.dates || data.nights.map(function(n){ return n.date; });
+  var h = '';
+  h += '<div class="fcast-print-kpis" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">';
+  [
+    {lbl:'Total sales', val:money(data.totalRevenue), col:'#0f766e'},
+    {lbl:'Tables', val:data.totalBookings!=null?String(data.totalBookings):'\u2014', col:'inherit'},
+    {lbl:'Nights', val:String((data.nights||[]).length), col:'inherit'}
+  ].forEach(function(s){
+    h += '<div style="background:var(--card);border-radius:10px;padding:12px 16px;min-width:130px;flex:1">'
+      +'<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)">'+s.lbl+'</div>'
+      +'<div style="font-size:22px;font-weight:900;letter-spacing:-.5px;margin-top:2px;color:'+s.col+'">'+s.val+'</div>'
+      +'</div>';
+  });
+  h += '</div>';
+
+  h += '<div class="fcast-tbl-wrap" style="margin-bottom:16px"><table class="fcast-tbl">';
+  h += '<thead><tr><th class="left">Date</th><th class="left">Artist</th><th>Sales</th><th>Tables</th></tr></thead><tbody>';
+  function artistLabel(n){
+    var raw = String(n.dj||'').trim();
+    if(raw && raw!=='...' && raw!=='TBD' && raw!=='-') return raw;
+    var sched = (typeof SCHED!=='undefined' ? SCHED : []).filter(function(r){
+      return r && r.d===n.date && /beach club/i.test(String(r.venue||r.v||'')) && r.dj;
+    })[0];
+    return (sched && String(sched.dj).trim()) || 'TBD';
+  }
+  data.nights.forEach(function(n){
+    h += '<tr>'
+      +'<td class="left">'+dayLabel(n.date)+'</td>'
+      +'<td class="left" style="font-weight:700">'+artistLabel(n).replace(/</g,'&lt;')+'</td>'
+      +'<td style="font-weight:700">'+money(n.totalRevenue)+'</td>'
+      +'<td>'+(n.bookings!=null?n.bookings:'\u2014')+'</td>'
+      +'</tr>';
+  });
+  h += '<tr>'
+    +'<td class="left" colspan="2" style="font-weight:800">Total</td>'
+    +'<td style="font-weight:800">'+money(data.totalRevenue)+'</td>'
+    +'<td style="font-weight:800">'+(data.totalBookings!=null?data.totalBookings:'\u2014')+'</td>'
+    +'</tr>';
+  h += '</tbody></table></div>';
+
+  h += '<div style="font-size:12px;font-weight:800;margin:4px 0 8px">Sales by referrer</div>';
+  h += '<div class="fcast-tbl-wrap"><table class="fcast-tbl">';
+  h += '<thead><tr><th class="left">Referrer</th>';
+  dates.forEach(function(d){ h += '<th>'+dayLabel(d)+'</th>'; });
+  h += '<th>Total</th><th>Tables</th></tr></thead><tbody>';
+  var refs = data.referrers || [];
+  if(!refs.length){
+    h += '<tr><td class="left" colspan="'+(dates.length+3)+'" style="color:var(--ink3)">No referrer bookings yet.</td></tr>';
+  }
+  refs.forEach(function(r){
+    h += '<tr><td class="left" style="font-weight:700">'+String(r.name||'No referrer').replace(/</g,'&lt;')+'</td>';
+    dates.forEach(function(d){
+      var cell = r.byDate && r.byDate[d];
+      h += '<td>'+(cell&&cell.revenue?money(cell.revenue):'\u2014')+'</td>';
+    });
+    h += '<td style="font-weight:700">'+money(r.totalRevenue)+'</td>';
+    h += '<td>'+(r.bookings!=null?r.bookings:'\u2014')+'</td></tr>';
+  });
+  if(refs.length){
+    h += '<tr><td class="left" style="font-weight:800">Total</td>';
+    dates.forEach(function(d){
+      var night = (data.nights||[]).filter(function(n){ return n.date===d; })[0];
+      h += '<td style="font-weight:800">'+(night?money(night.totalRevenue):'\u2014')+'</td>';
+    });
+    h += '<td style="font-weight:800">'+money(data.totalRevenue)+'</td>';
+    h += '<td style="font-weight:800">'+(data.totalBookings!=null?data.totalBookings:'\u2014')+'</td></tr>';
+  }
+  h += '</tbody></table></div>';
+  el.innerHTML = h;
+}
+
 function renderForecast(venueIdx, view){
   if(venueIdx!==undefined) _fcastActiveVenue = venueIdx;
   if(view!==undefined) _fcastActiveView = view;

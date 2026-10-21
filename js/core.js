@@ -65,10 +65,11 @@ function buildSidebar() {
   [
     {id:'vip',        ic:'&#9889;', lb:'Weekly Flash'},
     {id:'forecast',   ic:'&#9650;',  lb:'Forecast'},
+    {id:'basel',      ic:'',         lb:'BASEL Tracker', sub:true},
     {id:'roi-rules',  ic:'&#127919;', lb:'Venue ROI Rules'},
   ].forEach(function(b) {
-    html += '<button class="sb-btn" data-view="'+b.id+'" onclick="setView(\''+b.id+'\')">'
-          + '<span class="sb-ic">'+b.ic+'</span>'+b.lb+'</button>';
+    html += '<button class="sb-btn'+(b.sub?' sb-sub':'')+'" data-view="'+b.id+'" onclick="setView(\''+b.id+'\')">'
+          + (b.ic?'<span class="sb-ic">'+b.ic+'</span>':'')+b.lb+'</button>';
   });
   html += '<button class="sb-btn" data-view="3d" onclick="setView(\'3d\')">'
         + '<span class="sb-ic">&#127760;</span>3D View</button>';
@@ -98,6 +99,7 @@ function selVenue(v) {
   /* Re-render venue-driven tabs if active */
   if(curView==='vip')      renderVIP();
   if(curView==='forecast') renderForecast();
+  if(curView==='basel' && typeof renderBaselTracker==='function') renderBaselTracker();
   if(curView==='system')   renderSystem();
   if(curView==='ebitda')   renderEbitdaAccess();
 }
@@ -143,7 +145,7 @@ function setView(v) {
   try{
     if(_presenceRef) _presenceRef.update({view:v,lastSeen:firebase.database.ServerValue.TIMESTAMP});
   }catch(ePresence){}
-  ['calendar','summary','allshows','leaderboard','budget','rolling','accounting','vip','forecast','roi-rules','system','ebitda','3d'].forEach(function(id){
+  ['calendar','summary','allshows','leaderboard','budget','rolling','accounting','vip','forecast','basel','roi-rules','system','ebitda','3d'].forEach(function(id){
     var el = document.getElementById('view-'+id);
     if (!el) return;
     var on = id===v;
@@ -185,6 +187,11 @@ function setView(v) {
   }
   if (v === 'forecast') {
     renderForecast();
+    return;
+  }
+  if (v === 'basel') {
+    clearGlobalCalChrome();
+    if(typeof renderBaselTracker==='function') renderBaselTracker();
     return;
   }
   if (v === 'roi-rules') {
@@ -1321,6 +1328,7 @@ function go() {
   else if (curView==='accounting'){ renderAccounting(); }
   else if (curView==='vip')         renderVIP();
   else if (curView==='forecast')    renderForecast();
+  else if (curView==='basel' && typeof renderBaselTracker==='function') renderBaselTracker();
   else if (curView==='roi-rules'&&typeof renderRoiRulesPage==='function') renderRoiRulesPage();
   else if (curView==='budget'){
     /* Venue AND year pills changed while already ON the budget tab   keep them in sync live */

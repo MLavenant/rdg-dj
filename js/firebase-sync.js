@@ -1646,6 +1646,12 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     if(window._toastVipNights && typeof _applyToastVipNights==='function') _applyToastVipNights(window._toastVipNights);
     return n;
   }
+  window._baselTracker = null;
+  window._fbDb.ref('rdg/baselTracker').on('value', function(snap){
+    window._baselTracker = snap.val() || null;
+    if(window._fbReady && curView==='basel' && typeof renderBaselTracker==='function') renderBaselTracker();
+  });
+
   window._fbDb.ref('rdg/forecastLive').on('value', function(snap){
     var live = snap.val() || null;
     var n = _applyForecastLive(live) || 0;
