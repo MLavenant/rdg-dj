@@ -393,9 +393,9 @@ function _bpRowsHtml(data, opts){
         $k(r.bs_m), 'target', _bpRoiHtml(_bpThisReturn(r)), _bpPosHtml(nowPos));
       if(ly){
         h+=line('ly', 'Last year<em>'+_bpDay(ly.d)+'</em>', _escHtml(ly.dj||'TBD'), $k(ly.fee),
-          '<span class="bp-status bp-status-ly">Result</span>', $k(ly.bs), 'actual', _bpRoiHtml(ly.ret), _bpPosHtml(lyPos));
+          '<span class="bp-status bp-status-ly">Actual</span>', $k(ly.bs), 'actual', _bpRoiHtml(ly.ret), _bpPosHtml(lyPos));
       } else {
-        h+='<div class="bp-bk-cols bp-bk-line bp-bk-ly bp-bk-none"><span class="bp-bk-tag">Last year</span><span class="bp-bk-artist">No show on this date last year</span></div>';
+        h+='<div class="bp-bk-cols bp-bk-line bp-bk-ly bp-bk-none"><span class="bp-bk-tag">Last year</span><span class="bp-bk-artist">No show on this weekday last year</span></div>';
       }
       h+='</div>';
       h+='<div class="bp-bk-appr">'+_bpBadge(r.approval);
@@ -413,7 +413,7 @@ function _bpRowsHtml(data, opts){
     var lyRoi=lyTot.fee>0&&lyTot.hasBs?lyTot.bs/lyTot.fee:null;
     h+='<div class="bp-bk-box bp-bk-total"><div class="bp-bk-date"><b>Total</b><span>Over $20K</span></div><div class="bp-bk-lines">';
     h+=line('now', 'This year', '<b>'+now.n+' bookings</b>', '<b>'+$k(now.fee)+'</b>', '', '<b>'+$k(now.hasBs?now.bs:null)+'</b>', 'target', '<b>'+_bpRoiHtml(nowRoi)+'</b>', '');
-    h+=line('ly', 'Last year', lyTot.n+' same dates', $k(lyTot.n?lyTot.fee:null), '', $k(lyTot.hasBs?lyTot.bs:null), 'actual', _bpRoiHtml(lyRoi), '');
+    h+=line('ly', 'Last year', lyTot.n+' same weekdays', $k(lyTot.n?lyTot.fee:null), '', $k(lyTot.hasBs?lyTot.bs:null), 'actual', _bpRoiHtml(lyRoi), '');
     h+='</div><div class="bp-bk-appr"></div></div>';
   }
   h+='</div>';
@@ -434,7 +434,7 @@ function _bpDeckSlideHtml(data, n, of){
   h+='<div class="bp-deck-body">';
   h+='<div class="bp-deck-sec"><span>01</span>Budget vs pipeline<em>Confirmed + proposed for the whole month against the monthly budget</em></div>';
   h+=_bpSummaryHtml(data);
-  h+='<div class="bp-deck-sec"><span>02</span>Bookings over $20K<em>Only months over budget · this year on top, same date last year below</em></div>';
+  h+='<div class="bp-deck-sec"><span>02</span>Bookings over $20K<em>Only months over budget · this year on top, same weekday last year below</em></div>';
   h+=_bpRowsHtml(data, {noActions:true});
   h+='</div>';
   h+='<div class="bp-deck-ft"><span>Prepared '+_escHtml(_bpFmtDate(_bpNow()))+'</span><span>Riviera Dining Group · Entertainment</span></div>';
@@ -445,7 +445,7 @@ function _bpPlanHtml(data){
   var h='<div id="bpSheet" class="bp-sheet">';
   h+=_bpSheetHead(data, data.months.length>1?'Three Month Booking Plan':'Entertainment Booking Plan vs Budget');
   h+=_bpSummaryHtml(data);
-  h+='<div class="bp-sec-hd">Bookings over $20K <span>Only months that exceed budget. This year on top, the same date last year below.</span></div>';
+  h+='<div class="bp-sec-hd">Bookings over $20K <span>Only months that exceed budget. This year on top, the same weekday last year below.</span></div>';
   h+=_bpRowsHtml(data);
   h+='</div>';
   return h;
@@ -479,7 +479,7 @@ function _bpFindRow(uid){
 function _bpLyLine(row){
   if(typeof _modalLySameDateShow!=='function') return '';
   var ly=_modalLySameDateShow(row.venue, row.d);
-  if(!ly) return 'No show on the same date last year.';
+  if(!ly) return 'No show on the same weekday last year.';
   var fee=ly.fee!=null?ly.fee:ly.cost;
   return (ly.dj||'TBD')+' · fee '+$k(fee)+' · BS Actual '+$k(ly.bs_a)+' (vs target '+$k(ly.bs_m)+')';
 }
@@ -507,7 +507,7 @@ function bpOpenRequest(uid){
     +ro('Month over budget by', '<span class="bp-neg">'+$k(row.overage)+'</span>')
     +ro('BS Target / ROI Target', $k(row.bs_m)+' / '+(row.roi_t!=null?row.roi_t.toFixed(1)+'x':'-'))
     +'</div>';
-  h+='<div class="bp-kv bp-kv-wide"><span>Same date last year</span><b>'+_escHtml(_bpLyLine(row))+'</b></div>';
+  h+='<div class="bp-kv bp-kv-wide"><span>Same weekday last year</span><b>'+_escHtml(_bpLyLine(row))+'</b></div>';
   if(rec && row.approval==='reapproval'){
     h+='<div class="bp-warn">Fee, date or venue changed since this was submitted ('+$k(rec.fee)+' on '+_escHtml(rec.d)+'). It must be approved again.</div>';
   }
@@ -743,7 +743,7 @@ function _bpExceptionPageHtml(r, c, notes){
   h+='<div class="bp-x-hd"><div><b>Budget Exception</b><span>'+_escHtml(r.venue)+' · '+_escHtml(c.month.label)+' ('+_escHtml(c.month.range)+')</span></div>'
     +'<img src="assets/rdg-logo.png" alt="RDG"></div>';
 
-  h+='<div class="bp-x-sec bp-x-band"><span>01</span><b>Booking &amp; performance</b><em>Current booking compared with the same date last year</em></div><div class="bp-x-pair">';
+  h+='<div class="bp-x-sec bp-x-band"><span>01</span><b>Booking &amp; performance</b><em>Current booking compared with the same weekday last year</em></div><div class="bp-x-pair">';
   h+='<div class="bp-x-col"><div class="bp-x-col-hd">This year</div><div class="bp-x-fields">'
     +_bpField('DJ', _escHtml(r.dj||'TBD'))
     +_bpField('Date', _bpDay(r.d))
@@ -755,7 +755,7 @@ function _bpExceptionPageHtml(r, c, notes){
     h+=_bpField('DJ', _escHtml(ly.dj||'TBD'))
       +_bpField('Date', _bpDay(ly.d))
       +_bpField('Fee', $k(ly.fee))
-      +_bpField('Status', _escHtml(ly.status||'Result'));
+      +_bpField('Status', 'Actual');
   } else {
     h+=_bpField('DJ', '—')+_bpField('Date', '—')+_bpField('Fee', '—')+_bpField('Status', 'No show');
   }
@@ -778,7 +778,7 @@ function _bpExceptionPageHtml(r, c, notes){
     +_bpField('BS Target', $k(r.bs_m))
     +_bpField('ROI', _bpRoiHtml(_bpThisReturn(r)))
     +'</div></div>';
-  h+='<div class="bp-x-col bp-x-ly"><div class="bp-x-col-hd">Last year · same date</div><div class="bp-x-fields bp-x-fields-2">'
+  h+='<div class="bp-x-col bp-x-ly"><div class="bp-x-col-hd">Last year · same weekday</div><div class="bp-x-fields bp-x-fields-2">'
     +(ly?_bpField('BS Actual', $k(ly.bs))+_bpField('ROI', _bpRoiHtml(ly.ret)):_bpField('BS Actual', 'No show')+_bpField('ROI', '—'))
     +'</div></div></div>';
 
@@ -838,8 +838,8 @@ function _bpPrintSheetHtml(data, onlyMonth){
     venues.forEach(function(v){ var c=data.grid[v][mi]; c.rows.forEach(function(r){ if(_bpHighlightRow(r, c)) rows.push({r:r, budget:c.budget}); }); });
   });
   rows.sort(function(a,b){ return a.r.d<b.r.d?-1:(a.r.d>b.r.d?1:(a.r.venue<b.r.venue?-1:1)); });
-  h+='<div class="bp-p-sec">Bookings over $20K in months over budget'+(onlyMonth!=null?' · '+_escHtml(ms[onlyMonth].label):'')+' · this year vs same date last year</div>';
-  h+='<table class="bp-p-tbl bp-p-bk"><thead><tr><th colspan="2" class="l"></th><th colspan="5" class="bp-p-now bp-p-end">This year</th><th colspan="5" class="bp-p-ly bp-p-end">Last year (same date)</th><th colspan="2"></th></tr>'
+  h+='<div class="bp-p-sec">Bookings over $20K in months over budget'+(onlyMonth!=null?' · '+_escHtml(ms[onlyMonth].label):'')+' · this year vs same weekday last year</div>';
+  h+='<table class="bp-p-tbl bp-p-bk"><thead><tr><th colspan="2" class="l"></th><th colspan="5" class="bp-p-now bp-p-end">This year</th><th colspan="5" class="bp-p-ly bp-p-end">Last year (same weekday)</th><th colspan="2"></th></tr>'
     +'<tr><th class="l">Date</th><th class="l">Venue</th><th class="l">Artist</th><th>Fee</th><th class="l">Status</th><th>BS target</th><th class="bp-p-end">ROI</th>'
     +'<th class="l">Date</th><th class="l">Artist</th><th>Fee</th><th>BS actual</th><th class="bp-p-end">ROI</th><th>Month vs budget</th><th class="l">Approval</th></tr></thead><tbody>';
   var t={n:0,fee:0,bs:0,hb:false}, lt={n:0,fee:0,bs:0,hb:false};
@@ -851,12 +851,12 @@ function _bpPrintSheetHtml(data, onlyMonth){
     h+='<tr class="'+(r.violation?'bp-p-viol':(r.needs?'bp-p-over':''))+'"><td class="l"><b>'+_bpDay(r.d)+'</b></td><td class="l">'+_escHtml(BP_VENUE_SHORT[r.venue]||r.venue)+'</td>'
       +'<td class="l"><b>'+_escHtml(r.dj||'TBD')+'</b></td><td>'+$k(r.fee)+'</td><td class="l"><span class="bp-status '+(r.confirmed?'bp-status-conf':'bp-status-prop')+'">'+_escHtml(r.status||'No status')+'</span></td><td>'+$k(r.bs_m)+'</td><td class="bp-p-end">'+_bpRoiHtml(_bpThisReturn(r))+'</td>';
     if(ly) h+='<td class="l bp-p-lyc">'+_bpDay(ly.d)+'</td><td class="l bp-p-lyc">'+_escHtml(ly.dj||'TBD')+'</td><td class="bp-p-lyc">'+$k(ly.fee)+'</td><td class="bp-p-lyc">'+$k(ly.bs)+'</td><td class="bp-p-lyc bp-p-end">'+_bpRoiHtml(ly.ret)+'</td>';
-    else h+='<td colspan="5" class="l bp-p-lyc bp-p-end bp-muted">No show on this date last year</td>';
+    else h+='<td colspan="5" class="l bp-p-lyc bp-p-end bp-muted">No show on this weekday last year</td>';
     h+='<td>'+_bpPosHtml(pos)+'</td><td class="l">'+_bpBadge(r.approval)+'</td></tr>';
   });
   if(!rows.length) h+='<tr><td colspan="14" class="bp-muted">No bookings over $20K in a month that exceeds its budget.</td></tr>';
   else h+='<tr class="bp-p-all"><td class="l" colspan="2"><b>Total</b></td><td class="l"><b>'+t.n+' bookings</b></td><td><b>'+$k(t.fee)+'</b></td><td></td><td><b>'+$k(t.hb?t.bs:null)+'</b></td><td class="bp-p-end"><b>'+_bpRoiHtml(t.fee>0&&t.hb?t.bs/t.fee:null)+'</b></td>'
-    +'<td class="l bp-p-lyc" colspan="2">'+lt.n+' same dates</td><td class="bp-p-lyc">'+$k(lt.n?lt.fee:null)+'</td><td class="bp-p-lyc">'+$k(lt.hb?lt.bs:null)+'</td><td class="bp-p-lyc bp-p-end">'+_bpRoiHtml(lt.fee>0&&lt.hb?lt.bs/lt.fee:null)+'</td><td colspan="2"></td></tr>';
+    +'<td class="l bp-p-lyc" colspan="2">'+lt.n+' same weekdays</td><td class="bp-p-lyc">'+$k(lt.n?lt.fee:null)+'</td><td class="bp-p-lyc">'+$k(lt.hb?lt.bs:null)+'</td><td class="bp-p-lyc bp-p-end">'+_bpRoiHtml(lt.fee>0&&lt.hb?lt.bs/lt.fee:null)+'</td><td colspan="2"></td></tr>';
   h+='</tbody></table></div>';
   return h;
 }

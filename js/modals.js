@@ -142,29 +142,25 @@ function _modalLyDate(dateStr){
   if(!(y>=2000) || !parts[1] || !parts[2]) return null;
   return y+'-'+parts[1]+'-'+parts[2];
 }
-/** Live schedule show on exact LY calendar date (bake + shows overlays). */
+/** Prior-year show the calendar uses: same weekday, not the anniversary date. */
 function _modalLySameDateShow(venue, dateStr){
+  if(!venue || !dateStr) return null;
+  if(typeof priorYearShowFor==='function') return priorYearShowFor(venue, dateStr);
   var ly=_modalLyDate(dateStr);
-  if(!venue || !ly) return null;
+  if(!ly) return null;
   if(typeof _schedShowOn==='function') return _schedShowOn(venue, ly);
-  var best=null;
-  (typeof SCHED!=='undefined'?SCHED:[]).forEach(function(r){
-    if((r.v||r.venue)!==venue || r._s==='empty' || r.d!==ly) return;
-    if(!(r.dj||'').trim()) return;
-    if(!best || ((r.bs_a||0)>(best.bs_a||0))) best=r;
-  });
-  return best;
+  return null;
 }
 function _modalSalesBlock(venue, dateStr, feeToAdd, name){
   if(!venue || !dateStr) return '';
-  var lyDate=_modalLyDate(dateStr);
   var show=_modalLySameDateShow(venue, dateStr);
+  var lyDate=show&&show.d?show.d:_modalLyDate(dateStr);
   var py=show && typeof _pyFieldsFromShow==='function' ? _pyFieldsFromShow(show) : null;
   function row(label, val, cls){
     return '<div class="dj-sugg-row"><span>'+label+'</span><b'+(cls?' class="'+cls+'"':'')+'>'+val+'</b></div>';
   }
   var h='<div class="dj-sugg-sec dj-sugg-sales">';
-  h+='<div class="dj-sugg-sec-hd">Same date last year'+(lyDate?' <span class="dj-sugg-sub">('+lyDate+')</span>':'')+'</div>';
+  h+='<div class="dj-sugg-sec-hd">Same weekday last year'+(lyDate?' <span class="dj-sugg-sub">('+lyDate+')</span>':'')+'</div>';
   h+='<div class="dj-sugg-grid">';
   h+='<div class="dj-sugg-panel">';
   if(py && py.py_dj){
@@ -175,7 +171,7 @@ function _modalSalesBlock(venue, dateStr, feeToAdd, name){
     h+=row('ROI Actual', py.py_roi_a!=null?(Number(py.py_roi_a).toFixed(1)+'x'):'-');
     h+=row('Beat?', py.py_beat==1?'Yes':(py.py_beat==0?'No':'-'), py.py_beat==1?'pos':(py.py_beat==0?'neg':''));
   } else {
-    h+='<div class="dj-sugg-row"><span class="muted">No show on '+(lyDate||'that date')+' last year</span><b></b></div>';
+    h+='<div class="dj-sugg-row"><span class="muted">No show on this weekday last year</span><b></b></div>';
   }
   h+='</div></div></div>';
   return h;

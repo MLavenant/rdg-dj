@@ -186,7 +186,7 @@ function _pyFieldsFromShow(m){
   if(beat==null && m.bs_a!=null && bsM!=null) beat=m.bs_a>=bsM?1:0;
   return {
     py_dj:m.dj, py_fee:fee, py_bs_m:bsM, py_bs_a:m.bs_a||null,
-    py_roi_t:roiT, py_roi_a:m.roi_a||null, py_beat:beat
+    py_roi_t:roiT, py_roi_a:m.roi_a||null, py_beat:beat, py_date:m.d||null
   };
 }
 function _pyShowKey(r){ return (r.d||'')+'|'+(r.dj||''); }
@@ -282,6 +282,18 @@ function buildPyMapForMonth(venue, yr, mm){
   return map;
 }
 
+/** The prior-year show the calendar assigned to this date (same weekday). */
+function priorYearShowFor(venue, dateStr){
+  var f=resolvePyFields(venue, dateStr);
+  if(!f || !f.py_dj || !f.py_date) return null;
+  if(typeof _schedShowOn==='function'){
+    var live=_schedShowOn(venue, f.py_date);
+    if(live && String(live.dj||'')===String(f.py_dj)) return live;
+  }
+  return (typeof SCHED!=='undefined'?SCHED:[]).find(function(r){
+    return r && (r.v||r.venue)===venue && r._s!=='empty' && r.d===f.py_date && String(r.dj||'')===String(f.py_dj);
+  }) || null;
+}
 function findPriorYearMatch(venue, dateStr){
   if(!venue||!dateStr) return null;
   var info=fiscalInfoForDate(dateStr);

@@ -97,7 +97,7 @@ function renderCal(){
   h+='<th class="sc-num">ROI Tgt</th>';
   h+='<th class="sc-num">ROI Act</th>';
   h+='<th class="sc-sep" title="Prior-year comparison"></th>';
-  h+='<th class="sc-py sc-py-hd" title="Same date last year — not a second booking">Last year DJ</th>';
+  h+='<th class="sc-py sc-py-hd" title="Same weekday last year — not a second booking">Last year DJ</th>';
   h+='<th class="sc-num" title="Prior-year fee">LY Fee</th>';
   h+='<th class="sc-num" title="Prior-year BS target">LY BS Tgt</th>';
   h+='<th class="sc-num" title="Prior-year BS actual">LY BS Act</th>';
