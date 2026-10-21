@@ -435,6 +435,50 @@ body.session-locked .shell{pointer-events:none;user-select:none}
 .fcast-tbl td{padding:6px 10px;border-bottom:0.5px solid var(--hair);text-align:center;white-space:nowrap}
 .fcast-tbl tr:hover td{background:var(--hover,rgba(0,0,0,.03))}
 .fcast-tbl th.left,.fcast-tbl td.left{text-align:left}
+.bsl-print-page{display:flex;flex-direction:column;gap:12px;background:#fff;color:#0f172a}
+.bsl-empty{padding:18px;color:var(--ink3)}
+.bsl-hero{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;padding:18px 22px;border-radius:14px;background:linear-gradient(120deg,#0f172a 0%,#1e3a8a 55%,#7c3aed 100%);color:#fff}
+.bsl-hero-kicker{font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#fcd34d}
+.bsl-hero-title{font-size:26px;font-weight:900;letter-spacing:-.5px;line-height:1.1;margin-top:2px}
+.bsl-hero-sub{font-size:12px;font-weight:600;color:#cbd5e1;margin-top:4px}
+.bsl-hero-right{text-align:right}
+.bsl-hero-total{font-size:34px;font-weight:900;letter-spacing:-1px;line-height:1}
+.bsl-hero-upd{font-size:10px;color:#94a3b8;margin-top:4px}
+.bsl-section-hd{font-size:11px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#0f172a;padding-left:9px;border-left:4px solid #f59e0b;margin-top:4px}
+.bsl-day-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.bsl-day{background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.06)}
+.bsl-day-hd{display:flex;justify-content:space-between;padding:8px 14px;color:#fff;font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
+.bsl-day-body{padding:12px 14px 14px}
+.bsl-day-dj{font-size:13px;font-weight:800;line-height:1.25;min-height:16px}
+.bsl-day-sales{font-size:28px;font-weight:900;letter-spacing:-.8px;margin-top:6px;color:#0f172a}
+.bsl-day-meta{font-size:11px;font-weight:600;color:#64748b;margin-top:2px}
+.bsl-bar{height:7px;border-radius:99px;background:#f1f5f9;overflow:hidden;flex:1}
+.bsl-bar span{display:block;height:100%;border-radius:99px}
+.bsl-day .bsl-bar{margin:8px 0 10px}
+.bsl-day-refs-hd{font-size:9px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.bsl-day-ref{display:flex;align-items:center;gap:7px;font-size:12px;padding:4px 0;border-bottom:1px dashed #e2e8f0}
+.bsl-day-ref:last-child{border-bottom:none}
+.bsl-day-ref-name{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bsl-day-ref-tb{font-size:10px;color:#64748b}
+.bsl-dot{display:inline-block;width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-right:6px;vertical-align:middle}
+.bsl-day-ref .bsl-dot{margin-right:0}
+.bsl-muted{color:#94a3b8}
+.bsl-tbl-wrap{overflow-x:auto;border:1px solid #e2e8f0;border-radius:12px}
+.bsl-tbl{border-collapse:collapse;width:100%;font-size:12px;background:#fff}
+.bsl-tbl th{padding:9px 12px;color:#fff;font-size:10px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;text-align:center;white-space:nowrap}
+.bsl-tbl th.bsl-th-dark{background:#0f172a}
+.bsl-tbl td{padding:8px 12px;border-bottom:1px solid #eef2f7;text-align:center;white-space:nowrap}
+.bsl-tbl th.left,.bsl-tbl td.left{text-align:left}
+.bsl-tbl tbody tr:nth-child(even) td.bsl-ref-name{background:#f8fafc}
+.bsl-ref-name{font-weight:800}
+.bsl-cell-sub{font-size:10px;color:#64748b;font-weight:600}
+.bsl-total-cell{font-weight:900;font-size:13px}
+.bsl-share{display:flex;align-items:center;gap:8px}
+.bsl-share b{font-size:11px;min-width:32px;text-align:right}
+.bsl-total-row td{background:#0f172a!important;color:#fff;font-weight:900;border-bottom:none}
+.bsl-total-row .bsl-cell-sub{color:#cbd5e1}
+.bsl-foot{font-size:10px;color:#64748b}
+body.mobile-mode .bsl-day-grid{grid-template-columns:1fr}
 .fcast-pill{display:inline-block;padding:1px 7px;border-radius:20px;font-size:9px;font-weight:800}
 .fcast-fill-bar{height:6px;border-radius:3px;background:var(--hair);overflow:hidden;width:60px;display:inline-block;vertical-align:middle;margin-left:4px}
 .fcast-fill-bar-inner{height:100%;border-radius:3px;background:#22c55e}

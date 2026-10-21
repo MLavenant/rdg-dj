@@ -3265,10 +3265,21 @@ function exportViewPdf(viewId){
   var filename = 'RDG-'+(viewId||curView||'page')+'-'+new Date().toISOString().slice(0,10)+'.pdf';
   function run(){
     document.body.classList.add('printing-'+(viewId||curView||'page'));
-    function cleanup(){ document.body.classList.remove('printing-forecast','printing-vip','printing-page'); }
+    function cleanup(){ document.body.classList.remove('printing-forecast','printing-vip','printing-page','printing-basel'); }
     var exportType=viewId||curView;
     var exportJob;
-    if(exportType==='forecast' || exportType==='vip'){
+    if(exportType==='basel'){
+      var bslPage=el.querySelector('.bsl-print-page');
+      if(!bslPage){
+        cleanup();
+        alert('Basel data has not synced yet');
+        return;
+      }
+      filename='RDG-Basel-Tracker-'+new Date().toISOString().slice(0,10)+'.pdf';
+      exportJob=_captureDomToCanvas(bslPage,1400).then(function(c){
+        return _pdfFromCanvases([c], filename, false);
+      });
+    } else if(exportType==='forecast' || exportType==='vip'){
       var pages;
       if(exportType==='vip'){
         pages=[].slice.call(el.querySelectorAll('.vip-print-page'));
@@ -3312,7 +3323,7 @@ function exportViewPdf(viewId){
     });
   }
   _ensurePdfLibs().then(function(){
-    if((viewId||curView)==='forecast'||(viewId||curView)==='vip') run();
+    if((viewId||curView)==='forecast'||(viewId||curView)==='vip'||(viewId||curView)==='basel') run();
     else if(window.html2pdf) run();
     else {
       var s=document.createElement('script');
@@ -4454,49 +4465,32 @@ function _fcastLastNightRecapHtml(){
   return h;
 }
 
+var BASEL_DAY_COLORS = [
+  {bg:'#1d4ed8', soft:'#dbeafe', ink:'#1e3a8a'},
+  {bg:'#7c3aed', soft:'#ede9fe', ink:'#4c1d95'},
+  {bg:'#ea580c', soft:'#ffedd5', ink:'#7c2d12'}
+];
+var BASEL_REF_COLORS = ['#0f766e','#db2777','#2563eb','#ca8a04','#7c3aed','#dc2626','#0891b2','#65a30d'];
+
 function renderBaselTracker(){
   var el = document.getElementById('baselBody');
   if(!el) return;
   var data = window._baselTracker || null;
-  var meta = document.getElementById('baselMeta');
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
   function money(n){
     if(n==null || !isFinite(+n)) return '\u2014';
     return '$'+Math.round(+n).toLocaleString();
   }
-  function dayLabel(dateStr){
+  function pct(part, whole){ return whole>0 ? Math.round(part/whole*100) : 0; }
+  function dayLabel(dateStr, opts){
     var d = new Date(dateStr+'T12:00:00');
     if(isNaN(d.getTime())) return dateStr;
-    return d.toLocaleDateString('en-US',{weekday:'short', month:'short', day:'numeric'});
+    return d.toLocaleDateString('en-US', opts||{weekday:'short', month:'short', day:'numeric'});
   }
   if(!data || !data.nights){
-    if(meta) meta.textContent = 'Friday–Sunday · Casa Neos Beach Club · same sales method as Forecast, plus referrer';
-    el.innerHTML = '<div style="padding:18px;color:var(--ink3)">Basel weekend sales have not synced yet.</div>';
+    el.innerHTML = '<div class="bsl-empty">Basel weekend sales have not synced yet.</div>';
     return;
   }
-  if(meta){
-    var when = '';
-    try{ when = new Date(data.updatedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){}
-    meta.textContent = (data.venue||'Casa Neos Beach Club')+' · Fri–Sun'
-      +(when ? ' · updated '+when : '')
-      +' · '+(data.methodology||'same sales method as Forecast');
-  }
-  var dates = data.dates || data.nights.map(function(n){ return n.date; });
-  var h = '';
-  h += '<div class="fcast-print-kpis" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">';
-  [
-    {lbl:'Total sales', val:money(data.totalRevenue), col:'#0f766e'},
-    {lbl:'Tables', val:data.totalBookings!=null?String(data.totalBookings):'\u2014', col:'inherit'},
-    {lbl:'Nights', val:String((data.nights||[]).length), col:'inherit'}
-  ].forEach(function(s){
-    h += '<div style="background:var(--card);border-radius:10px;padding:12px 16px;min-width:130px;flex:1">'
-      +'<div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3)">'+s.lbl+'</div>'
-      +'<div style="font-size:22px;font-weight:900;letter-spacing:-.5px;margin-top:2px;color:'+s.col+'">'+s.val+'</div>'
-      +'</div>';
-  });
-  h += '</div>';
-
-  h += '<div class="fcast-tbl-wrap" style="margin-bottom:16px"><table class="fcast-tbl">';
-  h += '<thead><tr><th class="left">Date</th><th class="left">Artist</th><th>Sales</th><th>Tables</th></tr></thead><tbody>';
   function artistLabel(n){
     var raw = String(n.dj||'').trim();
     if(raw && raw!=='...' && raw!=='TBD' && raw!=='-') return raw;
@@ -4505,49 +4499,99 @@ function renderBaselTracker(){
     })[0];
     return (sched && String(sched.dj).trim()) || 'TBD';
   }
-  data.nights.forEach(function(n){
-    h += '<tr>'
-      +'<td class="left">'+dayLabel(n.date)+'</td>'
-      +'<td class="left" style="font-weight:700">'+artistLabel(n).replace(/</g,'&lt;')+'</td>'
-      +'<td style="font-weight:700">'+money(n.totalRevenue)+'</td>'
-      +'<td>'+(n.bookings!=null?n.bookings:'\u2014')+'</td>'
-      +'</tr>';
-  });
-  h += '<tr>'
-    +'<td class="left" colspan="2" style="font-weight:800">Total</td>'
-    +'<td style="font-weight:800">'+money(data.totalRevenue)+'</td>'
-    +'<td style="font-weight:800">'+(data.totalBookings!=null?data.totalBookings:'\u2014')+'</td>'
-    +'</tr>';
-  h += '</tbody></table></div>';
+  var dates = data.dates || data.nights.map(function(n){ return n.date; });
+  var nightsByDate = {};
+  data.nights.forEach(function(n){ nightsByDate[n.date] = n; });
+  var refs = (data.referrers || []).slice();
+  var total = +data.totalRevenue || 0;
+  var when = '';
+  try{ when = new Date(data.updatedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){}
+  var refColor = {};
+  refs.forEach(function(r, i){ refColor[r.name] = r.name==='No referrer' ? '#94a3b8' : BASEL_REF_COLORS[i % BASEL_REF_COLORS.length]; });
 
-  h += '<div style="font-size:12px;font-weight:800;margin:4px 0 8px">Sales by referrer</div>';
-  h += '<div class="fcast-tbl-wrap"><table class="fcast-tbl">';
-  h += '<thead><tr><th class="left">Referrer</th>';
-  dates.forEach(function(d){ h += '<th>'+dayLabel(d)+'</th>'; });
-  h += '<th>Total</th><th>Tables</th></tr></thead><tbody>';
-  var refs = data.referrers || [];
+  var h = '<div class="bsl-print-page">';
+  h += '<div class="bsl-hero">'
+    + '<div><div class="bsl-hero-kicker">Art Basel 2026</div>'
+    + '<div class="bsl-hero-title">BASEL Tracker</div>'
+    + '<div class="bsl-hero-sub">'+esc(data.venue||'Casa Neos Beach Club')+' · '
+    + dayLabel(dates[0],{weekday:'short',month:'short',day:'numeric'})+' – '+dayLabel(dates[dates.length-1],{weekday:'short',month:'short',day:'numeric'})
+    + '</div></div>'
+    + '<div class="bsl-hero-right"><div class="bsl-hero-total">'+money(total)+'</div>'
+    + '<div class="bsl-hero-sub">'+(data.totalBookings||0)+' tables · '+refs.length+' referrers</div>'
+    + (when ? '<div class="bsl-hero-upd">FourVenues · updated '+esc(when)+'</div>' : '')
+    + '</div></div>';
+
+  h += '<div class="bsl-section-hd">By day</div>';
+  h += '<div class="bsl-day-grid">';
+  dates.forEach(function(d, i){
+    var n = nightsByDate[d] || {date:d, totalRevenue:0, bookings:0};
+    var c = BASEL_DAY_COLORS[i % BASEL_DAY_COLORS.length];
+    var dayRefs = refs.map(function(r){
+      var cell = r.byDate && r.byDate[d];
+      return {name:r.name, revenue:cell?+cell.revenue||0:0, bookings:cell?+cell.bookings||0:0};
+    }).filter(function(x){ return x.revenue>0 || x.bookings>0; })
+      .sort(function(a,b){ return b.revenue-a.revenue; });
+    var share = pct(+n.totalRevenue||0, total);
+    h += '<div class="bsl-day" style="border-top-color:'+c.bg+'">'
+      + '<div class="bsl-day-hd" style="background:'+c.bg+'">'
+      + '<span>'+dayLabel(d,{weekday:'long'})+'</span><span>'+dayLabel(d,{month:'short',day:'numeric'})+'</span></div>'
+      + '<div class="bsl-day-body">'
+      + '<div class="bsl-day-dj" style="color:'+c.ink+'">'+esc(artistLabel(n))+'</div>'
+      + '<div class="bsl-day-sales">'+money(n.totalRevenue)+'</div>'
+      + '<div class="bsl-day-meta">'+(n.bookings||0)+' tables · '+share+'% of weekend</div>'
+      + '<div class="bsl-bar"><span style="width:'+share+'%;background:'+c.bg+'"></span></div>'
+      + '<div class="bsl-day-refs-hd" style="color:'+c.ink+'">Referrers</div>';
+    if(!dayRefs.length) h += '<div class="bsl-day-ref bsl-muted">No bookings yet</div>';
+    dayRefs.forEach(function(x){
+      h += '<div class="bsl-day-ref"><span class="bsl-dot" style="background:'+refColor[x.name]+'"></span>'
+        + '<span class="bsl-day-ref-name">'+esc(x.name)+'</span>'
+        + '<span class="bsl-day-ref-tb">'+x.bookings+' tb</span>'
+        + '<b>'+money(x.revenue)+'</b></div>';
+    });
+    h += '</div></div>';
+  });
+  h += '</div>';
+
+  h += '<div class="bsl-section-hd">By referrer</div>';
+  h += '<div class="bsl-tbl-wrap"><table class="bsl-tbl"><thead><tr>'
+    + '<th class="left bsl-th-dark">Referrer</th>';
+  dates.forEach(function(d, i){
+    var c = BASEL_DAY_COLORS[i % BASEL_DAY_COLORS.length];
+    h += '<th style="background:'+c.bg+'">'+dayLabel(d)+'</th>';
+  });
+  h += '<th class="bsl-th-dark">Total sales</th><th class="bsl-th-dark">Tables</th><th class="left bsl-th-dark" style="min-width:180px">Share of weekend</th></tr></thead><tbody>';
   if(!refs.length){
-    h += '<tr><td class="left" colspan="'+(dates.length+3)+'" style="color:var(--ink3)">No referrer bookings yet.</td></tr>';
+    h += '<tr><td class="left bsl-muted" colspan="'+(dates.length+4)+'">No referrer bookings yet.</td></tr>';
   }
   refs.forEach(function(r){
-    h += '<tr><td class="left" style="font-weight:700">'+String(r.name||'No referrer').replace(/</g,'&lt;')+'</td>';
-    dates.forEach(function(d){
+    var share = pct(+r.totalRevenue||0, total);
+    var col = refColor[r.name];
+    h += '<tr><td class="left bsl-ref-name"><span class="bsl-dot" style="background:'+col+'"></span>'+esc(r.name||'No referrer')+'</td>';
+    dates.forEach(function(d, i){
       var cell = r.byDate && r.byDate[d];
-      h += '<td>'+(cell&&cell.revenue?money(cell.revenue):'\u2014')+'</td>';
+      var c = BASEL_DAY_COLORS[i % BASEL_DAY_COLORS.length];
+      if(cell && (cell.revenue || cell.bookings)){
+        h += '<td style="background:'+c.soft+'"><b style="color:'+c.ink+'">'+money(cell.revenue)+'</b>'
+          + '<div class="bsl-cell-sub">'+cell.bookings+' table'+(cell.bookings===1?'':'s')+'</div></td>';
+      } else {
+        h += '<td class="bsl-muted">\u2014</td>';
+      }
     });
-    h += '<td style="font-weight:700">'+money(r.totalRevenue)+'</td>';
-    h += '<td>'+(r.bookings!=null?r.bookings:'\u2014')+'</td></tr>';
+    h += '<td class="bsl-total-cell">'+money(r.totalRevenue)+'</td>';
+    h += '<td>'+(r.bookings!=null?r.bookings:'\u2014')+'</td>';
+    h += '<td class="left"><div class="bsl-share"><div class="bsl-bar"><span style="width:'+share+'%;background:'+col+'"></span></div><b>'+share+'%</b></div></td></tr>';
   });
   if(refs.length){
-    h += '<tr><td class="left" style="font-weight:800">Total</td>';
+    h += '<tr class="bsl-total-row"><td class="left">Total</td>';
     dates.forEach(function(d){
-      var night = (data.nights||[]).filter(function(n){ return n.date===d; })[0];
-      h += '<td style="font-weight:800">'+(night?money(night.totalRevenue):'\u2014')+'</td>';
+      var n = nightsByDate[d];
+      h += '<td>'+money(n?n.totalRevenue:0)+'<div class="bsl-cell-sub">'+(n?n.bookings||0:0)+' tables</div></td>';
     });
-    h += '<td style="font-weight:800">'+money(data.totalRevenue)+'</td>';
-    h += '<td style="font-weight:800">'+(data.totalBookings!=null?data.totalBookings:'\u2014')+'</td></tr>';
+    h += '<td>'+money(total)+'</td><td>'+(data.totalBookings||0)+'</td><td class="left">100%</td></tr>';
   }
   h += '</tbody></table></div>';
+  h += '<div class="bsl-foot">Sales = FourVenues table price for accepted + not-completed bookings (same as Forecast). Referrer = FourVenues PPRR on the booking; “No referrer” when none is set.</div>';
+  h += '</div>';
   el.innerHTML = h;
 }
 
