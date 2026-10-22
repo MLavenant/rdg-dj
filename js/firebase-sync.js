@@ -1650,6 +1650,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
   window._fbDb.ref('rdg/baselTracker').on('value', function(snap){
     window._baselTracker = snap.val() || null;
     if(window._fbReady && curView==='basel' && typeof renderBaselTracker==='function') renderBaselTracker();
+    if(window._fbReady && curView==='forecast' && typeof renderForecast==='function') renderForecast();
   });
 
   window._fbDb.ref('rdg/forecastLive').on('value', function(snap){

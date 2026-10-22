@@ -4669,6 +4669,80 @@ function renderBaselTracker(){
   if(meta) meta.textContent = 'Friday–Sunday · '+(isAll ? venues.map(venueShort).join(', ') : (data.name||''))+' · same sales method as Forecast, plus referrer';
 }
 
+function _fcastBaselSnapHtml(){
+  var raw = window._baselTracker || null;
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+  function money(n){
+    if(n==null || !isFinite(+n)) return '\u2014';
+    return '$'+Math.round(+n).toLocaleString();
+  }
+  function dayLabel(dateStr, opts){
+    var d = new Date(dateStr+'T12:00:00');
+    if(isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-US', opts||{weekday:'short', month:'short', day:'numeric'});
+  }
+  function artist(dj, date, venueName){
+    var s = String(dj||'').trim();
+    if(s && s!=='...' && s!=='TBD' && s!=='-') return s;
+    var sched = (typeof SCHED!=='undefined' ? SCHED : []).filter(function(r){
+      return r && r.d===date && String(r.venue||r.v||'')===venueName && r.dj;
+    })[0];
+    return (sched && String(sched.dj).trim()) || 'TBD';
+  }
+  if(!raw || !raw.nights){
+    return '<div class="fcast-basel"><div class="fcast-basel-hd"><b>BASEL Tracker</b></div><div class="fcast-basel-empty">Basel weekend sales have not synced yet.</div></div>';
+  }
+  var venues = raw.venues && raw.venues.length ? raw.venues : [{
+    key:'casa_neos_bc', name:raw.venue||'Casa Neos Beach Club', totalRevenue:raw.totalRevenue,
+    totalBookings:raw.totalBookings, nights:raw.nights
+  }];
+  var dates = raw.dates || raw.nights.map(function(n){ return n.date; });
+  var h = '<div class="fcast-basel">';
+  h += '<div class="fcast-basel-hd"><b>BASEL Tracker</b><span>'
+    + esc(dayLabel(dates[0]))+' – '+esc(dayLabel(dates[dates.length-1]))
+    + ' · '+money(raw.totalRevenue)+' · '+(raw.totalBookings||0)+' tables</span>'
+    + '<button type="button" class="fcast-basel-open no-print" onclick="setView(\'basel\')">Open tracker</button></div>';
+  h += '<div class="fcast-basel-venues">';
+  venues.forEach(function(v){
+    var col = BASEL_VENUE_COLORS[v.key] || '#475569';
+    var short = BASEL_VENUE_SHORT[v.key] || v.name;
+    h += '<div class="fcast-basel-venue" style="border-top-color:'+col+'">';
+    var nBk = v.totalBookings||0;
+    h += '<div class="fcast-basel-venue-hd"><span style="color:'+col+'">'+esc(short)+'</span><b>'+money(v.totalRevenue)+'</b><em>'+nBk+' '+(nBk===1?'table':'tables')+'</em></div>';
+    h += '<div class="fcast-basel-days">';
+    dates.forEach(function(d, i){
+      var n = (v.nights||[]).filter(function(x){ return x.date===d; })[0] || {totalRevenue:0, bookings:0, dj:''};
+      var c = BASEL_DAY_COLORS[i % BASEL_DAY_COLORS.length];
+      h += '<div class="fcast-basel-day" style="background:'+c.soft+'">'
+        + '<span style="color:'+c.ink+'">'+dayLabel(d,{weekday:'short'})+'</span>'
+        + '<b>'+money(n.totalRevenue)+'</b>'
+        + '<em>'+esc(artist(n.dj, d, v.name))+'</em></div>';
+    });
+    h += '</div></div>';
+  });
+  h += '</div>';
+  var refs = raw.referrers || [];
+  if(refs.length){
+    h += '<table class="fcast-basel-refs"><thead><tr><th class="left">Referrer</th>';
+    dates.forEach(function(d, i){
+      var c = BASEL_DAY_COLORS[i % BASEL_DAY_COLORS.length];
+      h += '<th style="background:'+c.bg+'">'+dayLabel(d,{weekday:'short'})+'</th>';
+    });
+    h += '<th>Total</th><th>Tables</th></tr></thead><tbody>';
+    refs.forEach(function(r){
+      h += '<tr><td class="left">'+esc(r.name||'No referrer')+'</td>';
+      dates.forEach(function(d){
+        var cell = r.byDate && r.byDate[d];
+        h += '<td>'+(cell&&cell.revenue?money(cell.revenue):'\u2014')+'</td>';
+      });
+      h += '<td><b>'+money(r.totalRevenue)+'</b></td><td>'+(r.bookings!=null?r.bookings:'\u2014')+'</td></tr>';
+    });
+    h += '</tbody></table>';
+  }
+  h += '</div>';
+  return h;
+}
+
 function renderForecast(venueIdx, view){
   if(venueIdx!==undefined) _fcastActiveVenue = venueIdx;
   if(view!==undefined) _fcastActiveView = view;
@@ -4772,6 +4846,7 @@ function renderForecast(venueIdx, view){
     var totalPct = totalTarget>0?Math.round(totalRev/totalTarget*100):0;
     h += '<div class="fcast-print-page1">';
     h += _fcastLastNightRecapHtml();
+    h += _fcastBaselSnapHtml();
     h += '<div class="fcast-print-kpis" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">';
     [{lbl:'BS Actual (export)',val:'$'+totalRev.toLocaleString(),col:'#0f766e'},
      {lbl:'BS Target',val:'$'+totalTarget.toLocaleString(),col:'#7d5a00'},
