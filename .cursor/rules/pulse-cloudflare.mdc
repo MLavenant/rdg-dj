@@ -1,0 +1,23 @@
+---
+description: Pulse personal dashboard deploys to Cloudflare Pages only (not Netlify)
+alwaysApply: true
+---
+
+# Pulse hosting
+
+Pulse lives in `C:\Users\MatthiasLavenant\Documents\command-dashboard-portable\unified` (sibling of this repo).
+
+**Never deploy this repo (`rdg-dj-dashboard`) to Cloudflare project `pulse`.** That project is Pulse only. Deploying the DJ Dashboard there overwrites https://pulse-kzs.pages.dev/ with the wrong app.
+
+After meaningful Pulse app changes:
+
+1. Deploy with Cloudflare Pages only — never Netlify.
+2. From the `unified` folder only (not from `rdg-dj-dashboard`):
+   ```
+   $env:CLOUDFLARE_ACCOUNT_ID = "873fdc78a335be3970c6ec62b99e7d13"
+   npx --yes wrangler pages deploy . --project-name=pulse --branch=main --commit-dirty=true
+   ```
+3. Live URL: https://pulse-kzs.pages.dev/
+4. Do not run `netlify deploy` for Pulse.
+5. User data is in JSONBin / Cloudflare KV + device localStorage, not on the host.
+6. After deploy, confirm the live page title is `Pulse`, not `RDG DJ Dashboard`.
