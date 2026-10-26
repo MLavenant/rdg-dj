@@ -5227,6 +5227,7 @@ function buildVipFromSched(mon, sun) {
     var fp      = (typeof getVipFloorPlan==='function') ? getVipFloorPlan(vn, e.d) : (_vipFloorPlan[vn] || {});
     var budget  = fp.budget || null;
     var tierRef = {};
+    var planTierTotals = {};
     Object.keys(fp.tiers||{}).forEach(function(t){
       tierRef[t] = {
         soldTables: 0, totalTables: fp.tiers[t].total,
@@ -5234,7 +5235,9 @@ function buildVipFromSched(mon, sun) {
         minPerTable: fp.tiers[t].min,
         color: fp.tiers[t].color, textColor: fp.tiers[t].textColor
       };
+      if((+fp.tiers[t].total||0)>0) planTierTotals[t]=+fp.tiers[t].total;
     });
+    var hasFloorInventory = Object.keys(planTierTotals).length>0;
 
     /* Prefer Excel/Toast tier rows (FORECAST toast_excel_bs) over sparse FourVenues
        live rows that often have bookedTables=1 and empty tierSummary. */
@@ -5257,27 +5260,42 @@ function buildVipFromSched(mon, sun) {
       tablesActual = _vipResolveTables(vn, e.d, null);
     }
     var hasTierActual=!!(liveRow&&liveRow.tierSummary&&typeof liveRow.tierSummary==='object'&&Object.keys(liveRow.tierSummary).length);
+    var offPlanSold=0;
     if(hasTierActual){
+      var exclEarly = (typeof _vipExcludedTiers==='function') ? _vipExcludedTiers(vn) : [];
       Object.keys(liveRow.tierSummary).forEach(function(tname){
         var src=liveRow.tierSummary[tname]||{};
         var canon=tname.charAt(0).toUpperCase()+tname.slice(1).toLowerCase();
         var key=tierRef[tname]?tname:(tierRef[canon]?canon:tname);
+        var soldN=src.soldTables!=null?+src.soldTables:(src.sold!=null?+src.sold:(src.booked!=null?+src.booked:0));
+        if(exclEarly.indexOf(key)>=0 || exclEarly.indexOf(tname)>=0 || exclEarly.indexOf(canon)>=0) return;
+        /* Toast still reports the old Beach Club map (Riverwalk, Platinum 15, Gold 5).
+           Inventory stays on the floor plan the 3D view is using. */
+        if(hasFloorInventory && planTierTotals[key]==null){
+          offPlanSold+=soldN;
+          return;
+        }
         if(!tierRef[key]){
           tierRef[key]={ soldTables:0, totalTables:0, totalSales:0, avgPerTable:0, minPerTable:0, color:TIER_COLORS[key]||'#eee', textColor:TIER_TEXT[key]||'#333' };
         }
         if(src.soldTables!=null) tierRef[key].soldTables=+src.soldTables;
         else if(src.sold!=null) tierRef[key].soldTables=+src.sold;
         else if(src.booked!=null) tierRef[key].soldTables=+src.booked;
-        if(src.totalTables!=null) tierRef[key].totalTables=+src.totalTables;
-        else if(src.total!=null) tierRef[key].totalTables=+src.total;
+        if(!hasFloorInventory){
+          if(src.totalTables!=null) tierRef[key].totalTables=+src.totalTables;
+          else if(src.total!=null) tierRef[key].totalTables=+src.total;
+        }
         if(src.totalSales!=null) tierRef[key].totalSales=+src.totalSales;
         else if(src.sales!=null) tierRef[key].totalSales=+src.sales;
         else if(src.revenue!=null) tierRef[key].totalSales=+src.revenue;
         if(src.avgPerTable!=null) tierRef[key].avgPerTable=+src.avgPerTable;
         else if(tierRef[key].soldTables>0) tierRef[key].avgPerTable=Math.round(tierRef[key].totalSales/tierRef[key].soldTables);
-        if(src.minPerTable!=null) tierRef[key].minPerTable=+src.minPerTable;
+        if(!hasFloorInventory && src.minPerTable!=null) tierRef[key].minPerTable=+src.minPerTable;
         if(src.color) tierRef[key].color=src.color;
         if(src.textColor) tierRef[key].textColor=src.textColor;
+      });
+      Object.keys(planTierTotals).forEach(function(t){
+        if(tierRef[t]) tierRef[t].totalTables=planTierTotals[t];
       });
       /* TBL = VIP tiers only (MILA: Diamond+Prestige+Gold; never Booths/Seating). */
       var excl = (typeof _vipExcludedTiers==='function') ? _vipExcludedTiers(vn) : [];
@@ -5285,8 +5303,8 @@ function buildVipFromSched(mon, sun) {
         if(excl.indexOf(t)>=0) return s;
         return s+(tierRef[t].soldTables||0);
       },0);
-      if(excelRow || tablesActual==null || tablesActual===0 || excl.length){
-        tablesActual=sumSold;
+      if(excelRow || tablesActual==null || tablesActual===0 || excl.length || hasFloorInventory){
+        tablesActual=sumSold+offPlanSold;
       }
     }
 

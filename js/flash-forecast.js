@@ -285,12 +285,19 @@ function _vipResolveWeeklyTier(venue, weekKey){
 function _vipCollectTiers(d, weeklyTierActual){
   var tierSet = {};
   (d.shows||[]).forEach(function(sh){ Object.keys(sh.tiers||{}).forEach(function(t){ tierSet[t]=sh.tiers[t]; }); });
+  var hasPlan=Object.keys(tierSet).some(function(t){ return (+tierSet[t].totalTables||0)>0; });
   if(weeklyTierActual && weeklyTierActual.tiers){
     Object.keys(weeklyTierActual.tiers).forEach(function(t){
+      if(hasPlan && !tierSet[t]) return;
       var base=tierSet[t]||{};
-      weeklyTierActual.tiers[t].color=base.color||TIER_COLORS[t]||'#eee';
-      weeklyTierActual.tiers[t].textColor=base.textColor||TIER_TEXT[t]||'#333';
-      tierSet[t]=weeklyTierActual.tiers[t];
+      var src=weeklyTierActual.tiers[t]||{};
+      tierSet[t]={
+        soldTables:src.soldTables, totalSales:src.totalSales, avgPerTable:src.avgPerTable,
+        totalTables:(hasPlan && base.totalTables!=null)?base.totalTables:src.totalTables,
+        minPerTable:base.minPerTable!=null?base.minPerTable:src.minPerTable,
+        color:base.color||src.color||TIER_COLORS[t]||'#eee',
+        textColor:base.textColor||src.textColor||TIER_TEXT[t]||'#333'
+      };
     });
   }
   var excl=_vipExcludedTiers(d.venue);
