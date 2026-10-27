@@ -257,20 +257,16 @@ function setRoiPageTab(tab){
 function _roiSummaryRuleKeys(){
   if(typeof ensureVenueRulesFloorPlanBindings==='function') ensureVenueRulesFloorPlanBindings();
   var keys=Object.keys(VENUE_ROI_RULES||{}).filter(function(v){
-    if(typeof CNBC_SUMMER_ROOF_KEY!=='undefined'&&v===CNBC_SUMMER_ROOF_KEY) return false;
-    if(typeof CNL_OCT_KEY!=='undefined'&&VENUE_ROI_RULES[CNL_OCT_KEY]){
-      if(v==='Casa Neos Lounge') return false;
-      if(typeof CNL_REMODEL_KEY!=='undefined'&&v===CNL_REMODEL_KEY) return false;
-    }
-    return true;
+    return typeof roiRulesTabVisible==='function' ? roiRulesTabVisible(v) : true;
   });
   function rank(v){
     if(v==='Casa Neos Beach Club') return 1;
     if(typeof CNBC_SUMMER_ROOF_KEY!=='undefined'&&v===CNBC_SUMMER_ROOF_KEY) return 2;
     if(typeof CNL_OCT_KEY!=='undefined'&&v===CNL_OCT_KEY) return 3;
     if(v==='Casa Neos Lounge') return 4;
-    if(typeof CNL_REMODEL_KEY!=='undefined'&&v===CNL_REMODEL_KEY) return 5;
-    if(v==='MILA Lounge') return 6;
+    if(typeof CNL_REMODEL_KEY!=='undefined'&&v===CNL_REMODEL_KEY) return 1;
+    if(v==='MILA Lounge') return 2;
+    if(typeof CNBC_CURRENT_KEY!=='undefined'&&v===CNBC_CURRENT_KEY) return 3;
     return 20;
   }
   return keys.sort(function(a,b){ return rank(a)-rank(b)||a.localeCompare(b); });
