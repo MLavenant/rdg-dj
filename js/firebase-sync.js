@@ -1351,6 +1351,11 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       roiTyping=!!(ae && ae.closest && ae.closest('#vrBody input, #roiSpecialForm input'));
     }catch(eType){}
     if(data.venueRoiRules && !roiTyping) VENUE_ROI_RULES = data.venueRoiRules;
+    var roiHold=false;
+    if(VENUE_ROI_RULES && typeof _roiApplyPendingToRules==='function'){
+      var roiPend=_roiApplyPendingToRules(VENUE_ROI_RULES);
+      roiHold=!!(roiPend&&(roiPend.held||roiPend.confirmed));
+    }
     var hadRemodel=typeof CNL_REMODEL_KEY!=='undefined' && !!(data.venueRoiRules&&data.venueRoiRules[CNL_REMODEL_KEY]);
     var hadOct=typeof CNL_OCT_KEY!=='undefined' && !!(data.venueRoiRules&&data.venueRoiRules[CNL_OCT_KEY]);
     var hadCnbcCurrent=typeof CNBC_CURRENT_KEY!=='undefined' && !!(data.venueRoiRules&&data.venueRoiRules[CNBC_CURRENT_KEY]);
@@ -1384,7 +1389,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
           setFv3dDate(typeof getFv3dDate==='function'?getFv3dDate():null);
           if(typeof updateFv3dRefreshStatus==='function') updateFv3dRefreshStatus();
         }
-        if(typeof curView!=='undefined' && curView==='roi-rules' && typeof _roiPageTab!=='undefined' && (_roiPageTab==='floors' || _roiPageTab==='summary' || _roiPageTab==='rules') && typeof renderRoiRulesPage==='function' && !roiTyping){
+        if(!roiHold && typeof curView!=='undefined' && curView==='roi-rules' && typeof _roiPageTab!=='undefined' && (_roiPageTab==='floors' || _roiPageTab==='summary' || _roiPageTab==='rules') && typeof renderRoiRulesPage==='function' && !roiTyping){
           renderRoiRulesPage();
         }
       }catch(eFpUi){}

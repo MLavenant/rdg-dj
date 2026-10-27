@@ -60,15 +60,23 @@ function wireVenueRulesMoneyInputs(root){
     inp._vrMoneyWired=true;
     inp.addEventListener('blur',function(){
       var n=_vrParseMoney(inp.value);
-      inp.value=n?_vrFmtMoney(n):'';
+      var shown=n?_vrFmtMoney(n):'';
+      if(inp.value!==shown) inp.value=shown;
       if(inp.getAttribute('data-action')==='table-field' && typeof updateTierTable==='function'){
         updateTierTable(window._vrEditVenue, parseInt(inp.dataset.ti,10), inp.dataset.season, inp.dataset.day, inp.dataset.cat, n);
+      }else if(inp.getAttribute('data-action')==='day-field' && inp.dataset.field && typeof updateTierDay==='function'){
+        updateTierDay(window._vrEditVenue, parseInt(inp.dataset.ti,10), inp.dataset.season, inp.dataset.day, inp.dataset.field, n);
       }
       if(typeof roiRefreshVerifyBlocks==='function') roiRefreshVerifyBlocks(root);
     });
     inp.addEventListener('focus',function(){
-      inp.value=String(_vrParseMoney(inp.value)||'');
-      inp.select();
+      var raw=_vrParseMoney(inp.value);
+      var next=raw?String(raw):'';
+      if(inp.value!==next){
+        var atEnd=inp.selectionStart===inp.value.length;
+        inp.value=next;
+        if(atEnd){ try{ inp.setSelectionRange(next.length, next.length); }catch(eCaret){} }
+      }
     });
     inp.addEventListener('input',function(){
       if(typeof roiRefreshVerifyBlocks==='function') roiRefreshVerifyBlocks(root);
@@ -184,11 +192,42 @@ function openVenueRulesEditor(){
 
 function closeVenueRulesEditor(){ /* legacy modal hook — page replaces modal */ }
 
+function _roiRulesScroller(){
+  return document.getElementById('view-roi-rules')||document.scrollingElement;
+}
+/* Keep a just-typed minimum if a stale Firebase snapshot arrives before that cell write. */
+function _roiApplyPendingToRules(rules){
+  var pending=window._roiCellPending;
+  if(!rules||!pending) return {held:false, confirmed:false};
+  var held=false, confirmed=false, now=Date.now();
+  Object.keys(pending).forEach(function(path){
+    var rec=pending[path];
+    if(!rec||now-rec.t>20000){ delete pending[path]; return; }
+    var parts=path.split('/');
+    if(parts.length<6) return;
+    var rule=rules[parts[0]];
+    var tier=rule&&rule.tiers&&rule.tiers[+parts[2]];
+    if(!tier){ held=true; return; }
+    if(!tier[parts[3]]) tier[parts[3]]={};
+    if(!tier[parts[3]][parts[4]]) tier[parts[3]][parts[4]]={roi:0,sales:0,tables:{}};
+    var slot=tier[parts[3]][parts[4]];
+    if(parts[5]==='tables'){
+      if(!slot.tables) slot.tables={};
+      if((+slot.tables[parts[6]]||0)===(+rec.v||0)){ delete pending[path]; confirmed=true; return; }
+      slot.tables[parts[6]]=rec.v; held=true;
+    }else{
+      var remote=parts[5]==='roi'?(+slot.roi||0):(+slot.sales||0);
+      if(remote===(+rec.v||0)){ delete pending[path]; confirmed=true; return; }
+      slot[parts[5]]=rec.v; held=true;
+    }
+  });
+  return {held:held, confirmed:confirmed};
+}
 function renderRoiRulesPage(){
   ensureCnbcSummerRoofRules();
   var root=document.getElementById('roiRulesBody');
   if(!root) return;
-  var scroller=document.querySelector('.main')||document.scrollingElement;
+  var scroller=_roiRulesScroller();
   var keepScroll=scroller?scroller.scrollTop:0;
 
   var h='';
@@ -218,7 +257,6 @@ function renderRoiRulesPage(){
   }
 
   root.innerHTML=h;
-  if(scroller) scroller.scrollTop=keepScroll;
   if(_roiPageTab==='rules'){
     if(!_vrEditVenue||!VENUE_ROI_RULES[_vrEditVenue]){
       var keys=Object.keys(VENUE_ROI_RULES);
@@ -227,6 +265,10 @@ function renderRoiRulesPage(){
     renderVenueRulesPanel();
   }else if(_roiPageTab==='special'){
     wireRoiSpecialEvents();
+  }
+  if(scroller){
+    scroller.scrollTop=keepScroll;
+    requestAnimationFrame(function(){ if(scroller) scroller.scrollTop=keepScroll; });
   }
 }
 
