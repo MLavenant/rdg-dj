@@ -2731,13 +2731,24 @@ function updateTierDay(v,ti,season,day,field,val){
 }
 function updateTierTable(v,ti,season,day,cat,val){
   var rules=VENUE_ROI_RULES[v]; if(!rules) return;
-  _pushVenueRulesUndo('Change VIP table minimum');
-  var tier=rules.tiers[ti];
+  var tier=rules.tiers[ti]; if(!tier) return;
   if(!tier[season]) tier[season]={};
   if(!tier[season][day]) tier[season][day]={roi:0,sales:0,tables:{}};
   if(!tier[season][day].tables) tier[season][day].tables={};
-  tier[season][day].tables[cat]=parseFloat(val)||0;
-  saveVenueRules();
+  var n=(typeof _vrParseMoney==='function')?_vrParseMoney(val):(parseFloat(val)||0);
+  if((+tier[season][day].tables[cat]||0)===n) return;
+  _pushVenueRulesUndo('Change VIP table minimum');
+  tier[season][day].tables[cat]=n;
+  try{ localStorage.setItem('rdg_venue_roi_rules', JSON.stringify(VENUE_ROI_RULES)); }catch(e){}
+  /* One cell, like a calendar show write — do not replace the whole rules tree. */
+  if(window._fbRef){
+    try{ window._fbRef.child('venueRoiRules/'+v+'/tiers/'+ti+'/'+season+'/'+day+'/tables/'+cat).set(n); }catch(eSet){}
+  }else if(window._fbSave){
+    window._fbSave('venueRoiRules/'+v+'/tiers/'+ti+'/'+season+'/'+day+'/tables/'+cat, n);
+  }
+  if(typeof recalcAllSchedTargets==='function') recalcAllSchedTargets();
+  if(typeof refreshForecastRoiCache==='function') refreshForecastRoiCache();
+  if(typeof roiRefreshVerifyBlocks==='function') roiRefreshVerifyBlocks(document.getElementById('vrBody'));
 }
 function removeTier(v,ti){
   var rules=VENUE_ROI_RULES[v]; if(!rules) return;

@@ -61,6 +61,9 @@ function wireVenueRulesMoneyInputs(root){
     inp.addEventListener('blur',function(){
       var n=_vrParseMoney(inp.value);
       inp.value=n?_vrFmtMoney(n):'';
+      if(inp.getAttribute('data-action')==='table-field' && typeof updateTierTable==='function'){
+        updateTierTable(window._vrEditVenue, parseInt(inp.dataset.ti,10), inp.dataset.season, inp.dataset.day, inp.dataset.cat, n);
+      }
       if(typeof roiRefreshVerifyBlocks==='function') roiRefreshVerifyBlocks(root);
     });
     inp.addEventListener('focus',function(){
@@ -206,6 +209,8 @@ function renderRoiRulesPage(){
   ensureCnbcSummerRoofRules();
   var root=document.getElementById('roiRulesBody');
   if(!root) return;
+  var scroller=document.querySelector('.main')||document.scrollingElement;
+  var keepScroll=scroller?scroller.scrollTop:0;
 
   var h='';
   h+='<div class="roi-page-hero">';
@@ -234,6 +239,7 @@ function renderRoiRulesPage(){
   }
 
   root.innerHTML=h;
+  if(scroller) scroller.scrollTop=keepScroll;
   if(_roiPageTab==='rules'){
     if(!_vrEditVenue||!VENUE_ROI_RULES[_vrEditVenue]){
       var keys=Object.keys(VENUE_ROI_RULES);
