@@ -139,7 +139,7 @@ function _roiTableInventoryHtml(rules, countsMeta){
   return h;
 }
 function _roiBsSetHeaderHtml(){
-  return '<th class="vr-th-bsset" title="Tables × their minimum. Green BS SET means that total covers the BS Target. Red ACTUAL means it is short.">BS Set / Actual</th>';
+  return '<th class="vr-th-bsset" title="Tables × their minimum. Green BS SET means the total covers the BS Target, or is short by $1,000 or less. Red ACTUAL means it is short by more than $1,000.">BS Set / Actual</th>';
 }
 function _roiBsSetCellHtml(rules, counts, tier, ti, season, day){
   var dayData=(tier[season]||{})[day]||{roi:0,sales:0,tables:{}};

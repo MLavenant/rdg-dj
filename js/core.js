@@ -981,7 +981,7 @@ function roiCountForCat(counts, cat){
   var n=counts[roiNormTierName(cat)];
   return n!=null?+n:0;
 }
-/* BS Target − Σ(tables × min). Green when capacity ≥ BS (hitting target). */
+/* BS Target − Σ(tables × min). Green when the total is at or above the target, or short by $1,000 or less. */
 function roiVerifyCapacity(bsTarget, tables, tableCats, counts){
   var lines=[];
   var sum=0;
@@ -994,7 +994,7 @@ function roiVerifyCapacity(bsTarget, tables, tableCats, counts){
   });
   var bs=+bsTarget||0;
   var gap=bs-sum;
-  var hit=bs>0?(sum>=bs):null;
+  var hit=bs>0?(gap<=1000):null;
   return {lines:lines, sum:sum, bs:bs, gap:gap, hit:hit};
 }
 function applyCnbcBaselNightPrices(tiers, dateStr, plan){
