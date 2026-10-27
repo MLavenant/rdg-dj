@@ -1781,7 +1781,9 @@ function ensureCnlRemodelRules(){
   }
   var rem=VENUE_ROI_RULES[CNL_REMODEL_KEY];
   if(rem){
-    if(!rem.floorPlan) rem.floorPlan='casa-neos-lounge-new';
+    /* Remodel inventory is the Sep 25–30 map (Diamond 4 · Prestige 3 · Platinum 6 · Gold 4).
+       Do not keep the Oct 1 floor on this rule set. Dollar mins stay as saved. */
+    if(rem.floorPlan!=='casa-neos-lounge-new') rem.floorPlan='casa-neos-lounge-new';
     if(!rem.appliesTo) rem.appliesTo='Casa Neos Lounge';
     if(!rem.fromDate) rem.fromDate='2026-09-25';
     if(!rem.tableCats||rem.tableCats.indexOf('Prestige')<0){
