@@ -2503,7 +2503,6 @@ function renderVenueRulesPanel(){
     };
     return rank(a)-rank(b) || a.localeCompare(b);
   });
-  if(typeof roiRulesTabVisible==='function') venues=venues.filter(roiRulesTabVisible);
   if(!_vrEditVenue || venues.indexOf(_vrEditVenue)<0) _vrEditVenue=venues[0]||null;
   var tabsHtml='<div class="vr-tabs vr-tabs--page">';
   venues.forEach(function(v){

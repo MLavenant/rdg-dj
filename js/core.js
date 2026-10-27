@@ -1781,9 +1781,7 @@ function ensureCnlRemodelRules(){
   }
   var rem=VENUE_ROI_RULES[CNL_REMODEL_KEY];
   if(rem){
-    /* Remodel inventory is the Sep 25–30 map (Diamond 4 · Prestige 3 · Platinum 6 · Gold 4).
-       Do not keep the Oct 1 floor on this rule set. Dollar mins stay as saved. */
-    if(rem.floorPlan!=='casa-neos-lounge-new') rem.floorPlan='casa-neos-lounge-new';
+    if(!rem.floorPlan) rem.floorPlan='casa-neos-lounge-new';
     if(!rem.appliesTo) rem.appliesTo='Casa Neos Lounge';
     if(!rem.fromDate) rem.fromDate='2026-09-25';
     if(!rem.tableCats||rem.tableCats.indexOf('Prestige')<0){
@@ -1845,9 +1843,6 @@ function ensureVenueRulesFloorPlanBindings(){
   if(cnl&&!cnl.floorPlan){ cnl.floorPlan='casa-neos-lounge'; cnl.appliesTo='Casa Neos Lounge'; }
   var mila=VENUE_ROI_RULES['MILA Lounge'];
   if(mila&&!mila.floorPlan){ mila.floorPlan='mila-lounge'; mila.appliesTo='MILA Lounge'; }
-}
-function roiRulesTabVisible(key){
-  return key===CNL_REMODEL_KEY || key==='MILA Lounge' || key===CNBC_CURRENT_KEY;
 }
 function roiFloorPlanOptionsForVenue(venue){
   var v=venue||'';
