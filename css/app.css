@@ -1244,6 +1244,12 @@ model-viewer{--min-hotspot-opacity:0}
 .vr-cell-inp{width:72px;font-size:11px;font-family:inherit;border:0.5px solid var(--rule);border-radius:6px;padding:5px 7px;background:var(--card);color:var(--ink);outline:none;text-align:right;transition:border-color .12s}
 .vr-roi-inp{width:52px;text-align:center}
 .vr-target-inp{width:80px;background:#fffef5;border-color:#e8d48b}
+.vr-th-bsset{text-align:right;min-width:128px}
+.vr-bsset{text-align:right;white-space:nowrap}
+.vr-bsset-amt{font-weight:800;font-variant-numeric:tabular-nums;font-size:12px;margin-right:6px}
+.vr-bsset.vr-verify-hit .vr-bsset-amt{color:#166534}
+.vr-bsset.vr-verify-miss .vr-bsset-amt{color:#991b1b}
+.vr-bsset.vr-verify-na .vr-bsset-amt{color:var(--ink3)}
 .vr-cell-inp:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(59,130,246,.12)}
 .vr-cell-sm{width:64px}
 .vr-money-wrap{position:relative;display:inline-flex;align-items:center;vertical-align:middle}

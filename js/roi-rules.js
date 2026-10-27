@@ -130,36 +130,19 @@ function _roiTableInventoryHtml(rules, countsMeta){
   h+='</div></div>';
   return h;
 }
-function _roiVerifyBlockHtml(rules, countsMeta, tier, ti, days, seasons){
-  var counts=(countsMeta&&countsMeta.counts)||{};
-  var cats=rules.tableCats||[];
-  var total=countsMeta&&countsMeta.total!=null?countsMeta.total:cats.reduce(function(s,c){
-    return s+(typeof roiCountForCat==='function'?roiCountForCat(counts,c):0);
-  },0);
-  var h='<div class="vr-verify" data-verify-ti="'+ti+'">';
-  h+='<div class="vr-verify-hd">Verify · '+total+' tables × min vs BS Target</div>';
-  h+='<table class="vr-verify-tbl"><thead><tr><th>Season</th><th>Day</th><th class="left">Capacity (Σ count×min)</th><th>BS Target</th><th>BS − Capacity</th><th>Status</th></tr></thead><tbody>';
-  (seasons||['High','Low']).forEach(function(season){
-    (days||[]).forEach(function(day){
-      var dayData=(tier[season]||{})[day]||{roi:0,sales:0,tables:{}};
-      var v=typeof roiVerifyCapacity==='function'
-        ? roiVerifyCapacity(dayData.sales, dayData.tables, cats, counts)
-        : {sum:0,bs:+dayData.sales||0,gap:0,hit:null};
-      var stCls=v.hit===true?'vr-verify-hit':(v.hit===false?'vr-verify-miss':'vr-verify-na');
-      var stLbl=v.hit===true?'HIT':(v.hit===false?'SHORT':'—');
-      h+='<tr class="'+stCls+'" data-verify-row data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'">';
-      h+='<td>'+season+'</td><td>'+day.slice(0,3)+'</td>';
-      h+='<td class="left vr-verify-cap">'+_roiFmtUsd(v.sum)+'</td>';
-      h+='<td class="vr-verify-bs">'+_roiFmtUsd(v.bs)+'</td>';
-      h+='<td class="vr-verify-gap">'+_roiFmtUsd(v.gap)+'</td>';
-      h+='<td class="vr-verify-status"><span class="vr-verify-pill">'+stLbl+'</span></td>';
-      h+='</tr>';
-    });
-  });
-  h+='</tbody></table>';
-  h+='<div class="vr-verify-hint">Green = capacity (all tiers × their mins) ≥ BS Target. Red = short. Gap = BS Target − capacity.</div>';
-  h+='</div>';
-  return h;
+function _roiBsSetHeaderHtml(){
+  return '<th class="vr-th-bsset" title="Tables × their minimum. Green BS SET means that total covers the BS Target. Red ACTUAL means it is short.">BS Set / Actual</th>';
+}
+function _roiBsSetCellHtml(rules, counts, tier, ti, season, day){
+  var dayData=(tier[season]||{})[day]||{roi:0,sales:0,tables:{}};
+  var v=typeof roiVerifyCapacity==='function'
+    ? roiVerifyCapacity(dayData.sales, dayData.tables, rules.tableCats||[], counts||{})
+    : {sum:0,bs:+dayData.sales||0,hit:null};
+  var stCls=v.hit===true?'vr-verify-hit':(v.hit===false?'vr-verify-miss':'vr-verify-na');
+  var stLbl=v.hit===true?'BS SET':(v.hit===false?'ACTUAL':'—');
+  return '<td class="vr-bsset '+stCls+'" data-verify-row data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'">'
+    +'<span class="vr-bsset-amt">'+_roiFmtUsd(v.sum)+'</span>'
+    +'<span class="vr-verify-pill">'+stLbl+'</span></td>';
 }
 function roiRefreshVerifyBlocks(root){
   root=root||document;
@@ -168,10 +151,10 @@ function roiRefreshVerifyBlocks(root){
     var metaEl=root.querySelector('[data-roi-counts]');
     if(metaEl) counts=JSON.parse(metaEl.getAttribute('data-roi-counts')||'{}');
   }catch(e){ counts={}; }
-  root.querySelectorAll('[data-verify-row]').forEach(function(tr){
-    var ti=tr.getAttribute('data-ti');
-    var season=tr.getAttribute('data-season');
-    var day=tr.getAttribute('data-day');
+  root.querySelectorAll('[data-verify-row]').forEach(function(cell){
+    var ti=cell.getAttribute('data-ti');
+    var season=cell.getAttribute('data-season');
+    var day=cell.getAttribute('data-day');
     var cats=[];
     try{
       var catsEl=root.querySelector('[data-roi-cats]');
@@ -185,17 +168,13 @@ function roiRefreshVerifyBlocks(root){
       tables[c]=inp?_vrParseMoney(inp.value):0;
     });
     var v=typeof roiVerifyCapacity==='function'?roiVerifyCapacity(bs, tables, cats, counts):{sum:0,bs:bs,gap:bs,hit:null};
-    var cap=tr.querySelector('.vr-verify-cap');
-    var bsEl=tr.querySelector('.vr-verify-bs');
-    var gap=tr.querySelector('.vr-verify-gap');
-    var st=tr.querySelector('.vr-verify-status .vr-verify-pill');
-    if(cap) cap.textContent=_roiFmtUsd(v.sum);
-    if(bsEl) bsEl.textContent=_roiFmtUsd(v.bs);
-    if(gap) gap.textContent=_roiFmtUsd(v.gap);
-    tr.classList.remove('vr-verify-hit','vr-verify-miss','vr-verify-na');
-    if(v.hit===true){ tr.classList.add('vr-verify-hit'); if(st) st.textContent='HIT'; }
-    else if(v.hit===false){ tr.classList.add('vr-verify-miss'); if(st) st.textContent='SHORT'; }
-    else { tr.classList.add('vr-verify-na'); if(st) st.textContent='—'; }
+    var amt=cell.querySelector('.vr-bsset-amt');
+    var st=cell.querySelector('.vr-verify-pill');
+    if(amt) amt.textContent=_roiFmtUsd(v.sum);
+    cell.classList.remove('vr-verify-hit','vr-verify-miss','vr-verify-na');
+    if(v.hit===true){ cell.classList.add('vr-verify-hit'); if(st) st.textContent='BS SET'; }
+    else if(v.hit===false){ cell.classList.add('vr-verify-miss'); if(st) st.textContent='ACTUAL'; }
+    else { cell.classList.add('vr-verify-na'); if(st) st.textContent='—'; }
   });
 }
 
@@ -928,6 +907,7 @@ function renderRoiSpCustomEditor(ev){
     }
     h+='</div>';
     h+='<div class="vr-tier-scroll"><table class="vr-tier-tbl vr-tier-tbl--page"><thead><tr><th>Season</th><th>Day</th><th>ROI</th><th>BS Target</th>';
+    h+=_roiBsSetHeaderHtml();
     h+=_roiTierHeaderHtml(rules.tableCats, counts);
     h+='</tr></thead><tbody>';
     showDays=rules.days||showDays;
@@ -939,6 +919,7 @@ function renderRoiSpCustomEditor(ev){
         h+='<td class="vr-day-cell">'+day.slice(0,3)+'</td>';
         h+='<td><input type="number" step="0.1" class="vr-cell-inp vr-roi-inp roi-sp-roi" value="'+dayData.roi+'" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" title="BS Target = DJ fee × ROI"></td>';
         h+='<td>'+_vrMoneyInputHtml(dayData.sales, 'vr-cell-inp vr-target-inp roi-sp-sales', 'data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'"')+'</td>';
+        h+=_roiBsSetCellHtml(rules, counts, tier, ti, season, day);
         (rules.tableCats||[]).forEach(function(c){
           var tv=(dayData.tables||{})[c]||0;
           h+='<td>'+_vrMoneyInputHtml(tv, 'vr-cell-inp vr-cell-sm roi-sp-tbl', 'data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-cat="'+c+'"')+'</td>';
@@ -947,7 +928,6 @@ function renderRoiSpCustomEditor(ev){
       });
     });
     h+='</tbody></table></div>';
-    h+=_roiVerifyBlockHtml(rules, countsMeta, tier, ti, showDays, seasons);
     h+='</div>';
   });
   h+='</div>';

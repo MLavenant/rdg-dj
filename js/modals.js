@@ -2604,6 +2604,7 @@ function renderVenueRulesPanel(){
     h+='<button class="rules-del" data-action="remove-tier" data-ti="'+ti+'" title="Remove tier">&#10005;</button>';
     h+='</div>';
     h+='<div class="vr-tier-scroll"><table class="vr-tier-tbl vr-tier-tbl--page"><thead><tr><th>Season</th><th>Day</th><th>ROI</th><th>BS Target</th>';
+    if(typeof _roiBsSetHeaderHtml==='function') h+=_roiBsSetHeaderHtml();
     if(typeof _roiTierHeaderHtml==='function'){
       h+=_roiTierHeaderHtml(rules.tableCats, counts);
     }else{
@@ -2621,12 +2622,14 @@ function renderVenueRulesPanel(){
         h+='<td><input type="number" step="0.1" class="vr-cell-inp vr-roi-inp" value="'+dayData.roi+'" data-action="day-field" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-field="roi"></td>';
         if(typeof _vrMoneyInputHtml==='function'){
           h+='<td>'+_vrMoneyInputHtml(dayData.sales, 'vr-cell-inp vr-target-inp', 'data-action="day-field" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-field="sales"')+'</td>';
+          if(typeof _roiBsSetCellHtml==='function') h+=_roiBsSetCellHtml(rules, counts, tier, ti, season, day);
           (rules.tableCats||[]).forEach(function(c){
             var tv=(dayData.tables||{})[c]||0;
             h+='<td>'+_vrMoneyInputHtml(tv, 'vr-cell-inp vr-cell-sm', 'data-action="table-field" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-cat="'+c+'"')+'</td>';
           });
         }else{
         h+='<td><input type="number" class="vr-cell-inp" value="'+dayData.sales+'" data-action="day-field" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-field="sales"></td>';
+        if(typeof _roiBsSetCellHtml==='function') h+=_roiBsSetCellHtml(rules, counts, tier, ti, season, day);
         (rules.tableCats||[]).forEach(function(c){
           var tv=(dayData.tables||{})[c]||0;
           h+='<td><input type="number" class="vr-cell-inp vr-cell-sm" value="'+tv+'" data-action="table-field" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" data-cat="'+c+'"></td>';
@@ -2636,9 +2639,6 @@ function renderVenueRulesPanel(){
       });
     });
     h+='</tbody></table></div>';
-    if(typeof _roiVerifyBlockHtml==='function'){
-      h+=_roiVerifyBlockHtml(rules, countsMeta, tier, ti, rules.days, ['High','Low']);
-    }
     h+='</div>';
   });
   h+='</div>';
