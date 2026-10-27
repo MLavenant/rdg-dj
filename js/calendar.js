@@ -494,6 +494,28 @@ function renderCalMonthRecap(yr, mo, mm, showMap){
     +'<div class="cal-recap-item"><div class="cal-recap-l">BS Actual</div><div class="cal-recap-v">'+(bs.n?$k(bs.tBSA):'-')+'</div><div class="cal-recap-s">'+mtdHint+'</div></div>';
 }
 
+function _show3dFloorCheckHtml(tiers, bsTarget){
+  var sum=0, nTables=0;
+  (tiers||[]).forEach(function(t){
+    var price=t.suggested!=null?+t.suggested:(+t.minimum||0);
+    var n=(t.tables&&t.tables.length)||0;
+    sum+=n*price;
+    nTables+=n;
+  });
+  var tgt=bsTarget!=null&&isFinite(+bsTarget)?+bsTarget:null;
+  var gap=tgt!=null?sum-tgt:null;
+  var hit=gap!=null&&gap>=-0.5;
+  var cls=gap==null?'':(hit?' hit':' short');
+  var badge=gap==null?'—':(hit?'HIT':'SHORT');
+  function money(n){ return formatFv3dMoney(Math.round(n)); }
+  var varTxt=gap==null?'—':((gap>=0?'+':'−')+money(Math.abs(gap)));
+  return '<div class="show3d-check'+cls+'">'
+    +'<div class="show3d-check-hd"><span>Floor check</span><b>'+badge+'</b></div>'
+    +'<div class="show3d-check-row"><span>'+nTables+' tables × price</span><b>'+money(sum)+'</b></div>'
+    +'<div class="show3d-check-row"><span>BS target</span><b>'+(tgt!=null?money(tgt):'—')+'</b></div>'
+    +'<div class="show3d-check-row"><span>vs target</span><b>'+varTxt+'</b></div>'
+    +'</div>';
+}
 function closeShow3dModal(){
   var el=document.getElementById('show3dModal');
   if(el) el.remove();
@@ -538,7 +560,9 @@ function openShow3dModal(idx){
       +(remodel?' \u00b7 <span style="color:#7c3aed">Lounge remodel · Sep 25–30</span>':'')+'</div>'
     +'<div class="show3d-layout">'
     +'<div class="show3d-host" id="show3dHost"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#cbb8e8;font-size:12px">Loading floor plan&hellip;</div></div>'
-    +'<div class="show3d-side"><div class="fv3d-pricing-hd">Table minimums to hit ROI</div>'
+    +'<div class="show3d-side">'
+    +_show3dFloorCheckHtml(priced?priced.tiers:[], tgt&&tgt.bs_m)
+    +'<div class="fv3d-pricing-hd">Table minimums to hit ROI</div>'
     +'<div class="fv3d-tier-list">'+tiersHtml+'</div>'
     +'<div class="fv3d-panel-note" style="margin-top:10px">'+(summer?'Exact Sunset Rituals rooftop table mins for this fee / day.':(oct?'Oct 1 floor tiers for this fee / day.':(remodel?'Remodel floor-plan tiers scaled to this show\'s BS target.':'Scaled from the static floor-plan configuration to this show\'s BS target.')))+' No booking or event data.</div></div>'
     +'</div></div>'
