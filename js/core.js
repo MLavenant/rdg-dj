@@ -1844,10 +1844,24 @@ function ensureVenueRulesFloorPlanBindings(){
   var mila=VENUE_ROI_RULES['MILA Lounge'];
   if(mila&&!mila.floorPlan){ mila.floorPlan='mila-lounge'; mila.appliesTo='MILA Lounge'; }
 }
+function roiRulesTabVisible(key){
+  return key===CNBC_CURRENT_KEY || key==='MILA Lounge' || key===CNL_OCT_KEY;
+}
 function roiFloorPlanOptionsForVenue(venue){
   var v=venue||'';
   var opts=[];
-  if(v==='Casa Neos Beach Club'||v===CNBC_SUMMER_ROOF_KEY||v===CNBC_CURRENT_KEY){
+  if(v===CNBC_CURRENT_KEY){
+    opts=[
+      {v:'casa-neos-beach-club-oct17', l:'Current waterfront (Oct 17+) — live Beach Club map'},
+      {v:'casa-neos-beach-club-basel', l:'Casa Neos Beach Club Art Basel (Dec 4–6)'}
+    ];
+  }else if(v===CNL_OCT_KEY){
+    opts=[
+      {v:'casa-neos-lounge-oct', l:'Oct 1 floor — Diamond 7 · Prestige 3 · Platinum 3 · Gold 2'}
+    ];
+  }else if(v==='MILA Lounge'){
+    opts=[{v:'mila-lounge', l:'MILA Lounge'}];
+  }else if(v==='Casa Neos Beach Club'||v===CNBC_SUMMER_ROOF_KEY){
     opts=[
       {v:'casa-neos-beach-club', l:'Classic beach club (Riverwalk)'},
       {v:'casa-neos-beach-club-summer', l:'Sunset Rituals rooftop (Aug 1–Oct 4)'},
@@ -1855,14 +1869,12 @@ function roiFloorPlanOptionsForVenue(venue){
       {v:'casa-neos-beach-club-oct17', l:'Current waterfront (Oct 17+) — live Beach Club map'},
       {v:'casa-neos-beach-club-basel', l:'Casa Neos Beach Club Art Basel (Dec 4–6)'}
     ];
-  }else if(v==='Casa Neos Lounge'||v===CNL_REMODEL_KEY||v===CNL_OCT_KEY){
+  }else if(v==='Casa Neos Lounge'||v===CNL_REMODEL_KEY){
     opts=[
       {v:'casa-neos-lounge', l:'Classic lounge (pre–Sep 25)'},
       {v:'casa-neos-lounge-new', l:'After Dark remodel (Sep 25–30) — Prestige tier'},
       {v:'casa-neos-lounge-oct', l:'Oct 1 floor — Diamond 7 · Prestige 3 · Platinum 3 · Gold 2'}
     ];
-  }else if(v==='MILA Lounge'){
-    opts=[{v:'mila-lounge', l:'MILA Lounge'}];
   }
   return opts;
 }

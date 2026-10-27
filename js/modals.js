@@ -2493,24 +2493,27 @@ function renderVenueRulesPanel(){
   /* Keep Summer Roof next to Beach Club; Remodel next to Lounge. */
   venues.sort(function(a,b){
     var rank=function(v){
-      if(v==='Casa Neos Beach Club') return 1;
-      if(v===CNBC_SUMMER_ROOF_KEY) return 2;
-      if(v==='Casa Neos Lounge') return 3;
-      if(typeof CNL_REMODEL_KEY!=='undefined' && v===CNL_REMODEL_KEY) return 4;
-      if(typeof CNL_OCT_KEY!=='undefined' && v===CNL_OCT_KEY) return 5;
-      if(v==='MILA Lounge') return 6;
+      if(v===CNBC_CURRENT_KEY) return 1;
+      if(v==='MILA Lounge') return 2;
+      if(typeof CNL_OCT_KEY!=='undefined' && v===CNL_OCT_KEY) return 3;
+      if(v==='Casa Neos Beach Club') return 4;
+      if(v===CNBC_SUMMER_ROOF_KEY) return 5;
+      if(v==='Casa Neos Lounge') return 6;
+      if(typeof CNL_REMODEL_KEY!=='undefined' && v===CNL_REMODEL_KEY) return 7;
       return 9;
     };
     return rank(a)-rank(b) || a.localeCompare(b);
   });
+  if(typeof roiRulesTabVisible==='function') venues=venues.filter(roiRulesTabVisible);
   if(!_vrEditVenue || venues.indexOf(_vrEditVenue)<0) _vrEditVenue=venues[0]||null;
   var tabsHtml='<div class="vr-tabs vr-tabs--page">';
   venues.forEach(function(v){
     var label=v;
     var tip=v;
-    if(v===CNBC_SUMMER_ROOF_KEY){ label='CNBC Summer Roof'; tip='Sunset Rituals · Aug 1–Oct 4 only'; }
+    if(v===CNBC_CURRENT_KEY){ label='Casa Neos Beach Club'; tip='Current waterfront rules'; }
+    else if(v===CNBC_SUMMER_ROOF_KEY){ label='CNBC Summer Roof'; tip='Sunset Rituals · Aug 1–Oct 4 only'; }
     else if(typeof CNL_REMODEL_KEY!=='undefined' && v===CNL_REMODEL_KEY){ label='CN Lounge Remodel'; tip='After Dark remodel · Sep 25–30'; }
-    else if(typeof CNL_OCT_KEY!=='undefined' && v===CNL_OCT_KEY){ label='CN Lounge Oct 1'; tip='Oct 1 floor · Diamond 7, Prestige 3, Platinum 3, Gold 2'; }
+    else if(typeof CNL_OCT_KEY!=='undefined' && v===CNL_OCT_KEY){ label='CN Lounge'; tip='Oct 1 floor · Diamond 7, Prestige 3, Platinum 3, Gold 2'; }
     else if(v==='Casa Neos Lounge'){ label='CN Lounge Classic'; tip='Pre–Sep 25 lounge (Diamond / Platinium / Gold)'; }
     tabsHtml+='<button class="vr-tab'+(v===_vrEditVenue?' on':'')+'" data-vv="'+v+'" title="'+tip+'">'+label+'</button>';
   });
@@ -2546,6 +2549,7 @@ function renderVenueRulesPanel(){
   var fpOpts=typeof roiFloorPlanOptionsForVenue==='function'?roiFloorPlanOptionsForVenue(_vrEditVenue):[];
   if(fpOpts.length){
     var curFp=rules.floorPlan||fpOpts[0].v;
+    if(curFp && !fpOpts.some(function(o){ return o.v===curFp; })) fpOpts=[{v:curFp, l:curFp}].concat(fpOpts);
     h+='<div class="vr-season-box">';
     h+='<div class="vr-season-lbl">3D floor plan for these ROI rules</div>';
     h+='<select id="vrFloorPlanSel" class="vr-floor-plan-sel">';
