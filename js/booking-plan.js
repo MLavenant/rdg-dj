@@ -228,11 +228,14 @@ function _bpPlaceholderPct(key){
   var mag=Math.round((s%201))/10;
   return (s%3===0)?-mag:mag;
 }
-function _bpPctHtml(pct){
+function _bpPctHtml(pct, lowerBetter){
   if(pct==null || isNaN(pct)) return '<b class="bp-muted">—</b>';
-  var cls=pct>0.05?'bp-pos':(pct<-0.05?'bp-neg':'bp-muted');
+  var up=pct>0.05, down=pct<-0.05;
+  var good=lowerBetter?down:up;
+  var bad=lowerBetter?up:down;
+  var cls=good?'bp-pos':(bad?'bp-neg':'bp-muted');
   var abs=(Math.round(Math.abs(pct)*10)/10).toFixed(1);
-  var sign=pct>0.05?'+':(pct<-0.05?'\u2212':'');
+  var sign=up?'+':(down?'\u2212':'');
   return '<b class="'+cls+'">'+sign+abs+'%</b>';
 }
 function _bpFinPair(key, kind){
@@ -267,15 +270,15 @@ function _bpFinNums(pair, nowLbl, pyLbl){
   var b=pair.money?$k(pair.py):(Math.round(pair.py*10)/10).toFixed(1)+'%';
   return '<b>'+a+'</b> '+nowLbl+' <span class="bp-dot">·</span> <b>'+b+'</b> '+pyLbl;
 }
-function _bpFinMetric(name, pair, nowLbl, pyLbl){
-  return '<div class="bp-finm"><div class="bp-finm-name">'+name+'</div><div class="bp-finm-var">'+_bpPctHtml(pair.pct)+'</div><div class="bp-finm-nums">'+_bpFinNums(pair, nowLbl, pyLbl)+'</div></div>';
+function _bpFinMetric(name, pair, nowLbl, pyLbl, lowerBetter){
+  return '<div class="bp-finm"><div class="bp-finm-name">'+name+'</div><div class="bp-finm-var">'+_bpPctHtml(pair.pct, lowerBetter)+'</div><div class="bp-finm-nums">'+_bpFinNums(pair, nowLbl, pyLbl)+'</div></div>';
 }
 function _bpFinCardHtml(month, fin){
   var h='<article class="bp-fincard">';
   h+='<div class="bp-fincard-hd"><b>'+_escHtml(month.label||'')+'</b>'+(month.range?'<span>'+_escHtml(month.range)+'</span>':'')+'</div>';
   h+=_bpFinMetric('Sales projected vs last year', fin.sales, 'projected', 'last year');
-  h+=_bpFinMetric('Margins', fin.margin, 'projected', 'PY');
-  h+=_bpFinMetric('Live entertainment margins', fin.live, 'projected', 'PY');
+  h+=_bpFinMetric('Margins', fin.margin, 'projected', 'PY', true);
+  h+=_bpFinMetric('Live entertainment margins', fin.live, 'projected', 'PY', true);
   h+='</article>';
   return h;
 }
@@ -481,7 +484,7 @@ function _bpRowsHtml(data, opts){
       h+=line('<b>'+_escHtml(r.dj||'TBD')+'</b>', $k(r.fee),
         '<span class="bp-status '+(r.confirmed?'bp-status-conf':'bp-status-prop')+'">'+_escHtml(r.status||'No status')+'</span>',
         _bpBsVsHtml(r.bs_m, ly?ly.bs:null),
-        _bpPctHtml(_bpPlaceholderPct(r.venue+'|'+r.d+'|margin'))+'<em>vs PY</em>');
+        _bpPctHtml(_bpPlaceholderPct(r.venue+'|'+r.d+'|margin'), true)+'<em>vs PY</em>');
       h+='</div>';
       if(!simple){
         h+='<div class="bp-bk-appr">'+_bpBadge(r.approval);
@@ -498,7 +501,7 @@ function _bpRowsHtml(data, opts){
     h+='<div class="bp-bk-box bp-bk-total"><div class="bp-bk-date"><b>Total</b><span>Over $20K</span></div><div class="bp-bk-lines">';
     h+=line('<b>'+now.n+' bookings</b>', '<b>'+$k(now.fee)+'</b>', '',
       _bpBsVsHtml(now.hasBs?now.bs:null, lyTot.hasBs?lyTot.bs:null),
-      _bpPctHtml(_bpPlaceholderPct('total|'+((data.months[0]&&data.months[0].key)||'')+'|margin'))+'<em>vs PY</em>');
+      _bpPctHtml(_bpPlaceholderPct('total|'+((data.months[0]&&data.months[0].key)||'')+'|margin'), true)+'<em>vs PY</em>');
     h+='</div>'+(simple?'':'<div class="bp-bk-appr"></div>')+'</div>';
   }
   h+='</div>';
