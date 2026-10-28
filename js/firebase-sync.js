@@ -1356,6 +1356,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       VENUE_ROI_RULES = data.venueRoiRules;
     }
     if(VENUE_ROI_RULES && typeof _roiApplyPendingToRules==='function') _roiApplyPendingToRules(VENUE_ROI_RULES);
+    if(typeof _roiPaintOpenCells==='function') _roiPaintOpenCells();
     var hadRemodel=typeof CNL_REMODEL_KEY!=='undefined' && !!(data.venueRoiRules&&data.venueRoiRules[CNL_REMODEL_KEY]);
     var hadOct=typeof CNL_OCT_KEY!=='undefined' && !!(data.venueRoiRules&&data.venueRoiRules[CNL_OCT_KEY]);
     var hadCnbcCurrent=typeof CNBC_CURRENT_KEY!=='undefined' && !!(data.venueRoiRules&&data.venueRoiRules[CNBC_CURRENT_KEY]);

@@ -198,39 +198,13 @@ function _roiRulesScroller(){
 /* A cell edit stays pending until the server copy matches it. A full rules
    write from another open dashboard cannot put the old number back. */
 var ROI_CELL_QUEUE_KEY='rdg_roi_cell_queue';
-function _roiSaveStatus(state){
-  var host=document.getElementById('view-roi-rules');
-  if(!host) return;
-  var el=document.getElementById('vrSaveStatus');
-  if(!el){
-    el=document.createElement('div');
-    el.id='vrSaveStatus';
-    el.className='vr-save-status';
-    var body=document.getElementById('roiRulesBody');
-    if(body&&body.parentNode===host) host.insertBefore(el, body);
-    else host.appendChild(el);
-  }
-  el.classList.remove('saving','saved','error');
-  el.classList.add('on', state);
-  if(state==='saving') el.textContent='Saving…';
-  else if(state==='saved') el.textContent='Saved for everyone';
-  else el.textContent='Not saved yet — retrying';
-  clearTimeout(el._hide);
-  if(state==='saved') el._hide=setTimeout(function(){ el.classList.remove('on'); }, 4000);
-}
+function _roiSaveStatus(){ /* The number itself updates immediately, the same way a calendar edit does. */ }
 function _roiSaveCellQueue(){
   try{ sessionStorage.setItem(ROI_CELL_QUEUE_KEY, JSON.stringify(window._roiCellPending||{})); }catch(e){}
 }
 function _roiLoadCellQueue(){
-  try{
-    var raw=sessionStorage.getItem(ROI_CELL_QUEUE_KEY);
-    if(!raw) return;
-    var q=JSON.parse(raw);
-    window._roiCellPending=window._roiCellPending||{};
-    Object.keys(q||{}).forEach(function(p){
-      if(q[p] && q[p].v!=null && !window._roiCellPending[p]) window._roiCellPending[p]=q[p];
-    });
-  }catch(e){}
+  /* Do not replay an old tab queue over the live server copy. */
+  try{ sessionStorage.removeItem(ROI_CELL_QUEUE_KEY); }catch(e){}
 }
 function _roiFlushCell(path){
   var pending=window._roiCellPending||{};
@@ -244,26 +218,20 @@ function _roiFlushCell(path){
   if(rec._inflight) return;
   rec._inflight=true;
   var sent=rec.v;
-  _roiSaveStatus('saving');
   window._fbRef.child('venueRoiRules/'+path).set(sent, function(err){
     var cur=window._roiCellPending && window._roiCellPending[path];
     /* The live copy can confirm the number before this callback, and clears the queue. */
-    if(!cur){
-      if(!err && !Object.keys(window._roiCellPending||{}).length) _roiSaveStatus('saved');
-      return;
-    }
+    if(!cur) return;
     cur._inflight=false;
     if(cur.v!==sent){ _roiFlushCell(path); return; }
     if(err){
       cur.tries=(cur.tries||0)+1;
-      _roiSaveStatus('error');
       _roiSaveCellQueue();
       if(cur.tries<15) setTimeout(function(){ _roiFlushCell(path); }, Math.min(8000, 400*cur.tries));
       return;
     }
     cur.acked=true;
     _roiSaveCellQueue();
-    _roiSaveStatus('saved');
   });
 }
 function _roiRememberCell(path, n){
@@ -318,8 +286,30 @@ function _roiApplyPendingToRules(rules){
     }
   });
   _roiSaveCellQueue();
-  if(confirmed && !Object.keys(window._roiCellPending||{}).length) _roiSaveStatus('saved');
+  if(typeof _roiPaintOpenCells==='function') _roiPaintOpenCells();
   return {held:held, confirmed:confirmed};
+}
+/* Put the server number into every box the person is not typing in. */
+function _roiPaintOpenCells(){
+  var root=document.getElementById('vrBody');
+  var venue=window._vrEditVenue;
+  var rules=venue&&typeof VENUE_ROI_RULES!=='undefined'?VENUE_ROI_RULES[venue]:null;
+  if(!root||!rules||!rules.tiers) return;
+  root.querySelectorAll('[data-action="table-field"],[data-action="day-field"]').forEach(function(inp){
+    if(document.activeElement===inp) return;
+    var tier=rules.tiers[+inp.dataset.ti];
+    if(!tier) return;
+    var day=tier[inp.dataset.season]&&tier[inp.dataset.season][inp.dataset.day];
+    if(!day) return;
+    var n;
+    if(inp.getAttribute('data-action')==='table-field') n=day.tables?day.tables[inp.dataset.cat]:null;
+    else if(inp.dataset.field==='roi') n=day.roi;
+    else n=day.sales;
+    if(n==null||n==='') return;
+    var shown=inp.dataset.field==='roi'?String(+n||0):(typeof _vrFmtMoney==='function'?_vrFmtMoney(n):String(n));
+    if(inp.value!==shown) inp.value=shown;
+  });
+  if(typeof roiRefreshVerifyBlocks==='function') roiRefreshVerifyBlocks(root);
 }
 function _roiClone(o){
   try{ return JSON.parse(JSON.stringify(o==null?{}:o)); }catch(e){ return {}; }
@@ -421,21 +411,13 @@ function _roiCommitRulesTree(){
   if(!window._fbRef || !window._roiRulesBaselineReady){
     clearTimeout(window._roiCommitWait);
     window._roiCommitWait=setTimeout(_roiCommitRulesTree, 400);
-    _roiSaveStatus('saving');
     return;
   }
   var local=_roiClone(VENUE_ROI_RULES);
   var baseline=_roiClone(window._roiRulesBaseline||{});
-  _roiSaveStatus('saving');
   window._fbRef.child('venueRoiRules').transaction(function(cur){
     return _roiMergeSavedRules(cur||{}, local, baseline);
-  }, function(err, committed){
-    if(err||!committed){
-      _roiSaveStatus('error');
-      return;
-    }
-    _roiSaveStatus('saved');
-  }, false);
+  }, function(){}, false);
 }
 _roiLoadCellQueue();
 function renderRoiRulesPage(){
