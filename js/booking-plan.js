@@ -290,26 +290,24 @@ function _bpFinMetricsHtml(fin, nowLbl){
   h+=_bpFinMetric('Margins', fin.margin, nowLbl, 'PY', 'pp-up');
   return h;
 }
-function _bpFinCardHtml(month, fin, cast){
+function _bpFinCardHtml(month, fin, cast, nowLbl){
   var h='<article class="bp-fincard'+(cast?' bp-cast':'')+'">';
   h+='<div class="bp-fincard-hd"><b>'+_escHtml(month.label||'')+'</b>'+(month.range?'<span>'+_escHtml(month.range)+'</span>':'')+'</div>';
-  h+=_bpFinMetricsHtml(fin, 'projected');
+  h+=_bpFinMetricsHtml(fin, nowLbl||'projected');
   h+='</article>';
   return h;
 }
-function _bpActualCardHtml(c){
+function _bpActualBudgetHtml(c){
   var m=c.month||{};
-  var fin=_bpFinFor(c);
   var over=c.remaining!=null && c.remaining<0;
   var under=c.remaining!=null && c.remaining>=0;
-  var h='<article class="bp-actual bp-eq-actual">';
-  h+='<div class="bp-card-hd"><b>'+_escHtml(m.label||'Prior month')+'</b><span>'+(m.range?_escHtml(m.range):'Actual')+'</span></div>';
+  var h='<article class="bp-card bp-card-actual">';
+  h+='<div class="bp-card-hd"><b>'+_escHtml(m.label||'Prior month')+'</b><span>'+(m.range?_escHtml(m.range):'&nbsp;')+'</span></div>';
   h+='<div class="bp-budget-box"><span>Budget</span><b>'+(c.budget!=null?$k(c.budget):'Not set')+'</b></div>';
-  h+='<div class="bp-planned-box bp-actual-spend'+(over?' bp-planned-over':(under?' bp-planned-under':''))+'">'
+  h+='<div class="bp-planned-box'+(over?' bp-planned-over':(under?' bp-planned-under':''))+'">'
     +'<div class="bp-planned-top"><div class="bp-planned-main"><span>Actual spend</span><b>'+$k(c.planned)+'</b></div>'
     +'<div class="bp-planned-var">'+_bpMoneyVar(c.remaining)+'</div></div></div>';
-  h+='<div class="bp-actual-fin">'+_bpFinMetricsHtml(fin, 'actual')+'</div>';
-  h+='</article>';
+  h+='<div class="bp-card-foot"></div></article>';
   return h;
 }
 function _bpSplitLine(label, amount){
@@ -396,10 +394,12 @@ function _bpBandHtml(cells, months, actualCell){
   var h='<div class="bp-eq" style="--bp-cols:'+cols+';--bp-n:'+n+'">';
   h+='<div class="bp-eq-actual-hd">Actual</div>';
   h+='<div class="bp-eq-forecast-hd">Forecast</div>';
-  h+=_bpActualCardHtml(actualCell);
-  h+='<div class="bp-eq-budget"><div class="bp-subhd">Budget vs pipeline</div><div class="bp-cards">'+cards+'</div></div>';
+  h+='<div class="bp-eq-subspacer"></div>';
+  h+='<div class="bp-subhd bp-eq-subhd">Budget vs pipeline</div>';
+  h+='<div class="bp-eq-cards">'+_bpActualBudgetHtml(actualCell)+cards+'</div>';
+  h+='<div class="bp-eq-finspacer"></div>';
   h+='<div class="bp-eq-finhd">Financial</div>';
-  h+='<div class="bp-eq-fins"><div class="bp-fincards">'+finHtml+'</div></div>';
+  h+='<div class="bp-eq-allfins">'+_bpFinCardHtml(actualCell.month||{}, _bpFinFor(actualCell), false, 'actual')+finHtml+'</div>';
   h+='</div>';
   return h;
 }
