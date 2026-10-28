@@ -247,7 +247,11 @@ function _roiFlushCell(path){
   _roiSaveStatus('saving');
   window._fbRef.child('venueRoiRules/'+path).set(sent, function(err){
     var cur=window._roiCellPending && window._roiCellPending[path];
-    if(!cur) return;
+    /* The live copy can confirm the number before this callback, and clears the queue. */
+    if(!cur){
+      if(!err && !Object.keys(window._roiCellPending||{}).length) _roiSaveStatus('saved');
+      return;
+    }
     cur._inflight=false;
     if(cur.v!==sent){ _roiFlushCell(path); return; }
     if(err){
@@ -314,6 +318,7 @@ function _roiApplyPendingToRules(rules){
     }
   });
   _roiSaveCellQueue();
+  if(confirmed && !Object.keys(window._roiCellPending||{}).length) _roiSaveStatus('saved');
   return {held:held, confirmed:confirmed};
 }
 function _roiClone(o){
