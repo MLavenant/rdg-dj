@@ -214,14 +214,17 @@ function _bpMoneyVar(v){
   if(v==null) return '<span class="bp-muted">No budget</span>';
   return '<span class="'+(v>=0?'bp-pos':'bp-neg')+'">'+(v>=0?'Under ':'Over ')+$k(Math.abs(v))+'</span>';
 }
-/* Stable stand-in until sales, bottle service, and margin versus last year are calculated. Magnitude stays within 0–20%. */
-function _bpPlaceholderPct(key){
+/* Stable stand-in until sales and margins versus last year are calculated. The gap stays within 0–20%. */
+function _bpHash(key){
   var s=2166136261, str=String(key||''), i;
   for(i=0;i<str.length;i++){
     s^=str.charCodeAt(i);
     s=Math.imul(s, 16777619);
   }
-  s=s>>>0;
+  return s>>>0;
+}
+function _bpPlaceholderPct(key){
+  var s=_bpHash(key);
   var mag=Math.round((s%201))/10;
   return (s%3===0)?-mag:mag;
 }
@@ -232,15 +235,52 @@ function _bpPctHtml(pct){
   var sign=pct>0.05?'+':(pct<-0.05?'\u2212':'');
   return '<b class="'+cls+'">'+sign+abs+'%</b>';
 }
-function _bpCardVarsHtml(c){
+function _bpFinPair(key, kind){
+  var pct=_bpPlaceholderPct(key+'|'+kind);
+  var h=_bpHash(key+'|'+kind+'|base');
+  if(kind==='sales'){
+    var py=800000+(h%17)*100000;
+    return {now:Math.round(py*(1+pct/100)), py:py, pct:pct, money:true};
+  }
+  var pyM=10+(h%15);
+  return {now:Math.round(pyM*(1+pct/100)*10)/10, py:pyM, pct:pct, money:false};
+}
+function _bpFinFor(c){
+  if(c&&c._fin) return c._fin;
   var key=(c.venue||'all')+'|'+(c.month&&(c.month.key||c.month.label)||'');
-  var h='<div class="bp-vars"><div class="bp-vars-hd">Projected vs last year</div>';
-  h+='<div class="bp-var"><span>Total Sales Projected vs PY</span>'+_bpPctHtml(_bpPlaceholderPct(key+'|sales'))+'</div>';
-  h+='<div class="bp-var"><span>Bottle Service Sales vs PY</span>'+_bpPctHtml(_bpPlaceholderPct(key+'|bottle'))+'</div>';
-  h+='<div class="bp-var"><span>Margins vs PY</span>'+_bpPctHtml(_bpPlaceholderPct(key+'|margin'))+'</div>';
-  h+='<div class="bp-var"><span>Live Entertainment Margin <em>Projected</em></span>'+_bpPctHtml(_bpPlaceholderPct(key+'|live'))+'</div>';
-  h+='</div>';
+  return {sales:_bpFinPair(key,'sales'), margin:_bpFinPair(key,'margin'), live:_bpFinPair(key,'live')};
+}
+function _bpFinSum(list){
+  var sN=0, sP=0, mN=0, mP=0, lN=0, lP=0, n=list.length||1;
+  list.forEach(function(f){
+    sN+=f.sales.now; sP+=f.sales.py;
+    mN+=f.margin.now; mP+=f.margin.py;
+    lN+=f.live.now; lP+=f.live.py;
+  });
+  function pack(now, py, money){
+    return {now:money?now:(Math.round(now/n*10)/10), py:money?py:(Math.round(py/n*10)/10), pct:py?(now-py)/py*100:0, money:money};
+  }
+  return {sales:pack(sN,sP,true), margin:pack(mN,mP,false), live:pack(lN,lP,false)};
+}
+function _bpFinNums(pair, nowLbl, pyLbl){
+  var a=pair.money?$k(pair.now):(Math.round(pair.now*10)/10).toFixed(1)+'%';
+  var b=pair.money?$k(pair.py):(Math.round(pair.py*10)/10).toFixed(1)+'%';
+  return '<b>'+a+'</b> '+nowLbl+' <span class="bp-dot">·</span> <b>'+b+'</b> '+pyLbl;
+}
+function _bpFinMetric(name, pair, nowLbl, pyLbl){
+  return '<div class="bp-finm"><div class="bp-finm-name">'+name+'</div><div class="bp-finm-var">'+_bpPctHtml(pair.pct)+'</div><div class="bp-finm-nums">'+_bpFinNums(pair, nowLbl, pyLbl)+'</div></div>';
+}
+function _bpFinCardHtml(month, fin){
+  var h='<article class="bp-fincard">';
+  h+='<div class="bp-fincard-hd"><b>'+_escHtml(month.label||'')+'</b>'+(month.range?'<span>'+_escHtml(month.range)+'</span>':'')+'</div>';
+  h+=_bpFinMetric('Sales projected vs last year', fin.sales, 'projected', 'last year');
+  h+=_bpFinMetric('Margins', fin.margin, 'projected', 'PY');
+  h+=_bpFinMetric('Live entertainment margins', fin.live, 'projected', 'PY');
+  h+='</article>';
   return h;
+}
+function _bpSplitLine(label, amount){
+  return '<div class="bp-split-line"><i class="bp-arr"></i><span>'+label+'</span><b>'+$k(amount)+'</b></div>';
 }
 function _bpBsVsHtml(target, actual){
   return '<b>'+(target!=null?$k(target):'—')+'</b><em>target</em><span class="bp-bsva-vs">vs</span><b>'+(actual!=null?$k(actual):'—')+'</b><em>'+(actual!=null?'PY actual':'no PY')+'</em>';
@@ -293,27 +333,48 @@ function _bpAddTotals(t, c){
   }
 }
 function _bpBlankTot(){ return {budget:0,hasB:false,confirmed:0,proposed:0,bsT:0,pyFee:0,hasPyFee:false,pyBs:0,hasPyBs:false}; }
+function _bpBandHtml(cells, months){
+  var h='<div class="bp-subhd">Budget vs pipeline</div><div class="bp-cards">';
+  var tot=_bpBlankTot();
+  var fins=[];
+  cells.forEach(function(c){
+    h+=_bpCardHtml(c);
+    _bpAddTotals(tot, c);
+    fins.push(_bpFinFor(c));
+  });
+  if(months.length>1){
+    h+=_bpCardHtml(_bpTotCard(tot, months.length+'-month total', _bpSpanRange(months)));
+  }
+  h+='</div><div class="bp-subhd">Financial</div><div class="bp-fincards">';
+  cells.forEach(function(c, i){ h+=_bpFinCardHtml(c.month, fins[i]); });
+  if(months.length>1) h+=_bpFinCardHtml({label:months.length+'-month total', range:_bpSpanRange(months)}, _bpFinSum(fins));
+  h+='</div>';
+  return h;
+}
 function _bpSummaryHtml(data){
   var venues=Object.keys(data.grid);
   var h='<div class="bp-summary">';
   venues.forEach(function(v){
-    h+='<div class="bp-venue-block"><div class="bp-venue-name">'+_escHtml(v)+'</div><div class="bp-cards">';
-    var tot=_bpBlankTot();
-    data.grid[v].forEach(function(c){ h+=_bpCardHtml(c); _bpAddTotals(tot, c); });
-    if(data.months.length>1) h+=_bpCardHtml(_bpTotCard(tot, data.months.length+'-month total', _bpSpanRange(data.months)));
-    h+='</div></div>';
+    h+='<div class="bp-venue-block"><div class="bp-venue-name">'+_escHtml(v)+'</div>';
+    h+=_bpBandHtml(data.grid[v], data.months);
+    h+='</div>';
   });
   if(venues.length>1){
-    h+='<div class="bp-venue-block"><div class="bp-venue-name">All venues</div><div class="bp-cards">';
-    var gTot=_bpBlankTot();
-    data.months.forEach(function(m, i){
+    var combined=data.months.map(function(m, i){
       var bucket=_bpBlankTot();
-      venues.forEach(function(v){ _bpAddTotals(bucket, data.grid[v][i]); });
-      h+=_bpCardHtml(_bpTotCard(bucket, m.label, m.range));
-      _bpAddTotals(gTot, {budget:bucket.hasB?bucket.budget:null, confirmed:bucket.confirmed, proposed:bucket.proposed, bsT:bucket.bsT, py:{fee:bucket.hasPyFee?bucket.pyFee:null, bs:bucket.hasPyBs?bucket.pyBs:null}});
+      var fins=[];
+      venues.forEach(function(v){
+        _bpAddTotals(bucket, data.grid[v][i]);
+        fins.push(_bpFinFor(data.grid[v][i]));
+      });
+      var card=_bpTotCard(bucket, m.label, m.range);
+      card.month=m;
+      card._fin=_bpFinSum(fins);
+      return card;
     });
-    if(data.months.length>1) h+=_bpCardHtml(_bpTotCard(gTot, data.months.length+'-month total', _bpSpanRange(data.months)));
-    h+='</div></div>';
+    h+='<div class="bp-venue-block"><div class="bp-venue-name">All venues</div>';
+    h+=_bpBandHtml(combined, data.months);
+    h+='</div>';
   }
   h+='</div>';
   return h;
@@ -342,12 +403,9 @@ function _bpCardHtml(c){
   var under=c.remaining!=null && c.remaining>=0;
   h+='<div class="bp-budget-box"><span>Budget</span><b>'+(c.budget!=null?$k(c.budget):'Not set')+'</b></div>';
   h+='<div class="bp-planned-box'+(over?' bp-planned-over':(under?' bp-planned-under':''))+'">'
-    +'<div class="bp-planned-main"><span>Total planned</span><b>'+$k(c.planned)+'</b></div>'
-    +'<div class="bp-planned-var">'+_bpMoneyVar(c.remaining)+'</div></div>';
-  h+='<div class="bp-pipe"><div class="bp-pipe-hd">Confirmed + proposed</div>';
-  h+='<div class="bp-line"><span>Confirmed</span><b>'+$k(c.confirmed)+'</b></div>';
-  h+='<div class="bp-line"><span>Proposed</span><b>'+$k(c.proposed)+'</b></div></div>';
-  h+=_bpCardVarsHtml(c);
+    +'<div class="bp-planned-top"><div class="bp-planned-main"><span>Total planned</span><b>'+$k(c.planned)+'</b></div>'
+    +'<div class="bp-planned-var">'+_bpMoneyVar(c.remaining)+'</div></div>'
+    +'<div class="bp-split">'+_bpSplitLine('Confirmed', c.confirmed)+_bpSplitLine('Proposed', c.proposed)+'</div></div>';
   var foot='';
   if(!c.isTotal){
     var e=c.exc||{}, tags=[];
@@ -459,7 +517,7 @@ function _bpDeckSlideHtml(data, n, of){
     +'<em>'+_escHtml(ms[0].label+' – '+ms[ms.length-1].label)+'</em></div>'
     +'<img src="assets/rdg-logo.png" alt="RDG"></div>';
   h+='<div class="bp-deck-body">';
-  h+='<div class="bp-deck-sec"><span>01</span>Budget vs pipeline<em>Budget, confirmed, and proposed — then sales and margins versus last year</em></div>';
+  h+='<div class="bp-deck-sec"><span>01</span>Budget vs pipeline<em>Budget and planned spend, then sales and margins versus last year</em></div>';
   h+=_bpSummaryHtml(data);
   h+='<div class="bp-deck-sec"><span>02</span>Bookings over $20K<em>Artist, fee, status, BS target vs actual, and that day&rsquo;s margin vs last year</em></div>';
   h+=_bpRowsHtml(data, {noActions:true});
