@@ -1244,6 +1244,11 @@ model-viewer{--min-hotspot-opacity:0}
 .vr-cell-inp{width:92px;font-size:15px;font-family:inherit;border:0.5px solid var(--rule);border-radius:8px;padding:8px 10px;background:var(--card);color:var(--ink);outline:none;text-align:right;transition:border-color .12s}
 .vr-roi-inp{width:68px;text-align:center;font-size:15px}
 .vr-target-inp{width:108px;background:#fffef5;border-color:#e8d48b}
+.vr-save-status{display:none;margin:0 20px 10px;padding:8px 12px;border-radius:8px;font-size:13px;font-weight:800}
+.vr-save-status.on{display:block}
+.vr-save-status.saving{background:#fff6df;color:#7a5600}
+.vr-save-status.saved{background:#e5f6ea;color:#146c36}
+.vr-save-status.error{background:#fde8e8;color:#8f1d1d}
 .vr-th-bsset{text-align:center;min-width:148px}
 .vr-bsset{text-align:center;white-space:nowrap}
 .vr-bsset-amt{font-weight:800;font-variant-numeric:tabular-nums;font-size:15px;margin-right:8px}

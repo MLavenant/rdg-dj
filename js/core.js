@@ -1981,7 +1981,8 @@ function loadSavedVenueRules(){
 function saveVenueRules(){
   ensureVenueRulesFloorPlanBindings();
   try{ localStorage.setItem('rdg_venue_roi_rules', JSON.stringify(VENUE_ROI_RULES)); }catch(e){}
-  if(window._fbSave) window._fbSave('venueRoiRules', VENUE_ROI_RULES);
+  if(typeof _roiCommitRulesTree==='function') _roiCommitRulesTree();
+  else if(window._fbSave) window._fbSave('venueRoiRules', VENUE_ROI_RULES);
   refreshAllRoiDerivedData();
 }
 

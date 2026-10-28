@@ -195,34 +195,244 @@ function closeVenueRulesEditor(){ /* legacy modal hook — page replaces modal *
 function _roiRulesScroller(){
   return document.getElementById('view-roi-rules')||document.scrollingElement;
 }
-/* Keep a just-typed minimum if a stale Firebase snapshot arrives before that cell write. */
+/* A cell edit stays pending until the server copy matches it. A full rules
+   write from another open dashboard cannot put the old number back. */
+var ROI_CELL_QUEUE_KEY='rdg_roi_cell_queue';
+function _roiSaveStatus(state){
+  var host=document.getElementById('view-roi-rules');
+  if(!host) return;
+  var el=document.getElementById('vrSaveStatus');
+  if(!el){
+    el=document.createElement('div');
+    el.id='vrSaveStatus';
+    el.className='vr-save-status';
+    var body=document.getElementById('roiRulesBody');
+    if(body&&body.parentNode===host) host.insertBefore(el, body);
+    else host.appendChild(el);
+  }
+  el.classList.remove('saving','saved','error');
+  el.classList.add('on', state);
+  if(state==='saving') el.textContent='Saving…';
+  else if(state==='saved') el.textContent='Saved for everyone';
+  else el.textContent='Not saved yet — retrying';
+  clearTimeout(el._hide);
+  if(state==='saved') el._hide=setTimeout(function(){ el.classList.remove('on'); }, 4000);
+}
+function _roiSaveCellQueue(){
+  try{ sessionStorage.setItem(ROI_CELL_QUEUE_KEY, JSON.stringify(window._roiCellPending||{})); }catch(e){}
+}
+function _roiLoadCellQueue(){
+  try{
+    var raw=sessionStorage.getItem(ROI_CELL_QUEUE_KEY);
+    if(!raw) return;
+    var q=JSON.parse(raw);
+    window._roiCellPending=window._roiCellPending||{};
+    Object.keys(q||{}).forEach(function(p){
+      if(q[p] && q[p].v!=null && !window._roiCellPending[p]) window._roiCellPending[p]=q[p];
+    });
+  }catch(e){}
+}
+function _roiFlushCell(path){
+  var pending=window._roiCellPending||{};
+  var rec=pending[path];
+  if(!rec) return;
+  if(!window._fbRef){
+    clearTimeout(rec._wait);
+    rec._wait=setTimeout(function(){ _roiFlushCell(path); }, 500);
+    return;
+  }
+  if(rec._inflight) return;
+  rec._inflight=true;
+  var sent=rec.v;
+  _roiSaveStatus('saving');
+  window._fbRef.child('venueRoiRules/'+path).set(sent, function(err){
+    var cur=window._roiCellPending && window._roiCellPending[path];
+    if(!cur) return;
+    cur._inflight=false;
+    if(cur.v!==sent){ _roiFlushCell(path); return; }
+    if(err){
+      cur.tries=(cur.tries||0)+1;
+      _roiSaveStatus('error');
+      _roiSaveCellQueue();
+      if(cur.tries<15) setTimeout(function(){ _roiFlushCell(path); }, Math.min(8000, 400*cur.tries));
+      return;
+    }
+    cur.acked=true;
+    _roiSaveCellQueue();
+    _roiSaveStatus('saved');
+  });
+}
+function _roiRememberCell(path, n){
+  if(!window._roiCellPending) window._roiCellPending={};
+  window._roiCellPending[path]={v:n, t:Date.now(), tries:0, acked:false};
+  _roiSaveCellQueue();
+  _roiFlushCell(path);
+}
+function _roiReadPendingSlot(rules, parts){
+  var rule=rules[parts[0]];
+  var tiers=rule&&rule.tiers;
+  var tier=tiers&&(tiers[+parts[2]]!=null?tiers[+parts[2]]:null);
+  if(!tier) return {missing:true};
+  var slot=tier[parts[3]]&&tier[parts[3]][parts[4]];
+  if(!slot) return {missing:true, tier:tier};
+  if(parts[5]==='tables') return {slot:slot, value:slot.tables?slot.tables[parts[6]]:undefined};
+  return {slot:slot, value:slot[parts[5]]};
+}
 function _roiApplyPendingToRules(rules){
   var pending=window._roiCellPending;
   if(!rules||!pending) return {held:false, confirmed:false};
   var held=false, confirmed=false, now=Date.now();
   Object.keys(pending).forEach(function(path){
     var rec=pending[path];
-    if(!rec||now-rec.t>20000){ delete pending[path]; return; }
+    if(!rec){ delete pending[path]; return; }
     var parts=path.split('/');
-    if(parts.length<6) return;
+    if(parts.length<6){ delete pending[path]; return; }
+    var got=_roiReadPendingSlot(rules, parts);
+    if(!got.missing && (+got.value||0)===(+rec.v||0)){
+      delete pending[path];
+      confirmed=true;
+      return;
+    }
+    /* Give up only after the server has had time to echo and a later edit won. */
+    if(rec.acked && now-rec.t>120000){ delete pending[path]; return; }
     var rule=rules[parts[0]];
     var tier=rule&&rule.tiers&&rule.tiers[+parts[2]];
-    if(!tier){ held=true; return; }
-    if(!tier[parts[3]]) tier[parts[3]]={};
-    if(!tier[parts[3]][parts[4]]) tier[parts[3]][parts[4]]={roi:0,sales:0,tables:{}};
-    var slot=tier[parts[3]][parts[4]];
-    if(parts[5]==='tables'){
-      if(!slot.tables) slot.tables={};
-      if((+slot.tables[parts[6]]||0)===(+rec.v||0)){ delete pending[path]; confirmed=true; return; }
-      slot.tables[parts[6]]=rec.v; held=true;
-    }else{
-      var remote=parts[5]==='roi'?(+slot.roi||0):(+slot.sales||0);
-      if(remote===(+rec.v||0)){ delete pending[path]; confirmed=true; return; }
-      slot[parts[5]]=rec.v; held=true;
+    if(!tier){ held=true; }
+    else{
+      if(!tier[parts[3]]) tier[parts[3]]={};
+      if(!tier[parts[3]][parts[4]]) tier[parts[3]][parts[4]]={roi:0,sales:0,tables:{}};
+      var slot=tier[parts[3]][parts[4]];
+      if(parts[5]==='tables'){
+        if(!slot.tables) slot.tables={};
+        slot.tables[parts[6]]=rec.v;
+      }else slot[parts[5]]=rec.v;
+      held=true;
+    }
+    if(!rec._inflight && (!rec._pushedAt || now-rec._pushedAt>1500)){
+      rec._pushedAt=now;
+      _roiFlushCell(path);
     }
   });
+  _roiSaveCellQueue();
   return {held:held, confirmed:confirmed};
 }
+function _roiClone(o){
+  try{ return JSON.parse(JSON.stringify(o==null?{}:o)); }catch(e){ return {}; }
+}
+function _roiTierList(tiers){
+  if(!tiers) return [];
+  if(Array.isArray(tiers)) return tiers.slice();
+  return Object.keys(tiers).filter(function(k){ return String(+k)===String(k); }).sort(function(a,b){ return (+a)-(+b); }).map(function(k){ return tiers[k]; });
+}
+function _roiNum(v){ return +v||0; }
+function _roiSame(a,b){ return _roiNum(a)===_roiNum(b); }
+/* Copy only the cells this browser actually changed onto the live server copy. */
+function _roiMergeSavedRules(server, local, baseline){
+  var out=_roiClone(server||{});
+  var names={};
+  Object.keys(local||{}).forEach(function(k){ names[k]=1; });
+  Object.keys(baseline||{}).forEach(function(k){ names[k]=1; });
+  Object.keys(names).forEach(function(v){
+    var L=local?local[v]:null;
+    var B=baseline?baseline[v]:null;
+    if(!L){
+      if(B) delete out[v];
+      return;
+    }
+    if(!out[v]||typeof out[v]!=='object') out[v]=_roiClone(L);
+    var S=out[v];
+    var base=B||{};
+    ['floorPlan','label','appliesTo','fromDate','toDate','tableCats','days','highSeasonMonths'].forEach(function(f){
+      var lv=L[f]===undefined?null:L[f];
+      var bv=base[f]===undefined?null:base[f];
+      if(JSON.stringify(lv)!==JSON.stringify(bv)){
+        if(L[f]===undefined) delete S[f];
+        else S[f]=_roiClone(L[f]);
+      }
+    });
+    var lt=_roiTierList(L.tiers);
+    var bt=_roiTierList(base.tiers);
+    var st=_roiTierList(S.tiers);
+    var feeChanged=lt.length!==bt.length;
+    var i;
+    if(!feeChanged){
+      for(i=0;i<lt.length;i++){
+        if(_roiNum(lt[i]&&lt[i].fee)!==_roiNum(bt[i]&&bt[i].fee)) feeChanged=true;
+      }
+    }
+    function applyCells(targetTiers, serverTiers){
+      lt.forEach(function(localTier, ti){
+        if(!targetTiers[ti]) targetTiers[ti]=_roiClone(localTier);
+        var bTier=bt[ti]||{};
+        var sTier=(serverTiers&&serverTiers[ti])||{};
+        if(_roiNum(localTier.fee)!==_roiNum(bTier.fee)) targetTiers[ti].fee=_roiNum(localTier.fee);
+        ['High','Low'].forEach(function(season){
+          var lSeason=localTier[season]||{};
+          var bSeason=bTier[season]||{};
+          var sSeason=sTier[season]||{};
+          if(!targetTiers[ti][season]) targetTiers[ti][season]={};
+          var days={};
+          Object.keys(lSeason).forEach(function(d){ days[d]=1; });
+          Object.keys(bSeason).forEach(function(d){ days[d]=1; });
+          Object.keys(sSeason).forEach(function(d){ days[d]=1; });
+          Object.keys(days).forEach(function(day){
+            var lDay=lSeason[day]||{};
+            var bDay=bSeason[day]||{};
+            var sDay=sSeason[day]||{};
+            if(!targetTiers[ti][season][day]) targetTiers[ti][season][day]={roi:0,sales:0,tables:{}};
+            var slot=targetTiers[ti][season][day];
+            if(!slot.tables) slot.tables={};
+            if(!_roiSame(lDay.roi, bDay.roi)) slot.roi=_roiNum(lDay.roi);
+            else if(sDay.roi!=null) slot.roi=sDay.roi;
+            if(!_roiSame(lDay.sales, bDay.sales)) slot.sales=_roiNum(lDay.sales);
+            else if(sDay.sales!=null) slot.sales=sDay.sales;
+            var cats={};
+            Object.keys(lDay.tables||{}).forEach(function(c){ cats[c]=1; });
+            Object.keys(bDay.tables||{}).forEach(function(c){ cats[c]=1; });
+            Object.keys(sDay.tables||{}).forEach(function(c){ cats[c]=1; });
+            Object.keys(cats).forEach(function(cat){
+              var lv=(lDay.tables||{})[cat];
+              var bv=(bDay.tables||{})[cat];
+              var sv=(sDay.tables||{})[cat];
+              if(!_roiSame(lv, bv)) slot.tables[cat]=_roiNum(lv);
+              else if(sv!=null) slot.tables[cat]=sv;
+            });
+          });
+        });
+      });
+    }
+    if(feeChanged){
+      var serverBefore=st;
+      S.tiers=lt.map(function(t){ return _roiClone(t); });
+      applyCells(S.tiers, serverBefore);
+    }else{
+      S.tiers=_roiTierList(S.tiers);
+      applyCells(S.tiers, st);
+    }
+  });
+  return out;
+}
+function _roiCommitRulesTree(){
+  if(!window._fbRef || !window._roiRulesBaselineReady){
+    clearTimeout(window._roiCommitWait);
+    window._roiCommitWait=setTimeout(_roiCommitRulesTree, 400);
+    _roiSaveStatus('saving');
+    return;
+  }
+  var local=_roiClone(VENUE_ROI_RULES);
+  var baseline=_roiClone(window._roiRulesBaseline||{});
+  _roiSaveStatus('saving');
+  window._fbRef.child('venueRoiRules').transaction(function(cur){
+    return _roiMergeSavedRules(cur||{}, local, baseline);
+  }, function(err, committed){
+    if(err||!committed){
+      _roiSaveStatus('error');
+      return;
+    }
+    _roiSaveStatus('saved');
+  }, false);
+}
+_roiLoadCellQueue();
 function renderRoiRulesPage(){
   ensureCnbcSummerRoofRules();
   var root=document.getElementById('roiRulesBody');

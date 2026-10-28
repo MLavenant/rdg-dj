@@ -1350,19 +1350,22 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       var ae=document.activeElement;
       roiTyping=!!(ae && ae.closest && ae.closest('#vrBody input, #roiSpecialForm input'));
     }catch(eType){}
-    if(data.venueRoiRules && !roiTyping) VENUE_ROI_RULES = data.venueRoiRules;
-    var roiHold=false;
-    if(VENUE_ROI_RULES && typeof _roiApplyPendingToRules==='function'){
-      var roiPend=_roiApplyPendingToRules(VENUE_ROI_RULES);
-      roiHold=!!(roiPend&&(roiPend.held||roiPend.confirmed));
+    if(data.venueRoiRules && !roiTyping){
+      try{ window._roiRulesBaseline = JSON.parse(JSON.stringify(data.venueRoiRules)); }catch(eBase){ window._roiRulesBaseline = data.venueRoiRules; }
+      window._roiRulesBaselineReady = true;
+      VENUE_ROI_RULES = data.venueRoiRules;
     }
+    if(VENUE_ROI_RULES && typeof _roiApplyPendingToRules==='function') _roiApplyPendingToRules(VENUE_ROI_RULES);
     var hadRemodel=typeof CNL_REMODEL_KEY!=='undefined' && !!(data.venueRoiRules&&data.venueRoiRules[CNL_REMODEL_KEY]);
     var hadOct=typeof CNL_OCT_KEY!=='undefined' && !!(data.venueRoiRules&&data.venueRoiRules[CNL_OCT_KEY]);
     var hadCnbcCurrent=typeof CNBC_CURRENT_KEY!=='undefined' && !!(data.venueRoiRules&&data.venueRoiRules[CNBC_CURRENT_KEY]);
     if(typeof ensureVenueRulesFloorPlanBindings==='function') ensureVenueRulesFloorPlanBindings();
     else if(typeof ensureCnbcSummerRoofRules==='function') ensureCnbcSummerRoofRules();
     if(window._fbSave && VENUE_ROI_RULES && ((!hadRemodel && VENUE_ROI_RULES[CNL_REMODEL_KEY]) || (!hadOct && typeof CNL_OCT_KEY!=='undefined' && VENUE_ROI_RULES[CNL_OCT_KEY]) || (!hadCnbcCurrent && typeof CNBC_CURRENT_KEY!=='undefined' && VENUE_ROI_RULES[CNBC_CURRENT_KEY]))){
-      try{ window._fbSave('venueRoiRules', VENUE_ROI_RULES); }catch(eRem){}
+      try{
+        if(typeof _roiCommitRulesTree==='function') _roiCommitRulesTree();
+        else window._fbSave('venueRoiRules', VENUE_ROI_RULES);
+      }catch(eRem){}
     }
     if(data.roiSpecialEvents) ROI_SPECIAL_EVENTS = data.roiSpecialEvents;
     if(Object.prototype.hasOwnProperty.call(data, 'showTargetLocks')){
@@ -1389,7 +1392,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
           setFv3dDate(typeof getFv3dDate==='function'?getFv3dDate():null);
           if(typeof updateFv3dRefreshStatus==='function') updateFv3dRefreshStatus();
         }
-        if(!roiHold && typeof curView!=='undefined' && curView==='roi-rules' && typeof _roiPageTab!=='undefined' && (_roiPageTab==='floors' || _roiPageTab==='summary' || _roiPageTab==='rules') && typeof renderRoiRulesPage==='function' && !roiTyping){
+        if(typeof curView!=='undefined' && curView==='roi-rules' && typeof _roiPageTab!=='undefined' && (_roiPageTab==='floors' || _roiPageTab==='summary' || _roiPageTab==='rules') && typeof renderRoiRulesPage==='function' && !roiTyping){
           renderRoiRulesPage();
         }
       }catch(eFpUi){}
