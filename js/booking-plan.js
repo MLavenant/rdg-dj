@@ -302,7 +302,7 @@ function _bpActualCardHtml(c){
   var fin=_bpFinFor(c);
   var over=c.remaining!=null && c.remaining<0;
   var under=c.remaining!=null && c.remaining>=0;
-  var h='<article class="bp-actual">';
+  var h='<article class="bp-actual bp-eq-actual">';
   h+='<div class="bp-card-hd"><b>'+_escHtml(m.label||'Prior month')+'</b><span>'+(m.range?_escHtml(m.range):'Actual')+'</span></div>';
   h+='<div class="bp-budget-box"><span>Budget</span><b>'+(c.budget!=null?$k(c.budget):'Not set')+'</b></div>';
   h+='<div class="bp-planned-box bp-actual-spend'+(over?' bp-planned-over':(under?' bp-planned-under':''))+'">'
@@ -391,14 +391,16 @@ function _bpBandHtml(cells, months, actualCell){
   if(months.length>1) cards+=_bpCardHtml(_bpTotCard(tot, months.length+'-month total', _bpSpanRange(months)));
   cells.forEach(function(c, i){ finHtml+=_bpFinCardHtml(c.month, fins[i], true); });
   if(months.length>1) finHtml+=_bpFinCardHtml({label:months.length+'-month total', range:_bpSpanRange(months)}, _bpFinSum(fins), false);
-  var h='<div class="bp-horizon">';
-  h+='<div class="bp-horizon-hd"><div class="bp-horizon-actual">Actual</div><div class="bp-horizon-forecast">Forecast</div></div>';
-  h+='<div class="bp-horizon-body">';
+  var n=cells.length+(months.length>1?1:0);
+  var cols=n+1;
+  var h='<div class="bp-eq" style="--bp-cols:'+cols+';--bp-n:'+n+'">';
+  h+='<div class="bp-eq-actual-hd">Actual</div>';
+  h+='<div class="bp-eq-forecast-hd">Forecast</div>';
   h+=_bpActualCardHtml(actualCell);
-  h+='<div class="bp-forecast-col">';
-  h+='<div class="bp-subhd">Budget vs pipeline</div><div class="bp-cards">'+cards+'</div>';
-  h+='<div class="bp-subhd">Financial</div><div class="bp-fincards">'+finHtml+'</div>';
-  h+='</div></div></div>';
+  h+='<div class="bp-eq-budget"><div class="bp-subhd">Budget vs pipeline</div><div class="bp-cards">'+cards+'</div></div>';
+  h+='<div class="bp-eq-finhd">Financial</div>';
+  h+='<div class="bp-eq-fins"><div class="bp-fincards">'+finHtml+'</div></div>';
+  h+='</div>';
   return h;
 }
 function _bpSummaryHtml(data){
@@ -491,13 +493,16 @@ function _bpPosHtml(pos){
   return h;
 }
 function _bpRoiHtml(x){ return x!=null?(+x).toFixed(1)+'x':'-'; }
+function _bpPy(text){
+  return '<em><span class="bp-py">PY</span>'+text+'</em>';
+}
 function _bpStack(main, sub){
-  return '<span class="bp-stack"><b>'+main+'</b><em>'+sub+'</em></span>';
+  return '<span class="bp-stack"><b>'+main+'</b>'+(sub?_bpPy(sub):'')+'</span>';
 }
 function _bpExpectCell(pair, mode){
   var nums=pair.money
-    ? '<b>'+$k(pair.now)+'</b><em>PY '+$k(pair.py)+'</em>'
-    : '<b>'+(Math.round(pair.now*10)/10).toFixed(1)+'%</b><em>PY '+(Math.round(pair.py*10)/10).toFixed(1)+'%</em>';
+    ? '<b>'+$k(pair.now)+'</b>'+_bpPy($k(pair.py))
+    : '<b>'+(Math.round(pair.now*10)/10).toFixed(1)+'%</b>'+_bpPy((Math.round(pair.py*10)/10).toFixed(1)+'%');
   var gap=mode==='pp-up'?_bpPpHtml(pair.now-pair.py, false):_bpPctHtml(pair.pct, false);
   return '<span class="bp-expect"><span class="bp-expect-nums">'+nums+'</span>'+gap+'</span>';
 }
@@ -530,8 +535,8 @@ function _bpRowsHtml(data, opts){
       h+='<div class="bp-bk-box'+cls+'">';
       h+='<div class="bp-bk-date"><b>'+_bpDay(r.d)+'</b><span>'+_escHtml(BP_VENUE_SHORT[r.venue]||r.venue)+'</span></div>';
       h+='<div class="bp-bk-lines"><div class="bp-bk-cols bp-bk-line bp-bk-now">';
-      h+=_bpStack(_escHtml(r.dj||'TBD'), 'PY '+(ly&&ly.dj?_escHtml(ly.dj):(ly?'TBD':'No show')));
-      h+=_bpStack($k(r.fee), 'PY '+(ly&&ly.fee!=null?$k(ly.fee):'—'));
+      h+=_bpStack(_escHtml(r.dj||'TBD'), ly&&ly.dj?_escHtml(ly.dj):(ly?'TBD':'No show'));
+      h+=_bpStack($k(r.fee), ly&&ly.fee!=null?$k(ly.fee):'—');
       h+='<span><span class="bp-status '+(r.confirmed?'bp-status-conf':'bp-status-prop')+'">'+_escHtml(r.status||'No status')+'</span></span>';
       h+=_bpExpectCell(exp.margin, 'pp-up');
       h+=_bpExpectCell(exp.sales);
@@ -550,7 +555,7 @@ function _bpRowsHtml(data, opts){
   } else {
     h+='<div class="bp-bk-box bp-bk-total"><div class="bp-bk-date"><b>Total</b><span>Over $20K</span></div><div class="bp-bk-lines"><div class="bp-bk-cols bp-bk-line bp-bk-now">';
     h+=_bpStack(now.n+' bookings', '');
-    h+=_bpStack($k(now.fee), pyN?('PY '+$k(pyFee)):'');
+    h+=_bpStack($k(now.fee), pyN?$k(pyFee):'');
     h+='<span></span><span></span><span></span>';
     h+='</div></div>'+(simple?'':'<div class="bp-bk-appr"></div>')+'</div>';
   }
