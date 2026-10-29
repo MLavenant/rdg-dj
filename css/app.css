@@ -1750,6 +1750,8 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-fincard-hd{display:flex;flex-direction:column;gap:1px}
 .bp-fincard-hd b{font-size:14px;color:#0f2a4a}
 .bp-fincard-hd span{font-size:11px;color:#64748b}
+.bp-vs{display:block;margin-top:2px;font-style:normal;font-size:13px;font-weight:900;letter-spacing:.01em;color:#0f2a4a}
+.bp-finm-nums .bp-dot{margin:0 7px}
 .bp-finm{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1px 8px;align-items:center;padding-top:6px;border-top:1px solid #e2e8f0}
 .bp-finm:first-of-type{border-top:0;padding-top:0}
 .bp-finm-name{font-size:11px;font-weight:800;letter-spacing:.03em;text-transform:uppercase;color:#334155}
@@ -1940,6 +1942,15 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-deck-sec{display:flex;align-items:center;gap:8px;margin:6px 0 4px;padding:4px 10px;background:#0b2e40;color:#fff;border-radius:7px;font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
 .bp-deck-sec span{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#fcd34d;color:#0b2e40;font-size:10px;letter-spacing:0}
 .bp-deck-sec em{font-style:normal;font-weight:500;letter-spacing:0;text-transform:none;font-size:10px;color:#cbd5e1;margin-left:4px}
+.bp-deck-sec.bp-sec-1{background:#9a3412}
+.bp-deck-sec.bp-sec-1 span{background:#ffedd5;color:#9a3412}
+.bp-deck-sec.bp-sec-1 em{color:#ffedd5}
+.bp-deck-sec.bp-sec-2{background:#1e3a8a}
+.bp-deck-sec.bp-sec-2 span{background:#dbeafe;color:#1e3a8a}
+.bp-deck-sec.bp-sec-2 em{color:#dbeafe}
+.bp-sheet .bp-deck-sec{margin:14px 0 8px;padding:7px 12px;font-size:13px}
+.bp-sheet .bp-deck-sec span{width:24px;height:24px;font-size:11px}
+.bp-sheet .bp-deck-sec em{font-size:12px}
 .bp-deck .bp-summary{margin-top:0}
 .bp-deck .bp-venue-block{margin-top:0}
 .bp-deck .bp-venue-name{display:none}
@@ -1966,6 +1977,7 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-deck .bp-fincard{padding:7px 8px;gap:4px;border-radius:9px}
 .bp-deck .bp-fincard-hd b{font-size:12px}
 .bp-deck .bp-fincard-hd span{font-size:9px}
+.bp-deck .bp-vs{font-size:11px;margin-top:1px}
 .bp-deck .bp-finm{gap:0 6px;padding-top:3px}
 .bp-deck .bp-finm-name{font-size:10px}
 .bp-deck .bp-finm-var,.bp-deck .bp-finm-var b{font-size:16px}

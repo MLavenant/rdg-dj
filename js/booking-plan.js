@@ -274,26 +274,35 @@ function _bpFinSum(list){
   }
   return {sales:pack(sN,sP,true), margin:pack(mN,mP,false), live:pack(lN,lP,false)};
 }
-function _bpFinNums(pair, nowLbl, pyLbl){
+function _bpVsYears(month){
+  var y=month&&+month.year;
+  if(y) return y+' vs. '+(y-1);
+  var a=month&&+month.yearFrom, b=month&&+month.yearTo;
+  if(!(a&&b)) return '';
+  if(a===b) return a+' vs. '+(a-1);
+  return a+'–'+String(b).slice(-2)+' vs. '+(a-1)+'–'+String(b-1).slice(-2);
+}
+function _bpFinNums(pair){
   var a=pair.money?$k(pair.now):(Math.round(pair.now*10)/10).toFixed(1)+'%';
   var b=pair.money?$k(pair.py):(Math.round(pair.py*10)/10).toFixed(1)+'%';
-  return '<b>'+a+'</b> '+nowLbl+' <span class="bp-dot">·</span> <b>'+b+'</b> '+pyLbl;
+  return '<b>'+a+'</b><span class="bp-dot">·</span><b>'+b+'</b>';
 }
-function _bpFinMetric(name, pair, nowLbl, pyLbl, mode){
+function _bpFinMetric(name, pair, mode){
   var gap=mode==='pp-down'?_bpPpHtml(pair.now-pair.py, true):(mode==='pp-up'?_bpPpHtml(pair.now-pair.py, false):_bpPctHtml(pair.pct, false));
-  return '<div class="bp-finm"><div class="bp-finm-name">'+name+'</div><div class="bp-finm-var">'+gap+'</div><div class="bp-finm-nums">'+_bpFinNums(pair, nowLbl, pyLbl)+'</div></div>';
+  return '<div class="bp-finm"><div class="bp-finm-name">'+name+'</div><div class="bp-finm-var">'+gap+'</div><div class="bp-finm-nums">'+_bpFinNums(pair)+'</div></div>';
 }
-function _bpFinMetricsHtml(fin, nowLbl){
+function _bpFinMetricsHtml(fin){
   var h='';
-  h+=_bpFinMetric(nowLbl==='actual'?'Sales vs PY':'Sales projected vs last year', fin.sales, nowLbl, nowLbl==='actual'?'PY':'last year');
-  h+=_bpFinMetric('Live entertainment margins', fin.live, nowLbl, 'PY', 'pp-down');
-  h+=_bpFinMetric('Margins', fin.margin, nowLbl, 'PY', 'pp-up');
+  h+=_bpFinMetric('Sales', fin.sales);
+  h+=_bpFinMetric('Live entertainment margins', fin.live, 'pp-down');
+  h+=_bpFinMetric('Margins', fin.margin, 'pp-up');
   return h;
 }
-function _bpFinCardHtml(month, fin, cast, nowLbl){
+function _bpFinCardHtml(month, fin, cast){
+  var vs=_bpVsYears(month);
   var h='<article class="bp-fincard'+(cast?' bp-cast':'')+'">';
-  h+='<div class="bp-fincard-hd"><b>'+_escHtml(month.label||'')+'</b>'+(month.range?'<span>'+_escHtml(month.range)+'</span>':'')+'</div>';
-  h+=_bpFinMetricsHtml(fin, nowLbl||'projected');
+  h+='<div class="bp-fincard-hd"><b>'+_escHtml(month.label||'')+'</b>'+(month.range?'<span>'+_escHtml(month.range)+'</span>':'')+(vs?'<em class="bp-vs">'+vs+'</em>':'')+'</div>';
+  h+=_bpFinMetricsHtml(fin);
   h+='</article>';
   return h;
 }
@@ -388,7 +397,7 @@ function _bpBandHtml(cells, months, actualCell){
   });
   if(months.length>1) cards+=_bpCardHtml(_bpTotCard(tot, months.length+'-month total', _bpSpanRange(months)));
   cells.forEach(function(c, i){ finHtml+=_bpFinCardHtml(c.month, fins[i], true); });
-  if(months.length>1) finHtml+=_bpFinCardHtml({label:months.length+'-month total', range:_bpSpanRange(months)}, _bpFinSum(fins), false);
+  if(months.length>1) finHtml+=_bpFinCardHtml({label:months.length+'-month total', range:_bpSpanRange(months), yearFrom:months[0].year, yearTo:months[months.length-1].year}, _bpFinSum(fins), false);
   var n=cells.length+(months.length>1?1:0);
   var cols=n+1;
   var h='<div class="bp-eq" style="--bp-cols:'+cols+';--bp-n:'+n+'">';
@@ -399,7 +408,7 @@ function _bpBandHtml(cells, months, actualCell){
   h+='<div class="bp-eq-cards">'+_bpActualBudgetHtml(actualCell)+cards+'</div>';
   h+='<div class="bp-eq-finspacer"></div>';
   h+='<div class="bp-eq-finhd">Financial</div>';
-  h+='<div class="bp-eq-allfins">'+_bpFinCardHtml(actualCell.month||{}, _bpFinFor(actualCell), false, 'actual')+finHtml+'</div>';
+  h+='<div class="bp-eq-allfins">'+_bpFinCardHtml(actualCell.month||{}, _bpFinFor(actualCell), false)+finHtml+'</div>';
   h+='</div>';
   return h;
 }
@@ -575,9 +584,9 @@ function _bpDeckSlideHtml(data, n, of){
     +'<em>'+_escHtml(ms[0].label+' – '+ms[ms.length-1].label)+'</em></div>'
     +'<img src="assets/rdg-logo.png" alt="RDG"></div>';
   h+='<div class="bp-deck-body">';
-  h+='<div class="bp-deck-sec"><span>01</span>Budget vs pipeline<em>Budget and planned spend, then sales and margins versus last year</em></div>';
+  h+='<div class="bp-deck-sec bp-sec-1"><span>01</span>Budget vs pipeline<em>Budget and planned spend, then sales and margins versus LY</em></div>';
   h+=_bpSummaryHtml(data);
-  h+='<div class="bp-deck-sec"><span>02</span>Bookings over $20K<em>Artist and prior year, fee and prior year, status, expected margin and sales versus last year</em></div>';
+  h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Bookings over $20K<em>Artist and prior year, fee and prior year, status, expected margin and sales versus LY</em></div>';
   h+=_bpRowsHtml(data, {noActions:true});
   h+='</div>';
   h+='<div class="bp-deck-ft"><span>Prepared '+_escHtml(_bpFmtDate(_bpNow()))+'</span><span>Riviera Dining Group · Entertainment</span></div>';
@@ -587,8 +596,9 @@ function _bpDeckSlideHtml(data, n, of){
 function _bpPlanHtml(data){
   var h='<div id="bpSheet" class="bp-sheet">';
   h+=_bpSheetHead(data, data.months.length>1?'Three Month Booking Plan':'Entertainment Booking Plan vs Budget');
+  h+='<div class="bp-deck-sec bp-sec-1"><span>01</span>Budget vs pipeline<em>Budget and planned spend, then sales and margins versus LY</em></div>';
   h+=_bpSummaryHtml(data);
-  h+='<div class="bp-sec-hd">Bookings over $20K <span>Artist and prior year, fee and prior year, status, expected margin and sales versus last year. Only months that exceed budget.</span></div>';
+  h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Bookings over $20K<em>Artist and prior year, fee and prior year, status, expected margin and sales versus LY. Only months that exceed budget.</em></div>';
   h+=_bpRowsHtml(data);
   h+='</div>';
   return h;
