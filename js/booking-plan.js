@@ -286,36 +286,46 @@ function _bpFinAmt(pair, which){
   var n=which==='py'?pair.py:pair.now;
   return pair.money?$k(n):(Math.round(n*10)/10).toFixed(1)+'%';
 }
-function _bpFinMetric(name, pair, mode){
+function _bpFinMetric(pair, mode){
   var gap=mode==='pp-down'?_bpPpHtml(pair.now-pair.py, true):(mode==='pp-up'?_bpPpHtml(pair.now-pair.py, false):_bpPctHtml(pair.pct, false));
-  return '<div class="bp-finm"><div class="bp-finm-name">'+name+'</div><b class="bp-fin-now">'+_bpFinAmt(pair,'now')+'</b><span class="bp-fin-sep"></span><b class="bp-fin-py">'+_bpFinAmt(pair,'py')+'</b><div class="bp-finm-var">'+gap+'</div></div>';
+  return '<b class="bp-fin-now">'+_bpFinAmt(pair,'now')+'</b><i class="bp-fin-sep"></i><b class="bp-fin-py">'+_bpFinAmt(pair,'py')+'</b><span class="bp-finm-var">'+gap+'</span>';
 }
-function _bpFinMetricsHtml(fin, parts){
-  var h='';
-  if(parts) h+='<div class="bp-vs-row"><span></span><b>'+parts.now+'</b><span class="bp-fin-sep"></span><b>'+parts.py+'</b><span></span></div>';
-  h+=_bpFinMetric('Sales', fin.sales);
-  h+=_bpFinMetric('Live entertainment margins', fin.live, 'pp-down');
-  h+=_bpFinMetric('Margins', fin.margin, 'pp-up');
-  return h;
-}
-function _bpFinCardHtml(month, fin, cast){
-  var parts=_bpVsParts(month);
-  var h='<article class="bp-fincard'+(cast?' bp-cast':'')+'">';
+function _bpFinCardHtml(month, fin, cast, extra){
+  var parts=_bpVsParts(month)||{now:'',py:''};
+  var h='<article class="bp-fincard'+(cast?' bp-cast':'')+(extra?' '+extra:'')+'">';
   h+='<div class="bp-fincard-hd"><b>'+_escHtml(month.label||'')+'</b>'+(month.range?'<span>'+_escHtml(month.range)+'</span>':'')+'</div>';
-  h+=_bpFinMetricsHtml(fin, parts);
+  h+='<b class="bp-yr">'+parts.now+'</b><i class="bp-fin-sep bp-yr"></i><b class="bp-yr">'+parts.py+'</b><span class="bp-yr"></span>';
+  h+=_bpFinMetric(fin.sales);
+  h+=_bpFinMetric(fin.live, 'pp-down');
+  h+=_bpFinMetric(fin.margin, 'pp-up');
   h+='</article>';
   return h;
 }
-function _bpActualBudgetHtml(c){
-  var m=c.month||{};
+function _bpFinLabelsHtml(){
+  return '<article class="bp-fincard bp-lbl-card"><div class="bp-fincard-hd"><b>&nbsp;</b><span>&nbsp;</span></div>'
+    +'<span class="bp-yr"></span><span class="bp-lbl">Sales</span><span class="bp-lbl">Live entertainment margins</span><span class="bp-lbl">Margins</span></article>';
+}
+function _bpPlanBoxHtml(c, actual){
   var over=c.remaining!=null && c.remaining<0;
   var under=c.remaining!=null && c.remaining>=0;
+  return '<div class="bp-planned-box'+(over?' bp-planned-over':(under?' bp-planned-under':''))+'">'
+    +'<div class="bp-fc-row"><b>'+$k(c.planned)+'</b></div>'
+    +'<div class="bp-fc-row">'+_bpMoneyVar(c.remaining)+'</div>'
+    +'<div class="bp-split"><div class="bp-split-line"><b>'+(actual?'&nbsp;':$k(c.confirmed))+'</b></div><div class="bp-split-line"><b>'+(actual?'&nbsp;':$k(c.proposed))+'</b></div></div></div>';
+}
+function _bpBudgetLabelsHtml(){
+  return '<article class="bp-card bp-lbl-card"><div class="bp-card-hd"><b>&nbsp;</b><span>&nbsp;</span></div>'
+    +'<div class="bp-budget-box"><span>Budget</span></div>'
+    +'<div class="bp-planned-box"><div class="bp-fc-row"><span>Forecast</span></div><div class="bp-fc-row"><span>Variance</span></div>'
+    +'<div class="bp-split"><div class="bp-split-line"><i class="bp-arr"></i><span>Confirmed</span></div><div class="bp-split-line"><i class="bp-arr"></i><span>Proposed</span></div></div></div>'
+    +'<div class="bp-card-foot"></div></article>';
+}
+function _bpActualBudgetHtml(c){
+  var m=c.month||{};
   var h='<article class="bp-card bp-card-actual">';
   h+='<div class="bp-card-hd"><b>'+_escHtml(m.label||'Prior month')+'</b><span>'+(m.range?_escHtml(m.range):'&nbsp;')+'</span></div>';
-  h+='<div class="bp-budget-box"><span>Budget</span><b>'+(c.budget!=null?$k(c.budget):'Not set')+'</b></div>';
-  h+='<div class="bp-planned-box'+(over?' bp-planned-over':(under?' bp-planned-under':''))+'">'
-    +'<div class="bp-planned-top"><div class="bp-planned-main"><span>Actual spend</span><b>'+$k(c.planned)+'</b></div>'
-    +'<div class="bp-planned-var">'+_bpMoneyVar(c.remaining)+'</div></div></div>';
+  h+='<div class="bp-budget-box"><b>'+(c.budget!=null?$k(c.budget):'Not set')+'</b></div>';
+  h+=_bpPlanBoxHtml(c, true);
   h+='<div class="bp-card-foot"></div></article>';
   return h;
 }
@@ -401,14 +411,13 @@ function _bpBandHtml(cells, months, actualCell){
   var n=cells.length+(months.length>1?1:0);
   var cols=n+1;
   var h='<div class="bp-eq" style="--bp-cols:'+cols+';--bp-n:'+n+'">';
+  h+='<div class="bp-eq-frame"></div>';
   h+='<div class="bp-eq-actual-hd">Actual</div>';
   h+='<div class="bp-eq-forecast-hd">Forecast</div>';
-  h+='<div class="bp-eq-subspacer"></div>';
   h+='<div class="bp-subhd bp-eq-subhd">Budget vs pipeline</div>';
-  h+='<div class="bp-eq-cards">'+_bpActualBudgetHtml(actualCell)+cards+'</div>';
-  h+='<div class="bp-eq-finspacer"></div>';
+  h+='<div class="bp-eq-cards">'+_bpBudgetLabelsHtml()+_bpActualBudgetHtml(actualCell)+cards+'</div>';
   h+='<div class="bp-eq-finhd">Financial</div>';
-  h+='<div class="bp-eq-allfins">'+_bpFinCardHtml(actualCell.month||{}, _bpFinFor(actualCell), false)+finHtml+'</div>';
+  h+='<div class="bp-eq-allfins">'+_bpFinLabelsHtml()+_bpFinCardHtml(actualCell.month||{}, _bpFinFor(actualCell), false, 'bp-fincard-actual')+finHtml+'</div>';
   h+='</div>';
   return h;
 }
@@ -463,11 +472,8 @@ function _bpCardHtml(c){
   h+='<div class="bp-card-hd"><b>'+_escHtml(m.label)+'</b><span>'+(m.range?_escHtml(m.range):'&nbsp;')+'</span></div>';
   var over=c.remaining!=null && c.remaining<0;
   var under=c.remaining!=null && c.remaining>=0;
-  h+='<div class="bp-budget-box"><span>Budget</span><b>'+(c.budget!=null?$k(c.budget):'Not set')+'</b></div>';
-  h+='<div class="bp-planned-box'+(over?' bp-planned-over':(under?' bp-planned-under':''))+'">'
-    +'<div class="bp-fc-row"><span>Forecast</span><b>'+$k(c.planned)+'</b></div>'
-    +'<div class="bp-fc-row"><span>Variance</span>'+_bpMoneyVar(c.remaining)+'</div>'
-    +'<div class="bp-split">'+_bpSplitLine('Confirmed', c.confirmed)+_bpSplitLine('Proposed', c.proposed)+'</div></div>';
+  h+='<div class="bp-budget-box"><b>'+(c.budget!=null?$k(c.budget):'Not set')+'</b></div>';
+  h+=_bpPlanBoxHtml(c, false);
   var foot='';
   if(!c.isTotal){
     var e=c.exc||{}, tags=[];
