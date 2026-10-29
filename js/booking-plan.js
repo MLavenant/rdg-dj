@@ -274,35 +274,35 @@ function _bpFinSum(list){
   }
   return {sales:pack(sN,sP,true), margin:pack(mN,mP,false), live:pack(lN,lP,false)};
 }
-function _bpVsYears(month){
+function _bpVsParts(month){
   var y=month&&+month.year;
-  if(y) return y+' vs. '+(y-1);
+  if(y) return {now:String(y), py:String(y-1)};
   var a=month&&+month.yearFrom, b=month&&+month.yearTo;
-  if(!(a&&b)) return '';
-  if(a===b) return a+' vs. '+(a-1);
-  return a+'–'+String(b).slice(-2)+' vs. '+(a-1)+'–'+String(b-1).slice(-2);
+  if(!(a&&b)) return null;
+  if(a===b) return {now:String(a), py:String(a-1)};
+  return {now:a+'\u2013'+String(b).slice(-2), py:(a-1)+'\u2013'+String(b-1).slice(-2)};
 }
-function _bpFinNums(pair){
-  var a=pair.money?$k(pair.now):(Math.round(pair.now*10)/10).toFixed(1)+'%';
-  var b=pair.money?$k(pair.py):(Math.round(pair.py*10)/10).toFixed(1)+'%';
-  return '<b>'+a+'</b><span class="bp-dot">·</span><b>'+b+'</b>';
+function _bpFinAmt(pair, which){
+  var n=which==='py'?pair.py:pair.now;
+  return pair.money?$k(n):(Math.round(n*10)/10).toFixed(1)+'%';
 }
 function _bpFinMetric(name, pair, mode){
   var gap=mode==='pp-down'?_bpPpHtml(pair.now-pair.py, true):(mode==='pp-up'?_bpPpHtml(pair.now-pair.py, false):_bpPctHtml(pair.pct, false));
-  return '<div class="bp-finm"><div class="bp-finm-name">'+name+'</div><div class="bp-finm-var">'+gap+'</div><div class="bp-finm-nums">'+_bpFinNums(pair)+'</div></div>';
+  return '<div class="bp-finm"><div class="bp-finm-name">'+name+'</div><b class="bp-fin-now">'+_bpFinAmt(pair,'now')+'</b><span class="bp-fin-sep"></span><b class="bp-fin-py">'+_bpFinAmt(pair,'py')+'</b><div class="bp-finm-var">'+gap+'</div></div>';
 }
-function _bpFinMetricsHtml(fin){
+function _bpFinMetricsHtml(fin, parts){
   var h='';
+  if(parts) h+='<div class="bp-vs-row"><span></span><b>'+parts.now+'</b><span class="bp-fin-sep"></span><b>'+parts.py+'</b><span></span></div>';
   h+=_bpFinMetric('Sales', fin.sales);
   h+=_bpFinMetric('Live entertainment margins', fin.live, 'pp-down');
   h+=_bpFinMetric('Margins', fin.margin, 'pp-up');
   return h;
 }
 function _bpFinCardHtml(month, fin, cast){
-  var vs=_bpVsYears(month);
+  var parts=_bpVsParts(month);
   var h='<article class="bp-fincard'+(cast?' bp-cast':'')+'">';
-  h+='<div class="bp-fincard-hd"><b>'+_escHtml(month.label||'')+'</b>'+(month.range?'<span>'+_escHtml(month.range)+'</span>':'')+(vs?'<em class="bp-vs">'+vs+'</em>':'')+'</div>';
-  h+=_bpFinMetricsHtml(fin);
+  h+='<div class="bp-fincard-hd"><b>'+_escHtml(month.label||'')+'</b>'+(month.range?'<span>'+_escHtml(month.range)+'</span>':'')+'</div>';
+  h+=_bpFinMetricsHtml(fin, parts);
   h+='</article>';
   return h;
 }
@@ -465,8 +465,8 @@ function _bpCardHtml(c){
   var under=c.remaining!=null && c.remaining>=0;
   h+='<div class="bp-budget-box"><span>Budget</span><b>'+(c.budget!=null?$k(c.budget):'Not set')+'</b></div>';
   h+='<div class="bp-planned-box'+(over?' bp-planned-over':(under?' bp-planned-under':''))+'">'
-    +'<div class="bp-planned-top"><div class="bp-planned-main"><span>Total planned</span><b>'+$k(c.planned)+'</b></div>'
-    +'<div class="bp-planned-var">'+_bpMoneyVar(c.remaining)+'</div></div>'
+    +'<div class="bp-fc-row"><span>Forecast</span><b>'+$k(c.planned)+'</b></div>'
+    +'<div class="bp-fc-row"><span>Variance</span>'+_bpMoneyVar(c.remaining)+'</div>'
     +'<div class="bp-split">'+_bpSplitLine('Confirmed', c.confirmed)+_bpSplitLine('Proposed', c.proposed)+'</div></div>';
   var foot='';
   if(!c.isTotal){
