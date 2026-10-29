@@ -1719,6 +1719,7 @@ function _buildCnbcCurrentRules(){
   return out;
 }
 function ensureCnbcCurrentRules(){
+  var repaired=false;
   if(!VENUE_ROI_RULES[CNBC_CURRENT_KEY]){
     var seeded=_buildCnbcCurrentRules();
     if(seeded) VENUE_ROI_RULES[CNBC_CURRENT_KEY]=seeded;
@@ -1739,6 +1740,43 @@ function ensureCnbcCurrentRules(){
       });
     });
   }
+  /*
+    Oct 17 Beach Club was once saved with every sellable-tier minimum set to
+    zero. Those are malformed rules, not a valid "no minimum" configuration.
+    Recover only that all-zero record from the approved regular Beach Club
+    minimums; never touch its ROI/BS targets or any other venue's rules.
+  */
+  var src=VENUE_ROI_RULES['Casa Neos Beach Club'];
+  var cats=['Diamond','Prestige','Platinum','Gold'];
+  var hasMin=false;
+  (current.tiers||[]).forEach(function(tier){
+    ['High','Low'].forEach(function(season){
+      Object.keys(tier[season]||{}).forEach(function(day){
+        var tables=(tier[season][day]&&tier[season][day].tables)||{};
+        cats.forEach(function(cat){ if((+tables[cat]||0)>0) hasMin=true; });
+      });
+    });
+  });
+  if(!hasMin && src && src.tiers && src.tiers.length){
+    (current.tiers||[]).forEach(function(tier, ti){
+      var source=(src.tiers||[]).filter(function(t){ return +t.fee===+tier.fee; })[0] || (src.tiers||[])[ti];
+      if(!source) return;
+      ['High','Low'].forEach(function(season){
+        Object.keys(tier[season]||{}).forEach(function(day){
+          var slot=tier[season][day];
+          var from=source[season]&&source[season][day];
+          if(!slot||!from||!from.tables) return;
+          if(!slot.tables) slot.tables={};
+          cats.forEach(function(cat){
+            var n=+from.tables[cat]||0;
+            if(n>0) slot.tables[cat]=n;
+          });
+          repaired=true;
+        });
+      });
+    });
+  }
+  return repaired;
 }
 
 /* Casa Neos Lounge remodel (After Dark) — Sep 25–Sep 30, 2026. Different tiers than classic
@@ -1834,7 +1872,7 @@ function ensureCnlOctRules(){
 }
 function ensureVenueRulesFloorPlanBindings(){
   ensureCnbcSummerRoofRules();
-  ensureCnbcCurrentRules();
+  var repairedCnbc=ensureCnbcCurrentRules();
   ensureCnlRemodelRules();
   ensureCnlOctRules();
   var bc=VENUE_ROI_RULES['Casa Neos Beach Club'];
@@ -1843,6 +1881,7 @@ function ensureVenueRulesFloorPlanBindings(){
   if(cnl&&!cnl.floorPlan){ cnl.floorPlan='casa-neos-lounge'; cnl.appliesTo='Casa Neos Lounge'; }
   var mila=VENUE_ROI_RULES['MILA Lounge'];
   if(mila&&!mila.floorPlan){ mila.floorPlan='mila-lounge'; mila.appliesTo='MILA Lounge'; }
+  return repairedCnbc;
 }
 function roiRulesTabVisible(key){
   return key===CNBC_CURRENT_KEY || key==='MILA Lounge' || key===CNL_OCT_KEY;
