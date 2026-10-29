@@ -62,6 +62,10 @@ function wireVenueRulesMoneyInputs(root){
       var n=_vrParseMoney(inp.value);
       var shown=n?_vrFmtMoney(n):'';
       if(inp.value!==shown) inp.value=shown;
+      if(inp._vrFocusNum!=null && n===inp._vrFocusNum){
+        if(typeof _roiPaintOpenCells==='function') _roiPaintOpenCells();
+        return;
+      }
       if(inp.getAttribute('data-action')==='table-field' && typeof updateTierTable==='function'){
         updateTierTable(window._vrEditVenue, parseInt(inp.dataset.ti,10), inp.dataset.season, inp.dataset.day, inp.dataset.cat, n);
       }else if(inp.getAttribute('data-action')==='day-field' && inp.dataset.field && typeof updateTierDay==='function'){
@@ -71,6 +75,7 @@ function wireVenueRulesMoneyInputs(root){
     });
     inp.addEventListener('focus',function(){
       var raw=_vrParseMoney(inp.value);
+      inp._vrFocusNum=raw;
       var next=raw?String(raw):'';
       if(inp.value!==next){
         var atEnd=inp.selectionStart===inp.value.length;
@@ -265,8 +270,8 @@ function _roiApplyPendingToRules(rules){
       confirmed=true;
       return;
     }
-    /* Give up only after the server has had time to echo and a later edit won. */
-    if(rec.acked && now-rec.t>120000){ delete pending[path]; return; }
+    /* This write already reached the server. A different value is a newer edit and wins. */
+    if(rec.acked){ delete pending[path]; return; }
     var rule=rules[parts[0]];
     var tier=rule&&rule.tiers&&rule.tiers[+parts[2]];
     if(!tier){ held=true; }
@@ -321,6 +326,14 @@ function _roiTierList(tiers){
 }
 function _roiNum(v){ return +v||0; }
 function _roiSame(a,b){ return _roiNum(a)===_roiNum(b); }
+/* A missing local value is not an edit. Treating it as zero previously wiped real minimums. */
+function _roiLocalChange(localVal, baseVal){
+  if(localVal==null || localVal==='') return false;
+  return _roiNum(localVal)!==_roiNum(baseVal);
+}
+function _roiPendingCell(path){
+  return !!(window._roiCellPending && window._roiCellPending[path]);
+}
 /* Copy only the cells this browser actually changed onto the live server copy. */
 function _roiMergeSavedRules(server, local, baseline){
   var out=_roiClone(server||{});
@@ -377,9 +390,9 @@ function _roiMergeSavedRules(server, local, baseline){
             if(!targetTiers[ti][season][day]) targetTiers[ti][season][day]={roi:0,sales:0,tables:{}};
             var slot=targetTiers[ti][season][day];
             if(!slot.tables) slot.tables={};
-            if(!_roiSame(lDay.roi, bDay.roi)) slot.roi=_roiNum(lDay.roi);
+            if(_roiLocalChange(lDay.roi, bDay.roi)) slot.roi=_roiNum(lDay.roi);
             else if(sDay.roi!=null) slot.roi=sDay.roi;
-            if(!_roiSame(lDay.sales, bDay.sales)) slot.sales=_roiNum(lDay.sales);
+            if(_roiLocalChange(lDay.sales, bDay.sales)) slot.sales=_roiNum(lDay.sales);
             else if(sDay.sales!=null) slot.sales=sDay.sales;
             var cats={};
             Object.keys(lDay.tables||{}).forEach(function(c){ cats[c]=1; });
@@ -389,8 +402,12 @@ function _roiMergeSavedRules(server, local, baseline){
               var lv=(lDay.tables||{})[cat];
               var bv=(bDay.tables||{})[cat];
               var sv=(sDay.tables||{})[cat];
-              if(!_roiSame(lv, bv)) slot.tables[cat]=_roiNum(lv);
-              else if(sv!=null) slot.tables[cat]=sv;
+              var cellPath=v+'/tiers/'+ti+'/'+season+'/'+day+'/tables/'+cat;
+              if(_roiLocalChange(lv, bv)){
+                /* A positive minimum cannot be replaced by a silent zero. A typed zero still saves. */
+                if(_roiNum(lv)===0 && _roiNum(sv)>0 && !_roiPendingCell(cellPath)) slot.tables[cat]=sv;
+                else slot.tables[cat]=_roiNum(lv);
+              }else if(sv!=null) slot.tables[cat]=sv;
             });
           });
         });

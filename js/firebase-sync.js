@@ -1350,7 +1350,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       var ae=document.activeElement;
       roiTyping=!!(ae && ae.closest && ae.closest('#vrBody input, #roiSpecialForm input'));
     }catch(eType){}
-    if(data.venueRoiRules && !roiTyping){
+    if(data.venueRoiRules){
       try{ window._roiRulesBaseline = JSON.parse(JSON.stringify(data.venueRoiRules)); }catch(eBase){ window._roiRulesBaseline = data.venueRoiRules; }
       window._roiRulesBaselineReady = true;
       VENUE_ROI_RULES = data.venueRoiRules;
@@ -1363,7 +1363,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     var repairedCnbcRules=false;
     if(typeof ensureVenueRulesFloorPlanBindings==='function') repairedCnbcRules=!!ensureVenueRulesFloorPlanBindings();
     else if(typeof ensureCnbcSummerRoofRules==='function') ensureCnbcSummerRoofRules();
-    if(window._fbSave && VENUE_ROI_RULES && (repairedCnbcRules || (!hadRemodel && VENUE_ROI_RULES[CNL_REMODEL_KEY]) || (!hadOct && typeof CNL_OCT_KEY!=='undefined' && VENUE_ROI_RULES[CNL_OCT_KEY]) || (!hadCnbcCurrent && typeof CNBC_CURRENT_KEY!=='undefined' && VENUE_ROI_RULES[CNBC_CURRENT_KEY]))){
+    if(data.venueRoiRules && window._fbSave && VENUE_ROI_RULES && (repairedCnbcRules || (!hadRemodel && VENUE_ROI_RULES[CNL_REMODEL_KEY]) || (!hadOct && typeof CNL_OCT_KEY!=='undefined' && VENUE_ROI_RULES[CNL_OCT_KEY]) || (!hadCnbcCurrent && typeof CNBC_CURRENT_KEY!=='undefined' && VENUE_ROI_RULES[CNBC_CURRENT_KEY]))){
       try{
         if(typeof _roiCommitRulesTree==='function') _roiCommitRulesTree();
         else window._fbSave('venueRoiRules', VENUE_ROI_RULES);

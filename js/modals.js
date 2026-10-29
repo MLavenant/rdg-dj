@@ -2674,16 +2674,27 @@ function wireVenueRulesEvents(){
     btn.addEventListener('click',function(){ removeTier(_vrEditVenue, parseInt(btn.dataset.ti,10)); });
   });
   document.querySelectorAll('[data-action="day-field"]').forEach(function(inp){
+    inp.addEventListener('focus',function(){
+      inp._vrFocusNum=inp.dataset.field==='roi'?(parseFloat(inp.value)||0):((typeof _vrParseMoney==='function')?_vrParseMoney(inp.value):(parseFloat(inp.value)||0));
+    });
     var commit=function(){
       var val=inp.dataset.field==='roi'?(parseFloat(inp.value)||0):((typeof _vrParseMoney==='function')?_vrParseMoney(inp.value):(parseFloat(inp.value)||0));
+      if(inp._vrFocusNum!=null && (+val||0)===(+inp._vrFocusNum||0)) return;
       updateTierDay(_vrEditVenue, parseInt(inp.dataset.ti,10), inp.dataset.season, inp.dataset.day, inp.dataset.field, val);
     };
     inp.addEventListener('change', commit);
-    if(inp.dataset.field==='roi') inp.addEventListener('blur', commit);
+    if(inp.dataset.field==='roi') inp.addEventListener('blur', function(){
+      commit();
+      if(typeof _roiPaintOpenCells==='function') _roiPaintOpenCells();
+    });
   });
   document.querySelectorAll('[data-action="table-field"]').forEach(function(inp){
+    inp.addEventListener('focus',function(){
+      inp._vrFocusNum=(typeof _vrParseMoney==='function')?_vrParseMoney(inp.value):(parseFloat(inp.value)||0);
+    });
     inp.addEventListener('change',function(){
       var val=(typeof _vrParseMoney==='function')?_vrParseMoney(inp.value):(parseFloat(inp.value)||0);
+      if(inp._vrFocusNum!=null && (+val||0)===(+inp._vrFocusNum||0)) return;
       updateTierTable(_vrEditVenue, parseInt(inp.dataset.ti,10), inp.dataset.season, inp.dataset.day, inp.dataset.cat, val);
     });
   });
