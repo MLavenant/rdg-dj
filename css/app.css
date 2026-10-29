@@ -1718,11 +1718,24 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-eq-cards,.bp-eq-allfins{grid-column:1 / -1;display:grid;grid-template-columns:subgrid;align-items:stretch}
 .bp-eq-cards{grid-row:3}
 .bp-eq-finhd{grid-column:3 / -1;grid-row:4}
-.bp-eq-allfins{grid-row:5}
+.bp-eq-allfins{grid-row:5;grid-template-rows:auto auto auto auto auto}
+.bp-sf-col,.bp-sf-labs{display:grid;grid-template-rows:subgrid;grid-row:span 5;min-width:0;align-items:center}
+.bp-sf-mh{text-align:center;padding:2px 4px 0}
+.bp-sf-mh b{display:block;font-size:14px;color:#0f2a4a}
+.bp-sf-mh span{display:block;font-size:11px;font-weight:600;color:#64748b}
+.bp-sf-yhs,.bp-sf-vals{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 78px;column-gap:8px;align-items:center;justify-items:end;width:100%;padding:0 8px;box-sizing:border-box}
+.bp-sf-yhs{align-self:end;border-bottom:1px solid #94a3b8;padding-bottom:3px;font-size:12px;font-weight:900;color:#334155}
+.bp-sf-vals{padding-top:8px;padding-bottom:8px}
+.bp-sf-vals b{font-size:16px;font-weight:900;color:#0f172a;white-space:nowrap}
+.bp-sf-var{font-size:15px;font-weight:900;white-space:nowrap}
+.bp-sf-var b{font-size:15px}
+.bp-sf-lab{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#334155;line-height:1.15}
+.bp-sf-past{background:#d4e6f7;border-radius:12px}
+.bp-sf-col+.bp-sf-col{box-shadow:inset 1px 0 0 #e2e8f0}
+.bp-card-actual{background:#e7f1fa;border:1px solid #b7cfe6}
 .bp-eq-actual-hd,.bp-eq-forecast-hd,.bp-eq-finhd{font-size:12px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;border-radius:7px;padding:6px 10px}
 .bp-eq-actual-hd{background:#334155;color:#fff}
 .bp-eq-forecast-hd,.bp-eq-finhd{background:#0b2e40;color:#fff}
-.bp-card-actual,.bp-fincard-actual{background:#fff;border:1px solid #cbd5e1}
 .bp-eq-cards .bp-card,.bp-eq-allfins .bp-fincard{height:100%;min-width:0}
 .bp-eq-cards .bp-planned-box,.bp-eq-cards .bp-budget-box{height:100%;box-sizing:border-box}
 .bp-eq-allfins .bp-fincard{display:grid;grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr) auto;grid-template-rows:subgrid;grid-row:span 5;column-gap:0;row-gap:6px;align-items:center}
@@ -1987,11 +2000,12 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-deck .bp-fincard{padding:7px 8px;gap:4px;border-radius:9px}
 .bp-deck .bp-fincard-hd b{font-size:12px}
 .bp-deck .bp-fincard-hd span{font-size:9px}
-.bp-deck .bp-yr{font-size:11px;padding-bottom:2px}
-.bp-deck .bp-eq-allfins .bp-fincard{row-gap:3px}
-.bp-deck .bp-lbl{font-size:10px}
-.bp-deck .bp-fin-now,.bp-deck .bp-fin-py{font-size:14px}
-.bp-deck .bp-finm-var,.bp-deck .bp-finm-var b{font-size:14px}
+.bp-deck .bp-sf-mh b{font-size:12px}
+.bp-deck .bp-sf-mh span{font-size:9px}
+.bp-deck .bp-sf-yhs{font-size:10px;padding-bottom:2px}
+.bp-deck .bp-sf-vals{padding-top:3px;padding-bottom:3px}
+.bp-deck .bp-sf-vals b,.bp-deck .bp-sf-var,.bp-deck .bp-sf-var b{font-size:13px}
+.bp-deck .bp-sf-lab{font-size:10px}
 .bp-deck .bp-fc-row{height:24px}
 .bp-deck .bp-lbl-card .bp-fc-row > span,.bp-deck .bp-lbl-card .bp-split-line span,.bp-deck .bp-lbl-card .bp-budget-box span{font-size:11px}
 .bp-deck .bp-fc-row b,.bp-deck .bp-fc-row > .bp-pos,.bp-deck .bp-fc-row > .bp-neg{font-size:18px}

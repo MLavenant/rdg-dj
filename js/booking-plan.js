@@ -286,24 +286,23 @@ function _bpFinAmt(pair, which){
   var n=which==='py'?pair.py:pair.now;
   return pair.money?$k(n):(Math.round(n*10)/10).toFixed(1)+'%';
 }
-function _bpFinMetric(pair, mode){
+function _bpFinVals(pair, mode){
   var gap=mode==='pp-down'?_bpPpHtml(pair.now-pair.py, true):(mode==='pp-up'?_bpPpHtml(pair.now-pair.py, false):_bpPctHtml(pair.pct, false));
-  return '<b class="bp-fin-now">'+_bpFinAmt(pair,'now')+'</b><i class="bp-fin-sep"></i><b class="bp-fin-py">'+_bpFinAmt(pair,'py')+'</b><span class="bp-finm-var">'+gap+'</span>';
+  return '<div class="bp-sf-vals"><b>'+_bpFinAmt(pair,'now')+'</b><b>'+_bpFinAmt(pair,'py')+'</b><span class="bp-sf-var">'+gap+'</span></div>';
 }
-function _bpFinCardHtml(month, fin, cast, extra){
+function _bpFinColHtml(month, fin, kind){
   var parts=_bpVsParts(month)||{now:'',py:''};
-  var h='<article class="bp-fincard'+(cast?' bp-cast':'')+(extra?' '+extra:'')+'">';
-  h+='<div class="bp-fincard-hd"><b>'+_escHtml(month.label||'')+'</b>'+(month.range?'<span>'+_escHtml(month.range)+'</span>':'')+'</div>';
-  h+='<b class="bp-yr">'+parts.now+'</b><i class="bp-fin-sep bp-yr"></i><b class="bp-yr">'+parts.py+'</b><span class="bp-yr"></span>';
-  h+=_bpFinMetric(fin.sales);
-  h+=_bpFinMetric(fin.live, 'pp-down');
-  h+=_bpFinMetric(fin.margin, 'pp-up');
-  h+='</article>';
+  var h='<div class="bp-sf-col'+(kind?' bp-sf-'+kind:'')+'">';
+  h+='<div class="bp-sf-mh"><b>'+_escHtml(month.label||'')+'</b>'+(month.range?'<span>'+_escHtml(month.range)+'</span>':'')+'</div>';
+  h+='<div class="bp-sf-yhs"><b>'+parts.now+'</b><b>'+parts.py+'</b><b>Var</b></div>';
+  h+=_bpFinVals(fin.sales);
+  h+=_bpFinVals(fin.live, 'pp-down');
+  h+=_bpFinVals(fin.margin, 'pp-up');
+  h+='</div>';
   return h;
 }
-function _bpFinLabelsHtml(){
-  return '<article class="bp-fincard bp-lbl-card"><div class="bp-fincard-hd"><b>&nbsp;</b><span>&nbsp;</span></div>'
-    +'<span class="bp-yr"></span><span class="bp-lbl">Sales</span><span class="bp-lbl">Live entertainment margins</span><span class="bp-lbl">Margins</span></article>';
+function _bpFinLabsHtml(){
+  return '<div class="bp-sf-labs"><div></div><div></div><div class="bp-sf-lab">Sales</div><div class="bp-sf-lab">Live ent. margins</div><div class="bp-sf-lab">Margins</div></div>';
 }
 function _bpPlanBoxHtml(c, actual){
   var over=c.remaining!=null && c.remaining<0;
@@ -399,15 +398,16 @@ function _bpActualForVenues(venues, prev){
   return card;
 }
 function _bpBandHtml(cells, months, actualCell){
-  var cards='', finHtml='', tot=_bpBlankTot(), fins=[];
+  var cards='', tot=_bpBlankTot(), fins=[];
   cells.forEach(function(c){
     cards+=_bpCardHtml(c);
     _bpAddTotals(tot, c);
     fins.push(_bpFinFor(c));
   });
   if(months.length>1) cards+=_bpCardHtml(_bpTotCard(tot, months.length+'-month total', _bpSpanRange(months)));
-  cells.forEach(function(c, i){ finHtml+=_bpFinCardHtml(c.month, fins[i], true); });
-  if(months.length>1) finHtml+=_bpFinCardHtml({label:months.length+'-month total', range:_bpSpanRange(months), yearFrom:months[0].year, yearTo:months[months.length-1].year}, _bpFinSum(fins), false);
+  var sheet=_bpFinLabsHtml()+_bpFinColHtml(actualCell.month||{}, _bpFinFor(actualCell), 'past');
+  cells.forEach(function(c, i){ sheet+=_bpFinColHtml(c.month, fins[i], ''); });
+  if(months.length>1) sheet+=_bpFinColHtml({label:months.length+'-month total', range:_bpSpanRange(months), yearFrom:months[0].year, yearTo:months[months.length-1].year}, _bpFinSum(fins), 'total');
   var n=cells.length+(months.length>1?1:0);
   var cols=n+1;
   var h='<div class="bp-eq" style="--bp-cols:'+cols+';--bp-n:'+n+'">';
@@ -417,7 +417,7 @@ function _bpBandHtml(cells, months, actualCell){
   h+='<div class="bp-subhd bp-eq-subhd">Budget vs pipeline</div>';
   h+='<div class="bp-eq-cards">'+_bpBudgetLabelsHtml()+_bpActualBudgetHtml(actualCell)+cards+'</div>';
   h+='<div class="bp-eq-finhd">Financial</div>';
-  h+='<div class="bp-eq-allfins">'+_bpFinLabelsHtml()+_bpFinCardHtml(actualCell.month||{}, _bpFinFor(actualCell), false, 'bp-fincard-actual')+finHtml+'</div>';
+  h+='<div class="bp-eq-allfins">'+sheet+'</div>';
   h+='</div>';
   return h;
 }
@@ -470,8 +470,6 @@ function _bpCardHtml(c){
   var m=c.month;
   var h='<article class="bp-card'+(c.isTotal?' bp-card-total':' bp-cast')+'">';
   h+='<div class="bp-card-hd"><b>'+_escHtml(m.label)+'</b><span>'+(m.range?_escHtml(m.range):'&nbsp;')+'</span></div>';
-  var over=c.remaining!=null && c.remaining<0;
-  var under=c.remaining!=null && c.remaining>=0;
   h+='<div class="bp-budget-box"><b>'+(c.budget!=null?$k(c.budget):'Not set')+'</b></div>';
   h+=_bpPlanBoxHtml(c, false);
   var foot='';
