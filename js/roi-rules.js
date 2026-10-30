@@ -627,8 +627,7 @@ function _roiRulesTemplateOptions(selected){
 function renderRoiSpecialSection(){
   var h='';
   h+='<div class="roi-special-intro">';
-  h+='<p>Pick a <b>specific date</b> below to apply <b>High</b> or <b>Low</b> season ROI rules, or open a full <b>Special ROI</b> rule (custom targets / off-schedule days).</p>';
-  h+='<p class="roi-page-hint">Click the date field to open the calendar, or type/search a date, label, or venue. Example: Casa Neos BC Labor Day Monday → High or Low season, or a custom special.</p>';
+  h+='<p>Choose the <b>location</b> and the <b>date</b>, then set the special ROI rules for that performance.</p>';
   h+='</div>';
 
   h+=renderRoiDateAssignBar();
@@ -699,21 +698,17 @@ function renderRoiDateAssignBar(){
   var venues=(typeof listActiveVenues==='function'?listActiveVenues():['Casa Neos Beach Club','MILA Lounge','Casa Neos Lounge']);
   if(!_roiDatePick.venue) _roiDatePick.venue=curV||venues[0]||'';
   var h='<div class="roi-date-bar" id="roiDateBar">';
-  h+='<div class="roi-date-bar-hd">Select a date</div>';
-  h+='<div class="roi-date-bar-grid">';
-  h+='<div class="fld"><label>Venue</label><select id="roiDateVenue" onchange="_roiDatePick.venue=this.value;roiRefreshDateInspect()">';
+  h+='<div class="roi-date-bar-hd">Location and date</div>';
+  h+='<div class="roi-date-pick">';
+  h+='<div class="fld"><label>Location</label><select id="roiDateVenue" onchange="_roiDatePick.venue=this.value;roiRefreshDateInspect()">';
   venues.forEach(function(v){
     h+='<option value="'+_escRoi(v)+'"'+(v===_roiDatePick.venue?' selected':'')+'>'+_escRoi(v)+'</option>';
   });
   h+='</select></div>';
-  h+='<div class="fld"><label>Date (click to pick)</label><input id="roiDatePick" type="date" value="'+(_roiDatePick.date||'')+'" onchange="_roiDatePick.date=this.value;roiRefreshDateInspect()"></div>';
-  h+='<div class="fld"><label>Search specials</label><input id="roiDateSearch" type="search" placeholder="Label, date, venue…" value="'+_escRoi(_roiDatePick.q||'')+'" oninput="_roiDatePick.q=this.value;roiFilterSpecialList()"></div>';
+  h+='<div class="fld"><label>Date</label><input id="roiDatePick" type="date" value="'+(_roiDatePick.date||'')+'" onchange="_roiDatePick.date=this.value;roiRefreshDateInspect()"></div>';
+  h+='<button type="button" class="btn-save roi-date-go" onclick="roiOpenSpecialForPickedDate()">Set special ROI rules</button>';
   h+='</div>';
-  h+='<div class="roi-date-actions">';
-  h+='<button type="button" class="roi-season-btn roi-season-high" onclick="roiAssignSeasonForDate(\'High\')">Apply High season ROI</button>';
-  h+='<button type="button" class="roi-season-btn roi-season-low" onclick="roiAssignSeasonForDate(\'Low\')">Apply Low season ROI</button>';
-  h+='<button type="button" class="btn-add" onclick="roiOpenSpecialForPickedDate()">Special ROI rules…</button>';
-  h+='</div>';
+  h+='<div class="fld roi-date-search"><label>Search saved specials</label><input id="roiDateSearch" type="search" placeholder="Name, date, venue…" value="'+_escRoi(_roiDatePick.q||'')+'" oninput="_roiDatePick.q=this.value;roiFilterSpecialList()"></div>';
   h+='<div id="roiDateInspect" class="roi-date-inspect">'+_roiDateInspectHtml()+'</div>';
   h+='</div>';
   return h;
@@ -782,7 +777,7 @@ function _roiDateInspectHtml(){
   }else if(fee<=0){
     h+='<div class="roi-page-hint">Add a DJ fee on Calendar to preview BS / ROI targets for this date.</div>';
   }else{
-    h+='<div class="roi-page-hint">No matching ROI tier for this day (off-schedule). Use Special ROI rules or Apply High/Low (adds the weekday as an extra day).</div>';
+    h+='<div class="roi-page-hint">No matching ROI tier for this day. Set special ROI rules for this date.</div>';
   }
   h+='</div>';
   return h;
@@ -975,6 +970,7 @@ function openRoiSpecialFormForShow(venue, dateStr, djName){
   var fp='auto';
   if(venue==='Casa Neos Beach Club'&&typeof isCnbcSummerFloor==='function'&&isCnbcSummerFloor(dateStr)) fp='summer';
   _roiSpPrefill={
+    dj:String(djName||'Special').trim()||'Special',
     label:(String(djName||'Special').trim()||'Special')+' · '+dateLbl,
     venue:venue, start:dateStr, end:dateStr,
     rulesVenue:null, rules:rules, floorPlan:fp,
@@ -1004,71 +1000,42 @@ function renderRoiSpecialForm(uid){
   }):Object.assign({}, ROI_SPECIAL_EVENTS[uid]||{});
   if(!ev._uid&& !isNew) ev._uid=uid;
 
-  var venues=(typeof listActiveVenues==='function'?listActiveVenues():['Casa Neos Beach Club','MILA Lounge','Casa Neos Lounge']);
-  var forceCustom=_roiSpForceCustom||(ev.rules&&ev.rules.tiers);
-  var templateSel=forceCustom?'__custom__':(ev.rulesVenue||'Casa Neos Beach Club');
+  if(!ev.dj){
+    var booked=_roiShowsOnDate(ev.venue, ev.start);
+    ev.dj=(booked[0]&&booked[0].dj)||String(ev.label||'').split('·')[0].trim()||'Special';
+  }
+  if(!ev.rules||!ev.rules.tiers){
+    var ruleKey=ev.rulesVenue&&ev.rulesVenue!=='__custom__'?ev.rulesVenue:((typeof effectiveRoiVenue==='function')?effectiveRoiVenue(ev.venue, ev.start, ev.djFee||0):ev.venue);
+    ev.rules=_cloneVenueRules(ruleKey)||_cloneVenueRules(ev.venue);
+  }
+  window._roiSpEditing={
+    dj:ev.dj, label:ev.label||'', venue:ev.venue||'', start:ev.start||'', end:ev.end||ev.start||'',
+    floorPlan:ev.floorPlan||'auto', dayTemplate:ev.dayTemplate||'Sunday',
+    forceSeason:(ev.forceSeason==='High'||ev.forceSeason==='Low')?ev.forceSeason:null,
+    days:ev.days?ev.days.slice():[], extraDays:ev.extraDays?ev.extraDays.slice():[], djFee:ev.djFee||0
+  };
 
   var h='<div class="roi-sp-modal" id="roiSpecialForm">';
   h+='<div class="roi-sp-modal-back" onclick="cancelRoiSpecialForm()"></div>';
   h+='<div class="roi-sp-modal-card" role="dialog" aria-modal="true">';
-  h+='<div class="roi-section-title">'+(isNew?'New special performance':'Edit special performance')+'</div>';
-  h+='<div class="roi-form-grid">';
-  h+='<div class="fld"><label>Label</label><input id="roiSpLabel" type="text" value="'+_escRoi(ev.label)+'" placeholder="Labor Day Monday, NYE, Art Basel..."></div>';
-  h+='<div class="fld"><label>Venue</label><select id="roiSpVenue" onchange="roiSpFloorOrVenueChanged()">'+venues.map(function(v){
-    return '<option value="'+v+'"'+(v===ev.venue?' selected':'')+'>'+v+'</option>';
-  }).join('')+'</select></div>';
-  h+='<div class="fld"><label>Start date</label><input id="roiSpStart" type="date" value="'+(ev.start||'')+'"></div>';
-  h+='<div class="fld"><label>End date</label><input id="roiSpEnd" type="date" value="'+(ev.end||ev.start||'')+'"></div>';
-  h+='<div class="fld"><label>Rule template</label><select id="roiSpTemplate" onchange="toggleRoiSpCustom()">'+_roiRulesTemplateOptions(templateSel)+'</select></div>';
-  h+='<div class="fld"><label>Season for this date</label><select id="roiSpForceSeason">';
-  [{v:'',l:'Auto (High/Low by month)'},{v:'High',l:'Force High season'},{v:'Low',l:'Force Low season'}].forEach(function(o){
-    h+='<option value="'+o.v+'"'+((ev.forceSeason||'')===o.v?' selected':'')+'>'+o.l+'</option>';
-  });
-  h+='</select></div>';
-  h+='<div class="fld"><label>Floor plan</label><select id="roiSpFloor" onchange="roiSpFloorOrVenueChanged()">';
-  var floorOpts=[{v:'auto',l:'Auto (date / floor-plan drops)'},{v:'casa-neos-beach-club-oct17',l:'Current waterfront (Oct 17+)'},{v:'casa-neos-beach-club-basel',l:'Casa Neos Beach Club Art Basel (Dec 4–6)'},{v:'casa-neos-lounge-oct',l:'CN Lounge Oct 1 floor'}];
-  if(ev.floorPlan && !floorOpts.some(function(o){ return o.v===ev.floorPlan; })) floorOpts.push({v:ev.floorPlan, l:ev.floorPlan});
-  floorOpts.forEach(function(o){
-    h+='<option value="'+o.v+'"'+(ev.floorPlan===o.v?' selected':'')+'>'+o.l+'</option>';
-  });
-  h+='</select></div>';
+  h+='<div class="roi-sp-who">';
+  h+='<div><span>DJ</span><b>'+_escRoi(ev.dj)+'</b></div>';
+  h+='<div><span>Name</span><b>'+_escRoi(ev.label||ev.dj)+'</b></div>';
+  h+='<div><span>Venue</span><b>'+_escRoi(ev.venue||'')+'</b></div>';
   h+='</div>';
 
-  h+='<div id="roiSpCustomWrap" class="roi-tier-editor-wrap"'+(templateSel!=='__custom__'?' style="display:none"':'')+'>';
+  h+='<div id="roiSpCustomWrap" class="roi-tier-editor-wrap">';
   h+='<div class="roi-tier-editor-hd"><span class="vr-season-lbl">BS Target and table tiers</span>';
   h+='<span class="roi-page-hint" id="roiSpTierHint">BS Target = DJ fee × ROI.</span></div>';
   h+='<div id="roiSpCustomBody"></div>';
   h+='</div>';
-
-  h+='<div class="vr-days-box"><div class="vr-season-lbl">Days in this performance</div>';
-  h+='<div class="vr-month-grid" id="roiSpDaysFilter">';
-  DOW_NAMES.forEach(function(d){
-    var on=!ev.days||!ev.days.length||ev.days.indexOf(d)>-1;
-    h+='<button type="button" class="vr-month-btn roi-sp-day'+(on?' on':'')+'" data-day="'+d+'">'+d.slice(0,3)+'</button>';
-  });
-  h+='</div></div>';
-
-  h+='<div class="vr-days-box"><div class="vr-season-lbl">Extra off-schedule day</div>';
-  h+='<div class="vr-month-grid" id="roiSpExtraDays">';
-  DOW_NAMES.forEach(function(d){
-    var on=(ev.extraDays||[]).indexOf(d)>-1;
-    h+='<button type="button" class="vr-month-btn roi-sp-extra'+(on?' on':'')+'" data-day="'+d+'">'+d.slice(0,3)+'</button>';
-  });
-  h+='</div><select id="roiSpDayTemplate" class="roi-sp-template-day">';
-  DOW_NAMES.forEach(function(d){
-    h+='<option value="'+d+'"'+(ev.dayTemplate===d?' selected':'')+'>Copy tiers from '+d+'</option>';
-  });
-  h+='</select></div>';
 
   h+='<div class="roi-form-actions">';
   h+='<button type="button" class="btn-cancel" onclick="cancelRoiSpecialForm()">Cancel</button>';
   h+='<button type="button" class="btn-save" onclick="saveRoiSpecialForm(\''+(isNew?'__new__':uid)+'\')">Save</button>';
   h+='</div></div></div>';
 
-  setTimeout(function(){
-    renderRoiSpCustomEditor(ev);
-    wireRoiSpFormToggles();
-  },0);
+  setTimeout(function(){ renderRoiSpCustomEditor(ev); },0);
   return h;
 }
 
@@ -1108,20 +1075,12 @@ function renderRoiSpCustomEditor(ev){
   var body=document.getElementById('roiSpCustomBody');
   if(!body) return;
   var rules=ev.rules;
-  if(!rules||!rules.tiers){
-    var tmpl=document.getElementById('roiSpTemplate');
-    var key=tmpl?tmpl.value:'Casa Neos Beach Club';
-    if(key==='__custom__') key='Casa Neos Beach Club';
-    rules=_cloneVenueRules(key);
-  }
-  if(!rules){ body.innerHTML='<div class="roi-empty">Pick a template first.</div>'; return; }
+  if(!rules||!rules.tiers) rules=_cloneVenueRules((ev&&ev.venue)||'Casa Neos Beach Club');
+  if(!rules){ body.innerHTML='<div class="roi-empty">No venue rules for this performance.</div>'; return; }
+  var meta=window._roiSpEditing||{};
   var fee=_roiSpResolveFee(ev);
-  if(!(fee>0)){
-    var venueNow=(document.getElementById('roiSpVenue')||{}).value||(ev&&ev.venue)||'';
-    var startNow=(document.getElementById('roiSpStart')||{}).value||(ev&&ev.start)||'';
-    fee=_roiSpResolveFee({venue:venueNow,start:startNow,djFee:(ev&&ev.djFee)||0});
-  }
-  var dateStr=ev.start||(_roiSpPrefill&&_roiSpPrefill.start)||((document.getElementById('roiSpStart')||{}).value)||'';
+  if(!(fee>0)) fee=_roiSpResolveFee({venue:(ev&&ev.venue)||meta.venue||'', start:(ev&&ev.start)||meta.start||'', djFee:(ev&&ev.djFee)||meta.djFee||0});
+  var dateStr=ev.start||meta.start||(_roiSpPrefill&&_roiSpPrefill.start)||'';
   var days=rules.days||DOW_NAMES;
   var showDays=days;
   if(_roiSpPrefill&&_roiSpPrefill.days&&_roiSpPrefill.days.length) showDays=_roiSpPrefill.days;
@@ -1138,10 +1097,9 @@ function renderRoiSpCustomEditor(ev){
   }
   var seasons=['High','Low'];
   if(dateStr&&typeof seasonFor==='function') seasons=[seasonFor(rules, dateStr)];
-  var venue=(document.getElementById('roiSpVenue')||{}).value||(ev.venue)||'Casa Neos Beach Club';
-  var floorPlan=(document.getElementById('roiSpFloor')||{}).value||ev.floorPlan||'auto';
-  var tmplEl=document.getElementById('roiSpTemplate');
-  var tmplKey=tmplEl?tmplEl.value:(ev.rulesVenue||'');
+  var venue=(ev&&ev.venue)||meta.venue||'Casa Neos Beach Club';
+  var floorPlan=(ev&&ev.floorPlan)||meta.floorPlan||'auto';
+  var tmplKey=(ev&&ev.rulesVenue)||'';
   var countsKey=(tmplKey&&tmplKey!=='__custom__')?tmplKey:venue;
   if(floorPlan==='auto' && rules.floorPlan) floorPlan=rules.floorPlan;
   var countsMeta=typeof roiTableCountsForRulesVenue==='function'
@@ -1153,8 +1111,8 @@ function renderRoiSpCustomEditor(ev){
   h+=_roiTableInventoryHtml(rules, countsMeta, {hideSource:true});
   h+='<div class="vr-tiers vr-tiers--page">';
   rules.tiers.forEach(function(tier, ti){
-    h+='<div class="vr-tier-block vr-tier-block--page"><div class="vr-tier-hd"><span class="vr-tier-fee-lbl">DJ Fee tier</span>';
-    h+=_vrFeeInputHtml(tier.fee, 'vr-fee-inp roi-sp-fee', 'data-ti="'+ti+'" readonly title="Anchor fee for this tier"');
+    h+='<div class="vr-tier-block vr-tier-block--page"><div class="vr-tier-hd"><span class="vr-tier-fee-lbl">DJ Fee</span>';
+    h+='<b class="roi-sp-fee-lock">$'+_vrFmtMoney(tier.fee)+'</b>';
     if(fee>0&&tier.fee!==fee){
       h+='<span class="roi-tier-match-note">Show DJ: $'+fee.toLocaleString()+'</span>';
     }
@@ -1215,9 +1173,8 @@ function wireRoiSpRoiToBs(root){
 function _roiSpDjFeeForEditor(root){
   root=root||document.getElementById('roiSpCustomBody');
   if(root&&root._roiSpDjFee>0) return root._roiSpDjFee;
-  var venue=(document.getElementById('roiSpVenue')||{}).value||'';
-  var start=(document.getElementById('roiSpStart')||{}).value||'';
-  var fee=_roiSpResolveFee({venue:venue,start:start,djFee:0});
+  var meta=window._roiSpEditing||{};
+  var fee=_roiSpResolveFee({venue:meta.venue||'', start:meta.start||'', djFee:meta.djFee||0});
   if(fee>0&&root) root._roiSpDjFee=fee;
   return fee||0;
 }
@@ -1308,42 +1265,25 @@ function _collectRoiSpCustomRules(){
 }
 
 function saveRoiSpecialForm(uid){
-  var label=(document.getElementById('roiSpLabel')||{}).value||'';
-  var venue=(document.getElementById('roiSpVenue')||{}).value||'';
-  var start=(document.getElementById('roiSpStart')||{}).value||'';
-  var end=(document.getElementById('roiSpEnd')||{}).value||start;
-  var template=(document.getElementById('roiSpTemplate')||{}).value||'';
-  var floorPlan=(document.getElementById('roiSpFloor')||{}).value||'auto';
-  var dayTemplate=(document.getElementById('roiSpDayTemplate')||{}).value||'Sunday';
-  var forceSeason=(document.getElementById('roiSpForceSeason')||{}).value||'';
-  if(!label.trim()){ alert('Please enter a label.'); return; }
-  if(!start){ alert('Please enter a start date.'); return; }
+  var meta=window._roiSpEditing||{};
+  var label=meta.label||'';
+  var venue=meta.venue||'';
+  var start=meta.start||'';
+  var end=meta.end||start;
+  if(!label.trim()||!venue||!start){ alert('This performance is missing a name, venue, or date.'); return; }
   if(end<start) end=start;
 
-  var allDaysOn=document.querySelectorAll('.roi-sp-day.on');
-  var days=[];
-  if(allDaysOn.length<7){
-    document.querySelectorAll('.roi-sp-day.on').forEach(function(btn){ days.push(btn.dataset.day); });
-  }
-  var extraDays=[];
-  document.querySelectorAll('.roi-sp-extra.on').forEach(function(btn){ extraDays.push(btn.dataset.day); });
-
   var rec={
+    dj:meta.dj||'',
     label:label.trim(), venue:venue, start:start, end:end,
-    floorPlan:floorPlan, extraDays:extraDays, dayTemplate:dayTemplate,
-    forceSeason:(forceSeason==='High'||forceSeason==='Low')?forceSeason:null,
+    floorPlan:meta.floorPlan||'auto', extraDays:meta.extraDays||[], dayTemplate:meta.dayTemplate||'Sunday',
+    forceSeason:(meta.forceSeason==='High'||meta.forceSeason==='Low')?meta.forceSeason:null,
     updatedAt:new Date().toISOString(),
-    djFee:_roiSpResolveFee({venue:venue,start:start,end:end,djFee:0})
+    djFee:_roiSpResolveFee({venue:venue,start:start,end:end,djFee:meta.djFee||0})
   };
-  if(days.length) rec.days=days;
-
-  if(template==='__custom__'||_roiSpForceCustom){
-    rec.rules=_collectRoiSpCustomRules();
-    rec.rulesVenue=null;
-  }else{
-    rec.rulesVenue=template;
-    rec.rules=null;
-  }
+  if(meta.days&&meta.days.length) rec.days=meta.days.slice();
+  rec.rules=_collectRoiSpCustomRules();
+  rec.rulesVenue=null;
 
   var newUid=uid==='__new__'?_roiSpeUid():uid;
   rec._uid=newUid;
@@ -1352,6 +1292,7 @@ function saveRoiSpecialForm(uid){
   _roiEditSpecialUid=null;
   _roiSpForceCustom=false;
   _roiSpPrefill=null;
+  window._roiSpEditing=null;
   renderRoiRulesPage();
 }
 
@@ -1359,6 +1300,7 @@ function cancelRoiSpecialForm(){
   _roiEditSpecialUid=null;
   _roiSpForceCustom=false;
   _roiSpPrefill=null;
+  window._roiSpEditing=null;
   renderRoiRulesPage();
 }
 
