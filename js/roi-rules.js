@@ -5,6 +5,7 @@ var _roiEditSpecialUid = null;
 var _roiSpForceCustom = false;
 var _roiSpPrefill = null;
 var _roiDatePick = { venue: '', date: '', q: '' };
+var _roiFpDay = { venue: '', date: '', preset: '' };
 var _roiEditFloorUid = null;
 
 function _roiSpResolveFee(ev){
@@ -624,21 +625,19 @@ function _roiRulesTemplateOptions(selected){
   }).join('');
 }
 
+function _roiActionHead(n, title, text){
+  return '<div class="roi-action"><div class="roi-action-hd"><span class="roi-action-num">'+n+'</span><div><b>'+_escRoi(title)+'</b><p>'+text+'</p></div></div></div>';
+}
 function renderRoiSpecialSection(){
   var h='';
-  h+='<div class="roi-special-intro">';
-  h+='<p>Choose the <b>location</b> and the <b>date</b>, then set the special ROI rules for that performance.</p>';
-  h+='</div>';
-
+  h+=_roiActionHead('1', 'Special day ROI', 'Choose a location and a date, then edit the ROI, BS Target, and table tiers for that performance.');
   h+=renderRoiDateAssignBar();
-
-  h+=renderRoiSpecialUpcoming();
 
   var list=_roiSpeListFiltered();
   h+='<div class="roi-special-list">';
-  h+='<div class="roi-section-title">Saved specials'+(list.length?' <span class="roi-page-hint" style="font-weight:600">('+list.length+')</span>':'')+'</div>';
+  h+='<div class="roi-section-title">Saved special ROI rules'+(list.length?' <span class="roi-page-hint" style="font-weight:600">('+list.length+')</span>':'')+'</div>';
   if(!list.length){
-    h+='<div class="roi-empty">No specials match'+( _roiDatePick.q||_roiDatePick.date ? ' your search' : ' yet')+'. Pick a date above or add one.</div>';
+    h+='<div class="roi-empty">No specials match'+( _roiDatePick.q||_roiDatePick.date ? ' your search' : ' yet')+'. Pick a location and date above.</div>';
   }else{
     h+='<div class="roi-sp-stack">';
     list.forEach(function(ev){
@@ -673,6 +672,12 @@ function renderRoiSpecialSection(){
     h+='</div>';
   }
   h+='</div>';
+
+  h+=_roiActionHead('2', 'Floor plan for one day', 'Choose a location and a date, then use an existing floor plan for that day only.');
+  h+=renderRoiDayFloorPlan();
+
+  h+=_roiActionHead('3', 'Needs a special rule', 'Off-schedule shows. Open one to set the BS Target and table tiers.');
+  h+=renderRoiSpecialUpcoming();
 
   if(_roiEditSpecialUid!==null) h+=renderRoiSpecialForm(_roiEditSpecialUid);
   return h;
@@ -712,6 +717,87 @@ function renderRoiDateAssignBar(){
   h+='<div id="roiDateInspect" class="roi-date-inspect">'+_roiDateInspectHtml()+'</div>';
   h+='</div>';
   return h;
+}
+
+function _roiOneDayFloorUid(venue, dateStr){
+  var found='';
+  Object.keys(ROI_FLOOR_PLANS||{}).forEach(function(uid){
+    var p=ROI_FLOOR_PLANS[uid];
+    if(p&&p.oneDay&&p.venue===venue&&p.start===dateStr&&p.end===dateStr) found=uid;
+  });
+  return found;
+}
+function renderRoiDayFloorPlan(){
+  var venues=(typeof listActiveVenues==='function'?listActiveVenues():['Casa Neos Beach Club','MILA Lounge','Casa Neos Lounge']);
+  if(!_roiFpDay.venue) _roiFpDay.venue=venues[0]||'';
+  var plans=(typeof roiFloorPlanOptionsForVenue==='function')?roiFloorPlanOptionsForVenue(_roiFpDay.venue):[];
+  if(!_roiFpDay.preset||!plans.some(function(p){ return p.v===_roiFpDay.preset; })) _roiFpDay.preset=plans.length?plans[0].v:'';
+  var drop=(_roiFpDay.date&&typeof roiFloorPlanDropFor==='function')?roiFloorPlanDropFor(_roiFpDay.venue, _roiFpDay.date):null;
+  var current='Pick a date to see the floor plan that day uses.';
+  if(_roiFpDay.date){
+    if(!drop) current='No saved floor plan covers this date. The built-in plan still shows in 3D View.';
+    else if(drop.oneDay) current='This day only uses '+((typeof FV_3D_PLAN_PRESETS!=='undefined'&&FV_3D_PLAN_PRESETS[drop.preset]&&FV_3D_PLAN_PRESETS[drop.preset].label)||drop.label||drop.preset)+'.';
+    else current='This date follows '+((typeof FV_3D_PLAN_PRESETS!=='undefined'&&FV_3D_PLAN_PRESETS[drop.preset]&&FV_3D_PLAN_PRESETS[drop.preset].label)||drop.label||drop.preset)+' from '+(drop.start||'the scheduled range')+'.';
+  }
+  var oneUid=_roiFpDay.date?_roiOneDayFloorUid(_roiFpDay.venue, _roiFpDay.date):'';
+  var h='<div class="roi-date-bar" id="roiFpDayBar">';
+  h+='<div class="roi-date-pick roi-fp-pick">';
+  h+='<div class="fld"><label>Location</label><select id="roiFpDayVenue" onchange="_roiFpDay.venue=this.value;_roiFpDay.preset=\'\';renderRoiRulesPage()">';
+  venues.forEach(function(v){
+    h+='<option value="'+_escRoi(v)+'"'+(v===_roiFpDay.venue?' selected':'')+'>'+_escRoi(v)+'</option>';
+  });
+  h+='</select></div>';
+  h+='<div class="fld"><label>Date</label><input id="roiFpDayDate" type="date" value="'+(_roiFpDay.date||'')+'" onchange="_roiFpDay.date=this.value;renderRoiRulesPage()"></div>';
+  h+='<div class="fld"><label>Existing floor plan</label><select id="roiFpDayPlan" onchange="_roiFpDay.preset=this.value">';
+  plans.forEach(function(p){
+    h+='<option value="'+_escRoi(p.v)+'"'+(p.v===_roiFpDay.preset?' selected':'')+'>'+_escRoi(p.l)+'</option>';
+  });
+  h+='</select></div>';
+  h+='</div>';
+  h+='<div class="roi-date-actions">';
+  h+='<button type="button" class="btn-save" onclick="roiApplyDayFloorPlan()">Use this floor plan for this day</button>';
+  if(oneUid) h+='<button type="button" class="btn-cancel" onclick="roiClearDayFloorPlan()">Remove this day\'s floor plan</button>';
+  h+='</div>';
+  h+='<div class="roi-date-inspect"><div class="roi-inspect-card">'+_escRoi(current)+'</div></div>';
+  h+='</div>';
+  return h;
+}
+function roiApplyDayFloorPlan(){
+  var venue=(document.getElementById('roiFpDayVenue')||{}).value||_roiFpDay.venue;
+  var dateStr=(document.getElementById('roiFpDayDate')||{}).value||_roiFpDay.date;
+  var preset=(document.getElementById('roiFpDayPlan')||{}).value||_roiFpDay.preset;
+  if(!venue||!dateStr){ alert('Choose a location and a date.'); return; }
+  if(!preset){ alert('Choose an existing floor plan.'); return; }
+  var payload=typeof _fv3dPlanPayloadFromPreset==='function'?_fv3dPlanPayloadFromPreset(preset):null;
+  if(!payload){ alert('That floor plan is not available.'); return; }
+  var uid=_roiOneDayFloorUid(venue, dateStr)||_roiFpUid();
+  var prev=ROI_FLOOR_PLANS[uid]||{};
+  var label=(typeof FV_3D_PLAN_PRESETS!=='undefined'&&FV_3D_PLAN_PRESETS[preset]&&FV_3D_PLAN_PRESETS[preset].label)||preset;
+  ROI_FLOOR_PLANS[uid]={
+    _uid:uid,
+    oneDay:true,
+    label:label,
+    venue:venue,
+    start:dateStr,
+    end:dateStr,
+    preset:preset,
+    status:'ready',
+    plan:payload,
+    createdAt:prev.createdAt||new Date().toISOString(),
+    updatedAt:new Date().toISOString()
+  };
+  if(typeof saveRoiFloorPlans==='function') saveRoiFloorPlans();
+  _roiFpDay={venue:venue, date:dateStr, preset:preset};
+  renderRoiRulesPage();
+}
+function roiClearDayFloorPlan(){
+  var venue=(document.getElementById('roiFpDayVenue')||{}).value||_roiFpDay.venue;
+  var dateStr=(document.getElementById('roiFpDayDate')||{}).value||_roiFpDay.date;
+  var uid=_roiOneDayFloorUid(venue, dateStr);
+  if(!uid||!ROI_FLOOR_PLANS[uid]||!ROI_FLOOR_PLANS[uid].oneDay) return;
+  delete ROI_FLOOR_PLANS[uid];
+  if(typeof saveRoiFloorPlans==='function') saveRoiFloorPlans();
+  renderRoiRulesPage();
 }
 
 function _roiFeeOnDate(venue, dateStr){
@@ -907,10 +993,8 @@ function renderRoiSpecialUpcoming(){
     });
   }
   shows.sort(function(a,b){ return a.r.d.localeCompare(b.r.d); });
-  if(!shows.length) return '';
-  var h='<div class="roi-special-upcoming"><div class="roi-section-title">Needs a special rule</div>';
-  h+='<p class="roi-page-hint" style="margin:-4px 0 10px">Off-schedule shows. Open one to set the BS Target and table tiers.</p>';
-  h+='<div class="roi-sp-stack">';
+  if(!shows.length) return '<div class="roi-empty">No off-schedule shows need a rule.</div>';
+  var h='<div class="roi-sp-stack">';
   shows.slice(0,16).forEach(function(row){
     h+='<div class="roi-sp-card roi-alert-row" tabindex="0" role="button" data-venue="'+_escRoi(row.v)+'" data-date="'+row.r.d+'" data-dj="'+_escRoi(row.r.dj||'TBD')+'" onclick="openRoiSpecialFormFromRow(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openRoiSpecialFormFromRow(this);}">';
     h+='<div class="roi-sp-card-main">';
@@ -921,7 +1005,7 @@ function renderRoiSpecialUpcoming(){
     h+='<span class="roi-alert-cta">ADD SPECIAL PERFORMANCE ROI</span>';
     h+='</div>';
   });
-  h+='</div></div>';
+  h+='</div>';
   return h;
 }
 

@@ -1319,6 +1319,12 @@ model-viewer{--min-hotspot-opacity:0}
 .roi-date-pick{display:grid;grid-template-columns:minmax(220px,1.2fr) minmax(180px,.8fr) auto;gap:12px;align-items:end;margin-bottom:12px}
 .roi-date-pick select,.roi-date-pick input[type=date]{font-size:15px;font-weight:700;padding:10px 12px;width:100%}
 .roi-date-go{padding:12px 16px;font-size:13px;white-space:nowrap}
+.roi-fp-pick{grid-template-columns:minmax(200px,1fr) minmax(160px,.7fr) minmax(240px,1.4fr)}
+.roi-action{margin:22px 0 10px}
+.roi-action-hd{display:flex;gap:12px;align-items:flex-start}
+.roi-action-num{width:32px;height:32px;border-radius:10px;background:#0f172a;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;flex:none}
+.roi-action-hd b{display:block;font-size:16px;line-height:1.2}
+.roi-action-hd p{margin:3px 0 0;font-size:12px;color:var(--ink2);line-height:1.4}
 .roi-date-search{max-width:360px;margin-bottom:8px}
 .roi-sp-who{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
 .roi-sp-who span{display:block;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}

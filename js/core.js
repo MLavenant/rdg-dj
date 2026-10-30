@@ -625,7 +625,7 @@ function ensureDefaultRoiFloorPlans(){
   }else{
     Object.keys(ROI_FLOOR_PLANS).forEach(function(uid){
       var p=ROI_FLOOR_PLANS[uid];
-      if(!p||p.preset!=='casa-neos-beach-club-basel'||baselPlanIsCurrent(p.plan)) return;
+      if(!p||p.oneDay||p.preset!=='casa-neos-beach-club-basel'||baselPlanIsCurrent(p.plan)) return;
       p.label='Casa Neos Beach Club Art Basel';
       p.start='2026-12-04';
       p.end='2026-12-06';
