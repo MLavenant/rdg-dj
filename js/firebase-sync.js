@@ -1394,7 +1394,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
           setFv3dDate(typeof getFv3dDate==='function'?getFv3dDate():null);
           if(typeof updateFv3dRefreshStatus==='function') updateFv3dRefreshStatus();
         }
-        if(typeof curView!=='undefined' && curView==='roi-rules' && typeof _roiPageTab!=='undefined' && (_roiPageTab==='floors' || _roiPageTab==='summary' || _roiPageTab==='rules') && typeof renderRoiRulesPage==='function' && !roiTyping){
+        if(typeof curView!=='undefined' && curView==='roi-rules' && typeof _roiPageTab!=='undefined' && (_roiPageTab==='floors' || _roiPageTab==='summary' || _roiPageTab==='rules' || (_roiPageTab==='special' && (typeof _roiEditSpecialUid==='undefined' || _roiEditSpecialUid===null))) && typeof renderRoiRulesPage==='function' && !roiTyping){
           renderRoiRulesPage();
         }
       }catch(eFpUi){}

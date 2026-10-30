@@ -105,7 +105,7 @@ function _roiTierHeaderHtml(tableCats, counts){
   return h;
 }
 /* Big inventory strip: total tables, per-tier chips, and where counts come from. */
-function _roiTableInventoryHtml(rules, countsMeta){
+function _roiTableInventoryHtml(rules, countsMeta, opts){
   countsMeta=countsMeta||{};
   var counts=countsMeta.counts||{};
   var cats=rules.tableCats||[];
@@ -123,6 +123,7 @@ function _roiTableInventoryHtml(rules, countsMeta){
     h+='<div class="vr-inventory-chip"><span class="vr-inventory-chip-n">'+n+'</span><span class="vr-inventory-chip-lbl">'+_escRoi(c)+'</span></div>';
   });
   h+='</div></div>';
+  if(opts&&opts.hideSource){ h+='</div>'; return h; }
   h+='<div class="vr-inventory-source">';
   h+='<div class="vr-inventory-source-hd">Where these numbers come from</div>';
   h+='<ul class="vr-inventory-source-list">';
@@ -632,13 +633,7 @@ function renderRoiSpecialSection(){
 
   h+=renderRoiDateAssignBar();
 
-  h+='<div class="roi-special-toolbar">';
-  h+='<button type="button" class="btn-add" onclick="openRoiSpecialForm()">+ Add special performance</button>';
-  h+='</div>';
-
-  if(_roiEditSpecialUid!==null){
-    h+=renderRoiSpecialForm(_roiEditSpecialUid);
-  }
+  h+=renderRoiSpecialUpcoming();
 
   var list=_roiSpeListFiltered();
   h+='<div class="roi-special-list">';
@@ -646,9 +641,7 @@ function renderRoiSpecialSection(){
   if(!list.length){
     h+='<div class="roi-empty">No specials match'+( _roiDatePick.q||_roiDatePick.date ? ' your search' : ' yet')+'. Pick a date above or add one.</div>';
   }else{
-    h+='<table class="fcast-tbl roi-special-tbl"><thead><tr>';
-    h+='<th class="left">Label</th><th class="left">Venue</th><th>Dates</th><th>Days</th><th>Rules</th><th>Floor plan</th><th></th>';
-    h+='</tr></thead><tbody>';
+    h+='<div class="roi-sp-stack">';
     list.forEach(function(ev){
       var rulesLbl=ev.forceSeason?('Season: '+ev.forceSeason):(ev.rules&&ev.rules.tiers?'Custom':(ev.rulesVenue||'Auto'));
       if(rulesLbl===CNBC_SUMMER_ROOF_KEY) rulesLbl='Sunset Rituals';
@@ -656,7 +649,7 @@ function renderRoiSpecialSection(){
       if(typeof CNL_OCT_KEY!=='undefined' && rulesLbl===CNL_OCT_KEY) rulesLbl='CNL Oct 1';
       var days=(ev.days&&ev.days.length)?ev.days.map(function(d){return d.slice(0,3);}).join(', '):'All in range';
       if(ev.extraDays&&ev.extraDays.length){
-        days+=(days?' + ':'')+ev.extraDays.map(function(d){return d.slice(0,3);}).join(', ')+' (extra)';
+        days+=(days?' + ':'')+ev.extraDays.map(function(d){return d.slice(0,3);}).join(', ')+' extra';
       }
       var fp=ev.floorPlan==='summer'?'Sunset 20'
         :(ev.floorPlan==='casa-neos-beach-club-new'?'CNBC waterfront'
@@ -665,23 +658,24 @@ function renderRoiSpecialSection(){
         :(ev.floorPlan==='casa-neos-lounge-new'?'CNL remodel'
         :(ev.floorPlan==='casa-neos-lounge'?'CNL classic'
         :(ev.floorPlan==='regular'?'Regular':'Auto'))))));
-      h+='<tr>';
-      h+='<td class="left" style="font-weight:800">'+_escRoi(ev.label||'Untitled')+'</td>';
-      h+='<td class="left">'+_escRoi(ev.venue||'')+'</td>';
-      h+='<td style="font-size:11px"><button type="button" class="roi-date-chip" onclick="roiJumpToDate(\''+_escRoi(ev.venue||'')+'\',\''+ev.start+'\')" title="Select this date">'+ev.start+(ev.end!==ev.start?' → '+ev.end:'')+'</button></td>';
-      h+='<td style="font-size:10px">'+days+'</td>';
-      h+='<td style="font-size:10px">'+_escRoi(rulesLbl)+'</td>';
-      h+='<td style="font-size:10px">'+fp+'</td>';
-      h+='<td style="white-space:nowrap">';
-      h+='<button type="button" class="roi-mini-btn" onclick="openRoiSpecialForm(\''+ev._uid+'\')">Edit</button> ';
+      var when=ev.start+(ev.end&&ev.end!==ev.start?' → '+ev.end:'');
+      h+='<div class="roi-sp-card">';
+      h+='<div class="roi-sp-card-main">';
+      h+='<b>'+_escRoi(ev.label||'Untitled')+'</b>';
+      h+='<span>'+_escRoi(ev.venue||'')+'</span>';
+      h+='<span>'+_escRoi(when+' · '+days)+'</span>';
+      h+='<span>'+_escRoi(rulesLbl+' · '+fp)+'</span>';
+      h+='</div>';
+      h+='<div class="roi-sp-card-actions">';
+      h+='<button type="button" class="roi-mini-btn" onclick="openRoiSpecialForm(\''+ev._uid+'\')">Edit</button>';
       h+='<button type="button" class="roi-mini-btn roi-mini-del" onclick="deleteRoiSpecial(\''+ev._uid+'\')">Delete</button>';
-      h+='</td></tr>';
+      h+='</div></div>';
     });
-    h+='</tbody></table>';
+    h+='</div>';
   }
   h+='</div>';
 
-  h+=renderRoiSpecialUpcoming();
+  if(_roiEditSpecialUid!==null) h+=renderRoiSpecialForm(_roiEditSpecialUid);
   return h;
 }
 
@@ -920,14 +914,19 @@ function renderRoiSpecialUpcoming(){
   shows.sort(function(a,b){ return a.r.d.localeCompare(b.r.d); });
   if(!shows.length) return '';
   var h='<div class="roi-special-upcoming"><div class="roi-section-title">Needs a special rule</div>';
-  h+='<p class="roi-page-hint" style="margin:-4px 0 10px">Off-schedule shows without a special performance rule. Click a row to set Target, ROI, and table mins for that date.</p>';
-  h+='<table class="fcast-tbl roi-alert-tbl"><thead><tr><th class="left">Date</th><th class="left">Venue</th><th class="left">DJ</th><th>Day</th><th>Action</th></tr></thead><tbody>';
+  h+='<p class="roi-page-hint" style="margin:-4px 0 10px">Off-schedule shows. Open one to set the BS Target and table tiers.</p>';
+  h+='<div class="roi-sp-stack">';
   shows.slice(0,16).forEach(function(row){
-    h+='<tr class="roi-alert-row" tabindex="0" role="button" data-venue="'+_escRoi(row.v)+'" data-date="'+row.r.d+'" data-dj="'+_escRoi(row.r.dj||'TBD')+'" onclick="openRoiSpecialFormFromRow(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openRoiSpecialFormFromRow(this);}">';
-    h+='<td class="left">'+row.r.d+'</td><td class="left">'+_escRoi(row.v)+'</td><td class="left" style="font-weight:700">'+_escRoi(row.r.dj||'TBD')+'</td><td>'+row.day.slice(0,3)+'</td>';
-    h+='<td><span class="roi-alert-cta">No special rule — add one &#8594;</span></td></tr>';
+    h+='<div class="roi-sp-card roi-alert-row" tabindex="0" role="button" data-venue="'+_escRoi(row.v)+'" data-date="'+row.r.d+'" data-dj="'+_escRoi(row.r.dj||'TBD')+'" onclick="openRoiSpecialFormFromRow(this)" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();openRoiSpecialFormFromRow(this);}">';
+    h+='<div class="roi-sp-card-main">';
+    h+='<b>'+_escRoi(row.r.dj||'TBD')+'</b>';
+    h+='<span>'+_escRoi(row.v)+'</span>';
+    h+='<span>'+row.r.d+' · '+row.day.slice(0,3)+'</span>';
+    h+='</div>';
+    h+='<span class="roi-alert-cta">ADD SPECIAL PERFORMANCE ROI</span>';
+    h+='</div>';
   });
-  h+='</tbody></table></div>';
+  h+='</div></div>';
   return h;
 }
 
@@ -982,10 +981,6 @@ function openRoiSpecialFormForShow(venue, dateStr, djName){
     extraDays:[day], dayTemplate:'Sunday', days:[day], djFee:fee
   };
   renderRoiRulesPage();
-  setTimeout(function(){
-    var el=document.getElementById('roiSpecialForm');
-    if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
-  },50);
 }
 
 function _escRoi(s){
@@ -1013,7 +1008,9 @@ function renderRoiSpecialForm(uid){
   var forceCustom=_roiSpForceCustom||(ev.rules&&ev.rules.tiers);
   var templateSel=forceCustom?'__custom__':(ev.rulesVenue||'Casa Neos Beach Club');
 
-  var h='<div class="roi-special-form" id="roiSpecialForm">';
+  var h='<div class="roi-sp-modal" id="roiSpecialForm">';
+  h+='<div class="roi-sp-modal-back" onclick="cancelRoiSpecialForm()"></div>';
+  h+='<div class="roi-sp-modal-card" role="dialog" aria-modal="true">';
   h+='<div class="roi-section-title">'+(isNew?'New special performance':'Edit special performance')+'</div>';
   h+='<div class="roi-form-grid">';
   h+='<div class="fld"><label>Label</label><input id="roiSpLabel" type="text" value="'+_escRoi(ev.label)+'" placeholder="Labor Day Monday, NYE, Art Basel..."></div>';
@@ -1037,36 +1034,36 @@ function renderRoiSpecialForm(uid){
   h+='</select></div>';
   h+='</div>';
 
-  h+='<div class="vr-days-box"><div class="vr-season-lbl">Limit to specific days in range (optional)</div>';
+  h+='<div id="roiSpCustomWrap" class="roi-tier-editor-wrap"'+(templateSel!=='__custom__'?' style="display:none"':'')+'>';
+  h+='<div class="roi-tier-editor-hd"><span class="vr-season-lbl">BS Target and table tiers</span>';
+  h+='<span class="roi-page-hint" id="roiSpTierHint">BS Target = DJ fee × ROI.</span></div>';
+  h+='<div id="roiSpCustomBody"></div>';
+  h+='</div>';
+
+  h+='<div class="vr-days-box"><div class="vr-season-lbl">Days in this performance</div>';
   h+='<div class="vr-month-grid" id="roiSpDaysFilter">';
   DOW_NAMES.forEach(function(d){
     var on=!ev.days||!ev.days.length||ev.days.indexOf(d)>-1;
     h+='<button type="button" class="vr-month-btn roi-sp-day'+(on?' on':'')+'" data-day="'+d+'">'+d.slice(0,3)+'</button>';
   });
-  h+='</div><div class="vr-season-hint">Leave all selected to apply to every day in the date range.</div></div>';
+  h+='</div></div>';
 
-  h+='<div class="vr-days-box"><div class="vr-season-lbl">Extra off-schedule days (e.g. Monday at BC)</div>';
+  h+='<div class="vr-days-box"><div class="vr-season-lbl">Extra off-schedule day</div>';
   h+='<div class="vr-month-grid" id="roiSpExtraDays">';
   DOW_NAMES.forEach(function(d){
     var on=(ev.extraDays||[]).indexOf(d)>-1;
     h+='<button type="button" class="vr-month-btn roi-sp-extra'+(on?' on':'')+'" data-day="'+d+'">'+d.slice(0,3)+'</button>';
   });
-  h+='</div><div class="vr-season-hint">For days not in the standard venue schedule. Tier data defaults to the <select id="roiSpDayTemplate" style="font-size:10px;padding:2px 4px">';
+  h+='</div><select id="roiSpDayTemplate" class="roi-sp-template-day">';
   DOW_NAMES.forEach(function(d){
-    h+='<option value="'+d+'"'+(ev.dayTemplate===d?' selected':'')+'>'+d+'</option>';
+    h+='<option value="'+d+'"'+(ev.dayTemplate===d?' selected':'')+'>Copy tiers from '+d+'</option>';
   });
-  h+='</select> column unless you customize tiers below.</div></div>';
-
-  h+='<div id="roiSpCustomWrap" class="roi-tier-editor-wrap"'+(templateSel!=='__custom__'?' style="display:none"':'')+'>';
-  h+='<div class="roi-tier-editor-hd"><span class="vr-season-lbl">ROI, BS Target &amp; table minimums</span>';
-  h+='<span class="roi-page-hint" id="roiSpTierHint">Shows only the fee tier this DJ falls into.</span></div>';
-  h+='<div id="roiSpCustomBody"></div>';
-  h+='</div>';
+  h+='</select></div>';
 
   h+='<div class="roi-form-actions">';
   h+='<button type="button" class="btn-cancel" onclick="cancelRoiSpecialForm()">Cancel</button>';
-  h+='<button type="button" class="btn-save" onclick="saveRoiSpecialForm(\''+(isNew?'__new__':uid)+'\')">Save special performance</button>';
-  h+='</div></div>';
+  h+='<button type="button" class="btn-save" onclick="saveRoiSpecialForm(\''+(isNew?'__new__':uid)+'\')">Save</button>';
+  h+='</div></div></div>';
 
   setTimeout(function(){
     renderRoiSpCustomEditor(ev);
@@ -1153,7 +1150,7 @@ function renderRoiSpCustomEditor(ev){
   var counts=countsMeta.counts||{};
   var h='';
   h+='<div hidden data-roi-counts=\''+JSON.stringify(counts).replace(/'/g,'&#39;')+'\' data-roi-cats=\''+JSON.stringify(rules.tableCats||[]).replace(/'/g,'&#39;')+'\'></div>';
-  h+=_roiTableInventoryHtml(rules, countsMeta);
+  h+=_roiTableInventoryHtml(rules, countsMeta, {hideSource:true});
   h+='<div class="vr-tiers vr-tiers--page">';
   rules.tiers.forEach(function(tier, ti){
     h+='<div class="vr-tier-block vr-tier-block--page"><div class="vr-tier-hd"><span class="vr-tier-fee-lbl">DJ Fee tier</span>';
