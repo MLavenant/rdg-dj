@@ -1773,16 +1773,7 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-eq-allfins .bp-fincard{display:grid;grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr) auto;grid-template-rows:subgrid;grid-row:span 5;column-gap:0;row-gap:6px;align-items:center}
 .bp-lbl-card{background:transparent!important;border-color:transparent!important;padding-left:0!important;padding-right:0!important}
 .bp-lbl-card .bp-budget-box,.bp-lbl-card .bp-planned-box{background:transparent;border-color:transparent;padding-left:0;padding-right:0}
-.bp-eq-cards .bp-budget-box,
-.bp-eq-cards .bp-fc-row,
-.bp-eq-cards .bp-split-line{border-top:1px solid #94a3b8}
-.bp-eq-cards .bp-budget-box{border-top-color:#334155}
-.bp-eq-cards .bp-planned-box{gap:0}
-.bp-eq-cards .bp-split{border-top:0;padding-top:0;gap:0}
-.bp-eq-cards .bp-lbl-card .bp-budget-box,
-.bp-eq-cards .bp-lbl-card .bp-fc-row,
-.bp-eq-cards .bp-lbl-card .bp-split-line{border-top:1px solid #94a3b8}
-.bp-eq-cards .bp-lbl-card .bp-budget-box{border-top-color:#334155}
+.bp-lbl-card .bp-split{border-top-color:transparent}
 .bp-eq-allfins .bp-lbl-card{grid-template-columns:minmax(0,1fr)}
 .bp-lbl{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#334155;line-height:1.2}
 .bp-card-hd{display:flex;flex-direction:column;gap:2px;min-height:38px}

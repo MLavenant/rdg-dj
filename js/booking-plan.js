@@ -1343,8 +1343,10 @@ function bpSendShowApproval(row, cell){
       var pdf=_bpPdfFit([cv]);
       var snap=cv.toDataURL('image/jpeg', 0.86);
       var comma=snap.indexOf(',');
-      return pdf.output('blob').then(function(blob){
-        return _blobToBase64(blob).then(function(b64){ return {b64:b64, snap:comma>=0?snap.slice(comma+1):snap}; });
+      var blob=pdf.output('blob');
+      var ready=(blob && typeof blob.then==='function')?blob:Promise.resolve(blob);
+      return ready.then(function(fileBlob){
+        return _blobToBase64(fileBlob).then(function(b64){ return {b64:b64, snap:comma>=0?snap.slice(comma+1):snap}; });
       });
     }).then(function(pack){
       _bpBusy(false);
