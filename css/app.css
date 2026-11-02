@@ -1773,7 +1773,16 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-eq-allfins .bp-fincard{display:grid;grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr) auto;grid-template-rows:subgrid;grid-row:span 5;column-gap:0;row-gap:6px;align-items:center}
 .bp-lbl-card{background:transparent!important;border-color:transparent!important;padding-left:0!important;padding-right:0!important}
 .bp-lbl-card .bp-budget-box,.bp-lbl-card .bp-planned-box{background:transparent;border-color:transparent;padding-left:0;padding-right:0}
-.bp-lbl-card .bp-split{border-top-color:transparent}
+.bp-eq-cards .bp-budget-box,
+.bp-eq-cards .bp-fc-row,
+.bp-eq-cards .bp-split-line{border-top:1px solid #94a3b8}
+.bp-eq-cards .bp-budget-box{border-top-color:#334155}
+.bp-eq-cards .bp-planned-box{gap:0}
+.bp-eq-cards .bp-split{border-top:0;padding-top:0;gap:0}
+.bp-eq-cards .bp-lbl-card .bp-budget-box,
+.bp-eq-cards .bp-lbl-card .bp-fc-row,
+.bp-eq-cards .bp-lbl-card .bp-split-line{border-top:1px solid #94a3b8}
+.bp-eq-cards .bp-lbl-card .bp-budget-box{border-top-color:#334155}
 .bp-eq-allfins .bp-lbl-card{grid-template-columns:minmax(0,1fr)}
 .bp-lbl{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#334155;line-height:1.2}
 .bp-card-hd{display:flex;flex-direction:column;gap:2px;min-height:38px}
@@ -1985,6 +1994,11 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-x-bud b .bp-neg{color:#b91c1c}
 .bp-x-field b .bp-pos,.bp-x-field b .bp-neg{font-size:inherit}
 .bp-x-why{margin-top:10px;border:1px solid #e2e8f0;border-radius:10px;padding:8px 14px;background:#f8fafc}
+.bp-x-day{border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;background:#fff}
+.bp-x-day-hd,.bp-x-day-row{display:grid;grid-template-columns:180px minmax(0,1fr);align-items:center;gap:8px;padding:8px 14px;border-top:1px solid #94a3b8}
+.bp-x-day-hd{border-top:0;background:#f8fafc;font-size:12px;font-weight:900;color:#334155}
+.bp-x-day-row>span{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#334155}
+.bp-x-day .bp-sf-vals{border-top:0;padding:0}
 .bp-deck{display:flex;flex-direction:column;padding:16px 28px 10px}
 .bp-deck-hd{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:10px;border-bottom:4px solid #0b2e40}
 .bp-deck-hd>div{display:flex;flex-direction:column;gap:4px}

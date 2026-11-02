@@ -122,6 +122,17 @@ function getShowDjStatus(r, ds){
   var venue=r&&(r.v||r.venue);
   /* Multi-show nights: do not share date-level Accounting status across performances. */
   if(_countShowsOnDate(venue, date)>1) return null;
+  try{
+    /* Accounting is stored under the show's venue and that date's fiscal year.
+       The booking plan does not change the calendar's selected year, so Dec 2026
+       lives in fiscal 2027 even while today is still fiscal 2026. */
+    var year=(typeof fiscalYearForDate==='function')?fiscalYearForDate(date):'';
+    var k=String(venue||'')+'|'+year+'|'+String(date).slice(5,7)+'|'+date;
+    if(typeof acctData!=='undefined' && acctData && acctData[k]){
+      var acct=(typeof _acctNormalize==='function')?_acctNormalize(acctData[k]):acctData[k];
+      if(acct && acct.djStatus) return acct.djStatus;
+    }
+  }catch(eFy){}
   try{ return (getAcct(date).djStatus)||null; }catch(e){ return null; }
 }
 function _isCoarsePointer(){

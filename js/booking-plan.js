@@ -27,6 +27,7 @@ var _bpData={approvals:{}, confirms:{}, plans:{}, meetings:{}, notes:{}};
   bind('bookingMeetings','meetings');
   window._fbDb.ref('rdg/approvalNotes').on('value', function(snap){
     _bpData.notes=snap.val()||{};
+    _bpMaybeRerender();
     if(typeof curView!=='undefined' && curView==='calendar' && typeof renderCal==='function' && !document.getElementById('bpApprModal')){
       try{ renderCal(); }catch(eCal){}
     }
@@ -199,6 +200,12 @@ function _bpVenueList(){
 function _bpMonthOverBudget(c){ return !!(c && c.budget!=null && c.planned>c.budget); }
 function _bpHighlightRow(r, c){ return !!r && (+r.fee||0)>20000 && _bpMonthOverBudget(c); }
 function _bpExceptionRow(r, c){ return _bpHighlightRow(r, c) && !r.confirmed; }
+function _bpHasRequest(uid){
+  if(!uid) return false;
+  var n=_bpNotesFor(uid);
+  if(String(n.rationale||'').trim() || String(n.benefits||'').trim()) return true;
+  return !!(_bpData.approvals && _bpData.approvals[uid]);
+}
 function _bpNotesFor(uid){
   var n=(_bpData.notes&&uid)?_bpData.notes[uid]:null;
   return n&&typeof n==='object'?n:{};
@@ -533,7 +540,7 @@ function _bpRowsHtml(data, opts){
       var c=data.grid[v][mi];
       c.rows.forEach(function(r){ monthRows.push({r:r, budget:c.budget, planned:c.planned}); });
     });
-    monthRows=monthRows.filter(function(x){ return _bpHighlightRow(x.r, x); });
+    monthRows=monthRows.filter(function(x){ return _bpHighlightRow(x.r, x) || _bpHasRequest(x.r.uid); });
     if(!monthRows.length) return;
     any=true;
     monthRows.sort(function(a,b){ return a.r.d<b.r.d?-1:(a.r.d>b.r.d?1:(a.r.venue<b.r.venue?-1:1)); });
@@ -556,6 +563,7 @@ function _bpRowsHtml(data, opts){
       h+='</div></div>';
       if(!simple){
         h+='<div class="bp-bk-appr">'+_bpBadge(r.approval);
+        if(_bpHasRequest(r.uid)) h+='<span class="bp-tag bp-tag-green">Request sent</span>';
         if(r.approval==='needed'||r.approval==='reapproval') h+='<button type="button" class="bp-act bp-act-main" onclick="bpOpenRequest(\''+r.uid+'\')">Request approval</button>';
         else if(r.approval!=='none' && r.approval!=='past' && r.approval!=='confirmed') h+='<button type="button" class="bp-act" onclick="bpOpenRequest(\''+r.uid+'\')">Open</button>';
         h+='</div>';
@@ -930,14 +938,14 @@ function _bpExceptionPageHtml(r, c, notes){
     +'<div><span>Position vs budget</span><b>'+pos+'</b></div>'
     +'</div>';
 
-  h+='<div class="bp-x-sec bp-x-band"><span>04</span><b>Sales performance</b><em>Projected this year compared with last year</em></div><div class="bp-x-pair">';
-  h+='<div class="bp-x-col"><div class="bp-x-col-hd">This year · projected</div><div class="bp-x-fields bp-x-fields-2">'
-    +_bpField('BS Target', $k(r.bs_m))
-    +_bpField('ROI', _bpRoiHtml(_bpThisReturn(r)))
-    +'</div></div>';
-  h+='<div class="bp-x-col bp-x-ly"><div class="bp-x-col-hd">Last year · same weekday</div><div class="bp-x-fields bp-x-fields-2">'
-    +(ly?_bpField('BS Actual', $k(ly.bs))+_bpField('ROI', _bpRoiHtml(ly.ret)):_bpField('BS Actual', 'No show')+_bpField('ROI', '—'))
-    +'</div></div></div>';
+  var dayFin=_bpFinFor({venue:r.venue, month:{key:r.d}});
+  h+='<div class="bp-x-sec bp-x-band"><span>04</span><b>Expected day vs last year</b><em>Sales, margins, and live entertainment</em></div>';
+  h+='<div class="bp-x-day">'
+    +'<div class="bp-x-day-hd"><span></span><b>This year</b><b>PY</b><b>Var</b></div>'
+    +_bpDayVsRow('Expected sales', dayFin.sales)
+    +_bpDayVsRow('Margins', dayFin.margin, 'pp-up')
+    +_bpDayVsRow('Live entertainment', dayFin.live, 'pp-down')
+    +'</div>';
 
   h+='<div class="bp-x-sec bp-x-band"><span>05</span><b>Table tiers &amp; pricing</b><em>'+(priced&&priced.label?_escHtml(priced.label):'Venue pricing guidance')+'</em></div>';
   h+='<div class="bp-x-tiers">';
@@ -1061,11 +1069,21 @@ function _bpPdfFit(canvases){
   });
   return pdf;
 }
+function _bpDayVsRow(label, pair, mode){
+  return '<div class="bp-x-day-row"><span>'+label+'</span>'+_bpFinVals(pair, mode)+'</div>';
+}
+function _bpRequestBecause(row, cell){
+  if(cell && cell.budget!=null && cell.planned>cell.budget) return 'the performance is over Budget by '+$k(cell.planned-cell.budget);
+  return 'the performance is above '+$k(row&&row.fee);
+}
+function _bpRequestSentence(row, cell){
+  return 'Hello, I am requesting approval for '+(row.dj||'TBD')+' performance at '+row.venue+' for '+_bpDay(row.d)+' because '+_bpRequestBecause(row, cell)+'.';
+}
 function _bpExceptionRows(data){
   var out=[];
   Object.keys(data.grid).forEach(function(v){
     data.grid[v].forEach(function(c){
-      c.rows.forEach(function(r){ if(_bpExceptionRow(r, c)) out.push({r:r, c:c}); });
+      c.rows.forEach(function(r){ if(_bpExceptionRow(r, c) || _bpHasRequest(r.uid)) out.push({r:r, c:c}); });
     });
   });
   out.sort(function(a,b){ return a.r.d<b.r.d?-1:(a.r.d>b.r.d?1:(a.r.venue<b.r.venue?-1:1)); });
@@ -1283,7 +1301,7 @@ function bpOpenShowApproval(idx){
     +'<label>Expected benefits</label><textarea id="bpApprBen">'+_escHtml(notes.benefits||'')+'</textarea>'
     +'<label>Approved by</label><textarea id="bpApprBy" placeholder="Name, signature, or a note">'+_escHtml(notes.approvedBy||'')+'</textarea>'
     +'<div class="bp-appr-actions"><button type="button" class="bp-btn bp-btn-dark" id="bpApprSend">Send</button></div>'
-    +'<p style="font-size:12px;color:#64748b;margin-top:8px">Send opens an email to matthias@rivieradininggroup.com with this page as a snapshot and a PDF.</p></div>'
+    +'<p style="font-size:12px;color:#64748b;margin-top:8px">Send saves this request on the three-month plan and opens the email to Matthias, with Hugo and Christophe copied. The email includes this page and the PDF.</p></div>'
     +'<div class="bp-appr-preview" id="bpApprPreview"></div></div></div>';
   document.body.appendChild(wrap);
   function paint(){
@@ -1305,9 +1323,16 @@ function bpSendShowApproval(row, cell){
   if(!whyEl||!benEl||!byEl) return;
   var notes={rationale:whyEl.value.trim(), benefits:benEl.value.trim(), approvedBy:byEl.value.trim(), d:row.d, venue:row.venue, dj:row.dj||'', at:_bpNow(), by:_bpWho()};
   if(btn){ btn.disabled=true; btn.textContent='Sending…'; }
+  var rec={uid:row.uid, venue:row.venue, d:row.d, dj:row.dj, fee:row.fee, month:cell.month&&cell.month.key,
+    monthBudget:cell.budget, overage:cell.budget!=null?Math.max(0, cell.planned-cell.budget):0, amount:row.fee,
+    rationale:notes.rationale, benefit:notes.benefits, meetingDate:'',
+    requestedBy:_bpWho(), requestedAt:_bpNow(), finance:null, exec:null, fromCalendar:true};
   _bpSave('approvalNotes/'+row.uid, notes, function(){
+    _bpSave('bookingApprovals/'+row.uid, rec);
     if(!_bpData.notes) _bpData.notes={};
     _bpData.notes[row.uid]=notes;
+    if(!_bpData.approvals) _bpData.approvals={};
+    _bpData.approvals[row.uid]=rec;
     var html=_bpExceptionPageHtml(row, cell, notes);
     _bpBusy(true, 'Approval page');
     _ensurePdfLibs().then(function(){
@@ -1324,12 +1349,12 @@ function bpSendShowApproval(row, cell){
     }).then(function(pack){
       _bpBusy(false);
       var file='Request-Approval-'+String(row.d)+'-'+String(row.venue||'venue').replace(/\s+/g,'-')+'.pdf';
-      var body='<div style="font-family:Arial,sans-serif;font-size:14px;color:#172033"><p>Request approval for <b>'+_escHtml(row.dj||'TBD')+'</b> · '+_escHtml(row.venue)+' · '+_escHtml(_bpDay(row.d))+' · fee '+$k(row.fee)+'.</p>'
-        +'<p><b>Rationale</b><br>'+_escHtml(notes.rationale||'—')+'</p><p><b>Expected benefits</b><br>'+_escHtml(notes.benefits||'—')+'</p><p><b>Approved by</b><br>'+_escHtml(notes.approvedBy||'—')+'</p>'
-        +'<p><img src="cid:performance" alt="Performance" style="max-width:100%;height:auto"></p></div>';
+      var sentence=_bpRequestSentence(row, cell);
+      var body='<div style="font-family:Arial,sans-serif;font-size:14px;color:#172033"><p>'+_escHtml(sentence)+'</p>'
+        +'<p><img src="cid:performance" alt="Budget exception" style="max-width:100%;height:auto"></p></div>';
       var eml=_buildForecastFlashEml({
         to:['matthias@rivieradininggroup.com'],
-        cc:[],
+        cc:['hugo@rivieradininggroup.com','christophe@rivieradininggroup.com'],
         subject:'Request approval — '+(row.dj||'TBD')+' · '+row.venue+' · '+row.d,
         htmlBody:body,
         inlines:[{cid:'performance', filename:'performance.jpg', contentType:'image/jpeg', base64:pack.snap}],

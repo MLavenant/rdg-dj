@@ -1515,6 +1515,8 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
           } else if(curView==='calendar' && (acctChanged || swChanged)){
             if(typeof _calUiBusy==='function' && _calUiBusy()) window._calPendingRefresh='cal';
             else if(typeof renderCal==='function') renderCal();
+          } else if(curView==='rolling' && acctChanged && typeof renderBookingPlan==='function'){
+            renderBookingPlan();
           }
         }
       }catch(errView){
