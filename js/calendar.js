@@ -3805,7 +3805,7 @@ function renderSystem(){
     + '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">'
     + '<div>'
     + '<div style="font-size:13px;font-weight:800">Export calendar</div>'
-    + '<div style="margin-top:4px;font-size:11px;color:var(--ink3);line-height:1.45">2025 and 2026, one sheet each. Date, DJ fee, BS target, BS actual, ROI target, ROI actual.</div>'
+    + '<div style="margin-top:4px;font-size:11px;color:var(--ink3);line-height:1.45">2025, 2026, and 2027, one sheet each. Date, DJ fee, BS target, BS actual, ROI target, ROI actual.</div>'
     + '</div>'
     + '<button type="button" onclick="exportSanityCalendarExcel()" style="flex-shrink:0;font-size:12px;font-weight:800;padding:8px 14px;border-radius:8px;border:0;background:#1d4ed8;color:#fff;cursor:pointer">Export to Excel</button>'
     + '</div></div>';
@@ -3960,10 +3960,10 @@ function exportSanityCalendarExcel(){
     return;
   }
   var wb=XLSX.utils.book_new();
-  [2025,2026].forEach(function(year){
+  [2025,2026,2027].forEach(function(year){
     XLSX.utils.book_append_sheet(wb, _sanityCalendarSheet(_sanityCalendarSheetRows(year)), String(year));
   });
-  XLSX.writeFile(wb, 'RDG Calendar 2025-2026.xlsx');
+  XLSX.writeFile(wb, 'RDG Calendar 2025-2027.xlsx');
 }
 
 
