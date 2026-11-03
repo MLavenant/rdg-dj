@@ -230,6 +230,17 @@ function wmSpend(rows){
   });
   return any?sum:null;
 }
+/* Guest DJ fees already played plus fees still booked in the same fiscal month. */
+function wmBookedSpend(venue, year, period){
+  var full=mrPeriodMeta(year, period);
+  var sum=0, any=false;
+  mrShows(venue, full).forEach(function(r){
+    var fee=mrFee(r);
+    if(fee==null) return;
+    sum+=fee; any=true;
+  });
+  return any?sum:null;
+}
 function wmBs(rows){
   var sum=0, any=false;
   rows.forEach(function(row){
@@ -259,11 +270,10 @@ function mrVenuePack(venue, meta){
     var pyRows=wmMtdRows(venue, pyMeta, false);
     var sales=wmSumMap(window.WM_MTD&&WM_MTD.sales?WM_MTD.sales[venue]:null, meta.from, meta.to);
     var pySales=wmSumMap(window.WM_MTD&&WM_MTD.sales?WM_MTD.sales[venue]:null, pyMeta.from, pyMeta.to);
-    var live=wmSpend(rows);
-    var pyLive=wmSpend(pyRows);
-    var toastBs=wmSumMap(window.WM_MTD&&WM_MTD.toast?WM_MTD.toast[venue]:null, meta.from, meta.to);
+    var live=wmBookedSpend(venue, meta.year, meta.period);
+    var pyLive=wmBookedSpend(venue, pyMeta.year, pyMeta.period);
     beat=wmBeatRows(rows);
-    beat.bs=toastBs!=null?toastBs:wmBs(rows);
+    beat.bs=wmBs(rows);
     pyBeat=wmBeatRows(pyRows);
     pyBeat.bs=wmBs(pyRows);
     now={sales:sales, live:live, livePct:(sales>0&&live!=null)?live/sales:null};
@@ -304,7 +314,7 @@ function mrCardHtml(p, meta){
     ? '<div class="mr-line mr-solo mr-arrow"><span><i class="bp-arr"></i>Bottle Service Sales</span><b>'+mrMoney(p.beat.bs)+'</b><b></b></div>'
     : mrArrow('Bottle Service Sales', p.beat.bs, p.pyBeat.bs);
   h+=mrLine('ROI % Beat', p.beat.rate, p.pyBeat.rate, 'roi', solo, solo);
-  h+=mrLine('Total Spent', n.live, y.live, 'spend', solo, solo);
+  h+=mrLine('Live E Spent Actual + Forecast', n.live, y.live, 'spend', solo, solo);
   h+=mrBudgetRow(n.live, mrLiveBudget(p.venue, meta), solo?'mr-line mr-solo':'');
   h+=mrLine('Live Ent. margins', n.livePct, y.livePct, 'live', solo, solo);
   h+='</article>';
@@ -399,7 +409,7 @@ function mrComparePage(pack, opt){
     h+=mrCmpRow('Total Sales', mrMoneyCell(n.sales), solo?'':mrMoneyCell(y.sales), solo?'':sales.text, {tone:solo?'':sales.cls, solo:solo});
     h+=mrCmpRow('<i class="bp-arr"></i>Bottle Service Sales', mrMoneyCell(p.beat.bs), solo?'':mrMoneyCell(p.pyBeat.bs), '', {solo:solo});
     h+=mrCmpRow('ROI % Beat', mrPct(p.beat.rate), solo?'':mrPct(p.pyBeat.rate), solo?'':roi.text, {tone:solo?'':roi.cls, solo:solo});
-    h+=mrCmpRow('Total Spent', mrMoneyCell(n.live), solo?'':mrMoneyCell(y.live), solo?'':tot.text, {tone:solo?'':tot.cls, solo:solo});
+    h+=mrCmpRow('Live E Spent Actual + Forecast', mrMoneyCell(n.live), solo?'':mrMoneyCell(y.live), solo?'':tot.text, {tone:solo?'':tot.cls, solo:solo});
     h+=mrCmpRow('Budget', mrMoneyCell(bud), '', spend.text, {row:'mr-budc', tone:spend.cls, solo:solo});
     h+=mrCmpRow('Live Ent. margins', mrPct(n.livePct), solo?'':mrPct(y.livePct), solo?'':live.text, {tone:solo?'':live.cls, solo:solo});
     h+='</div></section>';
