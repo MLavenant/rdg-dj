@@ -185,11 +185,16 @@ function mrCardHtml(p, year){
   h+='</article>';
   return h;
 }
+function mrRoiClass(row){
+  if(!row||row.roiA==null||row.roiT==null||!isFinite(+row.roiA)||!isFinite(+row.roiT)) return '';
+  return (+row.roiA+1e-9<+row.roiT)?'mr-miss':'mr-beat';
+}
 function mrShowsTable(rows){
   var h='<table class="mr-shows"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI actual</th><th>ROI target</th><th>Sales</th><th>Margin</th></tr></thead><tbody>';
   if(!rows.length) h+='<tr><td class="l" colspan="7">No performances this month.</td></tr>';
   rows.forEach(function(row){
-    h+='<tr><td class="l"><b>'+_escHtml(mrDayLabel(row.d))+'</b></td><td class="l">'+_escHtml(row.dj)+'</td><td>'+mrMoney(row.fee)+'</td><td>'+(typeof rx==='function'?rx(row.roiA):'—')+'</td><td>'+(typeof rx==='function'?rx(row.roiT):'—')+'</td><td>'+mrMoney(row.sales)+'</td><td>'+mrPct(row.margin&&row.margin.margin)+'</td></tr>';
+    var tone=mrRoiClass(row);
+    h+='<tr'+(tone?' class="'+tone+'"':'')+'><td class="l"><b>'+_escHtml(mrDayLabel(row.d))+'</b></td><td class="l">'+_escHtml(row.dj)+'</td><td>'+mrMoney(row.fee)+'</td><td>'+(typeof rx==='function'?rx(row.roiA):'—')+'</td><td>'+(typeof rx==='function'?rx(row.roiT):'—')+'</td><td>'+mrMoney(row.sales)+'</td><td>'+mrPct(row.margin&&row.margin.margin)+'</td></tr>';
   });
   h+='</tbody></table>';
   return h;
@@ -264,8 +269,8 @@ function mrDetailPage(p, meta){
   h+='<table class="mr-pdf-tbl"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI actual</th><th>ROI target</th><th>Sales for the day</th><th>Margin</th></tr></thead><tbody>';
   if(!p.rows.length) h+='<tr><td class="l" colspan="7">No performances this month.</td></tr>';
   p.rows.forEach(function(row){
-    var miss=row.roiA!=null&&row.roiT!=null&&row.roiA+1e-9<row.roiT;
-    h+='<tr'+(miss?' class="mr-miss"':'')+'><td class="l"><b>'+_escHtml(mrDayLabel(row.d))+'</b></td><td class="l">'+_escHtml(row.dj)+'</td><td>'+mrMoney(row.fee)+'</td><td>'+(typeof rx==='function'?rx(row.roiA):'—')+'</td><td>'+(typeof rx==='function'?rx(row.roiT):'—')+'</td><td>'+mrMoney(row.sales)+'</td><td>'+mrPct(row.margin&&row.margin.margin)+'</td></tr>';
+    var tone=mrRoiClass(row);
+    h+='<tr'+(tone?' class="'+tone+'"':'')+'><td class="l"><b>'+_escHtml(mrDayLabel(row.d))+'</b></td><td class="l">'+_escHtml(row.dj)+'</td><td>'+mrMoney(row.fee)+'</td><td>'+(typeof rx==='function'?rx(row.roiA):'—')+'</td><td>'+(typeof rx==='function'?rx(row.roiT):'—')+'</td><td>'+mrMoney(row.sales)+'</td><td>'+mrPct(row.margin&&row.margin.margin)+'</td></tr>';
   });
   h+='</tbody></table></div></div>';
   return h;
