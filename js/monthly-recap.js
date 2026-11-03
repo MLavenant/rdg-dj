@@ -12,7 +12,7 @@ function mrLabel(name){
 function mrSanitySectionHtml(){
   return '<div class="mr-tabs">'
     +'<button type="button" class="mr-tab" onclick="setView(\'mrecap\')">Monthly Recap</button>'
-    +'<button type="button" class="mr-tab" onclick="setView(\'rolling\')">Three Month Plan</button>'
+    +'<button type="button" class="mr-tab" onclick="setView(\'rolling\')">Weekly Meeting</button>'
     +'</div>';
 }
 function mrPeriods(){
@@ -284,9 +284,11 @@ function mrCmpRow(label, now, py, gap, opt){
   if(!opt.solo) cells+=mrCmpCell('b','mr-c-py'+row,py);
   return cells+mrCmpCell('b','mr-c-var'+row+tone,gap);
 }
-function mrComparePage(pack){
+function mrComparePage(pack, opt){
+  opt=opt||{};
   var meta=pack.meta;
-  var h='<div class="bp-page bp-deck mr-fill"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">Monthly Live Entertainment Recap</div><b>'+_escHtml(meta.label)+'</b><em>'+_escHtml(meta.range||'')+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body"><div class="mr-pdf-locs">';
+  var kicker=opt.kicker||'Monthly Live Entertainment Recap';
+  var h='<div class="bp-page bp-deck mr-fill"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">'+_escHtml(kicker)+'</div><b>'+_escHtml(meta.label)+'</b><em>'+_escHtml(meta.range||'')+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body"><div class="mr-pdf-locs">';
   pack.venues.forEach(function(p){
     var n=p.now||{}, y=p.py||{};
     var solo=!p.py;
@@ -332,6 +334,29 @@ function mrDetailPage(p, meta){
     h+='<tr'+(tone?' class="'+tone+'"':'')+'><td class="l"><b>'+_escHtml(mrDayLabel(row.d))+'</b></td><td class="l">'+_escHtml(row.dj)+'</td><td>'+mrMoney(row.fee)+'</td><td>'+(typeof rx==='function'?rx(row.roiA):'—')+'</td><td>'+(typeof rx==='function'?rx(row.roiT):'—')+'</td><td>'+mrMoney(row.sales)+'</td><td>'+mrPct(row.margin&&row.margin.margin)+'</td></tr>';
   });
   h+='</tbody></table></div></div>';
+  return h;
+}
+/* The month shown as Actual on the booking plan: the fiscal month before the calendar month. */
+function wmActualMonth(){
+  var info=(typeof _bpAnchor==='function')?_bpAnchor():{year:(typeof curYr!=='undefined'?curYr:2026), monthIndex:(typeof curM!=='undefined'?curM:10)};
+  var y=info.year, mi=info.monthIndex-1;
+  if(mi<0){ mi=11; y--; }
+  return mrPeriodMeta(y, mi+1);
+}
+function wmPerformancesPage(pack){
+  var meta=pack.meta;
+  var h='<div class="bp-page bp-deck wm-shows"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">Weekly Live Entertainment Meeting</div><b>Performances</b><em>'+_escHtml((meta.label||'')+(meta.range?' · '+meta.range:''))+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body">';
+  pack.venues.forEach(function(p){
+    h+='<section class="wm-loc"><h3>'+_escHtml(p.label)+'</h3>';
+    h+='<table class="mr-pdf-tbl wm-tbl"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI actual</th><th>ROI target</th><th>Sales for the day</th></tr></thead><tbody>';
+    if(!p.rows.length) h+='<tr><td class="l" colspan="6">No performances this month.</td></tr>';
+    p.rows.forEach(function(row){
+      var tone=mrRoiClass(row);
+      h+='<tr'+(tone?' class="'+tone+'"':'')+'><td class="l"><b>'+_escHtml(mrDayLabel(row.d))+'</b></td><td class="l">'+_escHtml(row.dj)+'</td><td>'+mrMoney(row.fee)+'</td><td>'+(typeof rx==='function'?rx(row.roiA):'—')+'</td><td>'+(typeof rx==='function'?rx(row.roiT):'—')+'</td><td>'+mrMoney(row.sales)+'</td></tr>';
+    });
+    h+='</tbody></table></section>';
+  });
+  h+='</div></div>';
   return h;
 }
 function mrBuildPdf(){

@@ -65,7 +65,7 @@ function buildSidebar() {
   section('Reporting', [
     {id:'vip',      ic:'&#9889;',  lb:'Weekly Flash'},
     {id:'forecast', ic:'&#9650;',  lb:'Forecast'},
-    {id:'rolling',  ic:'&#9776;',  lb:'Three Month Plan'},
+    {id:'rolling',  ic:'&#9776;',  lb:'Weekly Meeting'},
     {id:'mrecap',   ic:'&#9776;',  lb:'Monthly Recap'}
   ]);
   section('Admin', [
@@ -165,7 +165,7 @@ function setView(v) {
   if (v === 'rolling') {
     clearGlobalCalChrome();
     var rollSub=document.getElementById('pgSub');
-    if(rollSub) rollSub.innerHTML='<span>Three Month Rolling Average</span>';
+    if(rollSub) rollSub.innerHTML='<span>Weekly Meeting</span>';
     if(typeof renderBookingPlan==='function') renderBookingPlan();
     return;
   }
@@ -1431,7 +1431,7 @@ function renderKPIs() {
     if(curView==='leaderboard'){
       document.getElementById('pgSub').innerHTML = '<span>ROI Ranking · '+(typeof _lbFilterLabel==='function'?_lbFilterLabel():'all venues')+'</span>';
     } else if(curView==='rolling'){
-      document.getElementById('pgSub').innerHTML = '<span>Three Month Rolling Average</span>';
+      document.getElementById('pgSub').innerHTML = '<span>Weekly Meeting</span>';
     } else {
       document.getElementById('pgSub').innerHTML = '<span>'+(budgetSubTab==='planner'?'Budget Planner':'Overview')+'</span>';
     }

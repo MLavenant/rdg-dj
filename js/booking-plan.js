@@ -114,12 +114,18 @@ function _bpPriorTotals(venue, m){
   return {fee:n?fee:null, bs:hasBs?bs:null, n:n, label:pm.short};
 }
 function _bpLyShow(venue, dateStr){
+  var py=(typeof resolvePyFields==='function')?resolvePyFields(venue, dateStr):null;
+  if(py&&(py.py_dj||py.py_fee!=null||py.py_bs_a!=null)){
+    var fee=py.py_fee!=null&&py.py_fee!==''&&isFinite(+py.py_fee)?+py.py_fee:null;
+    var bs=py.py_bs_a!=null&&py.py_bs_a!==''&&isFinite(+py.py_bs_a)?+py.py_bs_a:null;
+    return {dj:py.py_dj||'', fee:fee, bs:bs, ret:(fee>0&&bs!=null)?bs/fee:null, d:'', status:''};
+  }
   var show=(typeof _modalLySameDateShow==='function')?_modalLySameDateShow(venue, dateStr):null;
   if(!show) return null;
-  var fee=show.fee!=null?show.fee:(show.cost!=null?show.cost:null);
-  fee=fee!=null&&fee!==''?+fee:null;
-  var bs=show.bs_a!=null?+show.bs_a:null;
-  return {dj:show.dj||'', fee:fee, bs:bs, ret:(fee>0&&bs!=null)?bs/fee:null, d:show.d, status:_bpStatus(show)};
+  var lyFee=show.fee!=null?show.fee:(show.cost!=null?show.cost:null);
+  lyFee=lyFee!=null&&lyFee!==''?+lyFee:null;
+  var lyBs=show.bs_a!=null?+show.bs_a:null;
+  return {dj:show.dj||'', fee:lyFee, bs:lyBs, ret:(lyFee>0&&lyBs!=null)?lyBs/lyFee:null, d:show.d, status:_bpStatus(show)};
 }
 function _bpThisReturn(row){
   if(row.roi_t!=null) return +row.roi_t;
@@ -174,6 +180,7 @@ function _bpVenueMonth(venue, m){
     var isConf=BP_CONFIRMED.indexOf(status)>=0;
     var tgt=(typeof showTargets==='function')?showTargets(r):{bs_m:r.bs_m, roi_t:r.roi_t};
     rows.push({uid:_bpUid(r), venue:venue, d:r.d, dj:r.dj||'', fee:fee, status:status, note:r.note||'', confirmed:isConf,
+      bs_a:r.bs_a!=null&&r.bs_a!==''&&isFinite(+r.bs_a)?+r.bs_a:null,
       bs_m:tgt&&tgt.bs_m!=null?+tgt.bs_m:null, roi_t:tgt&&tgt.roi_t!=null?+tgt.roi_t:null});
     if(isConf) confirmed+=fee; else proposed+=fee;
     if(tgt&&tgt.bs_m) bsT+=+tgt.bs_m;
@@ -210,11 +217,13 @@ function _bpVenueList(){
 function _bpMonthOverBudget(c){ return !!(c && c.budget!=null && c.planned>c.budget); }
 function _bpHighlightRow(r, c){ return !!r && (+r.fee||0)>20000 && _bpMonthOverBudget(c); }
 function _bpSectionRow(r){ return !!r && (+r.fee||0)>5000; }
+/* Same bottle-service figure the calendar shows: actual when it is posted, otherwise the calendar target. */
 function _bpShowBs(r){
-  if(!r||!(r.fee>0)) return null;
-  if(typeof spRuleBs==='function') return spRuleBs(r);
-  var roi=(typeof spShowRoi==='function')?spShowRoi(r):null;
-  return roi?r.fee*roi:null;
+  if(!r) return null;
+  if(r.bs_a!=null&&r.bs_a!==''&&isFinite(+r.bs_a)) return +r.bs_a;
+  var tgt=(typeof showTargets==='function')?showTargets(r):null;
+  if(tgt&&tgt.bs_m!=null&&isFinite(+tgt.bs_m)) return +tgt.bs_m;
+  return null;
 }
 function _bpExceptionRow(r, c){ return _bpHighlightRow(r, c) && !r.confirmed; }
 function _bpHasRequest(uid){
@@ -660,7 +669,7 @@ function _bpDeckSlideHtml(data, n, of){
 }
 function _bpPlanHtml(data){
   var h='<div id="bpSheet" class="bp-sheet">';
-  h+=_bpSheetHead(data, data.months.length>1?'Three Month Booking Plan':'Entertainment Booking Plan vs Budget');
+  h+=_bpSheetHead(data, 'Weekly Meeting');
   h+='<div class="bp-deck-sec bp-sec-1"><span>01</span>Budget vs pipeline<em>Budget and planned spend, then sales and margins versus LY</em></div>';
   h+=_bpSummaryHtml(data);
   h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Bookings over $5K<em>Artist and prior year, fee and prior year, status, bottle service sales versus last year</em></div>';
@@ -920,8 +929,13 @@ function _bpCaptureSheet(){
   });
 }
 function _bpPdfName(){
-  var ms=_bpMonths();
-  return 'RDG-Entertainment-Booking-Plan-'+ms[0].key+(ms.length>1?'-to-'+ms[ms.length-1].key:'')+'.pdf';
+  return 'RDG-Weekly-Live-Entertainment-Meeting-'+_bpToday()+'.pdf';
+}
+function _bpMeetingDateLabel(){
+  var ds=_bpToday();
+  var d=new Date(ds+'T12:00:00');
+  if(isNaN(d.getTime())) return ds;
+  return d.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric', year:'numeric'});
 }
 /* Every PDF page is a fixed landscape-letter frame (11 x 8.5). */
 var BP_PAGE_W=1600, BP_PAGE_H=1236;
@@ -1230,7 +1244,17 @@ function _bpBuildLocationPages(){
     var ms=_bpMonths();
     period=ms[0].label+' – '+ms[ms.length-1].label;
     _bpBusy(true, 'Cover page');
-    return _bpRenderPage(_bpCoverHtml('Three Month Booking Plan', period+' · Beach Club · CN Lounge · MILA', '')).then(function(cv){ canvases.push(cv); });
+    return _bpRenderPage(_bpCoverHtml('Weekly Live Entertainment Meeting', _bpMeetingDateLabel(), '')).then(function(cv){ canvases.push(cv); });
+  }).then(function(){
+    var actual=(typeof wmActualMonth==='function')?wmActualMonth():null;
+    var pack=actual&&typeof mrPack==='function'?mrPack(actual):null;
+    if(!pack) return;
+    _bpBusy(true, 'Month to date');
+    return _bpRenderPage(mrComparePage(pack, {kicker:'Weekly Live Entertainment Meeting'})).then(function(cv){
+      canvases.push(cv);
+      _bpBusy(true, 'Performances');
+      return _bpRenderPage(wmPerformancesPage(pack));
+    }).then(function(cv){ canvases.push(cv); });
   }).then(function(){
     var chain=Promise.resolve();
     BP_VENUES.forEach(function(v, i){
