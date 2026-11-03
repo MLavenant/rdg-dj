@@ -261,20 +261,38 @@ function mrPdfArrow(label, now, py){
   var pyTxt=py==null?'—':mrMoney(py);
   return '<div class="mr-pdf-row mr-arrow"><span><i class="bp-arr"></i>'+label+'</span><b>'+mrMoney(now)+'</b><b>'+pyTxt+'</b><b></b></div>';
 }
+function mrCmpCell(tag, cls, text){
+  return '<'+tag+' class="'+cls+'">'+text+'</'+tag+'>';
+}
+/* One grid for the whole card, so 2026, 2025, and Var share the same tracks. */
+function mrCmpRow(label, now, py, gap, opt){
+  opt=opt||{};
+  var row=opt.row?' '+opt.row:'';
+  var tone=opt.tone?' '+opt.tone:'';
+  return mrCmpCell('span','mr-c-lab'+row,label)
+    +mrCmpCell('b','mr-c-now'+row,now)
+    +mrCmpCell('b','mr-c-py'+row,py)
+    +mrCmpCell('b','mr-c-var'+row+tone,gap);
+}
 function mrComparePage(pack){
   var meta=pack.meta;
   var h='<div class="bp-page bp-deck mr-fill"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">Monthly Live Entertainment Recap</div><b>'+_escHtml(meta.label)+'</b><em>'+_escHtml(meta.range||'')+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body"><div class="mr-pdf-locs">';
   pack.venues.forEach(function(p){
     var n=p.now||{}, y=p.py||{};
-    h+='<section class="mr-pdf-loc"><h3>'+_escHtml(p.label)+'</h3>';
-    h+=mrPdfHeads(meta.year);
-    h+=mrPdfRow('Total Sales', n.sales, y.sales, 'money', true);
-    h+=mrPdfArrow('Bottle Service Sales', p.beat.bs, p.pyBeat.bs);
-    h+=mrPdfRow('ROI % Beat', p.beat.rate, p.pyBeat.rate, 'roi');
-    h+=mrPdfRow('Total Spent', n.live, y.live, 'spend');
-    h+=mrBudgetRow(n.live, mrLiveBudget(p.venue, meta), 'mr-pdf-row');
-    h+=mrPdfRow('Live Ent. margins', n.livePct, y.livePct, 'live');
-    h+='</section>';
+    var bud=mrLiveBudget(p.venue, meta);
+    var spend=mrSpendVar(n.live, bud);
+    var roi=mrPp(p.beat.rate, p.pyBeat.rate, false);
+    var live=mrPp(n.livePct, y.livePct, true);
+    var tot=mrVar(n.live, y.live);
+    h+='<section class="mr-pdf-loc"><h3>'+_escHtml(p.label)+'</h3><div class="mr-cmp">';
+    h+=mrCmpRow('', String(meta.year), String(meta.year-1), 'Var', {row:'mr-c-hd'});
+    h+=mrCmpRow('Total Sales', mrMoney(n.sales), mrMoney(y.sales), '');
+    h+=mrCmpRow('<i class="bp-arr"></i>Bottle Service Sales', mrMoney(p.beat.bs), p.pyBeat.bs==null?'—':mrMoney(p.pyBeat.bs), '');
+    h+=mrCmpRow('ROI % Beat', mrPct(p.beat.rate), mrPct(p.pyBeat.rate), roi.text, {tone:roi.cls});
+    h+=mrCmpRow('Total Spent', mrMoney(n.live), mrMoney(y.live), tot.text, {tone:tot.cls});
+    h+=mrCmpRow('Budget', mrMoney(bud), '', spend.text, {row:'mr-budc', tone:spend.cls});
+    h+=mrCmpRow('Live Ent. margins', mrPct(n.livePct), mrPct(y.livePct), live.text, {tone:live.cls});
+    h+='</div></section>';
   });
   h+='</div></div></div>';
   return h;
