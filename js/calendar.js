@@ -171,7 +171,7 @@ function renderCal(){
           +'</td>';
         var djSt=getShowDjStatus(r, ds)||'';
         h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
-          +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status for this performance"')
+          +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status for this performance"', r)
           +'</div></td>';
         var bpd=(typeof _bpData!=='undefined')?_bpData:null;
         var apprNote=(bpd&&bpd.notes&&bpd.notes[showUid])||null;
@@ -1308,7 +1308,8 @@ function acctStatusClass(status){
   if(status==='On Workflow') return 'acct-st-pending';
   if(status.indexOf('Missing')===0) return 'acct-st-missing';
   if(status==='Confirmed'||status==='Invoice + Contract Signed'||status==='Contract + invoice received') return 'acct-st-confirmed';
-  if(status==='Offer sent'||status==='Hold 1') return 'acct-st-pending';
+  if(status==='Offer sent'||status==='Hold 1'||status==='Finance to Approve') return 'acct-st-pending';
+  if(status==='Refused') return 'acct-st-missing';
   return 'acct-st-notset';
 }
 function _acctCanonicalApStatus(st){
@@ -1544,8 +1545,8 @@ function updateShowDjStatus(idx,val,sel,uid){
   window._calStatusMenuOpen=false;
   _calRequestRefresh(curView==='accounting'?'go':false);
 }
-function _djStatusSelectHtml(djSt, extraAttrs){
-  var opts=(typeof ACCT_DJ_STATUS!=='undefined'?ACCT_DJ_STATUS:['Offer sent','Hold 1','Confirmed']);
+function _djStatusSelectHtml(djSt, extraAttrs, show){
+  var opts=(typeof faStatusOptions==='function')?faStatusOptions(show, djSt||''):(typeof ACCT_DJ_STATUS!=='undefined'?ACCT_DJ_STATUS:['Offer sent','Hold 1','Confirmed']);
   var h='<select class="acct-status-sel '+acctStatusClass(djSt||null)+'" '+(extraAttrs||'')+'>';
   /* Always keep Not set available (including when clearing a prior status) */
   h+='<option value=""'+(!djSt?' selected':'')+'>Not set</option>';

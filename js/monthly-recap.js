@@ -160,6 +160,83 @@ function mrDj(r){
   if(typeof djLabel==='function') name=djLabel(name)||name;
   return name||'TBD';
 }
+function wmYmd(d){
+  var m=d.getMonth()+1, day=d.getDate();
+  return d.getFullYear()+'-'+(m<10?'0'+m:''+m)+'-'+(day<10?'0'+day:''+day);
+}
+function wmAddDays(iso, n){
+  var d=new Date(String(iso).slice(0,10)+'T12:00:00');
+  d.setDate(d.getDate()+n);
+  return wmYmd(d);
+}
+function wmSpan(a, b){
+  var d1=new Date(String(a).slice(0,10)+'T12:00:00');
+  var d2=new Date(String(b).slice(0,10)+'T12:00:00');
+  return Math.round((d2-d1)/86400000);
+}
+function wmSumMap(map, from, to){
+  if(!map) return null;
+  var sum=0, any=false;
+  Object.keys(map).forEach(function(ds){
+    if(from&&ds<from) return;
+    if(to&&ds>to) return;
+    var n=+map[ds];
+    if(!isFinite(n)) return;
+    sum+=n; any=true;
+  });
+  return any?sum:null;
+}
+function wmDaySales(venue, date){
+  var map=window.WM_MTD&&WM_MTD.sales?WM_MTD.sales[venue]:null;
+  if(map&&map[date]!=null&&isFinite(+map[date])) return +map[date];
+  return mrDaySales(venue, date);
+}
+function wmToastDay(venue, date){
+  var map=window.WM_MTD&&WM_MTD.toast?WM_MTD.toast[venue]:null;
+  if(map&&map[date]!=null&&isFinite(+map[date])) return +map[date];
+  return null;
+}
+function wmMtdRows(venue, meta, useToast){
+  var shows=mrShows(venue, meta);
+  var byDate={};
+  shows.forEach(function(r){ byDate[r.d]=(byDate[r.d]||0)+1; });
+  return shows.map(function(r){
+    var x=mrShowRoi(r);
+    var sales=wmDaySales(venue, r.d);
+    var bs=x.bs;
+    if(useToast){
+      var dayBs=wmToastDay(venue, r.d);
+      if(dayBs!=null&&byDate[r.d]===1) bs=dayBs;
+    }
+    var roiA=x.roiA;
+    if(x.fee>0&&bs!=null) roiA=bs/x.fee;
+    var margin=mrDayMargin(venue, sales, x.fee);
+    return {r:r, dj:mrDj(r), d:r.d, fee:x.fee, bs:bs, roiA:roiA, roiT:x.roiT, sales:sales, margin:margin};
+  });
+}
+function wmBeatRows(rows){
+  var n=0, hit=0;
+  rows.forEach(function(row){
+    if(row.roiA==null||row.roiT==null) return;
+    n++;
+    if(row.roiA+1e-9>=row.roiT) hit++;
+  });
+  return {rate:n?hit/n:null, hit:hit, n:n};
+}
+function wmSpend(rows){
+  var sum=0, any=false;
+  rows.forEach(function(row){
+    if(row.fee!=null&&isFinite(+row.fee)){ sum+=+row.fee; any=true; }
+  });
+  return any?sum:null;
+}
+function wmBs(rows){
+  var sum=0, any=false;
+  rows.forEach(function(row){
+    if(row.bs!=null&&isFinite(+row.bs)){ sum+=+row.bs; any=true; }
+  });
+  return any?sum:null;
+}
 function mrVenuePack(venue, meta){
   var now=mrPl(venue, meta.year, meta.period);
   var py=mrPl(venue, meta.year-1, meta.period);
@@ -174,6 +251,25 @@ function mrVenuePack(venue, meta){
     var margin=mrDayMargin(venue, sales, x.fee);
     return {r:r, dj:mrDj(r), d:r.d, fee:x.fee, bs:x.bs, roiA:x.roiA, roiT:x.roiT, sales:sales, margin:margin};
   });
+  if(meta&&meta.mtd){
+    var pyTo=wmAddDays(pyMeta.from, wmSpan(meta.from, meta.to));
+    if(pyTo>pyMeta.to) pyTo=pyMeta.to;
+    pyMeta=Object.assign({}, pyMeta, {to:pyTo});
+    rows=wmMtdRows(venue, meta, true);
+    var pyRows=wmMtdRows(venue, pyMeta, false);
+    var sales=wmSumMap(window.WM_MTD&&WM_MTD.sales?WM_MTD.sales[venue]:null, meta.from, meta.to);
+    var pySales=wmSumMap(window.WM_MTD&&WM_MTD.sales?WM_MTD.sales[venue]:null, pyMeta.from, pyMeta.to);
+    var live=wmSpend(rows);
+    var pyLive=wmSpend(pyRows);
+    var toastBs=wmSumMap(window.WM_MTD&&WM_MTD.toast?WM_MTD.toast[venue]:null, meta.from, meta.to);
+    beat=wmBeatRows(rows);
+    beat.bs=toastBs!=null?toastBs:wmBs(rows);
+    pyBeat=wmBeatRows(pyRows);
+    pyBeat.bs=wmBs(pyRows);
+    now={sales:sales, live:live, livePct:(sales>0&&live!=null)?live/sales:null};
+    if(venue==='Casa Neos Lounge') py=null;
+    else py={sales:pySales, live:pyLive, livePct:(pySales>0&&pyLive!=null)?pyLive/pySales:null};
+  }
   return {venue:venue, label:mrLabel(venue), now:now, py:py, beat:beat, pyBeat:pyBeat, rows:rows};
 }
 function mrPack(meta){
@@ -336,12 +432,24 @@ function mrDetailPage(p, meta){
   h+='</tbody></table></div></div>';
   return h;
 }
-/* The month shown as Actual on the booking plan: the fiscal month before the calendar month. */
+/* November MTD on the meeting pack: the current month, through today, rolling after the 25th. */
 function wmActualMonth(){
-  var info=(typeof _bpAnchor==='function')?_bpAnchor():{year:(typeof curYr!=='undefined'?curYr:2026), monthIndex:(typeof curM!=='undefined'?curM:10)};
-  var y=info.year, mi=info.monthIndex-1;
-  if(mi<0){ mi=11; y--; }
-  return mrPeriodMeta(y, mi+1);
+  var info=(typeof wmReportingAnchor==='function')?wmReportingAnchor():{year:(typeof curYr!=='undefined'?curYr:2026), monthIndex:(typeof curM!=='undefined'?curM:10)};
+  var meta=mrPeriodMeta(info.year, info.monthIndex+1);
+  var today=(typeof TODAY!=='undefined'&&TODAY)?String(TODAY).slice(0,10):(typeof miamiToday==='function'?miamiToday():meta.to);
+  var through=today;
+  if(meta.from&&through<meta.from) through=meta.from;
+  if(meta.to&&through>meta.to) through=meta.to;
+  meta.to=through;
+  meta.mtd=true;
+  meta.label=(meta.label||'')+' MTD';
+  meta.range=wmShort(meta.from)+' – '+wmShort(through);
+  return meta;
+}
+function wmShort(iso){
+  var d=new Date(String(iso).slice(0,10)+'T12:00:00');
+  if(isNaN(d.getTime())) return String(iso||'');
+  return ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]+' '+d.getDate();
 }
 function wmPerformancesPage(pack){
   var meta=pack.meta;

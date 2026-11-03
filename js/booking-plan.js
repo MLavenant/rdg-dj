@@ -11,6 +11,7 @@ var BP_EXECS=['Mika','Greg'];
 var _bpVenue='Casa Neos Beach Club';
 var _bpOffset=0;
 var _bpPanel='plan';
+var _bpAnchorOverride=null;
 var _bpData={approvals:{}, confirms:{}, plans:{}, meetings:{}, notes:{}};
 
 (function _bpListen(){
@@ -67,9 +68,19 @@ function _bpDay(ds){
 
 /* ---- Periods (fiscal 4-4-5 months, same as Budget) ---- */
 function _bpAnchor(){
+  if(_bpAnchorOverride) return _bpAnchorOverride;
   if(typeof curYr!=='undefined' && typeof curM!=='undefined' && curM!=null) return {year:curYr, monthIndex:curM};
   var today=(typeof TODAY!=='undefined'&&TODAY)?String(TODAY):miamiToday();
   return fiscalInfoForDate(today);
+}
+/* The meeting month is the calendar month, and it rolls forward after the 25th. */
+function wmReportingAnchor(){
+  var today=(typeof TODAY!=='undefined'&&TODAY)?String(TODAY).slice(0,10):(typeof miamiToday==='function'?miamiToday():'');
+  var d=new Date(today+'T12:00:00');
+  if(isNaN(d.getTime())) d=new Date();
+  var y=d.getFullYear(), m=d.getMonth();
+  if(d.getDate()>25){ m+=1; if(m>11){ m=0; y+=1; } }
+  return {year:y, monthIndex:m};
 }
 function _bpMonths(){
   var info=_bpAnchor();
@@ -400,11 +411,10 @@ function renderBookingPlan(){
   var ms=data.months;
   if(meta) meta.textContent=(ms.length>1?(ms[0].short+' – '+ms[ms.length-1].short):ms[0].label)+' · reads the live calendar · approvals stored separately';
 
+  _bpPanel='plan';
   var h='<div class="bp-toolbar">';
   h+='<div class="bp-seg">'
-    +'<button type="button" class="'+(_bpPanel==='plan'?'on':'')+'" onclick="bpSetPanel(\'plan\')">Plan</button>'
-    +'<button type="button" class="'+(_bpPanel==='meeting'?'on':'')+'" onclick="bpSetPanel(\'meeting\')">Meeting</button>'
-    +'<button type="button" class="'+(_bpPanel==='history'?'on':'')+'" onclick="bpSetPanel(\'history\')">Plan history</button>'
+    +'<button type="button" class="on" onclick="bpSetPanel(\'plan\')">Plan</button>'
     +'</div>';
   h+='<div class="bp-nav"><button type="button" onclick="bpShift(-1)" title="Previous month">&#8249;</button>'
     +'<button type="button" onclick="bpShift(0)"'+(_bpOffset===0?' class="on"':'')+'>Today</button>'
@@ -421,12 +431,9 @@ function renderBookingPlan(){
     +'</select>';
   h+='<span class="bp-spacer"></span>';
   h+='<button type="button" class="bp-btn" onclick="bpExportPdf()">Export PDF</button>';
-  h+='<button type="button" class="bp-btn bp-btn-dark" onclick="bpGenerateMonthlyPlan()">Generate monthly plan (PDF + email)</button>';
   h+='</div>';
 
-  if(_bpPanel==='history') h+=_bpHistoryHtml();
-  else if(_bpPanel==='meeting') h+=_bpMeetingHtml(data);
-  else h+=_bpPlanHtml(data);
+  h+=_bpPlanHtml(data);
   host.innerHTML=h;
 }
 
@@ -1238,6 +1245,7 @@ function _bpBuildLocationPages(){
   var canvases=[];
   var saved=_bpVenue;
   var period='';
+  _bpAnchorOverride=(typeof wmReportingAnchor==='function')?wmReportingAnchor():null;
   return _ensurePdfLibs().then(function(){
     return document.fonts&&document.fonts.ready?document.fonts.ready:null;
   }).then(function(){
@@ -1256,6 +1264,9 @@ function _bpBuildLocationPages(){
       return _bpRenderPage(wmPerformancesPage(pack));
     }).then(function(cv){ canvases.push(cv); });
   }).then(function(){
+    _bpBusy(true, 'Three month plan');
+    return _bpRenderPage(_bpCoverHtml('Three Month Booking Plan', period+' · Beach Club · CN Lounge · MILA', '')).then(function(cv){ canvases.push(cv); });
+  }).then(function(){
     var chain=Promise.resolve();
     BP_VENUES.forEach(function(v, i){
       chain=chain.then(function(){
@@ -1268,12 +1279,14 @@ function _bpBuildLocationPages(){
     return chain;
   }).then(function(){
     _bpVenue=saved;
+    _bpAnchorOverride=null;
     return _bpPdfFit(canvases);
   }).then(function(pdf){
     _bpBusy(false);
     return pdf;
   }, function(err){
     _bpVenue=saved;
+    _bpAnchorOverride=null;
     _bpBusy(false);
     throw err;
   });

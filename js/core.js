@@ -71,6 +71,7 @@ function buildSidebar() {
   section('Admin', [
     {id:'roi-rules', ic:'&#127919;', lb:'Venue ROI Rules'},
     {id:'3d',        ic:'&#127760;', lb:'3D View'},
+    {id:'finance',   ic:'&#10003;',  lb:'Finance Approval'},
     {id:'system',    ic:'&#9881;',   lb:'Sanity'}
   ]);
   document.getElementById('sidebar').innerHTML = html;
@@ -128,13 +129,14 @@ function selYr(yr) {
 var _budgetInited = false;
 function setView(v) {
   if(v==='system' && !unlockSanity()) return;
+  if(v==='finance' && !unlockFinance()) return;
   if(v==='ebitda' && !unlockEbitdaAccess()) return;
   closeMobileNav();
   curView = v;
   try{
     if(_presenceRef) _presenceRef.update({view:v,lastSeen:firebase.database.ServerValue.TIMESTAMP});
   }catch(ePresence){}
-  ['calendar','summary','allshows','mrecap','leaderboard','budget','rolling','accounting','vip','forecast','basel','roi-rules','system','ebitda','3d'].forEach(function(id){
+  ['calendar','summary','allshows','mrecap','leaderboard','budget','rolling','accounting','vip','forecast','basel','roi-rules','finance','system','ebitda','3d'].forEach(function(id){
     var el = document.getElementById('view-'+id);
     if (!el) return;
     var on = id===v;
@@ -192,6 +194,12 @@ function setView(v) {
     clearGlobalCalChrome();
     document.getElementById('pgSub').innerHTML = '<span>Venue ROI Rules · BS targets, table mins, special days</span>';
     if(typeof renderRoiRulesPage==='function') renderRoiRulesPage();
+    return;
+  }
+  if (v === 'finance') {
+    clearGlobalCalChrome();
+    document.getElementById('pgSub').innerHTML = '<span>Finance Approval · April 2027 · Casa Neos Beach Club</span>';
+    if(typeof renderFinanceApproval==='function') renderFinanceApproval();
     return;
   }
   if (v === 'system') {
