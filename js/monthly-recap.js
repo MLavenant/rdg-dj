@@ -9,19 +9,11 @@ function mrLabel(name){
   var v=mrVenue(name);
   return (v&&v.label)||name;
 }
-function mrSetTab(tab){
-  window._sanityTab=tab==='plan'?'plan':'recap';
-  if(typeof mrRenderActive==='function') mrRenderActive();
-  document.querySelectorAll('.mr-tab').forEach(function(b){
-    b.classList.toggle('on', b.getAttribute('data-mr')===window._sanityTab);
-  });
-}
 function mrSanitySectionHtml(){
-  var tab=window._sanityTab||'recap';
   return '<div class="mr-tabs">'
-    +'<button type="button" class="mr-tab'+(tab==='recap'?' on':'')+'" data-mr="recap" onclick="mrSetTab(\'recap\')">Monthly Recap</button>'
-    +'<button type="button" class="mr-tab'+(tab==='plan'?' on':'')+'" data-mr="plan" onclick="mrSetTab(\'plan\')">Three Month Plan</button>'
-    +'</div><div id="mrTabBody"></div>';
+    +'<button type="button" class="mr-tab" onclick="setView(\'mrecap\')">Monthly Recap</button>'
+    +'<button type="button" class="mr-tab" onclick="setView(\'rolling\')">Three Month Plan</button>'
+    +'</div>';
 }
 function mrPeriods(){
   var beach=mrVenue('Casa Neos Beach Club');
@@ -57,7 +49,7 @@ function mrCurrent(){
 }
 function mrSelectPeriod(key){
   window._mrKey=key;
-  mrRenderActive();
+  mrRenderPage();
 }
 function mrPl(venue, year, period){
   var v=mrVenue(venue);
@@ -198,14 +190,9 @@ function mrShowsTable(rows){
   h+='</tbody></table>';
   return h;
 }
-function mrRenderActive(){
-  var host=document.getElementById('mrTabBody');
+function mrRenderPage(){
+  var host=document.getElementById('mrecapBody');
   if(!host) return;
-  var tab=window._sanityTab||'recap';
-  if(tab==='plan'){
-    host.innerHTML='<div class="mr-card"><h3>Three Month Plan</h3><p class="mr-note">Same plan as Reporting. Nothing on this tab changes how it is calculated.</p><button type="button" class="mr-go" onclick="setView(\'rolling\')">Open Three Month Plan</button></div>';
-    return;
-  }
   var periods=mrPeriods();
   var meta=mrCurrent();
   window._mrKey=meta.key;

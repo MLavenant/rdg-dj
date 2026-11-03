@@ -66,7 +66,7 @@ function buildSidebar() {
     {id:'vip',      ic:'&#9889;',  lb:'Weekly Flash'},
     {id:'forecast', ic:'&#9650;',  lb:'Forecast'},
     {id:'rolling',  ic:'&#9776;',  lb:'Three Month Plan'},
-    {id:'allshows', ic:'&#9776;',  lb:'Monthly Recap'}
+    {id:'mrecap',   ic:'&#9776;',  lb:'Monthly Recap'}
   ]);
   section('Admin', [
     {id:'roi-rules', ic:'&#127919;', lb:'Venue ROI Rules'},
@@ -134,7 +134,7 @@ function setView(v) {
   try{
     if(_presenceRef) _presenceRef.update({view:v,lastSeen:firebase.database.ServerValue.TIMESTAMP});
   }catch(ePresence){}
-  ['calendar','summary','allshows','leaderboard','budget','rolling','accounting','vip','forecast','basel','roi-rules','system','ebitda','3d'].forEach(function(id){
+  ['calendar','summary','allshows','mrecap','leaderboard','budget','rolling','accounting','vip','forecast','basel','roi-rules','system','ebitda','3d'].forEach(function(id){
     var el = document.getElementById('view-'+id);
     if (!el) return;
     var on = id===v;
@@ -155,6 +155,11 @@ function setView(v) {
       if (ys) ys.value = bgtYear;
       renderBudget();
     }
+    return;
+  }
+  if (v === 'mrecap') {
+    clearGlobalCalChrome();
+    if(typeof mrRenderPage==='function') mrRenderPage();
     return;
   }
   if (v === 'rolling') {
@@ -1339,6 +1344,7 @@ function go() {
   if (curView==='calendar')    renderCal();
   else if (curView==='summary')     renderSummary();
   else if (curView==='allshows')    renderAllShows();
+  else if (curView==='mrecap' && typeof mrRenderPage==='function') mrRenderPage();
   else if (curView==='leaderboard') renderLeaderboard();
   else if (curView==='accounting'){ renderAccounting(); }
   else if (curView==='vip')         renderVIP();

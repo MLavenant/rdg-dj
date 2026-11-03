@@ -1726,6 +1726,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       else if(curView==='accounting') renderAccounting();
       else if(curView==='leaderboard') renderLeaderboard();
       else if(curView==='allshows') renderAllShows();
+      else if(curView==='mrecap' && typeof mrRenderPage==='function') mrRenderPage();
       else if(curView==='summary') renderSummary();
     }
   });

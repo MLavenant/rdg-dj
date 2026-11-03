@@ -3907,7 +3907,6 @@ function renderSystem(){
 
   if(typeof mrSanitySectionHtml==='function') h += mrSanitySectionHtml();
   el.innerHTML = h;
-  if(typeof mrRenderActive==='function') mrRenderActive();
 }
 
 function _sanityCalendarSheetRows(year){
