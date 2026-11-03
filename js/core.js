@@ -59,7 +59,8 @@ function buildSidebar() {
     {id:'calendar',   ic:'&#9783;',  lb:'Calendar'},
     {id:'summary',    ic:'&#9776;',  lb:'Bottle Service Monthly Summary'},
     {id:'leaderboard',ic:'&#9650;',  lb:'ROI Ranking'},
-    {id:'accounting', ic:'&#9998;',  lb:'Accounting'}
+    {id:'accounting', ic:'&#9998;',  lb:'Accounting'},
+    {id:'budget',     ic:'&#36;',    lb:'Budget'}
   ]);
   section('Reporting', [
     {id:'vip',      ic:'&#9889;',  lb:'Weekly Flash'},

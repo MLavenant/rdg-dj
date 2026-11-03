@@ -228,20 +228,6 @@ function _bpMoneyVar(v){
   if(v==null) return '<span class="bp-muted">No budget</span>';
   return '<span class="'+(v>=0?'bp-pos':'bp-neg')+'">'+(v>=0?'Under ':'Over ')+$k(Math.abs(v))+'</span>';
 }
-/* Stable stand-in until sales and margins versus last year are calculated. The gap stays within 0–20%. */
-function _bpHash(key){
-  var s=2166136261, str=String(key||''), i;
-  for(i=0;i<str.length;i++){
-    s^=str.charCodeAt(i);
-    s=Math.imul(s, 16777619);
-  }
-  return s>>>0;
-}
-function _bpPlaceholderPct(key){
-  var s=_bpHash(key);
-  var mag=Math.round((s%201))/10;
-  return (s%3===0)?-mag:mag;
-}
 function _bpGapHtml(n, lowerBetter, unit){
   if(n==null || isNaN(n)) return '<b class="bp-muted">—</b>';
   var up=n>0.05, down=n<-0.05;
@@ -254,32 +240,73 @@ function _bpGapHtml(n, lowerBetter, unit){
 }
 function _bpPctHtml(pct, lowerBetter){ return _bpGapHtml(pct, lowerBetter, '%'); }
 function _bpPpHtml(pp, lowerBetter){ return _bpGapHtml(pp, lowerBetter, ' pp'); }
-function _bpFinPair(key, kind){
-  var pct=_bpPlaceholderPct(key+'|'+kind);
-  var h=_bpHash(key+'|'+kind+'|base');
-  if(kind==='sales'){
-    var py=800000+(h%17)*100000;
-    return {now:Math.round(py*(1+pct/100)), py:py, pct:pct, money:true};
+/* Raw amounts behind the Sales / Live ent. / Margins rows. live is the live
+   entertainment cost, ebitda the EBITDA (Net Profit for workbook P&L months). */
+var BP_FIN_KEYS=['sales','live','ebitda','pySales','pyLive','pyEbitda'];
+function _bpFinNum(v){ return v!=null&&isFinite(+v)?+v:null; }
+function _bpShare(part, sales){ return part!=null&&sales>0?part/sales*100:null; }
+function _bpFinFromRaw(raw){
+  var s=raw.sales, p=raw.pySales;
+  return {
+    raw:raw,
+    sales:{now:s, py:p, pct:s!=null&&p?(s-p)/Math.abs(p)*100:null, money:true},
+    live:{now:_bpShare(raw.live, s), py:_bpShare(raw.pyLive, p), money:false},
+    margin:{now:_bpShare(raw.ebitda, s), py:_bpShare(raw.pyEbitda, p), money:false}
+  };
+}
+function _bpPlRaw(venue, year, period){
+  var pl=(typeof mrPl==='function')?mrPl(venue, year, period):null;
+  if(!pl||_bpFinNum(pl.sales)==null) return null;
+  return {sales:+pl.sales, live:_bpFinNum(pl.live), ebitda:_bpFinNum(pl.net)};
+}
+/* Completed months use the workbook P&L. Open months simulate every performance day
+   (budget brunch + dinner + DJ fee x tier ROI) and run them through the Mini P&L. */
+function _bpMonthRaw(venue, m){
+  var raw={sales:null, live:null, ebitda:null, pySales:null, pyLive:null, pyEbitda:null};
+  if(!venue||!m||m.mi==null) return raw;
+  var period=m.mi+1;
+  var actual=m.to&&m.to<_bpToday()?_bpPlRaw(venue, m.year, period):null;
+  if(actual){
+    raw.sales=actual.sales; raw.live=actual.live; raw.ebitda=actual.ebitda;
+  } else if(typeof spSimRange==='function'){
+    var sim=spSimRange(venue, m.from, m.to);
+    if(sim&&sim.sales!=null){ raw.sales=sim.sales; raw.live=sim.fee; raw.ebitda=sim.ebitda; }
   }
-  var pyM=10+(h%15);
-  return {now:Math.round(pyM*(1+pct/100)*10)/10, py:pyM, pct:pct, money:false};
+  var py=_bpPlRaw(venue, m.year-1, period);
+  if(py){ raw.pySales=py.sales; raw.pyLive=py.live; raw.pyEbitda=py.ebitda; }
+  return raw;
+}
+function _bpDayRaw(venue, date){
+  var raw={sales:null, live:null, ebitda:null, pySales:null, pyLive:null, pyEbitda:null};
+  var day=(typeof spSimDay==='function')?spSimDay(venue, date):null;
+  if(day){ raw.sales=day.sales; raw.live=day.fee; raw.ebitda=day.ebitda; }
+  var ly=_bpLyShow(venue, date);
+  var pySales=ly&&typeof mrDaySales==='function'?mrDaySales(venue, ly.d):null;
+  if(pySales!=null){
+    raw.pySales=pySales;
+    raw.pyLive=ly.fee;
+    var m=typeof mrDayMargin==='function'?mrDayMargin(venue, pySales, ly.fee):null;
+    raw.pyEbitda=m?m.ebitda:null;
+  }
+  return raw;
 }
 function _bpFinFor(c){
   if(c&&c._fin) return c._fin;
-  var key=(c.venue||'all')+'|'+(c.month&&(c.month.key||c.month.label)||'');
-  return {sales:_bpFinPair(key,'sales'), margin:_bpFinPair(key,'margin'), live:_bpFinPair(key,'live')};
+  var m=c&&c.month||{};
+  var isDay=!m.from&&/^\d{4}-\d{2}-\d{2}$/.test(String(m.key||''));
+  return _bpFinFromRaw(isDay?_bpDayRaw(c.venue, m.key):_bpMonthRaw(c.venue, m));
 }
 function _bpFinSum(list){
-  var sN=0, sP=0, mN=0, mP=0, lN=0, lP=0, n=list.length||1;
-  list.forEach(function(f){
-    sN+=f.sales.now; sP+=f.sales.py;
-    mN+=f.margin.now; mP+=f.margin.py;
-    lN+=f.live.now; lP+=f.live.py;
+  var raw={};
+  BP_FIN_KEYS.forEach(function(k){
+    var total=0, ok=list.length>0;
+    list.forEach(function(f){
+      var v=f&&f.raw?f.raw[k]:null;
+      if(v==null) ok=false; else total+=v;
+    });
+    raw[k]=ok?total:null;
   });
-  function pack(now, py, money){
-    return {now:money?now:(Math.round(now/n*10)/10), py:money?py:(Math.round(py/n*10)/10), pct:py?(now-py)/py*100:0, money:money};
-  }
-  return {sales:pack(sN,sP,true), margin:pack(mN,mP,false), live:pack(lN,lP,false)};
+  return _bpFinFromRaw(raw);
 }
 function _bpVsParts(month){
   var y=month&&+month.year;
@@ -291,10 +318,12 @@ function _bpVsParts(month){
 }
 function _bpFinAmt(pair, which){
   var n=which==='py'?pair.py:pair.now;
+  if(n==null||!isFinite(+n)) return '—';
   return pair.money?$k(n):(Math.round(n*10)/10).toFixed(1)+'%';
 }
+function _bpFinGap(pair){ return pair.now!=null&&pair.py!=null?pair.now-pair.py:null; }
 function _bpFinVals(pair, mode){
-  var gap=mode==='pp-down'?_bpPpHtml(pair.now-pair.py, true):(mode==='pp-up'?_bpPpHtml(pair.now-pair.py, false):_bpPctHtml(pair.pct, false));
+  var gap=mode==='pp-down'?_bpPpHtml(_bpFinGap(pair), true):(mode==='pp-up'?_bpPpHtml(_bpFinGap(pair), false):_bpPctHtml(pair.pct, false));
   return '<div class="bp-sf-vals"><b>'+_bpFinAmt(pair,'now')+'</b><b>'+_bpFinAmt(pair,'py')+'</b><span class="bp-sf-var">'+gap+'</span></div>';
 }
 function _bpFinColHtml(month, fin, kind){
@@ -520,10 +549,8 @@ function _bpStack(main, sub){
   return '<span class="bp-stack"><b>'+main+'</b>'+(sub?_bpPy(sub):'')+'</span>';
 }
 function _bpExpectCell(pair, mode){
-  var nums=pair.money
-    ? '<b>'+$k(pair.now)+'</b>'+_bpPy($k(pair.py))
-    : '<b>'+(Math.round(pair.now*10)/10).toFixed(1)+'%</b>'+_bpPy((Math.round(pair.py*10)/10).toFixed(1)+'%');
-  var gap=mode==='pp-up'?_bpPpHtml(pair.now-pair.py, false):_bpPctHtml(pair.pct, false);
+  var nums='<b>'+_bpFinAmt(pair,'now')+'</b>'+_bpPy(_bpFinAmt(pair,'py'));
+  var gap=mode==='pp-up'?_bpPpHtml(_bpFinGap(pair), false):_bpPctHtml(pair.pct, false);
   return '<span class="bp-expect"><span class="bp-expect-nums">'+nums+'</span>'+gap+'</span>';
 }
 function _bpRowsHtml(data, opts){

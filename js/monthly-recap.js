@@ -1,0 +1,328 @@
+/* Monthly Live Entertainment Recap. Reads the ingested P&L and the live calendar.
+   Does not write shows, fees, or schedule overrides. */
+var MR_ORDER=['MILA Lounge','Casa Neos Lounge','Casa Neos Beach Club'];
+var MR_MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function mrStore(){ return window.DJ_MONTHLY_RECAP||{venues:{}}; }
+function mrVenue(name){ return (mrStore().venues||{})[name]||null; }
+function mrLabel(name){
+  var v=mrVenue(name);
+  return (v&&v.label)||name;
+}
+function mrSetTab(tab){
+  window._sanityTab=tab==='plan'?'plan':'recap';
+  if(typeof mrRenderActive==='function') mrRenderActive();
+  document.querySelectorAll('.mr-tab').forEach(function(b){
+    b.classList.toggle('on', b.getAttribute('data-mr')===window._sanityTab);
+  });
+}
+function mrSanitySectionHtml(){
+  var tab=window._sanityTab||'recap';
+  return '<div class="mr-tabs">'
+    +'<button type="button" class="mr-tab'+(tab==='recap'?' on':'')+'" data-mr="recap" onclick="mrSetTab(\'recap\')">Monthly Recap</button>'
+    +'<button type="button" class="mr-tab'+(tab==='plan'?' on':'')+'" data-mr="plan" onclick="mrSetTab(\'plan\')">Three Month Plan</button>'
+    +'</div><div id="mrTabBody"></div>';
+}
+function mrPeriods(){
+  var beach=mrVenue('Casa Neos Beach Club');
+  var years=beach&&beach.pl?Object.keys(beach.pl):[];
+  var out=[];
+  years.forEach(function(year){
+    Object.keys(beach.pl[year]||{}).forEach(function(p){
+      var period=+p;
+      if(!(period>=1&&period<=12)) return;
+      var meta=mrPeriodMeta(+year, period);
+      out.push(meta);
+    });
+  });
+  out.sort(function(a,b){ return a.from<b.from?-1:(a.from>b.from?1:0); });
+  return out;
+}
+function mrPeriodMeta(year, period){
+  var mi=period-1;
+  var range=(typeof fiscalPeriodRange==='function')?fiscalPeriodRange(year, mi):{from:'',to:''};
+  var end=(typeof _parseYmd==='function'&&range.to)?_parseYmd(range.to):null;
+  var label=end?MR_MONTHS[end.getMonth()]+' '+end.getFullYear():('Period '+period+' '+year);
+  var short=(typeof fiscalPeriodShortRange==='function')?fiscalPeriodShortRange(year, mi):'';
+  return {year:year, period:period, key:year+'-'+period, label:label, range:short, from:range.from, to:range.to};
+}
+function mrCurrent(){
+  var all=mrPeriods();
+  var key=window._mrKey;
+  var found=null;
+  all.forEach(function(m){ if(m.key===key) found=m; });
+  if(found) return found;
+  all.forEach(function(m){ if(m.key==='2026-10') found=m; });
+  return found||all[all.length-1]||mrPeriodMeta(2026, 10);
+}
+function mrSelectPeriod(key){
+  window._mrKey=key;
+  mrRenderActive();
+}
+function mrPl(venue, year, period){
+  var v=mrVenue(venue);
+  if(!v||!v.pl||!v.pl[String(year)]) return null;
+  return v.pl[String(year)][String(period)]||null;
+}
+function mrFee(r){
+  var raw=r&&r.fee!=null&&r.fee!==''?r.fee:(r&&r.cost!=null?r.cost:null);
+  var n=raw!=null&&raw!==''?+raw:null;
+  return n!=null&&isFinite(n)?n:null;
+}
+function mrShowRoi(r){
+  var fee=mrFee(r);
+  var tgt=(typeof showTargets==='function')?showTargets(r):{roi_t:r.roi_t};
+  var roiT=tgt&&tgt.roi_t!=null&&tgt.roi_t!==''&&isFinite(+tgt.roi_t)?+tgt.roi_t:null;
+  var bs=r.bs_a!=null&&r.bs_a!==''&&isFinite(+r.bs_a)?+r.bs_a:null;
+  var roiA=r.roi_a!=null&&r.roi_a!==''&&isFinite(+r.roi_a)?+r.roi_a:null;
+  if(roiA==null&&fee>0&&bs!=null) roiA=bs/fee;
+  return {fee:fee, bs:bs, roiT:roiT, roiA:roiA};
+}
+function mrShows(venue, meta){
+  var rows=(typeof SCHED!=='undefined'&&SCHED)?SCHED:[];
+  return rows.filter(function(r){
+    if(!r||r._s==='empty'||!r.d) return false;
+    if((r.v||r.venue)!==venue) return false;
+    if(meta.from&&r.d<meta.from) return false;
+    if(meta.to&&r.d>meta.to) return false;
+    var dj=String(r.dj||'').trim();
+    var fee=mrFee(r);
+    return !!dj||(fee!=null&&fee>0);
+  }).sort(function(a,b){ return a.d<b.d?-1:(a.d>b.d?1:0); });
+}
+function mrBeat(shows){
+  var n=0, hit=0, bs=0, hasBs=false;
+  shows.forEach(function(r){
+    var x=mrShowRoi(r);
+    if(x.bs!=null){ bs+=x.bs; hasBs=true; }
+    if(x.roiA==null||x.roiT==null) return;
+    n++;
+    if(x.roiA+1e-9>=x.roiT) hit++;
+  });
+  return {rate:n?hit/n:null, hit:hit, n:n, bs:hasBs?bs:null};
+}
+function mrDaySales(venue, date){
+  var v=mrVenue(venue);
+  if(!v||!v.daily) return null;
+  var n=v.daily[date];
+  return n!=null&&isFinite(+n)?+n:null;
+}
+function mrDayMargin(venue, sales, fee){
+  var v=mrVenue(venue);
+  var model=v&&v.model;
+  if(!model||!(sales>0)||fee==null||!isFinite(+fee)) return null;
+  var ebitda=sales*model.contrib-model.fixed-fee;
+  return {ebitda:ebitda, margin:ebitda/sales};
+}
+function mrPct(n){
+  if(n==null||!isFinite(+n)) return '—';
+  return (n*100).toFixed(1)+'%';
+}
+function mrPp(now, py){
+  if(now==null||py==null||!isFinite(+now)||!isFinite(+py)) return {text:'—', cls:''};
+  var pp=(now-py)*100;
+  var cls=pp>0.05?'mr-pos':(pp<-0.05?'mr-neg':'');
+  var sign=pp>0?'+':'';
+  return {text:sign+pp.toFixed(1)+' pp', cls:cls};
+}
+function mrVar(now, py){
+  if(now==null||py==null||!isFinite(+now)||!isFinite(+py)||py===0) return {text:'—', cls:''};
+  var pct=(now-py)/Math.abs(py)*100;
+  var cls=pct>0.05?'mr-pos':(pct<-0.05?'mr-neg':'');
+  var sign=pct>0?'+':'';
+  return {text:sign+pct.toFixed(1)+'%', cls:cls};
+}
+function mrMoney(n){ return (typeof $k==='function')?$k(n):(n==null?'—':String(Math.round(n))); }
+function mrDayLabel(d){
+  if(typeof _bpDay==='function') return _bpDay(d);
+  return d||'—';
+}
+function mrDj(r){
+  var name=r&&r.dj?r.dj:'';
+  if(typeof djLabel==='function') name=djLabel(name)||name;
+  return name||'TBD';
+}
+function mrVenuePack(venue, meta){
+  var now=mrPl(venue, meta.year, meta.period);
+  var py=mrPl(venue, meta.year-1, meta.period);
+  var shows=mrShows(venue, meta);
+  var pyMeta=mrPeriodMeta(meta.year-1, meta.period);
+  var pyShows=mrShows(venue, pyMeta);
+  var beat=mrBeat(shows);
+  var pyBeat=mrBeat(pyShows);
+  var rows=shows.map(function(r){
+    var x=mrShowRoi(r);
+    var sales=mrDaySales(venue, r.d);
+    var margin=mrDayMargin(venue, sales, x.fee);
+    return {r:r, dj:mrDj(r), d:r.d, fee:x.fee, bs:x.bs, roiA:x.roiA, roiT:x.roiT, sales:sales, margin:margin};
+  });
+  return {venue:venue, label:mrLabel(venue), now:now, py:py, beat:beat, pyBeat:pyBeat, rows:rows};
+}
+function mrPack(meta){
+  return {meta:meta, venues:MR_ORDER.map(function(v){ return mrVenuePack(v, meta); })};
+}
+function mrVarHtml(v){
+  return '<b class="'+v.cls+'">'+v.text+'</b>';
+}
+function mrLine(label, now, py, kind){
+  var nowTxt=kind==='pct'?mrPct(now):(kind==='roi'?mrPct(now):mrMoney(now));
+  var pyTxt=kind==='pct'?mrPct(py):(kind==='roi'?mrPct(py):mrMoney(py));
+  var gap=kind==='money'||kind==='spend'?mrVar(now, py):mrPp(now, py);
+  return '<div class="mr-line"><span>'+label+'</span><b>'+nowTxt+'</b><b>'+pyTxt+'</b>'+mrVarHtml(gap)+'</div>';
+}
+function mrArrow(label, now, py, kind){
+  var nowTxt=kind==='roi'?mrPct(now):mrMoney(now);
+  var pyTxt=py==null?'—':(kind==='roi'?mrPct(py):mrMoney(py));
+  return '<div class="mr-sub"><i class="bp-arr"></i><span>'+label+'</span><b>'+nowTxt+'</b><b>'+pyTxt+'</b></div>';
+}
+function mrCardHtml(p){
+  var n=p.now||{}, y=p.py||{};
+  var h='<article class="mr-card"><h3>'+_escHtml(p.label)+'</h3>';
+  h+=mrLine('Total Sales', n.sales, y.sales, 'money');
+  h+=mrArrow('Bottle Service Sales', p.beat.bs, p.pyBeat.bs, 'money');
+  h+=mrArrow('ROI beat', p.beat.rate, p.pyBeat.rate, 'roi');
+  h+=mrLine('ROI % Beat', p.beat.rate, p.pyBeat.rate, 'roi');
+  h+=mrLine('Live Entertainment Spending', n.live, y.live, 'spend');
+  h+=mrLine('Live Entertainment Margins', n.livePct, y.livePct, 'pct');
+  h+=mrLine('EBITDA Margins', n.netPct, y.netPct, 'pct');
+  if(!p.py) h+='<div class="mr-note">No 2025 P&amp;L for this location in the workbook.</div>';
+  h+='</article>';
+  return h;
+}
+function mrShowsTable(rows){
+  var h='<table class="mr-shows"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI actual</th><th>ROI target</th><th>Sales</th><th>Margin</th></tr></thead><tbody>';
+  if(!rows.length) h+='<tr><td class="l" colspan="7">No performances this month.</td></tr>';
+  rows.forEach(function(row){
+    h+='<tr><td class="l"><b>'+_escHtml(mrDayLabel(row.d))+'</b></td><td class="l">'+_escHtml(row.dj)+'</td><td>'+mrMoney(row.fee)+'</td><td>'+(typeof rx==='function'?rx(row.roiA):'—')+'</td><td>'+(typeof rx==='function'?rx(row.roiT):'—')+'</td><td>'+mrMoney(row.sales)+'</td><td>'+mrPct(row.margin&&row.margin.margin)+'</td></tr>';
+  });
+  h+='</tbody></table>';
+  return h;
+}
+function mrRenderActive(){
+  var host=document.getElementById('mrTabBody');
+  if(!host) return;
+  var tab=window._sanityTab||'recap';
+  if(tab==='plan'){
+    host.innerHTML='<div class="mr-card"><h3>Three Month Plan</h3><p class="mr-note">Same plan as Reporting. Nothing on this tab changes how it is calculated.</p><button type="button" class="mr-go" onclick="setView(\'rolling\')">Open Three Month Plan</button></div>';
+    return;
+  }
+  var periods=mrPeriods();
+  var meta=mrCurrent();
+  window._mrKey=meta.key;
+  var pack=mrPack(meta);
+  var h='<div class="mr-bar"><label class="mr-note">Month <select onchange="mrSelectPeriod(this.value)">';
+  periods.forEach(function(m){
+    h+='<option value="'+m.key+'"'+(m.key===meta.key?' selected':'')+'>'+_escHtml(m.label+' · '+m.range)+'</option>';
+  });
+  h+='</select></label><button type="button" class="mr-go" onclick="mrExportPdf()">Export PDF</button>';
+  h+='<span class="mr-note">P&amp;L from the workbook. Bottle service and ROI beat from the calendar. October 2026 is period 10, through '+_escHtml(meta.range||'')+'.</span></div>';
+  h+='<div class="mr-grid">';
+  pack.venues.forEach(function(p){ h+=mrCardHtml(p); });
+  h+='</div>';
+  pack.venues.forEach(function(p){
+    h+='<div class="mr-card"><h3>'+_escHtml(p.label)+'</h3>';
+    h+=mrShowsTable(p.rows);
+    h+='</div>';
+  });
+  host.innerHTML=h;
+}
+function mrPdfVar(v){ return '<b class="'+v.cls+'">'+v.text+'</b>'; }
+function mrPdfRow(label, now, py, kind){
+  var nowTxt=kind==='pct'||kind==='roi'?mrPct(now):mrMoney(now);
+  var pyTxt=kind==='pct'||kind==='roi'?mrPct(py):mrMoney(py);
+  var gap=kind==='money'||kind==='spend'?mrVar(now, py):mrPp(now, py);
+  return '<div class="mr-pdf-row"><span>'+label+'</span><b>'+nowTxt+'</b><b>'+pyTxt+'</b>'+mrPdfVar(gap)+'</div>';
+}
+function mrPdfArrow(label, now, py, kind){
+  var nowTxt=kind==='roi'?mrPct(now):mrMoney(now);
+  return '<div class="mr-pdf-sub"><i class="bp-arr"></i><span>'+label+' · '+nowTxt+'</span><b>'+(kind==='roi'?mrPct(py):mrMoney(py))+'</b></div>';
+}
+function mrComparePage(pack){
+  var meta=pack.meta;
+  var h='<div class="bp-page bp-deck"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">Monthly Live Entertainment Recap</div><b>'+_escHtml(meta.label)+'</b><em>'+_escHtml(meta.range||'')+' · vs 2025</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body"><div class="mr-pdf-locs">';
+  pack.venues.forEach(function(p){
+    var n=p.now||{}, y=p.py||{};
+    h+='<section class="mr-pdf-loc"><h3>'+_escHtml(p.label)+'</h3>';
+    h+=mrPdfRow('Total Sales', n.sales, y.sales, 'money');
+    h+=mrPdfArrow('Bottle Service Sales', p.beat.bs, p.pyBeat.bs, 'money');
+    h+=mrPdfArrow('ROI beat', p.beat.rate, p.pyBeat.rate, 'roi');
+    h+=mrPdfRow('ROI % Beat', p.beat.rate, p.pyBeat.rate, 'roi');
+    h+=mrPdfRow('Live Entertainment', n.live, y.live, 'spend');
+    h+=mrPdfRow('Live Ent. margins', n.livePct, y.livePct, 'pct');
+    h+=mrPdfRow('EBITDA margins', n.netPct, y.netPct, 'pct');
+    h+='</section>';
+  });
+  h+='</div></div></div>';
+  return h;
+}
+function mrDetailPage(p, meta, slice, pageNo, pageCount){
+  var n=p.now||{};
+  var h='<div class="bp-page bp-deck"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">'+_escHtml(p.label)+'</div><b>'+_escHtml(meta.label)+'</b><em>'+_escHtml(meta.range||'')+(pageCount>1?' · '+pageNo+' of '+pageCount:'')+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body">';
+  h+='<div class="mr-pdf-metrics">';
+  h+='<div><span>Sales</span><b>'+mrMoney(n.sales)+'</b></div>';
+  h+='<div><span>BS Sales</span><b>'+mrMoney(p.beat.bs)+'</b></div>';
+  h+='<div><span>ROI Beat</span><b>'+mrPct(p.beat.rate)+'</b></div>';
+  h+='<div><span>Live E margins</span><b>'+mrPct(n.livePct)+'</b></div>';
+  h+='<div><span>Margins</span><b>'+mrPct(n.netPct)+'</b></div>';
+  h+='</div>';
+  h+='<table class="mr-pdf-tbl"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI actual</th><th>ROI target</th><th>Sales for the day</th><th>Margin</th></tr></thead><tbody>';
+  if(!slice.length) h+='<tr><td class="l" colspan="7">No performances this month.</td></tr>';
+  slice.forEach(function(row){
+    h+='<tr><td class="l"><b>'+_escHtml(mrDayLabel(row.d))+'</b></td><td class="l">'+_escHtml(row.dj)+'</td><td>'+mrMoney(row.fee)+'</td><td>'+(typeof rx==='function'?rx(row.roiA):'—')+'</td><td>'+(typeof rx==='function'?rx(row.roiT):'—')+'</td><td>'+mrMoney(row.sales)+'</td><td>'+mrPct(row.margin&&row.margin.margin)+'</td></tr>';
+  });
+  h+='</tbody></table></div></div>';
+  return h;
+}
+function mrBuildPdf(){
+  var pack=mrPack(mrCurrent());
+  var meta=pack.meta;
+  var canvases=[];
+  if(typeof _bpBusy==='function') _bpBusy(true, 'Cover page');
+  return _ensurePdfLibs().then(function(){
+    return document.fonts&&document.fonts.ready?document.fonts.ready:null;
+  }).then(function(){
+    return _bpRenderPage(_bpCoverHtml('Monthly Live Entertainment Recap', meta.label+(meta.range?' · '+meta.range:''), ''));
+  }).then(function(cv){
+    canvases.push(cv);
+    if(typeof _bpBusy==='function') _bpBusy(true, 'All locations');
+    return _bpRenderPage(mrComparePage(pack));
+  }).then(function(cv){
+    canvases.push(cv);
+    var chain=Promise.resolve();
+    pack.venues.forEach(function(p){
+      chain=chain.then(function(){
+        if(typeof _bpBusy==='function') _bpBusy(true, p.label);
+        return _bpRenderPage(_bpCoverHtml('Monthly Live Entertainment Recap', meta.label, p.label));
+      }).then(function(cv){
+        canvases.push(cv);
+        var size=12;
+        var pages=Math.max(1, Math.ceil(p.rows.length/size));
+        var inner=Promise.resolve();
+        for(var i=0;i<pages;i++){
+          (function(i){
+            inner=inner.then(function(){
+              return _bpRenderPage(mrDetailPage(p, meta, p.rows.slice(i*size, (i+1)*size), i+1, pages));
+            }).then(function(cv){ canvases.push(cv); });
+          })(i);
+        }
+        return inner;
+      });
+    });
+    return chain;
+  }).then(function(){
+    var pdf=_bpPdfFit(canvases);
+    if(typeof _bpBusy==='function') _bpBusy(false);
+    return pdf;
+  }, function(err){
+    if(typeof _bpBusy==='function') _bpBusy(false);
+    throw err;
+  });
+}
+function mrExportPdf(){
+  var meta=mrCurrent();
+  mrBuildPdf().then(function(pdf){
+    pdf.save('RDG-Monthly-Live-Entertainment-Recap-'+meta.key+'.pdf');
+  }).catch(function(err){
+    alert('Could not export the Monthly Recap. '+(err&&err.message?err.message:''));
+  });
+}

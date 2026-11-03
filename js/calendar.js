@@ -3905,7 +3905,9 @@ function renderSystem(){
     + '<b style="color:var(--ink2)">Firebase:</b> instant overlays (Forecast Actuals, LIVE night, Sanity status).'
     + '</div></div>';
 
+  if(typeof mrSanitySectionHtml==='function') h += mrSanitySectionHtml();
   el.innerHTML = h;
+  if(typeof mrRenderActive==='function') mrRenderActive();
 }
 
 function _sanityCalendarSheetRows(year){
