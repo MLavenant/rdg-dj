@@ -2196,7 +2196,10 @@ body.mobile-mode .sb-btn{min-height:44px}
 .mr-fill .mr-pdf-loc h3{font-size:32px;margin:0 0 14px}
 .mr-fill .mr-pdf-row{font-size:26px;line-height:1.25;padding:8px 0}
 .mr-fill .mr-pdf-row span{font-size:17px;white-space:nowrap}
-.mr-fill .mr-pdf-row b:nth-of-type(1){box-shadow:inset -1px 0 0 #94a3b8;padding-right:16px}
+.mr-line,.mr-pdf-row{white-space:nowrap}
+.mr-arrow span{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.mr-fill .mr-pdf-row b:nth-of-type(1){padding-right:12px}
+.mr-fill .mr-pdf-row b:nth-of-type(2){border-left:1px solid #cbd5e1;padding-left:12px}
 .mr-fill .mr-pdf-sub{font-size:16px;padding-top:2px}
 .mr-pdf-locs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:start}
 .mr-pdf-loc{border:1px solid #e2e8f0;border-radius:12px;padding:8px 12px;display:flex;flex-direction:column}

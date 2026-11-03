@@ -181,29 +181,28 @@ function mrPack(meta){
 function mrVarHtml(v){
   return '<b class="'+v.cls+'">'+v.text+'</b>';
 }
-function mrLine(label, now, py, kind){
+function mrLine(label, now, py, kind, novar){
   var nowTxt=kind==='pct'||kind==='live'||kind==='roi'?mrPct(now):mrMoney(now);
   var pyTxt=kind==='pct'||kind==='live'||kind==='roi'?mrPct(py):mrMoney(py);
   var gap=kind==='money'||kind==='spend'?mrVar(now, py):mrPp(now, py, kind==='live');
-  return '<div class="mr-line"><span>'+label+'</span><b>'+nowTxt+'</b><b>'+pyTxt+'</b>'+mrVarHtml(gap)+'</div>';
+  return '<div class="mr-line"><span>'+label+'</span><b>'+nowTxt+'</b><b>'+pyTxt+'</b>'+(novar?'<b></b>':mrVarHtml(gap))+'</div>';
 }
 function mrHeads(year){
   return '<div class="mr-line mr-head"><span></span><b>'+year+'</b><b>'+(year-1)+'</b><b>Var</b></div>';
 }
-function mrArrow(label, now, py, kind){
-  var nowTxt=kind==='roi'?mrPct(now):mrMoney(now);
-  var pyTxt=py==null?'—':(kind==='roi'?mrPct(py):mrMoney(py));
-  return '<div class="mr-sub"><i class="bp-arr"></i><span>'+label+'</span><b>'+nowTxt+'</b><b>'+pyTxt+'</b></div>';
+function mrArrow(label, now, py){
+  var pyTxt=py==null?'—':mrMoney(py);
+  return '<div class="mr-line mr-arrow"><span><i class="bp-arr"></i>'+label+'</span><b>'+mrMoney(now)+'</b><b>'+pyTxt+'</b><b></b></div>';
 }
 function mrCardHtml(p, meta){
   var n=p.now||{}, y=p.py||{};
   var year=meta.year;
   var h='<article class="mr-card"><h3>'+_escHtml(p.label)+'</h3>';
   h+=mrHeads(year);
-  h+=mrLine('Total Sales', n.sales, y.sales, 'money');
-  h+=mrArrow('Bottle Service Sales', p.beat.bs, p.pyBeat.bs, 'money');
+  h+=mrLine('Total Sales', n.sales, y.sales, 'money', true);
+  h+=mrArrow('Bottle Service Sales', p.beat.bs, p.pyBeat.bs);
   h+=mrLine('ROI % Beat', p.beat.rate, p.pyBeat.rate, 'roi');
-  h+=mrLine('Live Entertainment Spending', n.live, y.live, 'spend');
+  h+=mrLine('Total Spent', n.live, y.live, 'spend');
   h+=mrBudgetRow(n.live, mrLiveBudget(p.venue, meta));
   h+=mrLine('Live Ent. margins', n.livePct, y.livePct, 'live');
   if(!p.py) h+='<div class="mr-note">No 2025 P&amp;L for this location in the workbook.</div>';
@@ -249,18 +248,18 @@ function mrRenderPage(){
   host.innerHTML=h;
 }
 function mrPdfVar(v){ return '<b class="'+v.cls+'">'+v.text+'</b>'; }
-function mrPdfRow(label, now, py, kind){
+function mrPdfRow(label, now, py, kind, novar){
   var nowTxt=kind==='pct'||kind==='live'||kind==='roi'?mrPct(now):mrMoney(now);
   var pyTxt=kind==='pct'||kind==='live'||kind==='roi'?mrPct(py):mrMoney(py);
   var gap=kind==='money'||kind==='spend'?mrVar(now, py):mrPp(now, py, kind==='live');
-  return '<div class="mr-pdf-row"><span>'+label+'</span><b>'+nowTxt+'</b><b>'+pyTxt+'</b>'+mrPdfVar(gap)+'</div>';
+  return '<div class="mr-pdf-row"><span>'+label+'</span><b>'+nowTxt+'</b><b>'+pyTxt+'</b>'+(novar?'<b></b>':mrPdfVar(gap))+'</div>';
 }
 function mrPdfHeads(year){
   return '<div class="mr-pdf-row mr-pdf-head"><span></span><b>'+year+'</b><b>'+(year-1)+'</b><b>Var</b></div>';
 }
-function mrPdfArrow(label, now, py, kind){
-  var nowTxt=kind==='roi'?mrPct(now):mrMoney(now);
-  return '<div class="mr-pdf-sub"><i class="bp-arr"></i><span>'+label+' · '+nowTxt+'</span><b>'+(kind==='roi'?mrPct(py):mrMoney(py))+'</b></div>';
+function mrPdfArrow(label, now, py){
+  var pyTxt=py==null?'—':mrMoney(py);
+  return '<div class="mr-pdf-row mr-arrow"><span><i class="bp-arr"></i>'+label+'</span><b>'+mrMoney(now)+'</b><b>'+pyTxt+'</b><b></b></div>';
 }
 function mrComparePage(pack){
   var meta=pack.meta;
@@ -269,10 +268,10 @@ function mrComparePage(pack){
     var n=p.now||{}, y=p.py||{};
     h+='<section class="mr-pdf-loc"><h3>'+_escHtml(p.label)+'</h3>';
     h+=mrPdfHeads(meta.year);
-    h+=mrPdfRow('Total Sales', n.sales, y.sales, 'money');
-    h+=mrPdfArrow('Bottle Service Sales', p.beat.bs, p.pyBeat.bs, 'money');
+    h+=mrPdfRow('Total Sales', n.sales, y.sales, 'money', true);
+    h+=mrPdfArrow('Bottle Service Sales', p.beat.bs, p.pyBeat.bs);
     h+=mrPdfRow('ROI % Beat', p.beat.rate, p.pyBeat.rate, 'roi');
-    h+=mrPdfRow('Live Entertainment Spending', n.live, y.live, 'spend');
+    h+=mrPdfRow('Total Spent', n.live, y.live, 'spend');
     h+=mrBudgetRow(n.live, mrLiveBudget(p.venue, meta), 'mr-pdf-row');
     h+=mrPdfRow('Live Ent. margins', n.livePct, y.livePct, 'live');
     h+='</section>';
