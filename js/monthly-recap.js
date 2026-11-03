@@ -126,6 +126,23 @@ function mrVar(now, py){
   return {text:sign+pct.toFixed(1)+'%', cls:cls};
 }
 function mrMoney(n){ return (typeof $k==='function')?$k(n):(n==null?'—':String(Math.round(n))); }
+function mrLiveBudget(venue, meta){
+  if(!meta||typeof BGT_PLAN==='undefined') return null;
+  var mm=meta.period<10?'0'+meta.period:String(meta.period);
+  var row=((BGT_PLAN[venue]||{})[String(meta.year)]||{})[mm];
+  return row&&row.live!=null&&isFinite(+row.live)?+row.live:null;
+}
+/* Spending above budget is worse. */
+function mrSpendVar(spend, budget){
+  if(spend==null||budget==null||!isFinite(+spend)||!isFinite(+budget)) return {text:'—', cls:''};
+  var gap=spend-budget;
+  var cls=gap>0.5?'mr-neg':(gap<-0.5?'mr-pos':'');
+  return {text:(gap>0?'+':'')+mrMoney(gap), cls:cls};
+}
+function mrBudgetRow(spend, budget, rowClass){
+  var v=mrSpendVar(spend, budget);
+  return '<div class="mr-budget '+(rowClass||'mr-line')+'"><span>Budget</span><b>'+mrMoney(budget)+'</b><b></b><b class="'+v.cls+'">'+v.text+'</b></div>';
+}
 function mrDayLabel(d){
   if(typeof _bpDay==='function') return _bpDay(d);
   return d||'—';
@@ -171,16 +188,17 @@ function mrArrow(label, now, py, kind){
   var pyTxt=py==null?'—':(kind==='roi'?mrPct(py):mrMoney(py));
   return '<div class="mr-sub"><i class="bp-arr"></i><span>'+label+'</span><b>'+nowTxt+'</b><b>'+pyTxt+'</b></div>';
 }
-function mrCardHtml(p, year){
+function mrCardHtml(p, meta){
   var n=p.now||{}, y=p.py||{};
+  var year=meta.year;
   var h='<article class="mr-card"><h3>'+_escHtml(p.label)+'</h3>';
   h+=mrHeads(year);
   h+=mrLine('Total Sales', n.sales, y.sales, 'money');
   h+=mrArrow('Bottle Service Sales', p.beat.bs, p.pyBeat.bs, 'money');
   h+=mrLine('ROI % Beat', p.beat.rate, p.pyBeat.rate, 'roi');
   h+=mrLine('Live Entertainment Spending', n.live, y.live, 'spend');
-  h+=mrLine('Live Entertainment Margins', n.livePct, y.livePct, 'live');
-  h+=mrLine('EBITDA Margins', n.netPct, y.netPct, 'pct');
+  h+=mrBudgetRow(n.live, mrLiveBudget(p.venue, meta));
+  h+=mrLine('Live Ent. margins', n.livePct, y.livePct, 'live');
   if(!p.py) h+='<div class="mr-note">No 2025 P&amp;L for this location in the workbook.</div>';
   h+='</article>';
   return h;
@@ -205,6 +223,7 @@ function mrRenderPage(){
   var periods=mrPeriods();
   var meta=mrCurrent();
   window._mrKey=meta.key;
+  window._mrMeta=meta;
   var pack=mrPack(meta);
   var h='<div class="mr-bar"><label class="mr-note">Month <select onchange="mrSelectPeriod(this.value)">';
   periods.forEach(function(m){
@@ -213,7 +232,7 @@ function mrRenderPage(){
   h+='</select></label><button type="button" class="mr-go" onclick="mrExportPdf()">Export PDF</button>';
   h+='<span class="mr-note">P&amp;L from the workbook. Bottle service and ROI beat from the calendar. October 2026 is period 10, through '+_escHtml(meta.range||'')+'.</span></div>';
   h+='<div class="mr-grid">';
-  pack.venues.forEach(function(p){ h+=mrCardHtml(p, meta.year); });
+  pack.venues.forEach(function(p){ h+=mrCardHtml(p, meta); });
   h+='</div>';
   pack.venues.forEach(function(p){
     h+='<div class="mr-card"><h3>'+_escHtml(p.label)+'</h3>';
@@ -238,7 +257,7 @@ function mrPdfArrow(label, now, py, kind){
 }
 function mrComparePage(pack){
   var meta=pack.meta;
-  var h='<div class="bp-page bp-deck"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">Monthly Live Entertainment Recap</div><b>'+_escHtml(meta.label)+'</b><em>'+_escHtml(meta.range||'')+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body"><div class="mr-pdf-locs">';
+  var h='<div class="bp-page bp-deck mr-fill"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">Monthly Live Entertainment Recap</div><b>'+_escHtml(meta.label)+'</b><em>'+_escHtml(meta.range||'')+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body"><div class="mr-pdf-locs">';
   pack.venues.forEach(function(p){
     var n=p.now||{}, y=p.py||{};
     h+='<section class="mr-pdf-loc"><h3>'+_escHtml(p.label)+'</h3>';
@@ -247,8 +266,8 @@ function mrComparePage(pack){
     h+=mrPdfArrow('Bottle Service Sales', p.beat.bs, p.pyBeat.bs, 'money');
     h+=mrPdfRow('ROI % Beat', p.beat.rate, p.pyBeat.rate, 'roi');
     h+=mrPdfRow('Live Entertainment Spending', n.live, y.live, 'spend');
+    h+=mrBudgetRow(n.live, mrLiveBudget(p.venue, meta), 'mr-pdf-row');
     h+=mrPdfRow('Live Ent. margins', n.livePct, y.livePct, 'live');
-    h+=mrPdfRow('EBITDA margins', n.netPct, y.netPct, 'pct');
     h+='</section>';
   });
   h+='</div></div></div>';
@@ -258,13 +277,17 @@ function mrLy(text){ return '<em>'+text+'</em>'; }
 function mrDetailPage(p, meta){
   var n=p.now||{}, y=p.py||{};
   var pyY=meta.year-1;
+  var bud=mrLiveBudget(p.venue, meta);
+  var salesVar=mrVar(n.sales, y.sales);
+  var bsVar=mrVar(p.beat.bs, p.pyBeat.bs);
+  var spendVar=mrSpendVar(n.live, bud);
   var h='<div class="bp-page bp-deck"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">'+_escHtml(p.label)+'</div><b>'+_escHtml(meta.label)+'</b><em>'+_escHtml(meta.range||'')+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body">';
   h+='<div class="mr-pdf-metrics">';
-  h+='<div><span>Sales</span><b>'+mrMoney(n.sales)+'</b>'+mrLy(pyY+' '+mrMoney(y.sales))+'</div>';
-  h+='<div><span>BS Sales</span><b>'+mrMoney(p.beat.bs)+'</b>'+mrLy(pyY+' '+mrMoney(p.pyBeat.bs))+'</div>';
-  h+='<div><span>ROI Beat</span><b>'+mrPct(p.beat.rate)+'</b>'+mrLy(pyY+' '+mrPct(p.pyBeat.rate))+'</div>';
+  h+='<div><span>Sales vs PY</span><b>'+mrMoney(n.sales)+'</b>'+mrLy(pyY+' '+mrMoney(y.sales))+'<i class="'+salesVar.cls+'">'+salesVar.text+'</i></div>';
+  h+='<div><span>BS vs '+pyY+'</span><b>'+mrMoney(p.beat.bs)+'</b>'+mrLy(pyY+' '+mrMoney(p.pyBeat.bs))+'<i class="'+bsVar.cls+'">'+bsVar.text+'</i></div>';
+  h+='<div class="mr-bud"><span>Spend vs budget</span><b>'+mrMoney(n.live)+'</b><em>Budget '+mrMoney(bud)+'</em><i class="'+spendVar.cls+'">'+spendVar.text+'</i></div>';
+  h+='<div><span>ROI beat</span><b>'+mrPct(p.beat.rate)+'</b>'+mrLy(pyY+' '+mrPct(p.pyBeat.rate))+'</div>';
   h+='<div><span>Live E margins</span><b>'+mrPct(n.livePct)+'</b>'+mrLy(pyY+' '+mrPct(y.livePct))+'</div>';
-  h+='<div><span>Margins</span><b>'+mrPct(n.netPct)+'</b>'+mrLy(pyY+' '+mrPct(y.netPct))+'</div>';
   h+='</div>';
   h+='<table class="mr-pdf-tbl"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI actual</th><th>ROI target</th><th>Sales for the day</th><th>Margin</th></tr></thead><tbody>';
   if(!p.rows.length) h+='<tr><td class="l" colspan="7">No performances this month.</td></tr>';

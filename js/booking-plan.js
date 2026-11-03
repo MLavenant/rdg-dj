@@ -155,8 +155,14 @@ function _bpApprovalState(row){
   if(f.decision==='approved' && e.decision==='approved') return 'approved';
   return 'pending';
 }
+/* Same figure as the calendar Total Budget: live entertainment plan, not the guest-DJ monthly budget. */
+function _bpMonthBudget(venue, m){
+  if(!m||typeof getBgtPlan!=='function') return null;
+  var live=getBgtPlan(venue, String(m.year), m.mm, 'live');
+  return live!=null&&isFinite(+live)?+live:null;
+}
 function _bpVenueMonth(venue, m){
-  var budget=getMonthlyBudget(venue, m.year, m.mm);
+  var budget=_bpMonthBudget(venue, m);
   var conf=(_bpData.confirms[venue]||{})[m.year]; conf=conf?conf[m.mm]:null;
   var rows=[], confirmed=0, proposed=0, bsT=0;
   _bpBookings(venue, m).forEach(function(r){
@@ -199,6 +205,12 @@ function _bpVenueList(){
 }
 function _bpMonthOverBudget(c){ return !!(c && c.budget!=null && c.planned>c.budget); }
 function _bpHighlightRow(r, c){ return !!r && (+r.fee||0)>20000 && _bpMonthOverBudget(c); }
+function _bpSectionRow(r){ return !!r && (+r.fee||0)>5000; }
+function _bpShowBs(r){
+  if(!r||!(r.fee>0)||typeof spRoi!=='function') return null;
+  var hit=spRoi(r.venue, r.fee, r.d);
+  return hit&&hit.roi?r.fee*hit.roi:null;
+}
 function _bpExceptionRow(r, c){ return _bpHighlightRow(r, c) && !r.confirmed; }
 function _bpHasRequest(uid){
   if(!uid) return false;
@@ -526,7 +538,7 @@ function _bpMonthPosition(venue, dateStr){
   _bpBookings(venue, {from:range.from, to:range.to}).forEach(function(r){
     spend+=+(r.fee!=null?r.fee:(r.cost||0))||0;
   });
-  var budget=getMonthlyBudget(venue, info.year, info.mm);
+  var budget=_bpMonthBudget(venue, {year:info.year, mm:info.mm});
   return {spend:spend, budget:budget, left:budget!=null?budget-spend:null};
 }
 function _bpPosHtml(pos){
@@ -542,26 +554,35 @@ function _bpPy(text){
 function _bpStack(main, sub){
   return '<span class="bp-stack"><b>'+main+'</b>'+(sub?_bpPy(sub):'')+'</span>';
 }
-function _bpExpectCell(pair, mode){
-  var nums='<b>'+_bpFinAmt(pair,'now')+'</b>'+_bpPy(_bpFinAmt(pair,'py'));
-  var gap=mode==='pp-up'?_bpPpHtml(_bpFinGap(pair), false):_bpPctHtml(pair.pct, false);
-  return '<span class="bp-expect"><span class="bp-expect-nums">'+nums+'</span>'+gap+'</span>';
+function _bpVsCell(nowText, pyText, gapHtml){
+  return '<span class="bp-expect"><span class="bp-expect-nums"><b>'+nowText+'</b>'+_bpPy(pyText)+'</span>'+gapHtml+'</span>';
+}
+function _bpBsCell(r, ly){
+  var now=_bpShowBs(r);
+  var py=ly&&ly.bs!=null?ly.bs:null;
+  var pct=now!=null&&py?(now-py)/Math.abs(py)*100:null;
+  return _bpVsCell(now!=null?$k(now):'—', py!=null?$k(py):'—', _bpPctHtml(pct, false));
+}
+function _bpRoiCell(r, ly){
+  var now=_bpThisReturn(r);
+  var py=ly&&ly.ret!=null?ly.ret:null;
+  return _bpVsCell(_bpRoiHtml(now), py!=null?_bpRoiHtml(py):'—', _bpGapHtml(now!=null&&py!=null?now-py:null, false, 'x'));
 }
 function _bpRowsHtml(data, opts){
   opts=opts||{};
   var simple=!!opts.noActions;
   var h='<div class="bp-bk'+(simple?' bp-bk-simple':'')+'">';
-  h+='<div class="bp-bk-hd"><span>Date</span><div class="bp-bk-cols"><span>Artist</span><span>Fee</span><span>Status</span><span class="r">Expected margins vs PY</span><span class="r">Expected total sales vs PY</span></div>'+(simple?'':'<span>Approval</span>')+'</div>';
+  h+='<div class="bp-bk-hd"><span>Date</span><div class="bp-bk-cols"><span>Artist</span><span>Fee</span><span>Status</span><span class="r">Bottle service sales vs PY</span><span class="r">ROI target vs ROI last year</span></div>'+(simple?'':'<span>Approval</span>')+'</div>';
   var any=false;
-  var now={n:0, fee:0};
-  var pyFee=0, pyN=0;
+  var now={n:0, fee:0, bs:0, hasBs:false};
+  var pyFee=0, pyN=0, pyBs=0, pyHasBs=false;
   data.months.forEach(function(m, mi){
     var monthRows=[];
     Object.keys(data.grid).forEach(function(v){
       var c=data.grid[v][mi];
       c.rows.forEach(function(r){ monthRows.push({r:r, budget:c.budget, planned:c.planned}); });
     });
-    monthRows=monthRows.filter(function(x){ return _bpHighlightRow(x.r, x) || _bpHasRequest(x.r.uid); });
+    monthRows=monthRows.filter(function(x){ return _bpSectionRow(x.r) || _bpHasRequest(x.r.uid); });
     if(!monthRows.length) return;
     any=true;
     monthRows.sort(function(a,b){ return a.r.d<b.r.d?-1:(a.r.d>b.r.d?1:(a.r.venue<b.r.venue?-1:1)); });
@@ -569,9 +590,11 @@ function _bpRowsHtml(data, opts){
     monthRows.forEach(function(x){
       var r=x.r;
       var ly=_bpLyShow(r.venue, r.d);
-      var exp=_bpFinFor({venue:r.venue, month:{key:r.d}});
+      var bsNow=_bpShowBs(r);
       now.n++; now.fee+=r.fee||0;
+      if(bsNow!=null){ now.bs+=bsNow; now.hasBs=true; }
       if(ly&&ly.fee!=null){ pyFee+=ly.fee; pyN++; }
+      if(ly&&ly.bs!=null){ pyBs+=ly.bs; pyHasBs=true; }
       var cls=r.violation?' bp-bk-viol':(r.needs?' bp-bk-over':'');
       h+='<div class="bp-bk-box'+cls+'">';
       h+='<div class="bp-bk-date"><b>'+_bpDay(r.d)+'</b><span>'+_escHtml(BP_VENUE_SHORT[r.venue]||r.venue)+'</span></div>';
@@ -579,8 +602,8 @@ function _bpRowsHtml(data, opts){
       h+=_bpStack(_escHtml(r.dj||'TBD'), ly&&ly.dj?_escHtml(ly.dj):(ly?'TBD':'No show'));
       h+=_bpStack($k(r.fee), ly&&ly.fee!=null?$k(ly.fee):'—');
       h+='<span><span class="bp-status '+(r.confirmed?'bp-status-conf':'bp-status-prop')+'">'+_escHtml(r.status||'No status')+'</span></span>';
-      h+=_bpExpectCell(exp.margin, 'pp-up');
-      h+=_bpExpectCell(exp.sales);
+      h+=_bpBsCell(r, ly);
+      h+=_bpRoiCell(r, ly);
       h+='</div></div>';
       if(!simple){
         h+='<div class="bp-bk-appr">'+_bpBadge(r.approval);
@@ -593,12 +616,15 @@ function _bpRowsHtml(data, opts){
     });
   });
   if(!any){
-    h+='<div class="bp-empty">No bookings over $20K in a month that exceeds its budget.</div>';
+    h+='<div class="bp-empty">No bookings over $5K.</div>';
   } else {
-    h+='<div class="bp-bk-box bp-bk-total"><div class="bp-bk-date"><b>Total</b><span>Over $20K</span></div><div class="bp-bk-lines"><div class="bp-bk-cols bp-bk-line bp-bk-now">';
+    var bsPct=now.hasBs&&pyHasBs&&pyBs?(now.bs-pyBs)/Math.abs(pyBs)*100:null;
+    h+='<div class="bp-bk-box bp-bk-total"><div class="bp-bk-date"><b>Total</b><span>Over $5K</span></div><div class="bp-bk-lines"><div class="bp-bk-cols bp-bk-line bp-bk-now">';
     h+=_bpStack(now.n+' bookings', '');
     h+=_bpStack($k(now.fee), pyN?$k(pyFee):'');
-    h+='<span></span><span></span><span></span>';
+    h+='<span></span>';
+    h+=_bpVsCell(now.hasBs?$k(now.bs):'—', pyHasBs?$k(pyBs):'—', _bpPctHtml(bsPct, false));
+    h+='<span></span>';
     h+='</div></div>'+(simple?'':'<div class="bp-bk-appr"></div>')+'</div>';
   }
   h+='</div>';
@@ -619,7 +645,7 @@ function _bpDeckSlideHtml(data, n, of){
   h+='<div class="bp-deck-body">';
   h+='<div class="bp-deck-sec bp-sec-1"><span>01</span>Budget vs pipeline<em>Budget and planned spend, then sales and margins versus LY</em></div>';
   h+=_bpSummaryHtml(data);
-  h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Bookings over $20K<em>Artist and prior year, fee and prior year, status, expected margin and sales versus LY</em></div>';
+  h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Bookings over $5K<em>Artist and prior year, fee and prior year, status, bottle service sales versus last year, ROI target versus last year</em></div>';
   h+=_bpRowsHtml(data, {noActions:true});
   h+='</div>';
   h+='<div class="bp-deck-ft"><span>Prepared '+_escHtml(_bpFmtDate(_bpNow()))+'</span><span>Riviera Dining Group · Entertainment</span></div>';
@@ -631,7 +657,7 @@ function _bpPlanHtml(data){
   h+=_bpSheetHead(data, data.months.length>1?'Three Month Booking Plan':'Entertainment Booking Plan vs Budget');
   h+='<div class="bp-deck-sec bp-sec-1"><span>01</span>Budget vs pipeline<em>Budget and planned spend, then sales and margins versus LY</em></div>';
   h+=_bpSummaryHtml(data);
-  h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Bookings over $20K<em>Artist and prior year, fee and prior year, status, expected margin and sales versus LY. Only months that exceed budget.</em></div>';
+  h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Bookings over $5K<em>Artist and prior year, fee and prior year, status, bottle service sales versus last year, ROI target versus last year</em></div>';
   h+=_bpRowsHtml(data);
   h+='</div>';
   return h;
@@ -1021,10 +1047,10 @@ function _bpPrintSheetHtml(data, onlyMonth){
   var rows=[];
   ms.forEach(function(m, mi){
     if(onlyMonth!=null && mi!==onlyMonth) return;
-    venues.forEach(function(v){ var c=data.grid[v][mi]; c.rows.forEach(function(r){ if(_bpHighlightRow(r, c)) rows.push({r:r, budget:c.budget}); }); });
+    venues.forEach(function(v){ var c=data.grid[v][mi]; c.rows.forEach(function(r){ if(_bpSectionRow(r)) rows.push({r:r, budget:c.budget}); }); });
   });
   rows.sort(function(a,b){ return a.r.d<b.r.d?-1:(a.r.d>b.r.d?1:(a.r.venue<b.r.venue?-1:1)); });
-  h+='<div class="bp-p-sec">Bookings over $20K in months over budget'+(onlyMonth!=null?' · '+_escHtml(ms[onlyMonth].label):'')+' · this year vs same weekday last year</div>';
+  h+='<div class="bp-p-sec">Bookings over $5K'+(onlyMonth!=null?' · '+_escHtml(ms[onlyMonth].label):'')+' · this year vs same weekday last year</div>';
   h+='<table class="bp-p-tbl bp-p-bk"><thead><tr><th colspan="2" class="l"></th><th colspan="5" class="bp-p-now bp-p-end">This year</th><th colspan="5" class="bp-p-ly bp-p-end">Last year (same weekday)</th><th colspan="2"></th></tr>'
     +'<tr><th class="l">Date</th><th class="l">Venue</th><th class="l">Artist</th><th>Fee</th><th class="l">Status</th><th>BS target</th><th class="bp-p-end">ROI</th>'
     +'<th class="l">Date</th><th class="l">Artist</th><th>Fee</th><th>BS actual</th><th class="bp-p-end">ROI</th><th>Month vs budget</th><th class="l">Approval</th></tr></thead><tbody>';
@@ -1040,7 +1066,7 @@ function _bpPrintSheetHtml(data, onlyMonth){
     else h+='<td colspan="5" class="l bp-p-lyc bp-p-end bp-muted">No show on this weekday last year</td>';
     h+='<td>'+_bpPosHtml(pos)+'</td><td class="l">'+_bpBadge(r.approval)+'</td></tr>';
   });
-  if(!rows.length) h+='<tr><td colspan="14" class="bp-muted">No bookings over $20K in a month that exceeds its budget.</td></tr>';
+  if(!rows.length) h+='<tr><td colspan="14" class="bp-muted">No bookings over $5K.</td></tr>';
   else h+='<tr class="bp-p-all"><td class="l" colspan="2"><b>Total</b></td><td class="l"><b>'+t.n+' bookings</b></td><td><b>'+$k(t.fee)+'</b></td><td></td><td><b>'+$k(t.hb?t.bs:null)+'</b></td><td class="bp-p-end"><b>'+_bpRoiHtml(t.fee>0&&t.hb?t.bs/t.fee:null)+'</b></td>'
     +'<td class="l bp-p-lyc" colspan="2">'+lt.n+' same weekdays</td><td class="bp-p-lyc">'+$k(lt.n?lt.fee:null)+'</td><td class="bp-p-lyc">'+$k(lt.hb?lt.bs:null)+'</td><td class="bp-p-lyc bp-p-end">'+_bpRoiHtml(lt.fee>0&&lt.hb?lt.bs/lt.fee:null)+'</td><td colspan="2"></td></tr>';
   h+='</tbody></table></div>';
@@ -1070,6 +1096,15 @@ function _bpRenderPage(html){
         inner.style.transform='scale('+s.toFixed(4)+')';
         inner.style.width=(100/s).toFixed(2)+'%';
         body.appendChild(inner);
+      } else if(body.querySelector('.mr-pdf-locs') && need>0 && room>need*1.08){
+        var up=Math.min(room/need*0.98, 1.85);
+        var grow=document.createElement('div');
+        while(body.firstChild) grow.appendChild(body.firstChild);
+        grow.style.transformOrigin='top center';
+        grow.style.transform='scale('+up.toFixed(4)+')';
+        grow.style.width=(100/up).toFixed(2)+'%';
+        grow.style.margin='0 auto';
+        body.appendChild(grow);
       }
     }
     return _bpPdfCanvas(stage.firstChild);
