@@ -110,10 +110,11 @@ function mrPct(n){
   if(n==null||!isFinite(+n)) return '—';
   return (n*100).toFixed(1)+'%';
 }
-function mrPp(now, py){
+function mrPp(now, py, lowerBetter){
   if(now==null||py==null||!isFinite(+now)||!isFinite(+py)) return {text:'—', cls:''};
   var pp=(now-py)*100;
-  var cls=pp>0.05?'mr-pos':(pp<-0.05?'mr-neg':'');
+  var up=pp>0.05, down=pp<-0.05;
+  var cls=(lowerBetter?down:up)?'mr-pos':((lowerBetter?up:down)?'mr-neg':'');
   var sign=pp>0?'+':'';
   return {text:sign+pp.toFixed(1)+' pp', cls:cls};
 }
@@ -157,25 +158,28 @@ function mrVarHtml(v){
   return '<b class="'+v.cls+'">'+v.text+'</b>';
 }
 function mrLine(label, now, py, kind){
-  var nowTxt=kind==='pct'?mrPct(now):(kind==='roi'?mrPct(now):mrMoney(now));
-  var pyTxt=kind==='pct'?mrPct(py):(kind==='roi'?mrPct(py):mrMoney(py));
-  var gap=kind==='money'||kind==='spend'?mrVar(now, py):mrPp(now, py);
+  var nowTxt=kind==='pct'||kind==='live'||kind==='roi'?mrPct(now):mrMoney(now);
+  var pyTxt=kind==='pct'||kind==='live'||kind==='roi'?mrPct(py):mrMoney(py);
+  var gap=kind==='money'||kind==='spend'?mrVar(now, py):mrPp(now, py, kind==='live');
   return '<div class="mr-line"><span>'+label+'</span><b>'+nowTxt+'</b><b>'+pyTxt+'</b>'+mrVarHtml(gap)+'</div>';
+}
+function mrHeads(year){
+  return '<div class="mr-line mr-head"><span></span><b>'+year+'</b><b>'+(year-1)+'</b><b>Var</b></div>';
 }
 function mrArrow(label, now, py, kind){
   var nowTxt=kind==='roi'?mrPct(now):mrMoney(now);
   var pyTxt=py==null?'—':(kind==='roi'?mrPct(py):mrMoney(py));
   return '<div class="mr-sub"><i class="bp-arr"></i><span>'+label+'</span><b>'+nowTxt+'</b><b>'+pyTxt+'</b></div>';
 }
-function mrCardHtml(p){
+function mrCardHtml(p, year){
   var n=p.now||{}, y=p.py||{};
   var h='<article class="mr-card"><h3>'+_escHtml(p.label)+'</h3>';
+  h+=mrHeads(year);
   h+=mrLine('Total Sales', n.sales, y.sales, 'money');
   h+=mrArrow('Bottle Service Sales', p.beat.bs, p.pyBeat.bs, 'money');
-  h+=mrArrow('ROI beat', p.beat.rate, p.pyBeat.rate, 'roi');
   h+=mrLine('ROI % Beat', p.beat.rate, p.pyBeat.rate, 'roi');
   h+=mrLine('Live Entertainment Spending', n.live, y.live, 'spend');
-  h+=mrLine('Live Entertainment Margins', n.livePct, y.livePct, 'pct');
+  h+=mrLine('Live Entertainment Margins', n.livePct, y.livePct, 'live');
   h+=mrLine('EBITDA Margins', n.netPct, y.netPct, 'pct');
   if(!p.py) h+='<div class="mr-note">No 2025 P&amp;L for this location in the workbook.</div>';
   h+='</article>';
@@ -204,7 +208,7 @@ function mrRenderPage(){
   h+='</select></label><button type="button" class="mr-go" onclick="mrExportPdf()">Export PDF</button>';
   h+='<span class="mr-note">P&amp;L from the workbook. Bottle service and ROI beat from the calendar. October 2026 is period 10, through '+_escHtml(meta.range||'')+'.</span></div>';
   h+='<div class="mr-grid">';
-  pack.venues.forEach(function(p){ h+=mrCardHtml(p); });
+  pack.venues.forEach(function(p){ h+=mrCardHtml(p, meta.year); });
   h+='</div>';
   pack.venues.forEach(function(p){
     h+='<div class="mr-card"><h3>'+_escHtml(p.label)+'</h3>';
@@ -215,10 +219,13 @@ function mrRenderPage(){
 }
 function mrPdfVar(v){ return '<b class="'+v.cls+'">'+v.text+'</b>'; }
 function mrPdfRow(label, now, py, kind){
-  var nowTxt=kind==='pct'||kind==='roi'?mrPct(now):mrMoney(now);
-  var pyTxt=kind==='pct'||kind==='roi'?mrPct(py):mrMoney(py);
-  var gap=kind==='money'||kind==='spend'?mrVar(now, py):mrPp(now, py);
+  var nowTxt=kind==='pct'||kind==='live'||kind==='roi'?mrPct(now):mrMoney(now);
+  var pyTxt=kind==='pct'||kind==='live'||kind==='roi'?mrPct(py):mrMoney(py);
+  var gap=kind==='money'||kind==='spend'?mrVar(now, py):mrPp(now, py, kind==='live');
   return '<div class="mr-pdf-row"><span>'+label+'</span><b>'+nowTxt+'</b><b>'+pyTxt+'</b>'+mrPdfVar(gap)+'</div>';
+}
+function mrPdfHeads(year){
+  return '<div class="mr-pdf-row mr-pdf-head"><span></span><b>'+year+'</b><b>'+(year-1)+'</b><b>Var</b></div>';
 }
 function mrPdfArrow(label, now, py, kind){
   var nowTxt=kind==='roi'?mrPct(now):mrMoney(now);
@@ -226,36 +233,39 @@ function mrPdfArrow(label, now, py, kind){
 }
 function mrComparePage(pack){
   var meta=pack.meta;
-  var h='<div class="bp-page bp-deck"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">Monthly Live Entertainment Recap</div><b>'+_escHtml(meta.label)+'</b><em>'+_escHtml(meta.range||'')+' · vs 2025</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body"><div class="mr-pdf-locs">';
+  var h='<div class="bp-page bp-deck"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">Monthly Live Entertainment Recap</div><b>'+_escHtml(meta.label)+'</b><em>'+_escHtml(meta.range||'')+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body"><div class="mr-pdf-locs">';
   pack.venues.forEach(function(p){
     var n=p.now||{}, y=p.py||{};
     h+='<section class="mr-pdf-loc"><h3>'+_escHtml(p.label)+'</h3>';
+    h+=mrPdfHeads(meta.year);
     h+=mrPdfRow('Total Sales', n.sales, y.sales, 'money');
     h+=mrPdfArrow('Bottle Service Sales', p.beat.bs, p.pyBeat.bs, 'money');
-    h+=mrPdfArrow('ROI beat', p.beat.rate, p.pyBeat.rate, 'roi');
     h+=mrPdfRow('ROI % Beat', p.beat.rate, p.pyBeat.rate, 'roi');
-    h+=mrPdfRow('Live Entertainment', n.live, y.live, 'spend');
-    h+=mrPdfRow('Live Ent. margins', n.livePct, y.livePct, 'pct');
+    h+=mrPdfRow('Live Entertainment Spending', n.live, y.live, 'spend');
+    h+=mrPdfRow('Live Ent. margins', n.livePct, y.livePct, 'live');
     h+=mrPdfRow('EBITDA margins', n.netPct, y.netPct, 'pct');
     h+='</section>';
   });
   h+='</div></div></div>';
   return h;
 }
-function mrDetailPage(p, meta, slice, pageNo, pageCount){
-  var n=p.now||{};
-  var h='<div class="bp-page bp-deck"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">'+_escHtml(p.label)+'</div><b>'+_escHtml(meta.label)+'</b><em>'+_escHtml(meta.range||'')+(pageCount>1?' · '+pageNo+' of '+pageCount:'')+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body">';
+function mrLy(text){ return '<em>'+text+'</em>'; }
+function mrDetailPage(p, meta){
+  var n=p.now||{}, y=p.py||{};
+  var pyY=meta.year-1;
+  var h='<div class="bp-page bp-deck"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">'+_escHtml(p.label)+'</div><b>'+_escHtml(meta.label)+'</b><em>'+_escHtml(meta.range||'')+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body">';
   h+='<div class="mr-pdf-metrics">';
-  h+='<div><span>Sales</span><b>'+mrMoney(n.sales)+'</b></div>';
-  h+='<div><span>BS Sales</span><b>'+mrMoney(p.beat.bs)+'</b></div>';
-  h+='<div><span>ROI Beat</span><b>'+mrPct(p.beat.rate)+'</b></div>';
-  h+='<div><span>Live E margins</span><b>'+mrPct(n.livePct)+'</b></div>';
-  h+='<div><span>Margins</span><b>'+mrPct(n.netPct)+'</b></div>';
+  h+='<div><span>Sales</span><b>'+mrMoney(n.sales)+'</b>'+mrLy(pyY+' '+mrMoney(y.sales))+'</div>';
+  h+='<div><span>BS Sales</span><b>'+mrMoney(p.beat.bs)+'</b>'+mrLy(pyY+' '+mrMoney(p.pyBeat.bs))+'</div>';
+  h+='<div><span>ROI Beat</span><b>'+mrPct(p.beat.rate)+'</b>'+mrLy(pyY+' '+mrPct(p.pyBeat.rate))+'</div>';
+  h+='<div><span>Live E margins</span><b>'+mrPct(n.livePct)+'</b>'+mrLy(pyY+' '+mrPct(y.livePct))+'</div>';
+  h+='<div><span>Margins</span><b>'+mrPct(n.netPct)+'</b>'+mrLy(pyY+' '+mrPct(y.netPct))+'</div>';
   h+='</div>';
   h+='<table class="mr-pdf-tbl"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI actual</th><th>ROI target</th><th>Sales for the day</th><th>Margin</th></tr></thead><tbody>';
-  if(!slice.length) h+='<tr><td class="l" colspan="7">No performances this month.</td></tr>';
-  slice.forEach(function(row){
-    h+='<tr><td class="l"><b>'+_escHtml(mrDayLabel(row.d))+'</b></td><td class="l">'+_escHtml(row.dj)+'</td><td>'+mrMoney(row.fee)+'</td><td>'+(typeof rx==='function'?rx(row.roiA):'—')+'</td><td>'+(typeof rx==='function'?rx(row.roiT):'—')+'</td><td>'+mrMoney(row.sales)+'</td><td>'+mrPct(row.margin&&row.margin.margin)+'</td></tr>';
+  if(!p.rows.length) h+='<tr><td class="l" colspan="7">No performances this month.</td></tr>';
+  p.rows.forEach(function(row){
+    var miss=row.roiA!=null&&row.roiT!=null&&row.roiA+1e-9<row.roiT;
+    h+='<tr'+(miss?' class="mr-miss"':'')+'><td class="l"><b>'+_escHtml(mrDayLabel(row.d))+'</b></td><td class="l">'+_escHtml(row.dj)+'</td><td>'+mrMoney(row.fee)+'</td><td>'+(typeof rx==='function'?rx(row.roiA):'—')+'</td><td>'+(typeof rx==='function'?rx(row.roiT):'—')+'</td><td>'+mrMoney(row.sales)+'</td><td>'+mrPct(row.margin&&row.margin.margin)+'</td></tr>';
   });
   h+='</tbody></table></div></div>';
   return h;
@@ -282,18 +292,8 @@ function mrBuildPdf(){
         return _bpRenderPage(_bpCoverHtml('Monthly Live Entertainment Recap', meta.label, p.label));
       }).then(function(cv){
         canvases.push(cv);
-        var size=12;
-        var pages=Math.max(1, Math.ceil(p.rows.length/size));
-        var inner=Promise.resolve();
-        for(var i=0;i<pages;i++){
-          (function(i){
-            inner=inner.then(function(){
-              return _bpRenderPage(mrDetailPage(p, meta, p.rows.slice(i*size, (i+1)*size), i+1, pages));
-            }).then(function(cv){ canvases.push(cv); });
-          })(i);
-        }
-        return inner;
-      });
+        return _bpRenderPage(mrDetailPage(p, meta));
+      }).then(function(cv){ canvases.push(cv); });
     });
     return chain;
   }).then(function(){

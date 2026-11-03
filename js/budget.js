@@ -382,15 +382,10 @@ function renderBudgetGuestDjTable(){
         h+='<input class="bgt-cat-inp" type="number" inputmode="decimal" data-cat="'+oid+'" data-mm="'+mm+'" value="'+(spend||'')+'" placeholder="0" onchange="onBgtCatSpendEdit(this)" onkeydown="if(event.key===\'Enter\'){this.blur();}">';
         h+='</div>';
       } else {
-        h+=bgtMoneyCell(spend||0,budget,variance,'under');
+        h+='<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+$k(spend||0)+'</div></div>';
       }
     }
-    if(row.editable){
-      h+='<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+$k(ytSpend)+'</div></div>';
-    } else {
-      var ytVar=hasB?(ytBudget-ytSpend):null;
-      h+=bgtMoneyCell(ytSpend,hasB?ytBudget:null,ytVar,'under');
-    }
+    h+='<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+$k(ytSpend)+'</div></div>';
   });
   /* Total / Budget / Variance footer rows */
   var ytTotSpend=0, ytTotBudget=0, ytHasB=false;
