@@ -47,43 +47,31 @@ recalcAllSchedTargets(); /* boot */
 
 /*    Sidebar                                                      */
 function buildSidebar() {
-  var venues = listActiveVenues();
-  var html = '<div class="sb-section-lbl">Views</div>';
-  [
+  var html = '';
+  function section(label, items){
+    html += '<div class="sb-section-lbl">'+label+'</div>';
+    items.forEach(function(b){
+      html += '<button class="sb-btn" data-view="'+b.id+'" onclick="setView(\''+b.id+'\')">'
+            + '<span class="sb-ic">'+b.ic+'</span>'+b.lb+'</button>';
+    });
+  }
+  section('View', [
     {id:'calendar',   ic:'&#9783;',  lb:'Calendar'},
     {id:'summary',    ic:'&#9776;',  lb:'Bottle Service Monthly Summary'},
-    {id:'allshows',   ic:'&#9776;',  lb:'All Shows'},
     {id:'leaderboard',ic:'&#9650;',  lb:'ROI Ranking'},
-    {id:'budget',     ic:'&#36;',    lb:'Budget'},
-    {id:'rolling',    ic:'&#9776;',  lb:'Three Month Rolling Average'},
-    {id:'accounting', ic:'&#9998;',  lb:'Accounting'},
-  ].forEach(function(b) {
-    html += '<button class="sb-btn" data-view="'+b.id+'" onclick="setView(\''+b.id+'\')">'
-          + '<span class="sb-ic">'+b.ic+'</span>'+b.lb+'</button>';
-  });
-  html += '<div class="sb-section-lbl" style="margin-top:8px">Forecasting &amp; Results</div>';
-  [
-    {id:'vip',        ic:'&#9889;', lb:'Weekly Flash'},
-    {id:'forecast',   ic:'&#9650;',  lb:'Forecast'},
-    {id:'basel',      ic:'',         lb:'BASEL Tracker', sub:true},
-    {id:'roi-rules',  ic:'&#127919;', lb:'Venue ROI Rules'},
-  ].forEach(function(b) {
-    html += '<button class="sb-btn'+(b.sub?' sb-sub':'')+'" data-view="'+b.id+'" onclick="setView(\''+b.id+'\')">'
-          + (b.ic?'<span class="sb-ic">'+b.ic+'</span>':'')+b.lb+'</button>';
-  });
-  html += '<button class="sb-btn" data-view="3d" onclick="setView(\'3d\')">'
-        + '<span class="sb-ic">&#127760;</span>3D View</button>';
-  html += '<div class="sb-section-lbl" style="margin-top:8px">Admin</div>';
-  html += '<button class="sb-btn" data-view="ebitda" onclick="setView(\'ebitda\')">'
-        + '<span class="sb-ic">&#128202;</span>EBITDA Access</button>';
-  html += '<button class="sb-btn" data-view="system" onclick="setView(\'system\')">'
-        + '<span class="sb-ic">&#9881;</span>Sanity</button>';
-  html += '<div class="sb-section-lbl">Venues</div>';
-  venues.forEach(function(v) {
-    var c=venueColor(v);
-    html += '<button class="sb-ven-btn'+(v===curV?' on':'')+'" data-v="'+v+'" onclick="selVenue(\''+v+'\')" style="border-left:3px solid '+c.a+'">'
-          + '<span class="sb-dot" style="background:'+c.a+'"></span>' + v + '</button>';
-  });
+    {id:'accounting', ic:'&#9998;',  lb:'Accounting'}
+  ]);
+  section('Reporting', [
+    {id:'vip',      ic:'&#9889;',  lb:'Weekly Flash'},
+    {id:'forecast', ic:'&#9650;',  lb:'Forecast'},
+    {id:'rolling',  ic:'&#9776;',  lb:'Three Month Plan'},
+    {id:'allshows', ic:'&#9776;',  lb:'Monthly Recap'}
+  ]);
+  section('Admin', [
+    {id:'roi-rules', ic:'&#127919;', lb:'Venue ROI Rules'},
+    {id:'3d',        ic:'&#127760;', lb:'3D View'},
+    {id:'system',    ic:'&#9881;',   lb:'Sanity'}
+  ]);
   document.getElementById('sidebar').innerHTML = html;
 }
 
