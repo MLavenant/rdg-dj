@@ -5,7 +5,7 @@ import json
 import re
 from openpyxl import load_workbook
 
-SRC = r"c:\Users\MatthiasLavenant\Downloads\DJ DATA (1).xlsx"
+SRC = r"c:\Users\MatthiasLavenant\Downloads\DJ DATA (2).xlsx"
 OUT = r"C:\Users\MatthiasLavenant\Documents\rdg-dj-dashboard\data\dj-monthly-recap.js"
 
 PL_SHEETS = [
@@ -357,7 +357,7 @@ def main():
         print(sheet, "model", model)
 
     payload = {
-        "source": "DJ DATA (1).xlsx",
+        "source": "DJ DATA (2).xlsx",
         "venues": venues,
     }
     text = "window.DJ_MONTHLY_RECAP=" + json.dumps(payload, separators=(",", ":")) + ";\n"
