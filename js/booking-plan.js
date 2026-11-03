@@ -179,6 +179,7 @@ function _bpVenueMonth(venue, m){
     if(tgt&&tgt.bs_m) bsT+=+tgt.bs_m;
   });
   var planned=confirmed+proposed;
+  var forecast=(typeof bgtMonthTotalSpend==='function')?bgtMonthTotalSpend(venue, String(m.year), m.mm):planned;
   /* Every booking is judged on the whole month (confirmed + proposed vs budget), not a running total. */
   var monthOver=budget!=null ? Math.max(0, planned-budget) : 0;
   rows.forEach(function(row){
@@ -199,8 +200,8 @@ function _bpVenueMonth(venue, m){
   });
   return {venue:venue, month:m, budget:budget, confirm:conf||null,
     confirmStale:!!(conf && budget!=null && +conf.amount!==+budget),
-    confirmed:confirmed, proposed:proposed, planned:planned,
-    remaining:budget!=null?budget-planned:null, bsT:bsT, py:_bpPriorTotals(venue, m),
+    confirmed:confirmed, proposed:proposed, planned:planned, forecast:forecast,
+    remaining:budget!=null?budget-forecast:null, bsT:bsT, py:_bpPriorTotals(venue, m),
     rows:rows, exc:exc};
 }
 function _bpVenueList(){
@@ -352,8 +353,9 @@ function _bpFinLabsHtml(){
 function _bpPlanBoxHtml(c, actual){
   var over=c.remaining!=null && c.remaining<0;
   var under=c.remaining!=null && c.remaining>=0;
+  var shown=c.forecast!=null?c.forecast:c.planned;
   return '<div class="bp-planned-box'+(over?' bp-planned-over':(under?' bp-planned-under':''))+'">'
-    +'<div class="bp-fc-row"><b>'+$k(c.planned)+'</b></div>'
+    +'<div class="bp-fc-row"><b>'+$k(shown)+'</b></div>'
     +'<div class="bp-fc-row">'+_bpMoneyVar(c.remaining)+'</div>'
     +'<div class="bp-split"><div class="bp-split-line"><b>'+(actual?'&nbsp;':$k(c.confirmed))+'</b></div><div class="bp-split-line"><b>'+(actual?'&nbsp;':$k(c.proposed))+'</b></div></div></div>';
 }
@@ -421,12 +423,13 @@ function renderBookingPlan(){
 function _bpAddTotals(t, c){
   if(c.budget!=null){ t.budget=(t.budget||0)+c.budget; t.hasB=true; }
   t.confirmed+=c.confirmed; t.proposed+=c.proposed; t.bsT+=c.bsT;
+  t.forecast=(t.forecast||0)+(c.forecast!=null?c.forecast:(c.planned||0));
   if(c.py){
     if(c.py.fee!=null){ t.pyFee=(t.pyFee||0)+c.py.fee; t.hasPyFee=true; }
     if(c.py.bs!=null){ t.pyBs=(t.pyBs||0)+c.py.bs; t.hasPyBs=true; }
   }
 }
-function _bpBlankTot(){ return {budget:0,hasB:false,confirmed:0,proposed:0,bsT:0,pyFee:0,hasPyFee:false,pyBs:0,hasPyBs:false}; }
+function _bpBlankTot(){ return {budget:0,hasB:false,confirmed:0,proposed:0,forecast:0,bsT:0,pyFee:0,hasPyFee:false,pyBs:0,hasPyBs:false}; }
 function _bpActualForVenues(venues, prev){
   if(venues.length===1) return _bpVenueMonth(venues[0], prev);
   var bucket=_bpBlankTot();
@@ -505,9 +508,10 @@ function _bpSpanRange(months){
 }
 function _bpTotCard(t, label, range){
   var planned=t.confirmed+t.proposed;
+  var shown=t.forecast!=null?t.forecast:planned;
   return {venue:'', month:{label:label, range:range||'', year:0, mm:''}, budget:t.hasB?t.budget:null,
-    confirmed:t.confirmed, proposed:t.proposed, planned:planned,
-    remaining:t.hasB?t.budget-planned:null, bsT:t.bsT,
+    confirmed:t.confirmed, proposed:t.proposed, planned:planned, forecast:shown,
+    remaining:t.hasB?t.budget-shown:null, bsT:t.bsT,
     py:{fee:t.hasPyFee?t.pyFee:null, bs:t.hasPyBs?t.pyBs:null, label:'prior year'},
     exc:null, confirm:null, isTotal:true};
 }
@@ -575,7 +579,7 @@ function _bpRowsHtml(data, opts){
   opts=opts||{};
   var simple=!!opts.noActions;
   var h='<div class="bp-bk'+(simple?' bp-bk-simple':'')+'">';
-  h+='<div class="bp-bk-hd"><span>Date</span><div class="bp-bk-cols"><span>Artist</span><span>Fee</span><span>Status</span><span class="r">Bottle service sales vs PY</span><span class="r">ROI target vs ROI last year</span></div>'+(simple?'':'<span>Approval</span>')+'</div>';
+  h+='<div class="bp-bk-hd"><span>Date</span><div class="bp-bk-cols"><span>Artist</span><span>Fee</span><span>Status</span><span class="r">Bottle service sales vs PY</span></div>'+(simple?'':'<span>Approval</span>')+'</div>';
   var any=false;
   var now={n:0, fee:0, bs:0, hasBs:false};
   var pyFee=0, pyN=0, pyBs=0, pyHasBs=false;
@@ -606,7 +610,6 @@ function _bpRowsHtml(data, opts){
       h+=_bpStack($k(r.fee), ly&&ly.fee!=null?$k(ly.fee):'—');
       h+='<span><span class="bp-status '+(r.confirmed?'bp-status-conf':'bp-status-prop')+'">'+_escHtml(r.status||'No status')+'</span></span>';
       h+=_bpBsCell(r, ly);
-      h+=_bpRoiCell(r, ly);
       h+='</div></div>';
       if(!simple){
         h+='<div class="bp-bk-appr">'+_bpBadge(r.approval);
@@ -627,7 +630,6 @@ function _bpRowsHtml(data, opts){
     h+=_bpStack($k(now.fee), pyN?$k(pyFee):'');
     h+='<span></span>';
     h+=_bpVsCell(now.hasBs?$k(now.bs):'—', pyHasBs?$k(pyBs):'—', _bpPctHtml(bsPct, false));
-    h+='<span></span>';
     h+='</div></div>'+(simple?'':'<div class="bp-bk-appr"></div>')+'</div>';
   }
   h+='</div>';
@@ -648,7 +650,7 @@ function _bpDeckSlideHtml(data, n, of){
   h+='<div class="bp-deck-body">';
   h+='<div class="bp-deck-sec bp-sec-1"><span>01</span>Budget vs pipeline<em>Budget and planned spend, then sales and margins versus LY</em></div>';
   h+=_bpSummaryHtml(data);
-  h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Bookings over $5K<em>Artist and prior year, fee and prior year, status, bottle service sales versus last year, ROI target versus last year</em></div>';
+  h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Bookings over $5K<em>Artist and prior year, fee and prior year, status, bottle service sales versus last year</em></div>';
   h+=_bpRowsHtml(data, {noActions:true});
   h+='</div>';
   h+='<div class="bp-deck-ft"><span>Prepared '+_escHtml(_bpFmtDate(_bpNow()))+'</span><span>Riviera Dining Group · Entertainment</span></div>';
@@ -660,7 +662,7 @@ function _bpPlanHtml(data){
   h+=_bpSheetHead(data, data.months.length>1?'Three Month Booking Plan':'Entertainment Booking Plan vs Budget');
   h+='<div class="bp-deck-sec bp-sec-1"><span>01</span>Budget vs pipeline<em>Budget and planned spend, then sales and margins versus LY</em></div>';
   h+=_bpSummaryHtml(data);
-  h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Bookings over $5K<em>Artist and prior year, fee and prior year, status, bottle service sales versus last year, ROI target versus last year</em></div>';
+  h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Bookings over $5K<em>Artist and prior year, fee and prior year, status, bottle service sales versus last year</em></div>';
   h+=_bpRowsHtml(data);
   h+='</div>';
   return h;
