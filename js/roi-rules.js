@@ -1182,13 +1182,47 @@ function renderRoiSpCustomEditor(ev){
   var seasons=['High','Low'];
   if(dateStr&&typeof seasonFor==='function') seasons=[seasonFor(rules, dateStr)];
   var venue=(ev&&ev.venue)||meta.venue||'Casa Neos Beach Club';
-  var floorPlan=(ev&&ev.floorPlan)||meta.floorPlan||'auto';
+  var assigned=(typeof roiAssignedFloorPlan==='function')?roiAssignedFloorPlan(venue, dateStr):null;
+  var floorPlan=(assigned&&assigned.key&&assigned.key!=='auto')?assigned.key:((ev&&ev.floorPlan)||meta.floorPlan||'auto');
   var tmplKey=(ev&&ev.rulesVenue)||'';
   var countsKey=(tmplKey&&tmplKey!=='__custom__')?tmplKey:venue;
-  if(floorPlan==='auto' && rules.floorPlan) floorPlan=rules.floorPlan;
+  if((!assigned||!assigned.key||assigned.key==='auto') && floorPlan==='auto' && rules.floorPlan) floorPlan=rules.floorPlan;
+  var planKey=(assigned&&assigned.tableKey)||floorPlan;
+  if(planKey&&planKey!=='auto'&&typeof roiApplyFloorPlanToRules==='function'){
+    var priorCats={};
+    (rules.tableCats||[]).forEach(function(c){ priorCats[roiNormTierName(c)]=true; });
+    var alreadyOnPlan=rules.floorPlan===planKey||(assigned&&(rules.floorPlan===assigned.key||rules.floorPlan===assigned.tableKey));
+    rules=JSON.parse(JSON.stringify(rules));
+    roiApplyFloorPlanToRules(rules, planKey);
+    var minsKey=(assigned&&assigned.key==='casa-neos-beach-club-basel')?assigned.key:(assigned&&assigned.tableKey?assigned.tableKey:planKey);
+    var seeded=(typeof roiFloorPlanTierMins==='function')?roiFloorPlanTierMins(minsKey, dateStr):{};
+    (rules.tiers||[]).forEach(function(tier){
+      ['High','Low'].forEach(function(season){
+        Object.keys(tier[season]||{}).forEach(function(day){
+          var dayData=tier[season][day];
+          if(!dayData) return;
+          if(!dayData.tables) dayData.tables={};
+          (rules.tableCats||[]).forEach(function(c){
+            var k=roiNormTierName(c);
+            if(alreadyOnPlan&&priorCats[k]) return;
+            if(seeded[k]!=null) dayData.tables[c]=seeded[k];
+          });
+        });
+      });
+    });
+    if(window._roiSpEditing) window._roiSpEditing.floorPlan='auto';
+  }
+  var countPlan=(assigned&&assigned.tableKey)||floorPlan;
   var countsMeta=typeof roiTableCountsForRulesVenue==='function'
-    ? roiTableCountsForRulesVenue(countsKey, {dateStr:dateStr, floorPlan:floorPlan})
+    ? roiTableCountsForRulesVenue(countsKey, {dateStr:dateStr, floorPlan:countPlan})
     : {counts:{}, badge:'', total:0};
+  if(assigned&&assigned.label) countsMeta.badge=assigned.label;
+  if(assigned&&assigned.label){
+    var planHint=document.getElementById('roiSpTierHint');
+    if(planHint && planHint.textContent.indexOf(assigned.label)<0){
+      planHint.textContent=planHint.textContent+' Floor plan: '+assigned.label+'.';
+    }
+  }
   var counts=countsMeta.counts||{};
   var h='';
   h+='<div hidden data-roi-counts=\''+JSON.stringify(counts).replace(/'/g,'&#39;')+'\' data-roi-cats=\''+JSON.stringify(rules.tableCats||[]).replace(/'/g,'&#39;')+'\'></div>';

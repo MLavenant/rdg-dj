@@ -685,6 +685,56 @@ function roiFloorPlanDropFor(venue, dateStr){
   });
   return best;
 }
+/* Floor plan actually assigned to a venue on a date: the dated drop (one-day or a range
+   such as Art Basel) wins. Built-in date rules are only the fallback. */
+function roiAssignedFloorPlan(venue, dateStr){
+  if(typeof ensureDefaultRoiFloorPlans==='function') ensureDefaultRoiFloorPlans();
+  var drop=(typeof roiFloorPlanDropFor==='function')?roiFloorPlanDropFor(venue, dateStr):null;
+  if(drop){
+    var preset=drop.preset||'';
+    var tableKey='';
+    var label=drop.label||'';
+    if(drop.plan&&drop.plan.tables&&drop.plan.tables.length&&typeof fv3dRegisterDropPlan==='function'){
+      var grabbed=fv3dRegisterDropPlan(drop._uid?drop:Object.assign({_uid:drop._uid||('drop-'+dateStr)}, drop));
+      if(grabbed&&grabbed.tableKey){
+        tableKey=grabbed.tableKey;
+        label=label||grabbed.label||grabbed.badge||'';
+      }
+    }
+    if(!tableKey&&preset&&typeof fv3dPresetFor==='function'){
+      var pre=fv3dPresetFor(preset);
+      if(pre){
+        tableKey=pre.tableKey||preset;
+        label=label||pre.label||pre.badge||preset;
+      }
+    }
+    if(!tableKey) tableKey=preset;
+    return {key:preset||tableKey, tableKey:tableKey, label:label||tableKey||'Floor plan', drop:drop};
+  }
+  var modelKey=typeof fv3dKeyForVenue==='function'?fv3dKeyForVenue(venue):null;
+  if(modelKey==='casa-neos-beach-club'&&typeof isCnbcSummerFloor==='function'&&isCnbcSummerFloor(dateStr)){
+    return {key:'casa-neos-beach-club-summer', tableKey:'casa-neos-beach-club-summer', label:'Sunset Rituals rooftop', drop:null};
+  }
+  if(modelKey==='casa-neos-lounge'&&typeof isCnlOctFloor==='function'&&isCnlOctFloor(dateStr)){
+    return {key:'casa-neos-lounge-oct', tableKey:'casa-neos-lounge-oct', label:'Oct 1 floor', drop:null};
+  }
+  if(modelKey==='casa-neos-lounge'&&typeof isCnlNewFloor==='function'&&isCnlNewFloor(dateStr)){
+    return {key:'casa-neos-lounge-new', tableKey:'casa-neos-lounge-new', label:'After Dark remodel', drop:null};
+  }
+  return {key:'auto', tableKey:modelKey||'', label:'', drop:null};
+}
+/* Table minimums on the assigned floor plan. Art Basel nights use that night's rate card. */
+function roiFloorPlanTierMins(tableKey, dateStr){
+  var tiers=(typeof FV_3D_TABLES!=='undefined'&&tableKey)?(FV_3D_TABLES[tableKey]||[]):[];
+  var night=(tableKey==='casa-neos-beach-club-basel'&&typeof FV_CNBC_BASEL_NIGHT_MINS!=='undefined')
+    ? FV_CNBC_BASEL_NIGHT_MINS[dateStr] : null;
+  var mins={};
+  tiers.forEach(function(t){
+    var k=roiNormTierName(t.name);
+    mins[k]=night&&night[k]!=null?+night[k]:+(t.minimum||0);
+  });
+  return mins;
+}
 /* Register a scraped plan payload onto the in-memory FV_3D_* maps (no redeploy needed). */
 function fv3dRegisterDropPlan(drop){
   if(!drop||!drop._uid||!drop.plan||!drop.plan.tables||!drop.plan.tables.length) return null;
