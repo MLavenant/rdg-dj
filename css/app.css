@@ -2186,7 +2186,18 @@ body.mobile-mode .sb-btn{min-height:44px}
 .mr-pdf-metrics em{display:block;margin-top:4px;font-style:normal;font-size:12px;font-weight:700;color:#64748b}
 .mr-head b,.mr-pdf-head b{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#64748b}
 .mr-pdf-head b{font-size:13px}
-.bp-deck-body:has(.mr-pdf-locs){display:block}
+.bp-deck-body:has(.mr-pdf-locs){display:flex;flex:1;align-items:center;justify-content:center;min-height:0}
+.bp-deck.mr-fill{height:1236px;padding:10px 36px 28px}
+.mr-fill .bp-deck-hd{align-items:center;padding-bottom:8px}
+.mr-fill .bp-deck-hd b{font-size:42px}
+.mr-fill .bp-deck-hd img{height:112px}
+.mr-fill .mr-pdf-locs{width:100%;height:auto;gap:24px;align-items:stretch}
+.mr-fill .mr-pdf-loc{height:auto;box-sizing:border-box;justify-content:flex-start;padding:26px 22px 28px}
+.mr-fill .mr-pdf-loc h3{font-size:32px;margin:0 0 14px}
+.mr-fill .mr-pdf-row{font-size:26px;line-height:1.25;padding:8px 0}
+.mr-fill .mr-pdf-row span{font-size:17px;white-space:nowrap}
+.mr-fill .mr-pdf-row b:nth-of-type(1){box-shadow:inset -1px 0 0 #94a3b8;padding-right:16px}
+.mr-fill .mr-pdf-sub{font-size:16px;padding-top:2px}
 .mr-pdf-locs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:start}
 .mr-pdf-loc{border:1px solid #e2e8f0;border-radius:12px;padding:8px 12px;display:flex;flex-direction:column}
 .mr-shows tr.mr-miss td,.mr-pdf-tbl tr.mr-miss td{background:#fde8e8;color:#1e293b}

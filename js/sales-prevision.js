@@ -37,32 +37,41 @@ function spBlendRoi(cell){
   if(cell.sunN>0 && cell.sun!=null){ sum+=cell.sun*cell.sunN; n+=cell.sunN; }
   return n?sum/n:null;
 }
-/* Tier + month + weekday, then tier + weekday, then the tier's blended average,
-   then the nearest tier that has history. Only Saturday and Sunday have history. */
+/* The month is the calendar's fiscal month, the same one the calendar grid uses. */
+function spRateMonth(date){
+  if(typeof fiscalInfoForDate==='function'){
+    var info=fiscalInfoForDate(date);
+    if(info&&info.monthIndex!=null) return String(info.monthIndex+1);
+  }
+  return String(_parseYmd(date).getMonth()+1);
+}
+/* Month + tier + weekday, then that weekday for the tier. No invented neighbor tier. */
 function spRoi(venue, fee, date){
   var v=spVenue(venue);
   var tiers=v&&v.tiers;
   if(!tiers||!(fee>0)) return null;
   var idx=spTierIndex(tiers, fee);
   if(idx<0) return null;
-  var d=_parseYmd(date), wd=d.getDay(), month=String(d.getMonth()+1);
-  var order=tiers.order;
-  var label=order[idx];
+  var d=_parseYmd(date), wd=d.getDay(), month=spRateMonth(date);
+  var label=tiers.order[idx];
   var roi=spDayRoi((tiers.monthly[label]||{})[month], wd);
   if(roi!=null) return {roi:roi, rule:'tier, month and day', tier:label};
   roi=spDayRoi(tiers.overall[label], wd);
-  if(roi!=null) return {roi:roi, rule:'tier and day average', tier:label};
-  roi=spBlendRoi(tiers.overall[label]);
-  if(roi!=null) return {roi:roi, rule:'tier average', tier:label};
-  for(var step=1;step<order.length;step++){
-    var picks=[idx-step, idx+step];
-    for(var k=0;k<picks.length;k++){
-      var alt=order[picks[k]];
-      if(!alt) continue;
-      roi=spDayRoi(tiers.overall[alt], wd);
-      if(roi==null) roi=spBlendRoi(tiers.overall[alt]);
-      if(roi!=null) return {roi:roi, rule:'nearest tier ('+alt+')', tier:label};
-    }
+  if(roi!=null) return {roi:roi, rule:'tier and day', tier:label};
+  return null;
+}
+/* Historical run rate when the tier and day match. Otherwise the ROI target from the app. */
+function spShowRoi(r){
+  var fee=spFee(r);
+  if(!(fee>0)||!r) return null;
+  var venue=r.v||r.venue;
+  var hist=spRoi(venue, fee, r.d);
+  if(hist) return hist.roi;
+  var tgt=(typeof showTargets==='function')?showTargets(r):null;
+  if(tgt&&tgt.roi_t!=null&&isFinite(+tgt.roi_t)&&+tgt.roi_t>0) return +tgt.roi_t;
+  if(typeof venueRoiLookup==='function'){
+    var look=venueRoiLookup(venue, r.d, fee);
+    if(look&&look.roiTarget!=null&&+look.roiTarget>0) return +look.roiTarget;
   }
   return null;
 }
@@ -106,7 +115,7 @@ function spSimDay(venue, date, shows){
     ebitda:m?m.ebitda:null, rules:rules, usedBudget:usedBudget};
 }
 /* Bottle service only. Cost is every calendar fee in the range.
-   Sales counts only shows that have a historical run rate. */
+   Sales is fee times the historical run rate, or the app ROI target when that day has no history. */
 function spBsRange(venue, from, to){
   if(!from||!to) return null;
   var sales=0, fee=0, rated=0, any=0;
@@ -119,8 +128,8 @@ function spBsRange(venue, from, to){
     any++;
     f=f||0;
     fee+=f;
-    var roi=f>0?spRoi(venue, f, r.d):null;
-    if(roi){ sales+=f*roi.roi; rated++; }
+    var roi=f>0?spShowRoi(r):null;
+    if(roi){ sales+=f*roi; rated++; }
   });
   if(!any) return {sales:null, fee:null};
   return {sales:rated?sales:null, fee:fee};

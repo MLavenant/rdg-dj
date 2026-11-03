@@ -66,9 +66,13 @@ function _bpDay(ds){
 }
 
 /* ---- Periods (fiscal 4-4-5 months, same as Budget) ---- */
-function _bpMonths(){
+function _bpAnchor(){
+  if(typeof curYr!=='undefined' && typeof curM!=='undefined' && curM!=null) return {year:curYr, monthIndex:curM};
   var today=(typeof TODAY!=='undefined'&&TODAY)?String(TODAY):miamiToday();
-  var info=fiscalInfoForDate(today);
+  return fiscalInfoForDate(today);
+}
+function _bpMonths(){
+  var info=_bpAnchor();
   var y=info.year, mi=info.monthIndex+_bpOffset;
   while(mi<0){ mi+=12; y--; }
   while(mi>11){ mi-=12; y++; }
@@ -81,8 +85,7 @@ function _bpMonths(){
   return out;
 }
 function _bpMonthAt(offset){
-  var today=(typeof TODAY!=='undefined'&&TODAY)?String(TODAY):miamiToday();
-  var info=fiscalInfoForDate(today);
+  var info=_bpAnchor();
   var y=info.year, mi=info.monthIndex+(+offset||0);
   while(mi<0){ mi+=12; y--; }
   while(mi>11){ mi-=12; y++; }
@@ -207,9 +210,9 @@ function _bpMonthOverBudget(c){ return !!(c && c.budget!=null && c.planned>c.bud
 function _bpHighlightRow(r, c){ return !!r && (+r.fee||0)>20000 && _bpMonthOverBudget(c); }
 function _bpSectionRow(r){ return !!r && (+r.fee||0)>5000; }
 function _bpShowBs(r){
-  if(!r||!(r.fee>0)||typeof spRoi!=='function') return null;
-  var hit=spRoi(r.venue, r.fee, r.d);
-  return hit&&hit.roi?r.fee*hit.roi:null;
+  if(!r||!(r.fee>0)) return null;
+  var roi=(typeof spShowRoi==='function')?spShowRoi(r):null;
+  return roi?r.fee*roi:null;
 }
 function _bpExceptionRow(r, c){ return _bpHighlightRow(r, c) && !r.confirmed; }
 function _bpHasRequest(uid){
@@ -1096,15 +1099,6 @@ function _bpRenderPage(html){
         inner.style.transform='scale('+s.toFixed(4)+')';
         inner.style.width=(100/s).toFixed(2)+'%';
         body.appendChild(inner);
-      } else if(body.querySelector('.mr-pdf-locs') && need>0 && room>need*1.08){
-        var up=Math.min(room/need*0.98, 1.85);
-        var grow=document.createElement('div');
-        while(body.firstChild) grow.appendChild(body.firstChild);
-        grow.style.transformOrigin='top center';
-        grow.style.transform='scale('+up.toFixed(4)+')';
-        grow.style.width=(100/up).toFixed(2)+'%';
-        grow.style.margin='0 auto';
-        body.appendChild(grow);
       }
     }
     return _bpPdfCanvas(stage.firstChild);
@@ -1151,7 +1145,6 @@ function _bpBuildPdf(data){
   var loc=_bpVenue;
   var sub='Three Month Booking Plan · '+period;
   var canvases=[];
-  var exc=_bpExceptionRows(data);
   _bpBusy(true, 'Cover page');
   return _ensurePdfLibs().then(function(){
     return document.fonts&&document.fonts.ready?document.fonts.ready:null;
@@ -1160,18 +1153,8 @@ function _bpBuildPdf(data){
   }).then(function(cv){
     canvases.push(cv);
     _bpBusy(true, 'Booking plan');
-    if(_bpPanel==='meeting') return _bpCaptureSheet().then(function(cv){ canvases.push(cv); });
-    return _bpRenderPage(_bpPrintSheetHtml(data, null)).then(function(cv){ canvases.push(cv); });
-  }).then(function(){
-    if(!exc.length) return null;
-    var chain=_bpRenderPage(_bpCoverHtml('Booking details', exc.length+' booking'+(exc.length===1?'':'s')+' over $20K in a month over budget · '+period, loc)).then(function(cv){ canvases.push(cv); });
-    exc.forEach(function(x, i){
-      chain=chain.then(function(){
-        _bpBusy(true, 'Booking '+(i+1)+' of '+exc.length);
-        return _bpRenderPage(_bpExceptionPageHtml(x.r, x.c, _bpNotesFor(x.r.uid)));
-      }).then(function(cv){ canvases.push(cv); });
-    });
-    return chain;
+    if(_bpPanel==='meeting') return _bpCaptureSheet().then(function(cv2){ canvases.push(cv2); });
+    return _bpRenderPage(_bpPrintSheetHtml(data, null)).then(function(cv2){ canvases.push(cv2); });
   }).then(function(){
     return _bpPdfFit(canvases);
   }).then(function(pdf){
@@ -1237,7 +1220,6 @@ function _bpCombinedPlan(){
 function _bpBuildLocationPages(){
   var canvases=[];
   var saved=_bpVenue;
-  var packets=[];
   var period='';
   return _ensurePdfLibs().then(function(){
     return document.fonts&&document.fonts.ready?document.fonts.ready:null;
@@ -1253,23 +1235,7 @@ function _bpBuildLocationPages(){
         _bpBusy(true, 'Location '+(i+1)+' of 3 · '+v);
         _bpVenue=v;
         var data=_bpCompute();
-        packets.push({venue:v, exc:_bpExceptionRows(data)});
         return _bpRenderPage(_bpDeckSlideHtml(data, i+1, BP_VENUES.length)).then(function(cv){ canvases.push(cv); });
-      });
-    });
-    return chain;
-  }).then(function(){
-    var chain=Promise.resolve();
-    packets.forEach(function(pack){
-      if(!pack.exc.length) return;
-      chain=chain.then(function(){
-        return _bpRenderPage(_bpCoverHtml('Details', pack.exc.length+' booking'+(pack.exc.length===1?'':'s')+' over $20K · '+period, pack.venue)).then(function(cv){ canvases.push(cv); });
-      });
-      pack.exc.forEach(function(x, i){
-        chain=chain.then(function(){
-          _bpBusy(true, pack.venue+' · booking '+(i+1)+' of '+pack.exc.length);
-          return _bpRenderPage(_bpExceptionPageHtml(x.r, x.c, _bpNotesFor(x.r.uid))).then(function(cv){ canvases.push(cv); });
-        });
       });
     });
     return chain;

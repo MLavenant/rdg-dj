@@ -28,6 +28,11 @@ function mrPeriods(){
     });
   });
   out.sort(function(a,b){ return a.from<b.from?-1:(a.from>b.from?1:0); });
+  if(typeof curYr!=='undefined' && typeof curM!=='undefined' && curM!=null){
+    var cal=mrPeriodMeta(curYr, curM+1);
+    if(!out.some(function(m){ return m.key===cal.key; })) out.push(cal);
+    out.sort(function(a,b){ return a.from<b.from?-1:(a.from>b.from?1:0); });
+  }
   return out;
 }
 function mrPeriodMeta(year, period){
@@ -42,10 +47,12 @@ function mrCurrent(){
   var all=mrPeriods();
   var key=window._mrKey;
   var found=null;
-  all.forEach(function(m){ if(m.key===key) found=m; });
+  if(key) all.forEach(function(m){ if(m.key===key) found=m; });
   if(found) return found;
-  all.forEach(function(m){ if(m.key==='2026-10') found=m; });
-  return found||all[all.length-1]||mrPeriodMeta(2026, 10);
+  var calKey=(typeof curYr!=='undefined' && typeof curM!=='undefined')?(curYr+'-'+(curM+1)):null;
+  if(calKey) all.forEach(function(m){ if(m.key===calKey) found=m; });
+  if(found) return found;
+  return all[all.length-1]||mrPeriodMeta(typeof curYr!=='undefined'?curYr:2026, (typeof curM!=='undefined'?curM:9)+1);
 }
 function mrSelectPeriod(key){
   window._mrKey=key;
