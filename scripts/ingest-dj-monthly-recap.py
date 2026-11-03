@@ -166,21 +166,24 @@ def as_date(v):
 
 
 def parse_sales(ws):
-    # read_only sheets can be iterated once, so keep every row.
-    rows = list(ws.iter_rows(max_row=220, max_col=16, values_only=True))
+    # Day total is the COMBINED block (MILA AW:BD, Casa/Lounge AN:AU).
+    # AW/AN is the week total. The next seven columns are Mon-Sun.
+    # The first MON on the sheet is one department, not the day total.
+    rows = list(ws.iter_rows(max_row=220, max_col=80, values_only=True))
     header_i = None
     start_i = 1
-    mon_i = 4
-    for i, row in enumerate(rows):
+    combined_i = None
+    for i, row in enumerate(rows[:8]):
         labels = [str(c).strip().upper() if isinstance(c, str) else "" for c in row]
-        if "MON" in labels and "SUN" in labels:
+        if "COMBINED" in labels:
+            combined_i = labels.index("COMBINED")
+        if header_i is None and "START" in labels and "MON" in labels:
             header_i = i
-            start_i = labels.index("START") if "START" in labels else 1
-            mon_i = labels.index("MON")
-            break
+            start_i = labels.index("START")
     days = {}
-    if header_i is None:
+    if header_i is None or combined_i is None:
         return days
+    mon_i = combined_i + 1
     for row in rows[header_i + 1:]:
         a = row[0] if row else None
         if not isinstance(a, str) or not a.strip().lower().startswith("week"):
@@ -354,7 +357,7 @@ def main():
         print(sheet, "model", model)
 
     payload = {
-        "source": "DJ DATA.xlsx",
+        "source": "DJ DATA (1).xlsx",
         "venues": venues,
     }
     text = "window.DJ_MONTHLY_RECAP=" + json.dumps(payload, separators=(",", ":")) + ";\n"

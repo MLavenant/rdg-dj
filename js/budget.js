@@ -942,17 +942,17 @@ function getBgtActual(venue, year, mm, field){
    OPEX CASA NEOS / OPEX LOUNGE (Row 7 Sales + Live Entertainment). */
 var BGT_PLAN_SEED = {
   "Casa Neos Beach Club":{"2026":{
-    "01":{"sales":3421326.12,"live":595694.57},"02":{"sales":2625788.27,"live":215300},
-    "03":{"sales":3776754.65,"live":186800},"04":{"sales":3015373.12,"live":97900},
-    "05":{"sales":3455018.79,"live":394500},"06":{"sales":3291723.63,"live":119400},
-    "07":{"sales":2159435.42,"live":119400},"08":{"sales":1876430.07,"live":60000},
-    "09":{"sales":2517077.27,"live":57000},"10":{"sales":2084827.79,"live":70900},
-    "11":{"sales":2517113.08,"live":112800},"12":{"sales":5497470.76,"live":1062000}
+    "01":{"sales":3421326.12,"live":65462},"02":{"sales":2625788.27,"live":229474},
+    "03":{"sales":3776754.65,"live":573580},"04":{"sales":3015373.12,"live":223547},
+    "05":{"sales":3455018.79,"live":488805},"06":{"sales":3291723.63,"live":142652},
+    "07":{"sales":2159435.42,"live":130527},"08":{"sales":1876430.07,"live":73898},
+    "09":{"sales":2517077.27,"live":78378},"10":{"sales":2084827.79,"live":88874},
+    "11":{"sales":2517113.08,"live":122847},"12":{"sales":5497470.76,"live":890290}
   }},
   "Casa Neos Lounge":{"2026":{
-    "01":{"sales":0,"live":0},"02":{"sales":0,"live":0},
-    "03":{"sales":1234427,"live":84600},"04":{"sales":913157.24,"live":79700},
-    "05":{"sales":1369793.33,"live":128200},"06":{"sales":1617945.9,"live":89400},
+    "01":{"sales":0,"live":0},"02":{"sales":0,"live":195805},
+    "03":{"sales":1234427,"live":92564},"04":{"sales":913157.24,"live":171294},
+    "05":{"sales":1369793.33,"live":140249},"06":{"sales":1617945.9,"live":97965},
     "07":{"sales":625749.28,"live":89400},"08":{"sales":1150892.62,"live":56150},
     "09":{"sales":1232386.02,"live":56150},"10":{"sales":583857.53,"live":72200},
     "11":{"sales":883206.8,"live":77450},"12":{"sales":1509705.66,"live":229200}
@@ -960,8 +960,8 @@ var BGT_PLAN_SEED = {
   "MILA Lounge":{"2026":{
     /* Live Ent $ + margin targets (Mila 2F). Sales = live ÷ margin so Live E Margin vs matches. */
     "01":{"sales":1756097.56,"live":144000},"02":{"sales":1584285.71,"live":110900},
-    "03":{"sales":2043975.9,"live":169650},"04":{"sales":1327205.88,"live":90250},
-    "05":{"sales":1731788.08,"live":261500},"06":{"sales":1870000,"live":112200},
+    "03":{"sales":2043975.9,"live":169650},"04":{"sales":1327205.88,"live":87374},
+    "05":{"sales":1731788.08,"live":147750},"06":{"sales":1870000,"live":112200},
     "07":{"sales":1650000,"live":112200},"08":{"sales":1094444.44,"live":68950},
     "09":{"sales":1209649.12,"live":68950},"10":{"sales":1287878.79,"live":85000},
     "11":{"sales":1388461.54,"live":90250},"12":{"sales":1835664.34,"live":262500}
@@ -994,12 +994,14 @@ function applyOfficialH2Budgets(){
   ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'].forEach(function(venue){
     if(!BGT_PLAN[venue]) BGT_PLAN[venue]={};
     if(!BGT_PLAN[venue]['2026']) BGT_PLAN[venue]['2026']={};
-    /* MILA: full-year official Live Ent budgets. CN venues: keep H2 lock (P7–P12). */
-    var from = venue==='MILA Lounge' ? 1 : 7;
-    for(var mi=from;mi<=12;mi++){
+    /* Full-year official Live Entertainment budgets. Sales stay as already loaded. */
+    for(var mi=1;mi<=12;mi++){
       var mm=padMm(mi);
       var official=(((BGT_PLAN_SEED[venue]||{})['2026']||{})[mm]);
-      if(official) BGT_PLAN[venue]['2026'][mm]={sales:official.sales,live:official.live};
+      if(!official||official.live==null) continue;
+      if(!BGT_PLAN[venue]['2026'][mm]) BGT_PLAN[venue]['2026'][mm]={};
+      BGT_PLAN[venue]['2026'][mm].live=official.live;
+      if(BGT_PLAN[venue]['2026'][mm].sales==null) BGT_PLAN[venue]['2026'][mm].sales=official.sales;
     }
   });
 }
