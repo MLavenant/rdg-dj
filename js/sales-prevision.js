@@ -60,20 +60,25 @@ function spRoi(venue, fee, date){
   if(roi!=null) return {roi:roi, rule:'tier and day', tier:label};
   return null;
 }
-/* Historical run rate when the tier and day match. Otherwise the ROI target from the app. */
-function spShowRoi(r){
+/* Bottle service from the app's fee-tier rules for that performance. */
+function spRuleBs(r){
   var fee=spFee(r);
   if(!(fee>0)||!r) return null;
-  var venue=r.v||r.venue;
-  var hist=spRoi(venue, fee, r.d);
-  if(hist) return hist.roi;
   var tgt=(typeof showTargets==='function')?showTargets(r):null;
-  if(tgt&&tgt.roi_t!=null&&isFinite(+tgt.roi_t)&&+tgt.roi_t>0) return +tgt.roi_t;
+  if(tgt&&tgt.bs_m!=null&&isFinite(+tgt.bs_m)) return +tgt.bs_m;
+  if(tgt&&tgt.roi_t!=null&&isFinite(+tgt.roi_t)&&+tgt.roi_t>0) return fee*+tgt.roi_t;
   if(typeof venueRoiLookup==='function'){
-    var look=venueRoiLookup(venue, r.d, fee);
-    if(look&&look.roiTarget!=null&&+look.roiTarget>0) return +look.roiTarget;
+    var look=venueRoiLookup(r.v||r.venue, r.d, fee);
+    if(look&&look.bsTarget!=null&&isFinite(+look.bsTarget)) return +look.bsTarget;
+    if(look&&look.roiTarget!=null&&+look.roiTarget>0) return fee*+look.roiTarget;
   }
   return null;
+}
+function spShowRoi(r){
+  var fee=spFee(r);
+  var bs=spRuleBs(r);
+  if(!(fee>0)||bs==null) return null;
+  return bs/fee;
 }
 function spBudgetDay(venue, date){
   var v=spVenue(venue);
@@ -115,7 +120,7 @@ function spSimDay(venue, date, shows){
     ebitda:m?m.ebitda:null, rules:rules, usedBudget:usedBudget};
 }
 /* Bottle service only. Cost is every calendar fee in the range.
-   Sales is fee times the historical run rate, or the app ROI target when that day has no history. */
+   Sales is the app fee-tier rule for that performance. */
 function spBsRange(venue, from, to){
   if(!from||!to) return null;
   var sales=0, fee=0, rated=0, any=0;

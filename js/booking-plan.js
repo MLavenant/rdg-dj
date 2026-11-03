@@ -212,6 +212,7 @@ function _bpHighlightRow(r, c){ return !!r && (+r.fee||0)>20000 && _bpMonthOverB
 function _bpSectionRow(r){ return !!r && (+r.fee||0)>5000; }
 function _bpShowBs(r){
   if(!r||!(r.fee>0)) return null;
+  if(typeof spRuleBs==='function') return spRuleBs(r);
   var roi=(typeof spShowRoi==='function')?spShowRoi(r):null;
   return roi?r.fee*roi:null;
 }
