@@ -1,7 +1,6 @@
-/* Three Month Plan sales simulation. Reads data/dj-sales-prevision.js, the
-   Monthly Recap P&L, and the live calendar. Never writes shows or overrides.
-   Day sales = budget brunch + budget dinner + simulated bottle service,
-   where bottle service = DJ fee x historical ROI for that tier. */
+/* Three Month Plan bottle-service sales. Reads data/dj-sales-prevision.js
+   and the live calendar. Never writes shows or overrides.
+   Sales for a month = sum of (calendar DJ fee x historical tier ROI). */
 
 function spVenue(venue){
   var s=window.DJ_SALES_PREVISION;
@@ -105,6 +104,26 @@ function spSimDay(venue, date, shows){
   var m=(typeof mrDayMargin==='function')?mrDayMargin(venue, sales, fee):null;
   return {date:date, sales:sales, brunch:bud.brunch, dinner:bud.dinner, bs:bs, fee:fee,
     ebitda:m?m.ebitda:null, rules:rules, usedBudget:usedBudget};
+}
+/* Bottle service only. Cost is every calendar fee in the range.
+   Sales counts only shows that have a historical run rate. */
+function spBsRange(venue, from, to){
+  if(!from||!to) return null;
+  var sales=0, fee=0, rated=0, any=0;
+  (typeof SCHED!=='undefined'&&SCHED?SCHED:[]).forEach(function(r){
+    if(!r||r._s==='empty'||!r.d||r.d<from||r.d>to) return;
+    if((r.v||r.venue)!==venue) return;
+    var f=spFee(r);
+    var named=r.dj&&String(r.dj).trim();
+    if(!named&&!(f>0)) return;
+    any++;
+    f=f||0;
+    fee+=f;
+    var roi=f>0?spRoi(venue, f, r.d):null;
+    if(roi){ sales+=f*roi.roi; rated++; }
+  });
+  if(!any) return {sales:null, fee:null};
+  return {sales:rated?sales:null, fee:fee};
 }
 function spSimRange(venue, from, to){
   if(!spVenue(venue)) return null;

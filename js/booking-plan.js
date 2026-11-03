@@ -240,8 +240,8 @@ function _bpGapHtml(n, lowerBetter, unit){
 }
 function _bpPctHtml(pct, lowerBetter){ return _bpGapHtml(pct, lowerBetter, '%'); }
 function _bpPpHtml(pp, lowerBetter){ return _bpGapHtml(pp, lowerBetter, ' pp'); }
-/* Raw amounts behind the Sales / Live ent. / Margins rows. live is the live
-   entertainment cost, ebitda the EBITDA (Net Profit for workbook P&L months). */
+/* Sales is bottle service: calendar DJ fee times the historical run rate.
+   Live entertainment margin is that cost divided by those sales. */
 var BP_FIN_KEYS=['sales','live','ebitda','pySales','pyLive','pyEbitda'];
 function _bpFinNum(v){ return v!=null&&isFinite(+v)?+v:null; }
 function _bpShare(part, sales){ return part!=null&&sales>0?part/sales*100:null; }
@@ -259,21 +259,16 @@ function _bpPlRaw(venue, year, period){
   if(!pl||_bpFinNum(pl.sales)==null) return null;
   return {sales:+pl.sales, live:_bpFinNum(pl.live), ebitda:_bpFinNum(pl.net)};
 }
-/* Completed months use the workbook P&L. Open months simulate every performance day
-   (budget brunch + dinner + DJ fee x tier ROI) and run them through the Mini P&L. */
+/* Every month, open or closed: bottle service = fee x historical ROI.
+   The same run rates are applied to last year's fees. */
 function _bpMonthRaw(venue, m){
   var raw={sales:null, live:null, ebitda:null, pySales:null, pyLive:null, pyEbitda:null};
-  if(!venue||!m||m.mi==null) return raw;
-  var period=m.mi+1;
-  var actual=m.to&&m.to<_bpToday()?_bpPlRaw(venue, m.year, period):null;
-  if(actual){
-    raw.sales=actual.sales; raw.live=actual.live; raw.ebitda=actual.ebitda;
-  } else if(typeof spSimRange==='function'){
-    var sim=spSimRange(venue, m.from, m.to);
-    if(sim&&sim.sales!=null){ raw.sales=sim.sales; raw.live=sim.fee; raw.ebitda=sim.ebitda; }
-  }
-  var py=_bpPlRaw(venue, m.year-1, period);
-  if(py){ raw.pySales=py.sales; raw.pyLive=py.live; raw.pyEbitda=py.ebitda; }
+  if(!venue||!m||m.mi==null||typeof spBsRange!=='function') return raw;
+  var now=spBsRange(venue, m.from, m.to);
+  if(now){ raw.sales=now.sales; raw.live=now.fee; }
+  var pyR=fiscalPeriodRange(m.year-1, m.mi);
+  var py=spBsRange(venue, pyR.from, pyR.to);
+  if(py){ raw.pySales=py.sales; raw.pyLive=py.fee; }
   return raw;
 }
 function _bpDayRaw(venue, date){
@@ -333,12 +328,11 @@ function _bpFinColHtml(month, fin, kind){
   h+='<div class="bp-sf-yhs"><b>'+parts.now+'</b><b>'+parts.py+'</b><b>Var</b></div>';
   h+=_bpFinVals(fin.sales);
   h+=_bpFinVals(fin.live, 'pp-down');
-  h+=_bpFinVals(fin.margin, 'pp-up');
   h+='</div>';
   return h;
 }
 function _bpFinLabsHtml(){
-  return '<div class="bp-sf-labs"><div></div><div></div><div class="bp-sf-lab">Sales</div><div class="bp-sf-lab">Live ent. margins</div><div class="bp-sf-lab">Margins</div></div>';
+  return '<div class="bp-sf-labs"><div></div><div></div><div class="bp-sf-lab">Sales</div><div class="bp-sf-lab">Live ent. margins</div></div>';
 }
 function _bpPlanBoxHtml(c, actual){
   var over=c.remaining!=null && c.remaining<0;
