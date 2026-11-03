@@ -148,7 +148,8 @@ function mrSpendVar(spend, budget){
 }
 function mrBudgetRow(spend, budget, rowClass){
   var v=mrSpendVar(spend, budget);
-  return '<div class="mr-budget '+(rowClass||'mr-line')+'"><span>Budget</span><b>'+mrMoney(budget)+'</b><b></b><b class="'+v.cls+'">'+v.text+'</b></div>';
+  var solo=rowClass&&rowClass.indexOf('mr-solo')>=0;
+  return '<div class="mr-budget '+(rowClass||'mr-line')+'"><span>Budget</span><b>'+mrMoney(budget)+'</b>'+(solo?'':'<b></b>')+'<b class="'+v.cls+'">'+v.text+'</b></div>';
 }
 function mrDayLabel(d){
   if(typeof _bpDay==='function') return _bpDay(d);
@@ -181,13 +182,15 @@ function mrPack(meta){
 function mrVarHtml(v){
   return '<b class="'+v.cls+'">'+v.text+'</b>';
 }
-function mrLine(label, now, py, kind, novar){
+function mrLine(label, now, py, kind, novar, solo){
   var nowTxt=kind==='pct'||kind==='live'||kind==='roi'?mrPct(now):mrMoney(now);
   var pyTxt=kind==='pct'||kind==='live'||kind==='roi'?mrPct(py):mrMoney(py);
   var gap=kind==='money'||kind==='spend'?mrVar(now, py):mrPp(now, py, kind==='live');
+  if(solo) return '<div class="mr-line mr-solo"><span>'+label+'</span><b>'+nowTxt+'</b>'+(novar?'<b></b>':mrVarHtml(gap))+'</div>';
   return '<div class="mr-line"><span>'+label+'</span><b>'+nowTxt+'</b><b>'+pyTxt+'</b>'+(novar?'<b></b>':mrVarHtml(gap))+'</div>';
 }
-function mrHeads(year){
+function mrHeads(year, solo){
+  if(solo) return '<div class="mr-line mr-head mr-solo"><span></span><b>'+year+'</b><b></b></div>';
   return '<div class="mr-line mr-head"><span></span><b>'+year+'</b><b>'+(year-1)+'</b><b>Var</b></div>';
 }
 function mrArrow(label, now, py){
@@ -197,15 +200,17 @@ function mrArrow(label, now, py){
 function mrCardHtml(p, meta){
   var n=p.now||{}, y=p.py||{};
   var year=meta.year;
-  var h='<article class="mr-card"><h3>'+_escHtml(p.label)+'</h3>';
-  h+=mrHeads(year);
-  h+=mrLine('Total Sales', n.sales, y.sales, 'money', true);
-  h+=mrArrow('Bottle Service Sales', p.beat.bs, p.pyBeat.bs);
-  h+=mrLine('ROI % Beat', p.beat.rate, p.pyBeat.rate, 'roi');
-  h+=mrLine('Total Spent', n.live, y.live, 'spend');
-  h+=mrBudgetRow(n.live, mrLiveBudget(p.venue, meta));
-  h+=mrLine('Live Ent. margins', n.livePct, y.livePct, 'live');
-  if(!p.py) h+='<div class="mr-note">No 2025 P&amp;L for this location in the workbook.</div>';
+  var solo=!p.py;
+  var h='<article class="mr-card'+(solo?' mr-solo-card':'')+'"><h3>'+_escHtml(p.label)+'</h3>';
+  h+=mrHeads(year, solo);
+  h+=mrLine('Total Sales', n.sales, y.sales, 'money', solo, solo);
+  h+=solo
+    ? '<div class="mr-line mr-solo mr-arrow"><span><i class="bp-arr"></i>Bottle Service Sales</span><b>'+mrMoney(p.beat.bs)+'</b><b></b></div>'
+    : mrArrow('Bottle Service Sales', p.beat.bs, p.pyBeat.bs);
+  h+=mrLine('ROI % Beat', p.beat.rate, p.pyBeat.rate, 'roi', solo, solo);
+  h+=mrLine('Total Spent', n.live, y.live, 'spend', solo, solo);
+  h+=mrBudgetRow(n.live, mrLiveBudget(p.venue, meta), solo?'mr-line mr-solo':'');
+  h+=mrLine('Live Ent. margins', n.livePct, y.livePct, 'live', solo, solo);
   h+='</article>';
   return h;
 }
@@ -264,34 +269,41 @@ function mrPdfArrow(label, now, py){
 function mrCmpCell(tag, cls, text){
   return '<'+tag+' class="'+cls+'">'+text+'</'+tag+'>';
 }
+function mrBlank(){ return '\u2014'; }
+function mrMoneyCell(n){
+  if(n==null||!isFinite(+n)) return mrBlank();
+  var t=mrMoney(n);
+  return t==='-'||t==='\u2014'?mrBlank():t;
+}
 /* One grid for the whole card, so 2026, 2025, and Var share the same tracks. */
 function mrCmpRow(label, now, py, gap, opt){
   opt=opt||{};
   var row=opt.row?' '+opt.row:'';
   var tone=opt.tone?' '+opt.tone:'';
-  return mrCmpCell('span','mr-c-lab'+row,label)
-    +mrCmpCell('b','mr-c-now'+row,now)
-    +mrCmpCell('b','mr-c-py'+row,py)
-    +mrCmpCell('b','mr-c-var'+row+tone,gap);
+  var cells=mrCmpCell('span','mr-c-lab'+row,label)+mrCmpCell('b','mr-c-now'+row,now);
+  if(!opt.solo) cells+=mrCmpCell('b','mr-c-py'+row,py);
+  return cells+mrCmpCell('b','mr-c-var'+row+tone,gap);
 }
 function mrComparePage(pack){
   var meta=pack.meta;
   var h='<div class="bp-page bp-deck mr-fill"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">Monthly Live Entertainment Recap</div><b>'+_escHtml(meta.label)+'</b><em>'+_escHtml(meta.range||'')+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body"><div class="mr-pdf-locs">';
   pack.venues.forEach(function(p){
     var n=p.now||{}, y=p.py||{};
+    var solo=!p.py;
     var bud=mrLiveBudget(p.venue, meta);
     var spend=mrSpendVar(n.live, bud);
     var roi=mrPp(p.beat.rate, p.pyBeat.rate, false);
     var live=mrPp(n.livePct, y.livePct, true);
     var tot=mrVar(n.live, y.live);
-    h+='<section class="mr-pdf-loc"><h3>'+_escHtml(p.label)+'</h3><div class="mr-cmp">';
-    h+=mrCmpRow('', String(meta.year), String(meta.year-1), 'Var', {row:'mr-c-hd'});
-    h+=mrCmpRow('Total Sales', mrMoney(n.sales), mrMoney(y.sales), '');
-    h+=mrCmpRow('<i class="bp-arr"></i>Bottle Service Sales', mrMoney(p.beat.bs), p.pyBeat.bs==null?'—':mrMoney(p.pyBeat.bs), '');
-    h+=mrCmpRow('ROI % Beat', mrPct(p.beat.rate), mrPct(p.pyBeat.rate), roi.text, {tone:roi.cls});
-    h+=mrCmpRow('Total Spent', mrMoney(n.live), mrMoney(y.live), tot.text, {tone:tot.cls});
-    h+=mrCmpRow('Budget', mrMoney(bud), '', spend.text, {row:'mr-budc', tone:spend.cls});
-    h+=mrCmpRow('Live Ent. margins', mrPct(n.livePct), mrPct(y.livePct), live.text, {tone:live.cls});
+    var sales=mrVar(n.sales, y.sales);
+    h+='<section class="mr-pdf-loc"><h3>'+_escHtml(p.label)+'</h3><div class="mr-cmp'+(solo?' mr-cmp-one':'')+'">';
+    h+=mrCmpRow('', String(meta.year), solo?'':String(meta.year-1), 'Var', {row:'mr-c-hd', solo:solo});
+    h+=mrCmpRow('Total Sales', mrMoneyCell(n.sales), solo?'':mrMoneyCell(y.sales), solo?'':sales.text, {tone:solo?'':sales.cls, solo:solo});
+    h+=mrCmpRow('<i class="bp-arr"></i>Bottle Service Sales', mrMoneyCell(p.beat.bs), solo?'':mrMoneyCell(p.pyBeat.bs), '', {solo:solo});
+    h+=mrCmpRow('ROI % Beat', mrPct(p.beat.rate), solo?'':mrPct(p.pyBeat.rate), solo?'':roi.text, {tone:solo?'':roi.cls, solo:solo});
+    h+=mrCmpRow('Total Spent', mrMoneyCell(n.live), solo?'':mrMoneyCell(y.live), solo?'':tot.text, {tone:solo?'':tot.cls, solo:solo});
+    h+=mrCmpRow('Budget', mrMoneyCell(bud), '', spend.text, {row:'mr-budc', tone:spend.cls, solo:solo});
+    h+=mrCmpRow('Live Ent. margins', mrPct(n.livePct), solo?'':mrPct(y.livePct), solo?'':live.text, {tone:solo?'':live.cls, solo:solo});
     h+='</div></section>';
   });
   h+='</div></div></div>';

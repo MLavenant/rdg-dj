@@ -931,6 +931,10 @@ var BGT_PLAN_SEED = {
     "07":{"sales":2159435.42,"live":130527},"08":{"sales":1876430.07,"live":73898},
     "09":{"sales":2517077.27,"live":78378},"10":{"sales":2084827.79,"live":88874},
     "11":{"sales":2517113.08,"live":122847},"12":{"sales":5497470.76,"live":890290}
+  },"2027":{
+    "01":{"live":602800},"02":{"live":214800},"03":{"live":909750},"04":{"live":201800},
+    "05":{"live":1089800},"06":{"live":169750},"07":{"live":68300},"08":{"live":85800},
+    "09":{"live":86590},"10":{"live":76300},"11":{"live":136800},"12":{"live":1096750}
   }},
   "Casa Neos Lounge":{"2026":{
     "01":{"sales":0,"live":0},"02":{"sales":0,"live":195805},
@@ -939,6 +943,10 @@ var BGT_PLAN_SEED = {
     "07":{"sales":625749.28,"live":89400},"08":{"sales":1150892.62,"live":56150},
     "09":{"sales":1232386.02,"live":56150},"10":{"sales":583857.53,"live":72200},
     "11":{"sales":883206.8,"live":77450},"12":{"sales":1509705.66,"live":229200}
+  },"2027":{
+    "01":{"live":257000},"02":{"live":146000},"03":{"live":264250},"04":{"live":100500},
+    "05":{"live":179000},"06":{"live":164000},"07":{"live":114750},"08":{"live":54000},
+    "09":{"live":64250},"10":{"live":154000},"11":{"live":154000},"12":{"live":238250}
   }},
   "MILA Lounge":{"2026":{
     /* Live Ent $ + margin targets (Mila 2F). Sales = live ÷ margin so Live E Margin vs matches. */
@@ -948,6 +956,10 @@ var BGT_PLAN_SEED = {
     "07":{"sales":1650000,"live":112200},"08":{"sales":1094444.44,"live":68950},
     "09":{"sales":1209649.12,"live":68950},"10":{"sales":1287878.79,"live":85000},
     "11":{"sales":1388461.54,"live":90250},"12":{"sales":1835664.34,"live":262500}
+  },"2027":{
+    "01":{"live":172200},"02":{"live":142700},"03":{"live":232000},"04":{"live":120200},
+    "05":{"live":223200},"06":{"live":141500},"07":{"live":82200},"08":{"live":103200},
+    "09":{"live":110789},"10":{"live":96815},"11":{"live":134640},"12":{"live":382500}
   }}
 };
 var BGT_PLAN = JSON.parse(JSON.stringify(BGT_PLAN_SEED));
@@ -975,17 +987,20 @@ function deepMergeBgtPlan(src){
 })();
 function applyOfficialH2Budgets(){
   ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'].forEach(function(venue){
+    var seed=BGT_PLAN_SEED[venue]||{};
     if(!BGT_PLAN[venue]) BGT_PLAN[venue]={};
-    if(!BGT_PLAN[venue]['2026']) BGT_PLAN[venue]['2026']={};
-    /* Full-year official Live Entertainment budgets. Sales stay as already loaded. */
-    for(var mi=1;mi<=12;mi++){
-      var mm=padMm(mi);
-      var official=(((BGT_PLAN_SEED[venue]||{})['2026']||{})[mm]);
-      if(!official||official.live==null) continue;
-      if(!BGT_PLAN[venue]['2026'][mm]) BGT_PLAN[venue]['2026'][mm]={};
-      BGT_PLAN[venue]['2026'][mm].live=official.live;
-      if(BGT_PLAN[venue]['2026'][mm].sales==null) BGT_PLAN[venue]['2026'][mm].sales=official.sales;
-    }
+    /* Official Live Entertainment budgets, including 2027. Sales stay as already loaded. */
+    Object.keys(seed).forEach(function(year){
+      if(!BGT_PLAN[venue][year]) BGT_PLAN[venue][year]={};
+      for(var mi=1;mi<=12;mi++){
+        var mm=padMm(mi);
+        var official=(seed[year]||{})[mm];
+        if(!official||official.live==null) continue;
+        if(!BGT_PLAN[venue][year][mm]) BGT_PLAN[venue][year][mm]={};
+        BGT_PLAN[venue][year][mm].live=official.live;
+        if(official.sales!=null && BGT_PLAN[venue][year][mm].sales==null) BGT_PLAN[venue][year][mm].sales=official.sales;
+      }
+    });
   });
 }
 /* Approved operating budgets; old browser / Firebase cache must not replace them. */
