@@ -417,11 +417,10 @@ function _bpFinLabsHtml(){
   return '<div class="bp-sf-labs"><div></div><div></div><div class="bp-sf-lab">Bottle service sales</div><div class="bp-sf-lab">Live ent. margins</div></div>';
 }
 function _bpCatSplitHtml(cats, labelsOnly){
-  var h='<div class="bp-split">';
-  (cats||[]).forEach(function(cat){
-    h+='<div class="bp-split-line"><span>'+_escHtml(cat.label)+'</span>'+(labelsOnly?'':'<b>'+$k(cat.amount)+'</b>')+'</div>';
-  });
-  return h+'</div>';
+  var guest=null;
+  (cats||[]).forEach(function(cat){ if(cat && cat.label==='Guest DJ') guest=cat; });
+  var amt=guest&&guest.amount!=null?guest.amount:null;
+  return '<div class="bp-split"><div class="bp-split-line"><i class="bp-arr"></i><span>Guest DJ</span>'+(labelsOnly||amt==null?'':'<b>'+$k(amt)+'</b>')+'</div></div>';
 }
 function _bpPlanBoxHtml(c){
   var over=c.remaining!=null && c.remaining<0;
