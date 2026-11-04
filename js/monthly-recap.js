@@ -125,10 +125,11 @@ function mrPp(now, py, lowerBetter){
   var sign=pp>0?'+':'';
   return {text:sign+pp.toFixed(1)+' pp', cls:cls};
 }
-function mrVar(now, py){
+function mrVar(now, py, lowerBetter){
   if(now==null||py==null||!isFinite(+now)||!isFinite(+py)||py===0) return {text:'—', cls:''};
   var pct=(now-py)/Math.abs(py)*100;
-  var cls=pct>0.05?'mr-pos':(pct<-0.05?'mr-neg':'');
+  var up=pct>0.05, down=pct<-0.05;
+  var cls=(lowerBetter?down:up)?'mr-pos':((lowerBetter?up:down)?'mr-neg':'');
   var sign=pct>0?'+':'';
   return {text:sign+pct.toFixed(1)+'%', cls:cls};
 }
@@ -302,7 +303,7 @@ function mrVarHtml(v){
 function mrLine(label, now, py, kind, novar, solo){
   var nowTxt=kind==='pct'||kind==='live'||kind==='roi'?mrPct(now):mrMoney(now);
   var pyTxt=kind==='pct'||kind==='live'||kind==='roi'?mrPct(py):mrMoney(py);
-  var gap=kind==='money'||kind==='spend'?mrVar(now, py):mrPp(now, py, kind==='live');
+  var gap=kind==='spend'?mrVar(now, py, true):(kind==='money'?mrVar(now, py):mrPp(now, py, kind==='live'));
   if(solo) return '<div class="mr-line mr-solo"><span>'+label+'</span><b>'+nowTxt+'</b>'+(novar?'<b></b>':mrVarHtml(gap))+'</div>';
   return '<div class="mr-line"><span>'+label+'</span><b>'+nowTxt+'</b><b>'+pyTxt+'</b>'+(novar?'<b></b>':mrVarHtml(gap))+'</div>';
 }
@@ -373,7 +374,7 @@ function mrPdfVar(v){ return '<b class="'+v.cls+'">'+v.text+'</b>'; }
 function mrPdfRow(label, now, py, kind, novar){
   var nowTxt=kind==='pct'||kind==='live'||kind==='roi'?mrPct(now):mrMoney(now);
   var pyTxt=kind==='pct'||kind==='live'||kind==='roi'?mrPct(py):mrMoney(py);
-  var gap=kind==='money'||kind==='spend'?mrVar(now, py):mrPp(now, py, kind==='live');
+  var gap=kind==='spend'?mrVar(now, py, true):(kind==='money'?mrVar(now, py):mrPp(now, py, kind==='live'));
   return '<div class="mr-pdf-row"><span>'+label+'</span><b>'+nowTxt+'</b><b>'+pyTxt+'</b>'+(novar?'<b></b>':mrPdfVar(gap))+'</div>';
 }
 function mrPdfHeads(year){
@@ -413,7 +414,7 @@ function mrComparePage(pack, opt){
     var spend=mrSpendVar(n.live, bud);
     var roi=mrPp(p.beat.rate, p.pyBeat.rate, false);
     var live=mrPp(n.livePct, y.livePct, true);
-    var tot=mrVar(n.live, y.live);
+    var tot=mrVar(n.live, y.live, true);
     var sales=mrVar(n.sales, y.sales);
     h+='<section class="mr-pdf-loc"><h3>'+_escHtml(p.label)+'</h3><div class="mr-cmp'+(solo?' mr-cmp-one':'')+'">';
     h+=mrCmpRow('', String(meta.year), solo?'':String(meta.year-1), 'Var', {row:'mr-c-hd', solo:solo});
