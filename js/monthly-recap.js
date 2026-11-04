@@ -237,7 +237,26 @@ function wmFiscalMm(period){
   var n=+period||0;
   return n<10?'0'+n:String(n);
 }
-/* Budget total: guest DJ already played and still booked, plus every other entertainment category. */
+/* Played guest-DJ fees plus the other entertainment categories. Future bookings stay out, so an open month is spend to date. */
+function wmMtdLiveSpend(venue, meta){
+  var fee=0, any=false;
+  mrShows(venue, meta).forEach(function(r){
+    var played=(typeof isPastPerformanceDate==='function')?isPastPerformanceDate(r.d):true;
+    if(!played) return;
+    var n=mrFee(r);
+    if(n!=null){ fee+=n; any=true; }
+  });
+  var other=0;
+  if(typeof bgtSpendCategoryRows==='function' && typeof bgtCategoryMonthSpend==='function'){
+    var mm=wmFiscalMm(meta.period);
+    bgtSpendCategoryRows().forEach(function(row){
+      if(!row.ids) return;
+      var n=bgtCategoryMonthSpend(venue, String(meta.year), mm, row.ids)||0;
+      if(n){ other+=n; any=true; }
+    });
+  }
+  return any?Math.round(fee+other):null;
+}
 function wmFullSpend(venue, year, period){
   var mm=wmFiscalMm(period);
   if(typeof bgtFullLiveSpend==='function') return bgtFullLiveSpend(venue, year, mm);
@@ -283,7 +302,7 @@ function mrVenuePack(venue, meta){
     var pyRows=wmMtdRows(venue, pyMeta, false);
     var sales=wmSumMap(window.WM_MTD&&WM_MTD.sales?WM_MTD.sales[venue]:null, meta.from, meta.to);
     var pySales=wmSumMap(window.WM_MTD&&WM_MTD.sales?WM_MTD.sales[venue]:null, pyMeta.from, pyMeta.to);
-    var live=wmFullSpend(venue, meta.year, meta.period);
+    var live=wmMtdLiveSpend(venue, meta);
     var pyLive=wmFullSpend(venue, meta.year-1, meta.period);
     beat=wmBeatRows(rows);
     beat.bs=wmBs(rows);
@@ -422,8 +441,9 @@ function mrComparePage(pack, opt){
     h+=mrCmpRow('Total Sales', mrMoneyCell(n.sales), solo?'':mrMoneyCell(y.sales), solo?'':sales.text, {tone:solo?'':sales.cls, solo:solo});
     h+=mrCmpRow('<i class="bp-arr"></i>Bottle Service Sales', mrMoneyCell(p.beat.bs), solo?'':mrMoneyCell(p.pyBeat.bs), '', {solo:solo});
     h+=mrCmpRow('ROI % Beat', mrPct(p.beat.rate), solo?'':mrPct(p.pyBeat.rate), solo?'':roi.text, {tone:solo?'':roi.cls, solo:solo});
-    h+=mrCmpRow('Live E Spent Actual + Forecast', mrMoneyCell(n.live), solo?'':mrMoneyCell(y.live), solo?'':tot.text, {tone:solo?'':tot.cls, solo:solo});
-    h+=mrCmpRow('Budget', mrMoneyCell(bud), '', spend.text, {row:'mr-budc', tone:spend.cls, solo:solo});
+    var liveLabel=meta.mtd?'Live Spent MTD':'Live E Spent Actual + Forecast';
+    h+=mrCmpRow(liveLabel, mrMoneyCell(n.live), solo?'':mrMoneyCell(y.live), solo?'':tot.text, {tone:solo?'':tot.cls, solo:solo});
+    if(!meta.mtd) h+=mrCmpRow('Budget', mrMoneyCell(bud), '', spend.text, {row:'mr-budc', tone:spend.cls, solo:solo});
     h+=mrCmpRow('Live Ent. margins', mrPct(n.livePct), solo?'':mrPct(y.livePct), solo?'':live.text, {tone:solo?'':live.cls, solo:solo});
     h+='</div></section>';
   });

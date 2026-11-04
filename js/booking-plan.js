@@ -208,6 +208,9 @@ function _bpVenueMonth(venue, m){
   });
   var planned=confirmed+proposed;
   var forecast=(typeof bgtMonthTotalSpend==='function')?bgtMonthTotalSpend(venue, String(m.year), m.mm):planned;
+  var cats=(typeof bgtSpendCategoryRows==='function' && typeof bgtCategoryMonthSpend==='function')?bgtSpendCategoryRows().map(function(row){
+    return {label:row.label, amount:Math.round(bgtCategoryMonthSpend(venue, String(m.year), m.mm, row.ids)||0)};
+  }):[];
   /* Every booking is judged on the whole month (confirmed + proposed vs budget), not a running total. */
   var monthOver=budget!=null ? Math.max(0, planned-budget) : 0;
   rows.forEach(function(row){
@@ -228,7 +231,7 @@ function _bpVenueMonth(venue, m){
   });
   return {venue:venue, month:m, budget:budget, confirm:conf||null,
     confirmStale:!!(conf && budget!=null && +conf.amount!==+budget),
-    confirmed:confirmed, proposed:proposed, planned:planned, forecast:forecast,
+    confirmed:confirmed, proposed:proposed, planned:planned, forecast:forecast, cats:cats,
     remaining:budget!=null?budget-forecast:null, bsT:bsT, py:_bpPriorTotals(venue, m),
     pySpend:_bpPySpend(venue, m), rows:rows, exc:exc};
 }
@@ -413,20 +416,28 @@ function _bpFinColHtml(month, fin, kind){
 function _bpFinLabsHtml(){
   return '<div class="bp-sf-labs"><div></div><div></div><div class="bp-sf-lab">Bottle service sales</div><div class="bp-sf-lab">Live ent. margins</div></div>';
 }
-function _bpPlanBoxHtml(c, actual){
+function _bpCatSplitHtml(cats, labelsOnly){
+  var h='<div class="bp-split">';
+  (cats||[]).forEach(function(cat){
+    h+='<div class="bp-split-line"><span>'+_escHtml(cat.label)+'</span>'+(labelsOnly?'':'<b>'+$k(cat.amount)+'</b>')+'</div>';
+  });
+  return h+'</div>';
+}
+function _bpPlanBoxHtml(c){
   var over=c.remaining!=null && c.remaining<0;
   var under=c.remaining!=null && c.remaining>=0;
   var shown=c.forecast!=null?c.forecast:c.planned;
   return '<div class="bp-planned-box'+(over?' bp-planned-over':(under?' bp-planned-under':''))+'">'
     +'<div class="bp-fc-row"><b>'+$k(shown)+'</b></div>'
     +'<div class="bp-fc-row">'+_bpMoneyVar(c.remaining)+'</div>'
-    +'<div class="bp-split"><div class="bp-split-line"><b>'+(actual?'&nbsp;':$k(c.confirmed))+'</b></div><div class="bp-split-line"><b>'+(actual?'&nbsp;':$k(c.proposed))+'</b></div></div></div>';
+    +_bpCatSplitHtml(c.cats, false)+'</div>';
 }
 function _bpBudgetLabelsHtml(){
+  var cats=(typeof bgtSpendCategoryRows==='function')?bgtSpendCategoryRows().map(function(row){ return {label:row.label}; }):[];
   return '<article class="bp-card bp-lbl-card"><div class="bp-card-hd"><b>&nbsp;</b><span>&nbsp;</span></div>'
-    +'<div class="bp-budget-box"><span>Budget</span><em>'+(_bpVenue==='Casa Neos Lounge'?'&nbsp;':'PY spent')+'</em></div>'
-    +'<div class="bp-planned-box"><div class="bp-fc-row"><span>Forecast</span></div><div class="bp-fc-row"><span>Variance</span></div>'
-    +'<div class="bp-split"><div class="bp-split-line"><i class="bp-arr"></i><span>Confirmed</span></div><div class="bp-split-line"><i class="bp-arr"></i><span>Proposed</span></div></div></div>'
+    +'<div class="bp-budget-box"><span>Total Budget</span><em>'+(_bpVenue==='Casa Neos Lounge'?'&nbsp;':'PY spent')+'</em></div>'
+    +'<div class="bp-planned-box"><div class="bp-fc-row"><span>Total Forecast Spend</span></div><div class="bp-fc-row"><span>Variance</span></div>'
+    +_bpCatSplitHtml(cats, true)+'</div>'
     +'<div class="bp-card-foot"></div></article>';
 }
 function _bpActualBudgetHtml(c){
@@ -434,7 +445,7 @@ function _bpActualBudgetHtml(c){
   var h='<article class="bp-card bp-card-actual">';
   h+='<div class="bp-card-hd"><b>'+_escHtml(m.label||'Prior month')+'</b><span>'+(m.range?_escHtml(m.range):'&nbsp;')+'</span></div>';
   h+='<div class="bp-budget-box">'+_bpBudgetFigure(c.budget, c.pySpend, c.venue)+'</div>';
-  h+=_bpPlanBoxHtml(c, true);
+  h+=_bpPlanBoxHtml(c);
   h+='<div class="bp-card-foot"></div></article>';
   return h;
 }
@@ -482,6 +493,10 @@ function renderBookingPlan(){
 function _bpAddTotals(t, c){
   if(c.budget!=null){ t.budget=(t.budget||0)+c.budget; t.hasB=true; }
   t.confirmed+=c.confirmed; t.proposed+=c.proposed; t.bsT+=c.bsT;
+  (c.cats||[]).forEach(function(cat, i){
+    if(!t.cats[i]) t.cats[i]={label:cat.label, amount:0};
+    t.cats[i].amount+=(cat.amount||0);
+  });
   t.forecast=(t.forecast||0)+(c.forecast!=null?c.forecast:(c.planned||0));
   if(c.py){
     if(c.py.fee!=null){ t.pyFee=(t.pyFee||0)+c.py.fee; t.hasPyFee=true; }
@@ -490,7 +505,7 @@ function _bpAddTotals(t, c){
   if(c.pySpend!=null){ t.pySpend=(t.pySpend||0)+c.pySpend; t.hasPySpend=true; }
   else t.pyMiss=true;
 }
-function _bpBlankTot(){ return {budget:0,hasB:false,confirmed:0,proposed:0,forecast:0,bsT:0,pyFee:0,hasPyFee:false,pyBs:0,hasPyBs:false,pySpend:0,hasPySpend:false,pyMiss:false}; }
+function _bpBlankTot(){ return {budget:0,hasB:false,confirmed:0,proposed:0,forecast:0,bsT:0,cats:[],pyFee:0,hasPyFee:false,pyBs:0,hasPyBs:false,pySpend:0,hasPySpend:false,pyMiss:false}; }
 function _bpActualForVenues(venues, prev){
   if(venues.length===1) return _bpVenueMonth(venues[0], prev);
   var bucket=_bpBlankTot();
@@ -571,7 +586,7 @@ function _bpTotCard(t, label, range){
   var planned=t.confirmed+t.proposed;
   var shown=t.forecast!=null?t.forecast:planned;
   return {venue:'', month:{label:label, range:range||'', year:0, mm:''}, budget:t.hasB?t.budget:null,
-    confirmed:t.confirmed, proposed:t.proposed, planned:planned, forecast:shown,
+    confirmed:t.confirmed, proposed:t.proposed, planned:planned, forecast:shown, cats:t.cats,
     remaining:t.hasB?t.budget-shown:null, bsT:t.bsT,
     py:{fee:t.hasPyFee?t.pyFee:null, bs:t.hasPyBs?t.pyBs:null, label:'prior year'},
     pySpend:t.hasPySpend&&!t.pyMiss?t.pySpend:null,
@@ -582,7 +597,7 @@ function _bpCardHtml(c){
   var h='<article class="bp-card'+(c.isTotal?' bp-card-total':' bp-cast')+'">';
   h+='<div class="bp-card-hd"><b>'+_escHtml(m.label)+'</b><span>'+(m.range?_escHtml(m.range):'&nbsp;')+'</span></div>';
   h+='<div class="bp-budget-box">'+_bpBudgetFigure(c.budget, c.pySpend, c.venue)+'</div>';
-  h+=_bpPlanBoxHtml(c, false);
+  h+=_bpPlanBoxHtml(c);
   var foot='';
   if(!c.isTotal){
     var e=c.exc||{}, tags=[];

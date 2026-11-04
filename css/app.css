@@ -2045,7 +2045,7 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-deck-sec.bp-sec-1 em{color:#ffedd5}
 .bp-deck-sec.bp-sec-2{background:#9a3412;margin-top:2px}
 .bp-deck .bp-deck-sec{margin:2px 0}
-.bp-deck .bp-deck-sec.bp-sec-2{margin-top:16px}
+.bp-deck .bp-deck-sec.bp-sec-2{margin-top:2px}
 .bp-deck-sec.bp-sec-2 span{background:#ffedd5;color:#9a3412}
 .bp-deck-sec.bp-sec-2 em{color:#ffedd5}
 .bp-sheet .bp-deck-sec{margin:14px 0 8px;padding:7px 12px;font-size:13px}
@@ -2075,9 +2075,14 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-deck .bp-planned-main span{font-size:11px}
 .bp-deck .bp-planned-main b{font-size:16px}
 .bp-deck .bp-planned-var{font-size:13px}
-.bp-deck .bp-split{gap:1px;padding-top:4px}
-.bp-deck .bp-split-line{font-size:11px;height:15px}
-.bp-deck .bp-split-line b{font-size:12px}
+.bp-deck .bp-split{display:grid;grid-template-columns:1fr 1fr;gap:0 4px;padding-top:2px}
+.bp-deck .bp-split-line{font-size:9px;height:10px;gap:3px}
+.bp-deck .bp-budget-box{padding:1px 4px;border-radius:8px}
+.bp-deck .bp-planned-box{padding:1px 4px;gap:0;border-radius:8px}
+.bp-deck .bp-fc-row{height:13px}
+.bp-deck .bp-split-line b{font-size:10px}
+.bp-deck .bp-lbl-card .bp-fc-row{height:auto;min-height:15px}
+.bp-deck .bp-lbl-card .bp-fc-row > span{white-space:normal;line-height:1.05}
 .bp-deck .bp-subhd{margin:0;font-size:10px}
 .bp-deck .bp-fincards{gap:8px}
 .bp-deck .bp-fincard{padding:7px 8px;gap:4px;border-radius:9px}
@@ -2090,7 +2095,7 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-deck .bp-sf-vals{padding-top:1px;padding-bottom:1px}
 .bp-deck .bp-sf-vals b,.bp-deck .bp-sf-var,.bp-deck .bp-sf-var b{font-size:12px}
 .bp-deck .bp-sf-lab{font-size:9px;line-height:1.1;white-space:normal}
-.bp-deck .bp-fc-row{height:15px}
+.bp-deck .bp-fc-row{height:13px}
 .bp-deck .bp-lbl-card .bp-fc-row > span,.bp-deck .bp-lbl-card .bp-split-line span,.bp-deck .bp-lbl-card .bp-budget-box span{font-size:11px}
 .bp-deck .bp-fc-row b,.bp-deck .bp-fc-row > .bp-pos,.bp-deck .bp-fc-row > .bp-neg{font-size:15px}
 .bp-deck .bp-line{padding:3px 0;font-size:13px}
