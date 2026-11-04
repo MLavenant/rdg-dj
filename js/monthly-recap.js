@@ -257,6 +257,16 @@ function wmMtdLiveSpend(venue, meta){
   }
   return any?Math.round(fee+other):null;
 }
+function wmGuestDjSpend(venue, meta){
+  var sum=0, any=false;
+  mrShows(venue, meta).forEach(function(r){
+    var played=(typeof isPastPerformanceDate==='function')?isPastPerformanceDate(r.d):true;
+    if(!played) return;
+    var n=mrFee(r);
+    if(n!=null){ sum+=n; any=true; }
+  });
+  return any?Math.round(sum):null;
+}
 function wmFullSpend(venue, year, period){
   var mm=wmFiscalMm(period);
   if(typeof bgtFullLiveSpend==='function') return bgtFullLiveSpend(venue, year, mm);
@@ -304,13 +314,15 @@ function mrVenuePack(venue, meta){
     var pySales=wmSumMap(window.WM_MTD&&WM_MTD.sales?WM_MTD.sales[venue]:null, pyMeta.from, pyMeta.to);
     var live=wmMtdLiveSpend(venue, meta);
     var pyLive=wmFullSpend(venue, meta.year-1, meta.period);
+    var guest=wmGuestDjSpend(venue, meta);
+    var pyGuest=wmGuestDjSpend(venue, pyMeta);
     beat=wmBeatRows(rows);
     beat.bs=wmBs(rows);
     pyBeat=wmBeatRows(pyRows);
     pyBeat.bs=wmBs(pyRows);
-    now={sales:sales, live:live, livePct:(sales>0&&live!=null)?live/sales:null};
+    now={sales:sales, live:live, guest:guest, livePct:(sales>0&&live!=null)?live/sales:null};
     if(venue==='Casa Neos Lounge') py=null;
-    else py={sales:pySales, live:pyLive, livePct:(pySales>0&&pyLive!=null)?pyLive/pySales:null};
+    else py={sales:pySales, live:pyLive, guest:pyGuest, livePct:(pySales>0&&pyLive!=null)?pyLive/pySales:null};
   }
   return {venue:venue, label:mrLabel(venue), now:now, py:py, beat:beat, pyBeat:pyBeat, rows:rows};
 }
@@ -441,8 +453,12 @@ function mrComparePage(pack, opt){
     h+=mrCmpRow('Total Sales', mrMoneyCell(n.sales), solo?'':mrMoneyCell(y.sales), solo?'':sales.text, {tone:solo?'':sales.cls, solo:solo});
     h+=mrCmpRow('<i class="bp-arr"></i>Bottle Service Sales', mrMoneyCell(p.beat.bs), solo?'':mrMoneyCell(p.pyBeat.bs), '', {solo:solo});
     h+=mrCmpRow('ROI % Beat', mrPct(p.beat.rate), solo?'':mrPct(p.pyBeat.rate), solo?'':roi.text, {tone:solo?'':roi.cls, solo:solo});
-    var liveLabel=meta.mtd?'Live Spent MTD':'Live E Spent Actual + Forecast';
-    h+=mrCmpRow(liveLabel, mrMoneyCell(n.live), solo?'':mrMoneyCell(y.live), solo?'':tot.text, {tone:solo?'':tot.cls, solo:solo});
+    var guestVar=mrVar(n.guest, y.guest, true);
+    var liveLabel=meta.mtd?'Guest DJ':'Live E Spent Actual + Forecast';
+    var liveNow=meta.mtd?n.guest:n.live;
+    var livePy=meta.mtd?y.guest:y.live;
+    var liveGap=meta.mtd?guestVar:tot;
+    h+=mrCmpRow(liveLabel, mrMoneyCell(liveNow), solo?'':mrMoneyCell(livePy), solo?'':liveGap.text, {tone:solo?'':liveGap.cls, solo:solo});
     if(!meta.mtd) h+=mrCmpRow('Budget', mrMoneyCell(bud), '', spend.text, {row:'mr-budc', tone:spend.cls, solo:solo});
     h+=mrCmpRow('Live Ent. margins', mrPct(n.livePct), solo?'':mrPct(y.livePct), solo?'':live.text, {tone:solo?'':live.cls, solo:solo});
     h+='</div></section>';
