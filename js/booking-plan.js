@@ -629,6 +629,16 @@ function _bpLyBits(ly){
     bs:ly&&ly.bs!=null?$k(ly.bs):'\u2014'
   };
 }
+/* Same bottle-service sales as the financial row: this year is actual for nights already played and target for the rest. Prior year is actual only. */
+function _bpMonthBottle(data, m){
+  var sales=0, py=0, has=false, hasPy=false;
+  Object.keys(data.grid||{}).forEach(function(v){
+    var raw=_bpMonthRaw(v, m);
+    if(raw.sales!=null){ sales+=raw.sales; has=true; }
+    if(v!=='Casa Neos Lounge' && raw.pySales!=null){ py+=raw.pySales; hasPy=true; }
+  });
+  return {sales:has?sales:null, py:hasPy?py:null};
+}
 function _bpBkHead(simple, py){
   var cols='<span>Artist</span>'+(py?'<span class="bp-lyh">2025</span>':'')+'<span>Fee</span>'+(py?'<span class="bp-lyh">2025</span>':'')+'<span>Status</span><span class="r">BS actual</span>'+(py?'<span class="bp-lyh r">2025</span>':'');
   return '<div class="bp-bk-hd"><span>Date</span><div class="bp-bk-cols'+(py?'':' bp-cols-now')+'">'+cols+'</div>'+(simple?'':'<span>Approval</span>')+'</div>';
@@ -664,10 +674,10 @@ function _bpRowsHtml(data, opts){
       box+='<span class="bp-dj">'+_escHtml(r.dj||'TBD')+'</span>';
       if(py) box+='<span class="bp-lyc">'+bits.dj+'</span>';
       box+='<span class="bp-fee">'+$k(r.fee)+'</span>';
-      if(py) box+='<span class="bp-lyc">'+bits.fee+'</span>';
+      if(py) box+='<span class="bp-lyc bp-lym">'+bits.fee+'</span>';
       box+='<span><span class="bp-status '+(played?'bp-status-actual':(r.confirmed?'bp-status-conf':'bp-status-prop'))+'">'+_escHtml(played?'Actual':(r.status||'No status'))+'</span></span>';
       box+='<span class="bp-bsnow">'+(bsNow!=null?$k(bsNow):'\u2014')+'</span>';
-      if(py) box+='<span class="bp-lyc">'+bits.bs+'</span>';
+      if(py) box+='<span class="bp-lyc bp-lym">'+bits.bs+'</span>';
       box+='</div></div>';
       if(!simple){
         box+='<div class="bp-bk-appr">'+_bpBadge(r.approval);
@@ -719,14 +729,20 @@ function _bpRowsHtml(data, opts){
     h+=paint(items);
   }
   if(items.length){
+    var bsAll=0, pyAll=0, hasBsAll=false, hasPyAll=false;
+    data.months.forEach(function(m){
+      var bot=_bpMonthBottle(data, m);
+      if(bot.sales!=null){ bsAll+=bot.sales; hasBsAll=true; }
+      if(bot.pySales!=null){ pyAll+=bot.pySales; hasPyAll=true; }
+    });
     h+='<div class="bp-bk-box bp-bk-total"><div class="bp-bk-date"><b>Total</b><span>All shows</span></div><div class="bp-bk-lines"><div class="bp-bk-cols bp-bk-line bp-bk-now'+(py?'':' bp-cols-now')+'">';
     h+='<span class="bp-dj">'+now.n+' bookings</span>';
     if(py) h+='<span class="bp-lyc"></span>';
     h+='<span class="bp-fee">'+$k(now.fee)+'</span>';
-    if(py) h+='<span class="bp-lyc">'+(pyN?$k(pyFee):'\u2014')+'</span>';
+    if(py) h+='<span class="bp-lyc bp-lym">'+(pyN?$k(pyFee):'\u2014')+'</span>';
     h+='<span></span>';
-    h+='<span class="bp-bsnow">'+(now.hasBs?$k(now.bs):'\u2014')+'</span>';
-    if(py) h+='<span class="bp-lyc">'+(pyHasBs?$k(pyBs):'\u2014')+'</span>';
+    h+='<span class="bp-bsnow">'+(hasBsAll?$k(bsAll):(now.hasBs?$k(now.bs):'\u2014'))+'</span>';
+    if(py) h+='<span class="bp-lyc bp-lym">'+(hasPyAll?$k(pyAll):'\u2014')+'</span>';
     h+='</div></div>'+(simple?'':'<div class="bp-bk-appr"></div>')+'</div>';
   }
   h+='</div>';

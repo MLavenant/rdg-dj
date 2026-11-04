@@ -2029,14 +2029,14 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-x-day-hd{border-top:0;background:#f8fafc;font-size:12px;font-weight:900;color:#334155}
 .bp-x-day-row>span{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#334155}
 .bp-x-day .bp-sf-vals{border-top:0;padding:0}
-.bp-deck{display:flex;flex-direction:column;padding:2px 22px 4px}
-.bp-deck-hd{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:10px;border-bottom:4px solid #0b2e40}
+.bp-deck{display:flex;flex-direction:column;padding:2px 22px 0}
+.bp-deck-hd{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:4px;border-bottom:4px solid #0b2e40}
 .bp-deck-hd>div{display:flex;flex-direction:column;gap:4px}
 .bp-deck-kicker{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#64748b}
 .bp-deck-hd b{font-size:32px;font-weight:900;font-style:italic;text-transform:uppercase;color:#0b2e40;letter-spacing:-.5px;line-height:1.05}
 .bp-deck-hd em{font-style:normal;font-size:13px;font-weight:600;color:#475569}
 .bp-deck-hd img{height:50px}
-.bp-deck-body{flex:1;min-height:0;overflow:hidden;padding-top:2px}
+.bp-deck-body{flex:1;min-height:0;overflow:hidden;padding-top:0}
 .bp-deck-sec{display:flex;align-items:center;gap:8px;margin:6px 0 4px;padding:4px 10px;background:#0b2e40;color:#fff;border-radius:7px;font-size:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
 .bp-deck-sec span{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:#fcd34d;color:#0b2e40;font-size:10px;letter-spacing:0}
 .bp-deck-sec em{font-style:normal;font-weight:500;letter-spacing:0;text-transform:none;font-size:10px;color:#cbd5e1;margin-left:4px}
@@ -2100,11 +2100,12 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-deck .bp-var{font-size:10px;gap:6px}
 .bp-deck .bp-var em{font-size:8px}
 .bp-deck .bp-var>b{font-size:12px}
-.bp-deck .bp-bk-cols{grid-template-columns:minmax(8.4em,11em) minmax(5em,6.6em) minmax(3.2em,max-content) minmax(3.3em,4.2em) minmax(4.6em,max-content) minmax(5.2em,max-content) minmax(3.6em,4.6em);gap:1px 3px;width:100%}
+.bp-deck .bp-bk-cols{grid-template-columns:minmax(8.2em,10.4em) minmax(4.2em,5.2em) minmax(3.1em,max-content) minmax(3.1em,3.8em) max-content minmax(4.4em,max-content) minmax(5.6em,max-content);gap:1px 2px;width:100%}
 .bp-deck .bp-bk-cols.bp-cols-now{grid-template-columns:11em max-content max-content max-content}
 .bp-deck .bp-cols-now .bp-dj{max-width:11em}
 .bp-deck .bp-dj{white-space:normal;max-width:none;font-size:11px;line-height:1.08;overflow-wrap:break-word}
 .bp-deck .bp-lyc{font-size:10px;max-width:none;overflow-wrap:break-word}
+.bp-deck .bp-lym{white-space:nowrap;overflow:visible;overflow-wrap:normal;padding:0 2px}
 .bp-deck .bp-bk-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 14px;align-items:start}
 .bp-deck .bp-bk-col{min-width:0;display:flex;flex-direction:column;gap:1px}
 .bp-deck .bp-card-hd{min-height:0}
@@ -2126,16 +2127,16 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-deck .bp-bk-hd{padding:0 6px;font-size:10px}
 .bp-deck .bp-bk-month{margin-top:0;padding-bottom:0;font-size:11px}
 .bp-deck .bp-bk-month span{font-size:10px}
-.bp-deck .bp-bk{gap:2px}
-.bp-deck .bp-bk-box{padding:2px 4px;border-radius:7px}
+.bp-deck .bp-bk{gap:0}
+.bp-deck .bp-bk-box{padding:1px 3px;border-radius:7px}
 .bp-deck .bp-bk-date b{font-size:13px}
 .bp-deck .bp-bk-date span{font-size:10px;margin-top:0}
-.bp-deck .bp-bk-line{padding:1px 0;min-height:0;font-size:13px}
+.bp-deck .bp-bk-line{padding:0;min-height:0;font-size:13px}
 .bp-deck .bp-py{margin:0 4px 0 6px}
 .bp-deck .bp-stack b,.bp-deck .bp-expect-nums,.bp-deck .bp-expect>b{font-size:13px}
 .bp-deck .bp-stack em,.bp-deck .bp-expect-nums em{font-size:11px}
-.bp-deck .bp-bk{gap:2px}
-.bp-deck .bp-bk-box{padding:2px 4px}
+.bp-deck .bp-bk{gap:0}
+.bp-deck .bp-bk-box{padding:1px 3px}
 .bp-deck .bp-bk-line.bp-bk-ly{padding:1px 4px;margin:0 -4px}
 .bp-deck .bp-bk-tag,.bp-deck .bp-bk-tag em{font-size:11px}
 .bp-deck .bp-status,.bp-deck .bp-badge{font-size:12px;padding:2px 6px}
