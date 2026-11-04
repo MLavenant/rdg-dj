@@ -271,8 +271,9 @@ function mrVenuePack(venue, meta){
   var rows=shows.map(function(r){
     var x=mrShowRoi(r);
     var sales=mrDaySales(venue, r.d);
-    var margin=mrDayMargin(venue, sales, x.fee);
-    return {r:r, dj:mrDj(r), d:r.d, fee:x.fee, bs:x.bs, roiA:x.roiA, roiT:x.roiT, sales:sales, margin:margin};
+    var tgt=(typeof showTargets==='function')?showTargets(r):null;
+    var bsT=tgt&&tgt.bs_m!=null&&isFinite(+tgt.bs_m)?+tgt.bs_m:null;
+    return {r:r, dj:mrDj(r), d:r.d, fee:x.fee, bs:x.bs, bsT:bsT, roiA:x.roiA, roiT:x.roiT, sales:sales};
   });
   if(meta&&meta.mtd){
     var pyTo=wmAddDays(pyMeta.from, wmSpan(meta.from, meta.to));
@@ -337,11 +338,11 @@ function mrRoiClass(row){
   return (+row.roiA+1e-9<+row.roiT)?'mr-miss':'mr-beat';
 }
 function mrShowsTable(rows){
-  var h='<table class="mr-shows"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI actual</th><th>ROI target</th><th>Sales</th><th>Margin</th></tr></thead><tbody>';
+  var h='<table class="mr-shows"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI actual</th><th>ROI target</th><th>Sales</th><th>BS actual vs target</th></tr></thead><tbody>';
   if(!rows.length) h+='<tr><td class="l" colspan="7">No performances this month.</td></tr>';
   rows.forEach(function(row){
     var tone=mrRoiClass(row);
-    h+='<tr'+(tone?' class="'+tone+'"':'')+'><td class="l"><b>'+_escHtml(mrDayLabel(row.d))+'</b></td><td class="l">'+_escHtml(row.dj)+'</td><td>'+mrMoney(row.fee)+'</td><td>'+(typeof rx==='function'?rx(row.roiA):'—')+'</td><td>'+(typeof rx==='function'?rx(row.roiT):'—')+'</td><td>'+mrMoney(row.sales)+'</td><td>'+mrPct(row.margin&&row.margin.margin)+'</td></tr>';
+    h+='<tr'+(tone?' class="'+tone+'"':'')+'><td class="l"><b>'+_escHtml(mrDayLabel(row.d))+'</b></td><td class="l">'+_escHtml(row.dj)+'</td><td>'+mrMoney(row.fee)+'</td><td>'+(typeof rx==='function'?rx(row.roiA):'—')+'</td><td>'+(typeof rx==='function'?rx(row.roiT):'—')+'</td><td>'+mrMoney(row.sales)+'</td><td class="wm-bs">'+wmBsVs(row.bs, row.bsT)+'</td></tr>';
   });
   h+='</tbody></table>';
   return h;
@@ -445,11 +446,11 @@ function mrDetailPage(p, meta){
   h+='<div><span>ROI beat</span><b>'+mrPct(p.beat.rate)+'</b>'+mrLy(pyY+' '+mrPct(p.pyBeat.rate))+'</div>';
   h+='<div><span>Live E margins</span><b>'+mrPct(n.livePct)+'</b>'+mrLy(pyY+' '+mrPct(y.livePct))+'</div>';
   h+='</div>';
-  h+='<table class="mr-pdf-tbl"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI actual</th><th>ROI target</th><th>Sales for the day</th><th>Margin</th></tr></thead><tbody>';
+  h+='<table class="mr-pdf-tbl"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI actual</th><th>ROI target</th><th>Sales for the day</th><th>BS actual vs target</th></tr></thead><tbody>';
   if(!p.rows.length) h+='<tr><td class="l" colspan="7">No performances this month.</td></tr>';
   p.rows.forEach(function(row){
     var tone=mrRoiClass(row);
-    h+='<tr'+(tone?' class="'+tone+'"':'')+'><td class="l"><b>'+_escHtml(mrDayLabel(row.d))+'</b></td><td class="l">'+_escHtml(row.dj)+'</td><td>'+mrMoney(row.fee)+'</td><td>'+(typeof rx==='function'?rx(row.roiA):'—')+'</td><td>'+(typeof rx==='function'?rx(row.roiT):'—')+'</td><td>'+mrMoney(row.sales)+'</td><td>'+mrPct(row.margin&&row.margin.margin)+'</td></tr>';
+    h+='<tr'+(tone?' class="'+tone+'"':'')+'><td class="l"><b>'+_escHtml(mrDayLabel(row.d))+'</b></td><td class="l">'+_escHtml(row.dj)+'</td><td>'+mrMoney(row.fee)+'</td><td>'+(typeof rx==='function'?rx(row.roiA):'—')+'</td><td>'+(typeof rx==='function'?rx(row.roiT):'—')+'</td><td>'+mrMoney(row.sales)+'</td><td class="wm-bs">'+wmBsVs(row.bs, row.bsT)+'</td></tr>';
   });
   h+='</tbody></table></div></div>';
   return h;
