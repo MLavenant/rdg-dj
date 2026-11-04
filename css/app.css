@@ -1893,6 +1893,8 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-empty{text-align:center!important;color:#94a3b8;padding:18px!important}
 .bp-status{font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px}
 .bp-status-conf{background:#e8edf3;color:#0f2a4a}
+.bp-status-actual{background:#1d4ed8;color:#fff}
+.bp-deck .bp-bk-months{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 10px;align-items:start}
 .bp-status-prop{background:#f8fafc;color:#64748b;border:0.5px solid #e2e8f0}
 .bp-badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;margin-right:4px}
 .bp-st-none{color:#64748b}
@@ -2008,7 +2010,7 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-deck-sec.bp-sec-1{background:#9a3412}
 .bp-deck-sec.bp-sec-1 span{background:#ffedd5;color:#9a3412}
 .bp-deck-sec.bp-sec-1 em{color:#ffedd5}
-.bp-deck-sec.bp-sec-2{background:#9a3412;margin-top:10px}
+.bp-deck-sec.bp-sec-2{background:#9a3412;margin-top:4px}
 .bp-deck-sec.bp-sec-2 span{background:#ffedd5;color:#9a3412}
 .bp-deck-sec.bp-sec-2 em{color:#ffedd5}
 .bp-sheet .bp-deck-sec{margin:14px 0 8px;padding:7px 12px;font-size:13px}

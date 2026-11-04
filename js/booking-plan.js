@@ -236,13 +236,42 @@ function _bpVenueList(){
 function _bpMonthOverBudget(c){ return !!(c && c.budget!=null && c.planned>c.budget); }
 function _bpHighlightRow(r, c){ return !!r && (+r.fee||0)>20000 && _bpMonthOverBudget(c); }
 function _bpSectionRow(r){ return !!r && (+r.fee||0)>5000; }
-/* Same bottle-service figure the calendar shows: actual when it is posted, otherwise the calendar target. */
+function _bpPlayed(r){
+  if(!r||!r.d) return false;
+  return (typeof isPastPerformanceDate==='function')?isPastPerformanceDate(r.d):r.d<_bpToday();
+}
+/* Past nights use the posted actual (Toast when the calendar actual is still empty).
+   Nights that have not happened use the bottle-service target. */
 function _bpShowBs(r){
   if(!r) return null;
+  var venue=r.venue||r.v;
+  if(!_bpPlayed(r)){
+    if(r.bs_m!=null&&r.bs_m!==''&&isFinite(+r.bs_m)) return +r.bs_m;
+    var tgt=(typeof showTargets==='function')?showTargets(r):null;
+    if(tgt&&tgt.bs_m!=null&&isFinite(+tgt.bs_m)) return +tgt.bs_m;
+    return null;
+  }
   if(r.bs_a!=null&&r.bs_a!==''&&isFinite(+r.bs_a)) return +r.bs_a;
-  var tgt=(typeof showTargets==='function')?showTargets(r):null;
-  if(tgt&&tgt.bs_m!=null&&isFinite(+tgt.bs_m)) return +tgt.bs_m;
+  if(typeof wmToastDay==='function'&&venue){
+    var mates=0;
+    (typeof SCHED!=='undefined'?SCHED:[]).forEach(function(s){
+      if(s&&s._s!=='empty'&&s.d===r.d&&(s.v||s.venue)===venue) mates++;
+    });
+    var day=wmToastDay(venue, r.d);
+    if(day!=null&&mates<=1) return +day;
+  }
+  if(r.bs_m!=null&&r.bs_m!==''&&isFinite(+r.bs_m)) return +r.bs_m;
+  var locked=(typeof showTargets==='function')?showTargets(r):null;
+  if(locked&&locked.bs_m!=null&&isFinite(+locked.bs_m)) return +locked.bs_m;
   return null;
+}
+function _bpMonthBs(venue, from, to){
+  var sum=0, any=false;
+  _bpBookings(venue, {from:from, to:to}).forEach(function(r){
+    var bs=_bpShowBs(r);
+    if(bs!=null&&isFinite(+bs)){ sum+=+bs; any=true; }
+  });
+  return any?sum:null;
 }
 function _bpExceptionRow(r, c){ return _bpHighlightRow(r, c) && !r.confirmed; }
 function _bpHasRequest(uid){
@@ -304,16 +333,22 @@ function _bpPlRaw(venue, year, period){
   if(!pl||_bpFinNum(pl.sales)==null) return null;
   return {sales:+pl.sales, live:_bpFinNum(pl.live), ebitda:_bpFinNum(pl.net)};
 }
-/* Every month, open or closed: bottle service = fee x historical ROI.
-   The same run rates are applied to last year's fees. */
+/* Open month: actual bottle service for nights already played, target for the rest.
+   A closed month is all actuals. */
 function _bpMonthRaw(venue, m){
   var raw={sales:null, live:null, ebitda:null, pySales:null, pyLive:null, pyEbitda:null};
-  if(!venue||!m||m.mi==null||typeof spBsRange!=='function') return raw;
-  var now=spBsRange(venue, m.from, m.to);
-  if(now){ raw.sales=now.sales; raw.live=now.fee; }
+  if(!venue||!m||m.mi==null) return raw;
+  raw.sales=_bpMonthBs(venue, m.from, m.to);
+  if(typeof spBsRange==='function'){
+    var now=spBsRange(venue, m.from, m.to);
+    if(now) raw.live=now.fee;
+  }
   var pyR=fiscalPeriodRange(m.year-1, m.mi);
-  var py=spBsRange(venue, pyR.from, pyR.to);
-  if(py){ raw.pySales=py.sales; raw.pyLive=py.fee; }
+  raw.pySales=_bpMonthBs(venue, pyR.from, pyR.to);
+  if(typeof spBsRange==='function'){
+    var py=spBsRange(venue, pyR.from, pyR.to);
+    if(py) raw.pyLive=py.fee;
+  }
   return raw;
 }
 function _bpDayRaw(venue, date){
@@ -618,8 +653,6 @@ function _bpRowsHtml(data, opts){
       var c=data.grid[v][mi];
       c.rows.forEach(function(r){ monthRows.push({r:r, budget:c.budget, planned:c.planned}); });
     });
-    monthRows=monthRows.filter(function(x){ return _bpSectionRow(x.r) || _bpHasRequest(x.r.uid); });
-    if(!monthRows.length) return;
     monthRows.sort(function(a,b){ return a.r.d<b.r.d?-1:(a.r.d>b.r.d?1:(a.r.venue<b.r.venue?-1:1)); });
     monthRows.forEach(function(x){
       var r=x.r;
@@ -629,14 +662,14 @@ function _bpRowsHtml(data, opts){
       if(bsNow!=null){ now.bs+=bsNow; now.hasBs=true; }
       if(ly&&ly.fee!=null){ pyFee+=ly.fee; pyN++; }
       if(ly&&ly.bs!=null){ pyBs+=ly.bs; pyHasBs=true; }
-      var played=(typeof isPastPerformanceDate==='function')?isPastPerformanceDate(r.d):(r.d && r.d<_bpToday());
+      var played=_bpPlayed(r);
       var cls=(r.violation?' bp-bk-viol':(r.needs?' bp-bk-over':''))+(played?' bp-bk-played':'');
       var box='<div class="bp-bk-box'+cls+'">';
       box+='<div class="bp-bk-date"><b>'+_bpDay(r.d)+'</b><span>'+_escHtml(BP_VENUE_SHORT[r.venue]||r.venue)+'</span></div>';
       box+='<div class="bp-bk-lines"><div class="bp-bk-cols bp-bk-line bp-bk-now">';
       box+=_bpStack(_escHtml(r.dj||'TBD'), ly&&ly.dj?_escHtml(ly.dj):(ly?'TBD':'No show'));
       box+=_bpStack($k(r.fee), ly&&ly.fee!=null?$k(ly.fee):'—');
-      box+='<span><span class="bp-status '+(r.confirmed?'bp-status-conf':'bp-status-prop')+'">'+_escHtml(r.status||'No status')+'</span></span>';
+      box+='<span><span class="bp-status '+(played?'bp-status-actual':(r.confirmed?'bp-status-conf':'bp-status-prop'))+'">'+_escHtml(played?'Actual':(r.status||'No status'))+'</span></span>';
       box+=_bpBsCell(r, ly);
       box+='</div></div>';
       if(!simple){
@@ -662,10 +695,26 @@ function _bpRowsHtml(data, opts){
     });
     return out;
   }
+  var byMonth=!!opts.byMonth;
   var split=opts.columns===2 && items.length>1;
-  var h='<div class="bp-bk'+(simple?' bp-bk-simple':'')+(split?' bp-bk-splitwrap':'')+'">';
+  var h='<div class="bp-bk'+(simple?' bp-bk-simple':'')+(split||byMonth?' bp-bk-splitwrap':'')+'">';
   if(!items.length){
-    h+=_bpBkHead(simple)+'<div class="bp-empty">No bookings over $5K.</div>';
+    h+=_bpBkHead(simple)+'<div class="bp-empty">No performances.</div>';
+  } else if(byMonth){
+    var groups=[], seen={};
+    data.months.forEach(function(m){
+      seen[m.label]={label:m.label, range:m.range, items:[]};
+      groups.push(seen[m.label]);
+    });
+    items.forEach(function(it){
+      if(!seen[it.label]){ seen[it.label]={label:it.label, range:it.range, items:[]}; groups.push(seen[it.label]); }
+      seen[it.label].items.push(it);
+    });
+    h+='<div class="bp-bk-months">';
+    groups.forEach(function(g){
+      h+='<div class="bp-bk-col">'+(g.items.length?paint(g.items):(_bpBkHead(simple)+'<div class="bp-bk-month">'+_escHtml(g.label)+' <span>'+_escHtml(g.range||'')+'</span></div><div class="bp-empty">No performances.</div>'))+'</div>';
+    });
+    h+='</div>';
   } else if(split){
     var mid=Math.ceil(items.length/2);
     h+='<div class="bp-bk-split"><div class="bp-bk-col">'+paint(items.slice(0, mid))+'</div><div class="bp-bk-col">'+paint(items.slice(mid))+'</div></div>';
@@ -674,7 +723,7 @@ function _bpRowsHtml(data, opts){
   }
   if(items.length){
     var bsPct=now.hasBs&&pyHasBs&&pyBs?(now.bs-pyBs)/Math.abs(pyBs)*100:null;
-    h+='<div class="bp-bk-box bp-bk-total"><div class="bp-bk-date"><b>Total</b><span>Over $5K</span></div><div class="bp-bk-lines"><div class="bp-bk-cols bp-bk-line bp-bk-now">';
+    h+='<div class="bp-bk-box bp-bk-total"><div class="bp-bk-date"><b>Total</b><span>All shows</span></div><div class="bp-bk-lines"><div class="bp-bk-cols bp-bk-line bp-bk-now">';
     h+=_bpStack(now.n+' bookings', '');
     h+=_bpStack($k(now.fee), pyN?$k(pyFee):'');
     h+='<span></span>';
@@ -699,8 +748,8 @@ function _bpDeckSlideHtml(data, n, of){
   h+='<div class="bp-deck-body">';
   h+='<div class="bp-deck-sec bp-sec-1"><span>01</span>Budget vs pipeline<em>Budget and planned spend, then sales and margins versus LY</em></div>';
   h+=_bpSummaryHtml(data);
-  h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Bookings over $5K<em>Artist and prior year, fee and prior year, status, bottle service sales versus last year</em></div>';
-  h+=_bpRowsHtml(data, {noActions:true, columns:2});
+  h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Performances<em>Every show, one column per month. Past nights use actual bottle service; upcoming nights use the target</em></div>';
+  h+=_bpRowsHtml(data, {noActions:true, byMonth:true});
   h+='</div>';
   h+='<div class="bp-deck-ft"><span>Prepared '+_escHtml(_bpFmtDate(_bpNow()))+'</span><span>Riviera Dining Group · Entertainment</span></div>';
   h+='</div>';
@@ -711,8 +760,8 @@ function _bpPlanHtml(data){
   h+=_bpSheetHead(data, 'Weekly Meeting');
   h+='<div class="bp-deck-sec bp-sec-1"><span>01</span>Budget vs pipeline<em>Budget and planned spend, then sales and margins versus LY</em></div>';
   h+=_bpSummaryHtml(data);
-  h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Bookings over $5K<em>Artist and prior year, fee and prior year, status, bottle service sales versus last year</em></div>';
-  h+=_bpRowsHtml(data);
+  h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Performances<em>Every show. Past nights use actual bottle service; upcoming nights use the target</em></div>';
+  h+=_bpRowsHtml(data, {byMonth:true});
   h+='</div>';
   return h;
 }
