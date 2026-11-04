@@ -1057,9 +1057,6 @@ function _bpBusy(on, msg){
   }
   el.innerHTML='<div><b>Preparing PDF</b><span>'+_escHtml(msg||'')+'</span></div>';
 }
-function _bpApprovalPageHtml(){
-  return '<div class="bp-page bp-portrait bp-approval-src"><img src="assets/artist-booking-approval-process.png" alt="Artist booking approval process"></div>';
-}
 function _bpCoverHtml(title, sub, location){
   return '<div class="bp-page bp-cover">'
     +'<img class="bp-cover-logo" src="assets/rdg-logo.png" alt="RDG">'
@@ -1370,11 +1367,26 @@ function _bpBuildLocationPages(){
     _bpBusy(true, 'Cover page');
     return _bpRenderPage(_bpCoverHtml('Weekly Live Entertainment Meeting', _bpMeetingDateLabel(), '')).then(function(cv){ canvases.push(cv); });
   }).then(function(){
-    _bpBusy(true, 'Approval process');
-    return _bpRenderPage(_bpCoverHtml('Approval Process', 'Artist booking approval', '')).then(function(cv){
+    /* Monthly recap for the closed month: break page, all-locations comparison, then each venue's detail page (the monthly recap's pages 2, 4, 6, 8). */
+    var recap=typeof wmRecapMonth==='function'?wmRecapMonth():null;
+    var recapPack=recap&&typeof mrPack==='function'?mrPack(recap):null;
+    if(!recapPack) return;
+    var recapTitle=(recap.label||'').replace(/\s+\d{4}$/,'')+' Recap';
+    _bpBusy(true, recapTitle);
+    return _bpRenderPage(_bpCoverHtml(recapTitle, recap.label+(recap.range?' · '+recap.range:''), '')).then(function(cv){
       canvases.push(cv);
-      return _bpRenderPage(_bpApprovalPageHtml());
-    }).then(function(cv){ canvases.push(cv); });
+      return _bpRenderPage(mrComparePage(recapPack));
+    }).then(function(cv){
+      canvases.push(cv);
+      var chain=Promise.resolve();
+      recapPack.venues.forEach(function(p){
+        chain=chain.then(function(){
+          _bpBusy(true, p.label);
+          return _bpRenderPage(mrDetailPage(p, recap));
+        }).then(function(cv){ canvases.push(cv); });
+      });
+      return chain;
+    });
   }).then(function(){
     _bpBusy(true, 'Weekly recap');
     var anchor=(typeof wmReportingAnchor==='function')?wmReportingAnchor():null;

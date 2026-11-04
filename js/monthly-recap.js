@@ -468,6 +468,13 @@ function wmActualMonth(){
   meta.range=wmShort(meta.from)+' – '+wmShort(through);
   return meta;
 }
+/* The weekly packet's recap break is the last closed month: the month before the meeting anchor (October on Nov 4). */
+function wmRecapMonth(){
+  var info=(typeof wmReportingAnchor==='function')?wmReportingAnchor():{year:curYr, monthIndex:curM};
+  var mi=info.monthIndex-1, yr=info.year;
+  if(mi<0){ mi=11; yr=info.year-1; }
+  return mrPeriodMeta(yr, mi+1);
+}
 function wmShort(iso){
   var d=new Date(String(iso).slice(0,10)+'T12:00:00');
   if(isNaN(d.getTime())) return String(iso||'');
