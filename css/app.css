@@ -2075,12 +2075,12 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-deck .bp-planned-main span{font-size:11px}
 .bp-deck .bp-planned-main b{font-size:16px}
 .bp-deck .bp-planned-var{font-size:13px}
-.bp-deck .bp-split{display:flex;flex-direction:column;gap:0;padding-top:2px}
-.bp-deck .bp-split-line{font-size:11px;height:14px;gap:4px}
+.bp-deck .bp-split{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;margin-top:6px;padding-top:2px;border-top:0}
+.bp-deck .bp-split-line{justify-content:center;font-size:11px;height:16px;gap:4px}
 .bp-deck .bp-budget-box{padding:1px 4px;border-radius:8px}
 .bp-deck .bp-planned-box{padding:1px 4px;gap:0;border-radius:8px}
 .bp-deck .bp-fc-row{height:13px}
-.bp-deck .bp-split-line b{font-size:12px}
+.bp-deck .bp-split-line b{margin-left:6px;font-size:12px}
 .bp-deck .bp-lbl-card .bp-fc-row{height:auto;min-height:15px}
 .bp-deck .bp-lbl-card .bp-fc-row > span{white-space:normal;line-height:1.05}
 .bp-deck .bp-subhd{margin:0;font-size:10px}

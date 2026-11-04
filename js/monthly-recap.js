@@ -461,7 +461,6 @@ function mrComparePage(pack, opt){
     var roi=mrPp(p.beat.rate, p.pyBeat.rate, false);
     var marginNow=mrSideMargin(n), marginPy=mrSideMargin(y);
     var live=mrPp(marginNow, marginPy, true);
-    var tot=mrVar(n.live, y.live, true);
     var sales=mrVar(n.sales, y.sales);
     h+='<section class="mr-pdf-loc"><h3>'+_escHtml(p.label)+'</h3><div class="mr-cmp'+(solo?' mr-cmp-one':'')+'">';
     h+=mrCmpRow('', String(meta.year), solo?'':String(meta.year-1), 'Var', {row:'mr-c-hd', solo:solo});
@@ -469,11 +468,7 @@ function mrComparePage(pack, opt){
     h+=mrCmpRow('<i class="bp-arr"></i>Bottle Service Sales', mrMoneyCell(p.beat.bs), solo?'':mrMoneyCell(p.pyBeat.bs), '', {solo:solo});
     h+=mrCmpRow('ROI % Beat', mrPct(p.beat.rate), solo?'':mrPct(p.pyBeat.rate), solo?'':roi.text, {tone:solo?'':roi.cls, solo:solo});
     var guestVar=mrVar(n.guest, y.guest, true);
-    var liveLabel=meta.mtd?'Guest DJ':'Live E Spent Actual + Forecast';
-    var liveNow=meta.mtd?n.guest:n.live;
-    var livePy=meta.mtd?y.guest:y.live;
-    var liveGap=meta.mtd?guestVar:tot;
-    h+=mrCmpRow(liveLabel, mrMoneyCell(liveNow), solo?'':mrMoneyCell(livePy), solo?'':liveGap.text, {tone:solo?'':liveGap.cls, solo:solo});
+    h+=mrCmpRow('Guest DJ', mrMoneyCell(n.guest), solo?'':mrMoneyCell(y.guest), solo?'':guestVar.text, {tone:solo?'':guestVar.cls, solo:solo});
     if(!meta.mtd) h+=mrCmpRow('Budget', mrMoneyCell(bud), '', spend.text, {row:'mr-budc', tone:spend.cls, solo:solo});
     h+=mrCmpRow('Live Ent. margins', mrPct(marginNow), solo?'':mrPct(marginPy), solo?'':live.text, {tone:solo?'':live.cls, solo:solo});
     h+='</div></section>';

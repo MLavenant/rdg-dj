@@ -432,11 +432,10 @@ function _bpPlanBoxHtml(c){
     +_bpCatSplitHtml(c.cats, false)+'</div>';
 }
 function _bpBudgetLabelsHtml(){
-  var cats=(typeof bgtSpendCategoryRows==='function')?bgtSpendCategoryRows().map(function(row){ return {label:row.label}; }):[];
   return '<article class="bp-card bp-lbl-card"><div class="bp-card-hd"><b>&nbsp;</b><span>&nbsp;</span></div>'
     +'<div class="bp-budget-box"><span>Total Budget</span><em>'+(_bpVenue==='Casa Neos Lounge'?'&nbsp;':'PY spent')+'</em></div>'
-    +'<div class="bp-planned-box"><div class="bp-fc-row"><span>Total Forecast Spend</span></div><div class="bp-fc-row"><span>Variance</span></div>'
-    +_bpCatSplitHtml(cats, true)+'</div>'
+    +'<div class="bp-planned-box"><div class="bp-fc-row"><span>Total Forecast</span></div><div class="bp-fc-row"></div>'
+    +_bpCatSplitHtml([], true)+'</div>'
     +'<div class="bp-card-foot"></div></article>';
 }
 function _bpActualBudgetHtml(c){
