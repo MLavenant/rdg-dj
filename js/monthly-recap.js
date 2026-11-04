@@ -267,6 +267,15 @@ function wmGuestDjSpend(venue, meta){
   });
   return any?Math.round(sum):null;
 }
+function wmGuestMargin(guest, sales){
+  if(!(sales>0)||guest==null||!isFinite(+guest)) return null;
+  return guest/sales;
+}
+function mrSideMargin(side){
+  if(!side) return null;
+  if(side.guest!=null) return wmGuestMargin(side.guest, side.sales);
+  return side.livePct!=null?side.livePct:null;
+}
 function wmFullSpend(venue, year, period){
   var mm=wmFiscalMm(period);
   if(typeof bgtFullLiveSpend==='function') return bgtFullLiveSpend(venue, year, mm);
@@ -320,9 +329,14 @@ function mrVenuePack(venue, meta){
     beat.bs=wmBs(rows);
     pyBeat=wmBeatRows(pyRows);
     pyBeat.bs=wmBs(pyRows);
-    now={sales:sales, live:live, guest:guest, livePct:(sales>0&&live!=null)?live/sales:null};
+    now={sales:sales, live:live, guest:guest, livePct:wmGuestMargin(guest, sales)};
     if(venue==='Casa Neos Lounge') py=null;
-    else py={sales:pySales, live:pyLive, guest:pyGuest, livePct:(pySales>0&&pyLive!=null)?pyLive/pySales:null};
+    else py={sales:pySales, live:pyLive, guest:pyGuest, livePct:wmGuestMargin(pyGuest, pySales)};
+  } else {
+    var guestFull=wmGuestDjSpend(venue, meta);
+    var pyGuestFull=wmGuestDjSpend(venue, pyMeta);
+    if(now) now=Object.assign({}, now, {guest:guestFull});
+    if(py) py=Object.assign({}, py, {guest:pyGuestFull});
   }
   return {venue:venue, label:mrLabel(venue), now:now, py:py, beat:beat, pyBeat:pyBeat, rows:rows};
 }
@@ -445,7 +459,8 @@ function mrComparePage(pack, opt){
     var bud=mrLiveBudget(p.venue, meta);
     var spend=mrSpendVar(n.live, bud);
     var roi=mrPp(p.beat.rate, p.pyBeat.rate, false);
-    var live=mrPp(n.livePct, y.livePct, true);
+    var marginNow=mrSideMargin(n), marginPy=mrSideMargin(y);
+    var live=mrPp(marginNow, marginPy, true);
     var tot=mrVar(n.live, y.live, true);
     var sales=mrVar(n.sales, y.sales);
     h+='<section class="mr-pdf-loc"><h3>'+_escHtml(p.label)+'</h3><div class="mr-cmp'+(solo?' mr-cmp-one':'')+'">';
@@ -460,7 +475,7 @@ function mrComparePage(pack, opt){
     var liveGap=meta.mtd?guestVar:tot;
     h+=mrCmpRow(liveLabel, mrMoneyCell(liveNow), solo?'':mrMoneyCell(livePy), solo?'':liveGap.text, {tone:solo?'':liveGap.cls, solo:solo});
     if(!meta.mtd) h+=mrCmpRow('Budget', mrMoneyCell(bud), '', spend.text, {row:'mr-budc', tone:spend.cls, solo:solo});
-    h+=mrCmpRow('Live Ent. margins', mrPct(n.livePct), solo?'':mrPct(y.livePct), solo?'':live.text, {tone:solo?'':live.cls, solo:solo});
+    h+=mrCmpRow('Live Ent. margins', mrPct(marginNow), solo?'':mrPct(marginPy), solo?'':live.text, {tone:solo?'':live.cls, solo:solo});
     h+='</div></section>';
   });
   h+='</div></div></div>';
@@ -480,7 +495,8 @@ function mrDetailPage(p, meta){
   h+='<div><span>BS vs '+pyY+'</span><b>'+mrMoney(p.beat.bs)+'</b>'+mrLy(pyY+' '+mrMoney(p.pyBeat.bs))+'<i class="'+bsVar.cls+'">'+bsVar.text+'</i></div>';
   h+='<div class="mr-bud"><span>Spend vs budget</span><b>'+mrMoney(n.live)+'</b><em>Budget '+mrMoney(bud)+'</em><i class="'+spendVar.cls+'">'+spendVar.text+'</i></div>';
   h+='<div><span>ROI beat</span><b>'+mrPct(p.beat.rate)+'</b>'+mrLy(pyY+' '+mrPct(p.pyBeat.rate))+'</div>';
-  h+='<div><span>Live E margins</span><b>'+mrPct(n.livePct)+'</b>'+mrLy(pyY+' '+mrPct(y.livePct))+'</div>';
+  var marginNow=mrSideMargin(n), marginPy=mrSideMargin(y);
+  h+='<div><span>Live E margins</span><b>'+mrPct(marginNow)+'</b>'+mrLy(pyY+' '+mrPct(marginPy))+'</div>';
   h+='</div>';
   h+='<table class="mr-pdf-tbl"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI actual</th><th>ROI target</th><th>Sales for the day</th><th>BS actual vs target</th></tr></thead><tbody>';
   if(!p.rows.length) h+='<tr><td class="l" colspan="7">No performances this month.</td></tr>';
