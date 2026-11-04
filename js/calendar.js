@@ -426,6 +426,22 @@ function _overlaySumBs(shows, maxDate){
   return {tBSM:tBSM, tBSA:tBSA, n:n};
 }
 
+/* November and December: Guest DJ budget is the live target minus every other category. */
+function calGuestDjBudget(venue, year, mm){
+  var month=+mm;
+  var live=(typeof getBgtPlan==='function')?getBgtPlan(venue, year, mm, 'live'):null;
+  if(live==null && typeof getMonthlyBudget==='function') live=getMonthlyBudget(venue, year, mm);
+  if(month!==11 && month!==12) return {amount:live, guest:false};
+  var other=0;
+  if(live!=null && typeof bgtSpendCategoryRows==='function' && typeof bgtCategoryMonthSpend==='function'){
+    bgtSpendCategoryRows().forEach(function(row){
+      if(!row||!row.ids) return;
+      other+=bgtCategoryMonthSpend(venue, String(year), mm, row.ids)||0;
+    });
+    return {amount:Math.round(+live-other), guest:true};
+  }
+  return {amount:live, guest:true};
+}
 /* Last-year strip: Fees / Budget / Variance + MTD BS Target / BS Actual (+ show detail). */
 function renderCalPriorYearRecap(yr, mm){
   var box=document.getElementById('calPriorYearRecap');
@@ -455,7 +471,7 @@ function renderCalPriorYearRecap(yr, mm){
   var mtdHint=mtdMax?('MTD thru '+mtdMax.slice(5)):'Full month';
   var items=[
     {l:'Total DJ Fees',v:fees?$k(fees):'-'},
-    {l:'Total Budget',v:budget!=null?$k(budget):'-',s:'Guest DJ monthly budget'},
+    {l:(+mm===11||+mm===12)?'Guest DJ Budget':'Total Budget',v:budget!=null?$k(budget):'-',s:'Guest DJ monthly budget'},
     {l:'Budget Variance',v:feeVar!=null?$kv(feeVar):'-',s:feePct!=null?feePct+'% of budget used':'-',cls:varCls},
     {l:'BS Target',v:bs.n?$k(bs.tBSM):'-',s:mtdHint},
     {l:'BS Actual',v:bs.n?$k(bs.tBSA):'-',s:mtdHint}
@@ -478,8 +494,8 @@ function renderCalMonthRecap(yr, mo, mm, showMap){
       monthShows.push(r);
     });
   });
-  var budget=(typeof getBgtPlan==='function')?getBgtPlan(curV, yr, mm, 'live'):null;
-  if(budget==null && typeof getMonthlyBudget==='function') budget=getMonthlyBudget(curV, yr, mm);
+  var guestB=calGuestDjBudget(curV, yr, mm);
+  var budget=guestB.amount;
   var feeVar=budget!=null?budget-fees:null;
   var feePct=budget?Math.round(fees/budget*100):null;
   var mtdMax=_overlayMtdMaxDate(yr, mm);
@@ -489,7 +505,7 @@ function renderCalMonthRecap(yr, mo, mm, showMap){
   box.innerHTML=
     '<div class="cal-recap-hd">'+MN_SH[mo]+' '+yr+' actual<span>This year</span></div>'
     +'<div class="cal-recap-item"><div class="cal-recap-l">Total DJ Fees</div><div class="cal-recap-v">'+$k(fees||null)+'</div></div>'
-    +'<div class="cal-recap-item"><div class="cal-recap-l">Total Budget</div><div class="cal-recap-v">'+(budget!=null?$k(budget):'-')+'</div><div class="cal-recap-s">Live Entertainment budget</div></div>'
+    +'<div class="cal-recap-item"><div class="cal-recap-l">'+(guestB.guest?'Guest DJ Budget':'Total Budget')+'</div><div class="cal-recap-v">'+(budget!=null?$k(budget):'-')+'</div><div class="cal-recap-s">'+(guestB.guest?'Target minus other categories':'Live Entertainment budget')+'</div></div>'
     +'<div class="cal-recap-item"><div class="cal-recap-l">Budget Variance</div><div class="cal-recap-v '+(feeVar!=null?(feeVar>=0?'hit':'low'):'')+'">'+(feeVar!=null?$kv(feeVar):'-')+'</div><div class="cal-recap-s">'+(feePct!=null?feePct+'% of budget used':'set budget in Budget tab')+'</div></div>'
     +'<div class="cal-recap-item"><div class="cal-recap-l">BS Target</div><div class="cal-recap-v">'+(bs.n?$k(bs.tBSM):'-')+'</div><div class="cal-recap-s">'+mtdHint+'</div></div>'
     +'<div class="cal-recap-item"><div class="cal-recap-l">BS Actual</div><div class="cal-recap-v">'+(bs.n?$k(bs.tBSA):'-')+'</div><div class="cal-recap-s">'+mtdHint+'</div></div>';
