@@ -663,7 +663,11 @@ function initSessionWatch(){
   setInterval(function(){
     var marked=false;
     try{ marked=sessionStorage.getItem('rdg_session_active')==='1'; }catch(e){}
-    if(marked && !_sessionIsActive()) _sessionLogout('idle');
+    if(marked && !_sessionIsActive()){ _sessionLogout('idle'); return; }
+    /* Signed in but Firebase dropped: bring the live connection back without a reload. */
+    if(marked && window._fbDb && window._fbOnline===false){
+      try{ window._fbDb.goOnline(); }catch(eReconnect){}
+    }
   }, 15000);
   if(!_sessionIsActive()){
     _showSessionGate('Enter your first name and password to open the DJ Dashboard.');
