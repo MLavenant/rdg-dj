@@ -2274,11 +2274,11 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-deck.mr-fill{height:1236px;padding:16px 24px 20px}
 .mr-fill .bp-deck-hd{align-items:center;padding-bottom:8px}
 .mr-fill .bp-deck-hd b{font-size:42px}
-.mr-fill .bp-deck-hd img{height:112px}
+.mr-fill .bp-deck-hd img{height:148px}
 .mr-fill .bp-deck-body{display:block;overflow:visible}
 .mr-fill .mr-pdf-locs{position:absolute;left:24px;right:24px;top:50%;width:auto;height:auto;gap:16px;align-items:stretch;margin:0;transform:translateY(-50%)}
 .mr-fill .mr-pdf-loc{height:auto;box-sizing:border-box;justify-content:flex-start;padding:22px 16px 24px}
-.mr-fill .mr-pdf-loc h3{font-size:30px;margin:0 0 16px}
+.mr-fill .mr-pdf-loc h3{font-size:36px;margin:0 0 16px;text-align:center}
 .mr-fill .mr-cmp{display:grid;grid-template-columns:minmax(150px,1fr) max-content max-content max-content;column-gap:0;row-gap:16px;align-items:center;width:100%}
 .mr-fill .mr-cmp-one{grid-template-columns:minmax(150px,1fr) max-content max-content}
 .mr-fill .mr-cmp .mr-c-lab,.mr-fill .mr-cmp .mr-c-now,.mr-fill .mr-cmp .mr-c-py,.mr-fill .mr-cmp .mr-c-var{white-space:nowrap;font-variant-numeric:tabular-nums;line-height:1.15}
@@ -2303,6 +2303,11 @@ body.mobile-mode .sb-btn{min-height:44px}
 .mr-shows tr.mr-beat td,.mr-pdf-tbl tr.mr-beat td{background:#e7f6ec;color:#1e293b}
 .mr-shows tr.mr-miss b,.mr-shows tr.mr-beat b,.mr-pdf-tbl tr.mr-miss b,.mr-pdf-tbl tr.mr-beat b{color:#1e293b}
 .mr-pdf-loc h3{margin:0 0 2px;font-size:16px;font-weight:900;color:#0b2e40}
+.mr-venue .bp-deck-hd{position:relative;justify-content:center;align-items:center;min-height:108px;padding-bottom:8px}
+.mr-venue .bp-deck-hd>div{align-items:center;text-align:center;width:100%}
+.mr-venue .bp-deck-kicker{font-size:28px;letter-spacing:.08em;color:#0b2e40}
+.mr-venue .bp-deck-hd b{font-size:40px}
+.mr-venue .bp-deck-hd img{position:absolute;right:0;top:50%;height:108px;transform:translateY(-50%)}
 .mr-budget.mr-pdf-row span,.mr-budget.mr-line span{color:#92400e}
 .mr-budget{background:#fef3c7;border-radius:6px;padding:1px 6px;margin:1px 0}
 .mr-budget span{color:#92400e;font-weight:800}

@@ -437,7 +437,7 @@ function mrDetailPage(p, meta){
   var salesVar=mrVar(n.sales, y.sales);
   var bsVar=mrVar(p.beat.bs, p.pyBeat.bs);
   var spendVar=mrSpendVar(n.live, bud);
-  var h='<div class="bp-page bp-deck"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">'+_escHtml(p.label)+'</div><b>'+_escHtml(meta.label)+'</b><em>'+_escHtml(meta.range||'')+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body">';
+  var h='<div class="bp-page bp-deck mr-venue"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">'+_escHtml(p.label)+'</div><b>'+_escHtml(meta.label)+'</b><em>'+_escHtml(meta.range||'')+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body">';
   h+='<div class="mr-pdf-metrics">';
   h+='<div><span>Sales vs PY</span><b>'+mrMoney(n.sales)+'</b>'+mrLy(pyY+' '+mrMoney(y.sales))+'<i class="'+salesVar.cls+'">'+salesVar.text+'</i></div>';
   h+='<div><span>BS vs '+pyY+'</span><b>'+mrMoney(p.beat.bs)+'</b>'+mrLy(pyY+' '+mrMoney(p.pyBeat.bs))+'<i class="'+bsVar.cls+'">'+bsVar.text+'</i></div>';
