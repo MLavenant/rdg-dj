@@ -1567,6 +1567,25 @@ function bgtMonthTotalSpend(venue, year, mm){
   });
   return Math.round(total);
 }
+/* Guest DJ plus every other entertainment category.
+   An open month uses that budget total (played fees, still-booked fees, and the other categories).
+   A closed month uses the larger of that total and the P&L live-entertainment actual, so prior year is the full spend. */
+function bgtFullLiveSpend(venue, year, mm){
+  var cat=0;
+  try{ cat=+bgtMonthTotalSpend(venue, String(year), mm)||0; }catch(e){ cat=0; }
+  if(!isFinite(cat)) cat=0;
+  var pnlRaw=(typeof getBgtActual==='function')?getBgtActual(venue, String(year), mm, 'live'):null;
+  var pnl=pnlRaw!=null&&isFinite(+pnlRaw)?+pnlRaw:0;
+  var today=(typeof TODAY!=='undefined'&&TODAY)?String(TODAY).slice(0,10):'';
+  var open=false;
+  if(today&&typeof fiscalPeriodRange==='function'){
+    var range=fiscalPeriodRange(+year, (parseInt(mm,10)||1)-1);
+    open=!!(range&&range.to&&range.to>=today);
+  }
+  if(open) return cat>0?Math.round(cat):(pnl>0?Math.round(pnl):null);
+  var n=Math.max(cat, pnl);
+  return n>0?Math.round(n):null;
+}
 function onBgtCatSpendEdit(el){
   if(!el) return;
   var cat=el.getAttribute('data-cat');

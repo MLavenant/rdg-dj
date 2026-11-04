@@ -208,10 +208,12 @@ function wmMtdRows(venue, meta, useToast){
       var dayBs=wmToastDay(venue, r.d);
       if(dayBs!=null&&byDate[r.d]===1) bs=dayBs;
     }
+    var tgt=(typeof showTargets==='function')?showTargets(r):null;
+    var bsT=tgt&&tgt.bs_m!=null&&isFinite(+tgt.bs_m)?+tgt.bs_m:null;
     var roiA=x.roiA;
     if(x.fee>0&&bs!=null) roiA=bs/x.fee;
     var margin=mrDayMargin(venue, sales, x.fee);
-    return {r:r, dj:mrDj(r), d:r.d, fee:x.fee, bs:bs, roiA:roiA, roiT:x.roiT, sales:sales, margin:margin};
+    return {r:r, dj:mrDj(r), d:r.d, fee:x.fee, bs:bs, bsT:bsT, roiA:roiA, roiT:x.roiT, sales:sales, margin:margin};
   });
 }
 function wmBeatRows(rows){
@@ -230,16 +232,25 @@ function wmSpend(rows){
   });
   return any?sum:null;
 }
-/* Guest DJ fees already played plus fees still booked in the same fiscal month. */
-function wmBookedSpend(venue, year, period){
-  var full=mrPeriodMeta(year, period);
-  var sum=0, any=false;
-  mrShows(venue, full).forEach(function(r){
-    var fee=mrFee(r);
-    if(fee==null) return;
-    sum+=fee; any=true;
-  });
-  return any?sum:null;
+function wmFiscalMm(period){
+  var n=+period||0;
+  return n<10?'0'+n:String(n);
+}
+/* Budget total: guest DJ already played and still booked, plus every other entertainment category. */
+function wmFullSpend(venue, year, period){
+  var mm=wmFiscalMm(period);
+  if(typeof bgtFullLiveSpend==='function') return bgtFullLiveSpend(venue, year, mm);
+  return null;
+}
+function wmBsVs(actual, target){
+  if((actual==null||!isFinite(+actual))&&(target==null||!isFinite(+target))) return '—';
+  var txt=mrMoney(actual)+' <span>vs '+mrMoney(target)+'</span>';
+  if(actual!=null&&isFinite(+actual)&&target>0){
+    var gap=(actual-target)/Math.abs(target)*100;
+    var cls=gap>=-0.05?'wm-bs-hit':'wm-bs-miss';
+    txt+=' <b class="'+cls+'">'+(gap>0?'+':'')+gap.toFixed(0)+'%</b>';
+  }
+  return txt;
 }
 function wmBs(rows){
   var sum=0, any=false;
@@ -270,8 +281,8 @@ function mrVenuePack(venue, meta){
     var pyRows=wmMtdRows(venue, pyMeta, false);
     var sales=wmSumMap(window.WM_MTD&&WM_MTD.sales?WM_MTD.sales[venue]:null, meta.from, meta.to);
     var pySales=wmSumMap(window.WM_MTD&&WM_MTD.sales?WM_MTD.sales[venue]:null, pyMeta.from, pyMeta.to);
-    var live=wmBookedSpend(venue, meta.year, meta.period);
-    var pyLive=wmBookedSpend(venue, pyMeta.year, pyMeta.period);
+    var live=wmFullSpend(venue, meta.year, meta.period);
+    var pyLive=wmFullSpend(venue, meta.year-1, meta.period);
     beat=wmBeatRows(rows);
     beat.bs=wmBs(rows);
     pyBeat=wmBeatRows(pyRows);
@@ -466,11 +477,11 @@ function wmPerformancesPage(pack){
   var h='<div class="bp-page bp-deck wm-shows"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">Weekly Live Entertainment Meeting</div><b>Performances</b><em>'+_escHtml((meta.label||'')+(meta.range?' · '+meta.range:''))+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body">';
   pack.venues.forEach(function(p){
     h+='<section class="wm-loc"><h3>'+_escHtml(p.label)+'</h3>';
-    h+='<table class="mr-pdf-tbl wm-tbl"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI actual</th><th>ROI target</th><th>Sales for the day</th></tr></thead><tbody>';
+    h+='<table class="mr-pdf-tbl wm-tbl"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI actual</th><th>ROI target</th><th>BS actual vs target</th></tr></thead><tbody>';
     if(!p.rows.length) h+='<tr><td class="l" colspan="6">No performances this month.</td></tr>';
     p.rows.forEach(function(row){
       var tone=mrRoiClass(row);
-      h+='<tr'+(tone?' class="'+tone+'"':'')+'><td class="l"><b>'+_escHtml(mrDayLabel(row.d))+'</b></td><td class="l">'+_escHtml(row.dj)+'</td><td>'+mrMoney(row.fee)+'</td><td>'+(typeof rx==='function'?rx(row.roiA):'—')+'</td><td>'+(typeof rx==='function'?rx(row.roiT):'—')+'</td><td>'+mrMoney(row.sales)+'</td></tr>';
+      h+='<tr'+(tone?' class="'+tone+'"':'')+'><td class="l"><b>'+_escHtml(mrDayLabel(row.d))+'</b></td><td class="l">'+_escHtml(row.dj)+'</td><td>'+mrMoney(row.fee)+'</td><td>'+(typeof rx==='function'?rx(row.roiA):'—')+'</td><td>'+(typeof rx==='function'?rx(row.roiT):'—')+'</td><td class="wm-bs">'+wmBsVs(row.bs, row.bsT)+'</td></tr>';
     });
     h+='</tbody></table></section>';
   });

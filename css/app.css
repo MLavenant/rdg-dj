@@ -1927,6 +1927,7 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-bk-month{margin-top:6px;font-size:12px;font-weight:900;color:#0f2a4a;border-bottom:2px solid #0f2a4a;padding-bottom:3px}
 .bp-bk-month span{font-weight:500;color:#64748b;margin-left:6px;font-size:11px}
 .bp-bk-box{background:#fff;border:1px solid #cbd5e1;border-radius:8px;padding:4px 10px;box-shadow:0 1px 2px rgba(15,42,74,.04)}
+.bp-bk-played{background:#dbeafe;border-color:#60a5fa}
 .bp-bk-over{border-left:4px solid #f59e0b}
 .bp-bk-viol{border-left:4px solid #dc2626;background:#fffafa}
 .bp-bk-date b{display:block;font-size:12px;color:#0f2a4a}
@@ -2253,6 +2254,9 @@ body.mobile-mode .sb-btn{min-height:44px}
 .wm-shows .wm-loc h3{margin:8px 0 4px;font-size:16px;color:#0b2e40}
 .wm-shows .wm-tbl{font-size:12px}
 .wm-shows .wm-tbl th,.wm-shows .wm-tbl td{padding:3px 6px}
+.wm-tbl .wm-bs span{color:#64748b;font-weight:650;margin:0 2px}
+.wm-bs-hit{color:#15803d}
+.wm-bs-miss{color:#b91c1c}
 .fa-loc{margin:0 0 18px}
 .fa-loc h3{margin:0 0 8px;font-size:16px;color:#0b2e40}
 .fa-tbl{width:100%;border-collapse:collapse;font-size:13px;background:#fff}

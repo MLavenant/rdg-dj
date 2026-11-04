@@ -181,11 +181,10 @@ function _bpMonthBudget(venue, m){
   var live=getBgtPlan(venue, String(m.year), m.mm, 'live');
   return live!=null&&isFinite(+live)?+live:null;
 }
-/* Prior-year live entertainment spend from the Budget page (GL 6750). */
+/* Prior-year full live-entertainment spend: guest DJ plus every other category. */
 function _bpPySpend(venue, m){
-  if(!venue||!m||!m.mm||typeof getBgtActual!=='function') return null;
-  var v=getBgtActual(venue, String(m.year-1), m.mm, 'live');
-  return v!=null&&isFinite(+v)?+v:null;
+  if(!venue||!m||!m.mm||typeof bgtFullLiveSpend!=='function') return null;
+  return bgtFullLiveSpend(venue, m.year-1, m.mm);
 }
 function _bpBudgetFigure(amount, py){
   return '<b>'+(amount!=null?$k(amount):'Not set')+'</b><em>PY '+(py!=null?$k(py):'\u2014')+'</em>';
@@ -630,7 +629,8 @@ function _bpRowsHtml(data, opts){
       if(bsNow!=null){ now.bs+=bsNow; now.hasBs=true; }
       if(ly&&ly.fee!=null){ pyFee+=ly.fee; pyN++; }
       if(ly&&ly.bs!=null){ pyBs+=ly.bs; pyHasBs=true; }
-      var cls=r.violation?' bp-bk-viol':(r.needs?' bp-bk-over':'');
+      var played=(typeof isPastPerformanceDate==='function')?isPastPerformanceDate(r.d):(r.d && r.d<_bpToday());
+      var cls=(r.violation?' bp-bk-viol':(r.needs?' bp-bk-over':''))+(played?' bp-bk-played':'');
       var box='<div class="bp-bk-box'+cls+'">';
       box+='<div class="bp-bk-date"><b>'+_bpDay(r.d)+'</b><span>'+_escHtml(BP_VENUE_SHORT[r.venue]||r.venue)+'</span></div>';
       box+='<div class="bp-bk-lines"><div class="bp-bk-cols bp-bk-line bp-bk-now">';
