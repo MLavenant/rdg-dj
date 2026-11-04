@@ -643,6 +643,18 @@ function _bpBkHead(simple, py){
   var cols='<span>Artist</span>'+(py?'<span class="bp-lyh">2025</span>':'')+'<span class="r">Fee</span>'+(py?'<span class="bp-lyh r">2025</span>':'')+'<span>Status</span><span class="r">BS actual</span>'+(py?'<span class="bp-lyh r">2025</span>':'');
   return '<div class="bp-bk-hd"><span>Date</span><div class="bp-bk-cols'+(py?'':' bp-cols-now')+'">'+cols+'</div>'+(simple?'':'<span>Approval</span>')+'</div>';
 }
+function _bpTotalBox(simple, py, label, n, fee, pyFeeTxt, bsTxt, pyBsTxt){
+  var box='<div class="bp-bk-box bp-bk-total"><div class="bp-bk-date"><b>'+_escHtml(label||'Total')+'</b><span>All shows</span></div><div class="bp-bk-lines"><div class="bp-bk-cols bp-bk-line bp-bk-now'+(py?'':' bp-cols-now')+'">';
+  box+='<span class="bp-dj">'+n+' bookings</span>';
+  if(py) box+='<span></span>';
+  box+='<span class="bp-fee">'+$k(fee)+'</span>';
+  if(py) box+='<span class="bp-lyc bp-lym">'+(pyFeeTxt||'\u2014')+'</span>';
+  box+='<span></span>';
+  box+='<span class="bp-bsnow">'+(bsTxt||'\u2014')+'</span>';
+  if(py) box+='<span class="bp-lyc bp-lym">'+(pyBsTxt||'\u2014')+'</span>';
+  box+='</div></div>'+(simple?'':'<div class="bp-bk-appr"></div>')+'</div>';
+  return box;
+}
 function _bpRowsHtml(data, opts){
   opts=opts||{};
   var simple=!!opts.noActions;
@@ -650,6 +662,8 @@ function _bpRowsHtml(data, opts){
   var items=[];
   var now={n:0, fee:0, bs:0, hasBs:false};
   var pyFee=0, pyN=0, pyBs=0, pyHasBs=false;
+  var mTot={};
+  data.months.forEach(function(m, mi){ mTot[mi]={n:0, fee:0, pyFee:0, pyN:0}; });
   data.months.forEach(function(m, mi){
     var monthRows=[];
     Object.keys(data.grid).forEach(function(v){
@@ -666,6 +680,9 @@ function _bpRowsHtml(data, opts){
       if(bsNow!=null){ now.bs+=bsNow; now.hasBs=true; }
       if(ly&&ly.fee!=null){ pyFee+=ly.fee; pyN++; }
       if(ly&&ly.bs!=null){ pyBs+=ly.bs; pyHasBs=true; }
+      var mt=mTot[mi];
+      mt.n++; mt.fee+=r.fee||0;
+      if(ly&&ly.fee!=null){ mt.pyFee+=ly.fee; mt.pyN++; }
       var played=_bpPlayed(r);
       var cls=(r.violation?' bp-bk-viol':(r.needs?' bp-bk-over':''))+(played?' bp-bk-played':'');
       var box='<div class="bp-bk-box'+cls+'">';
@@ -720,7 +737,12 @@ function _bpRowsHtml(data, opts){
     h+='<div class="bp-bk-months">';
     groups.forEach(function(g, gi){
       var col=g.items.length?paint(g.items):(_bpBkHead(simple, py)+'<div class="bp-bk-month">'+_escHtml(g.label)+' <span>'+_escHtml(g.range||'')+'</span></div><div class="bp-empty">No performances.</div>');
-      if(gi===0) col+='__BP_TOTAL__';
+      var mi=data.months.findIndex(function(mm){ return mm.label===g.label; });
+      if(mi>=0){
+        var mt=mTot[mi];
+        var bot=_bpMonthBottle(data, data.months[mi]);
+        col+=_bpTotalBox(simple, py, 'Total', mt.n, mt.fee, mt.pyN?$k(mt.pyFee):'\u2014', bot.sales!=null?$k(bot.sales):'\u2014', bot.py!=null?$k(bot.py):'\u2014');
+      }
       h+='<div class="bp-bk-col">'+col+'</div>';
     });
     h+='</div>';
@@ -737,17 +759,12 @@ function _bpRowsHtml(data, opts){
       if(bot.sales!=null){ bsAll+=bot.sales; hasBsAll=true; }
       if(bot.py!=null){ pyAll+=bot.py; hasPyAll=true; }
     });
-    var totalBox='<div class="bp-bk-box bp-bk-total"><div class="bp-bk-date"><b>Total</b><span>All shows</span></div><div class="bp-bk-lines"><div class="bp-bk-cols bp-bk-line bp-bk-now'+(py?'':' bp-cols-now')+'">';
-    totalBox+='<span class="bp-dj">'+now.n+' bookings</span>';
-    if(py) totalBox+='<span></span>';
-    totalBox+='<span class="bp-fee">'+$k(now.fee)+'</span>';
-    if(py) totalBox+='<span class="bp-lyc bp-lym">'+(pyN?$k(pyFee):'\u2014')+'</span>';
-    totalBox+='<span></span>';
-    totalBox+='<span class="bp-bsnow">'+(hasBsAll?$k(bsAll):(now.hasBs?$k(now.bs):'\u2014'))+'</span>';
-    if(py) totalBox+='<span class="bp-lyc bp-lym">'+(hasPyAll?$k(pyAll):'\u2014')+'</span>';
-    totalBox+='</div></div>'+(simple?'':'<div class="bp-bk-appr"></div>')+'</div>';
-    h=h.replace('__BP_TOTAL__', totalBox);
-    if(!byMonth) h+=totalBox;
+    var grandBox=_bpTotalBox(simple, py, '3-month total', now.n, now.fee, pyN?$k(pyFee):'\u2014', hasBsAll?$k(bsAll):(now.hasBs?$k(now.bs):'\u2014'), hasPyAll?$k(pyAll):'\u2014');
+    if(byMonth){
+      h+='<div class="bp-bk-grandbar"><div class="bp-bk-grandbar-inner">'+grandBox+'</div></div>';
+    } else {
+      h+=grandBox;
+    }
   }
   h+='</div>';
   return h;
