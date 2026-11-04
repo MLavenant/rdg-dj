@@ -186,8 +186,10 @@ function _bpPySpend(venue, m){
   if(!venue||!m||!m.mm||typeof bgtFullLiveSpend!=='function') return null;
   return bgtFullLiveSpend(venue, m.year-1, m.mm);
 }
-function _bpBudgetFigure(amount, py){
-  return '<b>'+(amount!=null?$k(amount):'Not set')+'</b><em>PY '+(py!=null?$k(py):'\u2014')+'</em>';
+function _bpBudgetFigure(amount, py, venue){
+  var v=venue||_bpVenue;
+  var pyBit=v==='Casa Neos Lounge'?'':'<em>PY '+(py!=null?$k(py):'\u2014')+'</em>';
+  return '<b>'+(amount!=null?$k(amount):'Not set')+'</b>'+pyBit;
 }
 function _bpVenueMonth(venue, m){
   var budget=_bpMonthBudget(venue, m);
@@ -425,7 +427,7 @@ function _bpPlanBoxHtml(c, actual){
 }
 function _bpBudgetLabelsHtml(){
   return '<article class="bp-card bp-lbl-card"><div class="bp-card-hd"><b>&nbsp;</b><span>&nbsp;</span></div>'
-    +'<div class="bp-budget-box"><span>Budget</span><em>PY spent</em></div>'
+    +'<div class="bp-budget-box"><span>Budget</span><em>'+(_bpVenue==='Casa Neos Lounge'?'&nbsp;':'PY spent')+'</em></div>'
     +'<div class="bp-planned-box"><div class="bp-fc-row"><span>Forecast</span></div><div class="bp-fc-row"><span>Variance</span></div>'
     +'<div class="bp-split"><div class="bp-split-line"><i class="bp-arr"></i><span>Confirmed</span></div><div class="bp-split-line"><i class="bp-arr"></i><span>Proposed</span></div></div></div>'
     +'<div class="bp-card-foot"></div></article>';
@@ -434,7 +436,7 @@ function _bpActualBudgetHtml(c){
   var m=c.month||{};
   var h='<article class="bp-card bp-card-actual">';
   h+='<div class="bp-card-hd"><b>'+_escHtml(m.label||'Prior month')+'</b><span>'+(m.range?_escHtml(m.range):'&nbsp;')+'</span></div>';
-  h+='<div class="bp-budget-box">'+_bpBudgetFigure(c.budget, c.pySpend)+'</div>';
+  h+='<div class="bp-budget-box">'+_bpBudgetFigure(c.budget, c.pySpend, c.venue)+'</div>';
   h+=_bpPlanBoxHtml(c, true);
   h+='<div class="bp-card-foot"></div></article>';
   return h;
@@ -582,7 +584,7 @@ function _bpCardHtml(c){
   var m=c.month;
   var h='<article class="bp-card'+(c.isTotal?' bp-card-total':' bp-cast')+'">';
   h+='<div class="bp-card-hd"><b>'+_escHtml(m.label)+'</b><span>'+(m.range?_escHtml(m.range):'&nbsp;')+'</span></div>';
-  h+='<div class="bp-budget-box">'+_bpBudgetFigure(c.budget, c.pySpend)+'</div>';
+  h+='<div class="bp-budget-box">'+_bpBudgetFigure(c.budget, c.pySpend, c.venue)+'</div>';
   h+=_bpPlanBoxHtml(c, false);
   var foot='';
   if(!c.isTotal){
@@ -618,32 +620,26 @@ function _bpPosHtml(pos){
   return h;
 }
 function _bpRoiHtml(x){ return x!=null?(+x).toFixed(1)+'x':'-'; }
-function _bpPy(text){
-  return '<em><span class="bp-py">PY</span>'+text+'</em>';
+function _bpPyOn(data){
+  var venues=Object.keys(data&&data.grid||{});
+  if(!venues.length) return _bpVenue!=='Casa Neos Lounge';
+  return venues.some(function(v){ return v!=='Casa Neos Lounge'; });
 }
-function _bpStack(main, sub){
-  return '<span class="bp-stack"><b>'+main+'</b>'+(sub?_bpPy(sub):'')+'</span>';
+function _bpLyBits(ly){
+  return {
+    dj:ly&&ly.dj?_escHtml(ly.dj):'\u2014',
+    fee:ly&&ly.fee!=null?$k(ly.fee):'\u2014',
+    bs:ly&&ly.bs!=null?$k(ly.bs):'\u2014'
+  };
 }
-function _bpVsCell(nowText, pyText, gapHtml){
-  return '<span class="bp-expect"><span class="bp-expect-nums"><b>'+nowText+'</b>'+_bpPy(pyText)+'</span>'+gapHtml+'</span>';
-}
-function _bpBsCell(r, ly){
-  var now=_bpShowBs(r);
-  var py=ly&&ly.bs!=null?ly.bs:null;
-  var pct=now!=null&&py?(now-py)/Math.abs(py)*100:null;
-  return _bpVsCell(now!=null?$k(now):'—', py!=null?$k(py):'—', _bpPctHtml(pct, false));
-}
-function _bpRoiCell(r, ly){
-  var now=_bpThisReturn(r);
-  var py=ly&&ly.ret!=null?ly.ret:null;
-  return _bpVsCell(_bpRoiHtml(now), py!=null?_bpRoiHtml(py):'—', _bpGapHtml(now!=null&&py!=null?now-py:null, false, 'x'));
-}
-function _bpBkHead(simple){
-  return '<div class="bp-bk-hd"><span>Date</span><div class="bp-bk-cols"><span>Artist</span><span>Fee</span><span>Status</span><span class="r">Bottle service sales vs PY</span></div>'+(simple?'':'<span>Approval</span>')+'</div>';
+function _bpBkHead(simple, py){
+  var cols='<span>Artist</span>'+(py?'<span class="bp-lyh">2025</span>':'')+'<span>Fee</span>'+(py?'<span class="bp-lyh">2025</span>':'')+'<span>Status</span><span class="r">BS actual</span>'+(py?'<span class="bp-lyh r">2025</span>':'');
+  return '<div class="bp-bk-hd"><span>Date</span><div class="bp-bk-cols'+(py?'':' bp-cols-now')+'">'+cols+'</div>'+(simple?'':'<span>Approval</span>')+'</div>';
 }
 function _bpRowsHtml(data, opts){
   opts=opts||{};
   var simple=!!opts.noActions;
+  var py=_bpPyOn(data);
   var items=[];
   var now={n:0, fee:0, bs:0, hasBs:false};
   var pyFee=0, pyN=0, pyBs=0, pyHasBs=false;
@@ -656,7 +652,8 @@ function _bpRowsHtml(data, opts){
     monthRows.sort(function(a,b){ return a.r.d<b.r.d?-1:(a.r.d>b.r.d?1:(a.r.venue<b.r.venue?-1:1)); });
     monthRows.forEach(function(x){
       var r=x.r;
-      var ly=_bpLyShow(r.venue, r.d);
+      var ly=py?_bpLyShow(r.venue, r.d):null;
+      var bits=py?_bpLyBits(ly):null;
       var bsNow=_bpShowBs(r);
       now.n++; now.fee+=r.fee||0;
       if(bsNow!=null){ now.bs+=bsNow; now.hasBs=true; }
@@ -666,11 +663,14 @@ function _bpRowsHtml(data, opts){
       var cls=(r.violation?' bp-bk-viol':(r.needs?' bp-bk-over':''))+(played?' bp-bk-played':'');
       var box='<div class="bp-bk-box'+cls+'">';
       box+='<div class="bp-bk-date"><b>'+_bpDay(r.d)+'</b><span>'+_escHtml(BP_VENUE_SHORT[r.venue]||r.venue)+'</span></div>';
-      box+='<div class="bp-bk-lines"><div class="bp-bk-cols bp-bk-line bp-bk-now">';
-      box+=_bpStack(_escHtml(r.dj||'TBD'), ly&&ly.dj?_escHtml(ly.dj):(ly?'TBD':'No show'));
-      box+=_bpStack($k(r.fee), ly&&ly.fee!=null?$k(ly.fee):'—');
+      box+='<div class="bp-bk-lines"><div class="bp-bk-cols bp-bk-line bp-bk-now'+(py?'':' bp-cols-now')+'">';
+      box+='<span class="bp-dj">'+_escHtml(r.dj||'TBD')+'</span>';
+      if(py) box+='<span class="bp-lyc">'+bits.dj+'</span>';
+      box+='<span class="bp-fee">'+$k(r.fee)+'</span>';
+      if(py) box+='<span class="bp-lyc">'+bits.fee+'</span>';
       box+='<span><span class="bp-status '+(played?'bp-status-actual':(r.confirmed?'bp-status-conf':'bp-status-prop'))+'">'+_escHtml(played?'Actual':(r.status||'No status'))+'</span></span>';
-      box+=_bpBsCell(r, ly);
+      box+='<span class="bp-bsnow">'+(bsNow!=null?$k(bsNow):'\u2014')+'</span>';
+      if(py) box+='<span class="bp-lyc">'+bits.bs+'</span>';
       box+='</div></div>';
       if(!simple){
         box+='<div class="bp-bk-appr">'+_bpBadge(r.approval);
@@ -684,7 +684,7 @@ function _bpRowsHtml(data, opts){
     });
   });
   function paint(list){
-    var out=_bpBkHead(simple);
+    var out=_bpBkHead(simple, py);
     var last='';
     list.forEach(function(it){
       if(it.label!==last){
@@ -699,7 +699,7 @@ function _bpRowsHtml(data, opts){
   var split=opts.columns===2 && items.length>1;
   var h='<div class="bp-bk'+(simple?' bp-bk-simple':'')+(split||byMonth?' bp-bk-splitwrap':'')+'">';
   if(!items.length){
-    h+=_bpBkHead(simple)+'<div class="bp-empty">No performances.</div>';
+    h+=_bpBkHead(simple, py)+'<div class="bp-empty">No performances.</div>';
   } else if(byMonth){
     var groups=[], seen={};
     data.months.forEach(function(m){
@@ -712,7 +712,7 @@ function _bpRowsHtml(data, opts){
     });
     h+='<div class="bp-bk-months">';
     groups.forEach(function(g){
-      h+='<div class="bp-bk-col">'+(g.items.length?paint(g.items):(_bpBkHead(simple)+'<div class="bp-bk-month">'+_escHtml(g.label)+' <span>'+_escHtml(g.range||'')+'</span></div><div class="bp-empty">No performances.</div>'))+'</div>';
+      h+='<div class="bp-bk-col">'+(g.items.length?paint(g.items):(_bpBkHead(simple, py)+'<div class="bp-bk-month">'+_escHtml(g.label)+' <span>'+_escHtml(g.range||'')+'</span></div><div class="bp-empty">No performances.</div>'))+'</div>';
     });
     h+='</div>';
   } else if(split){
@@ -722,12 +722,14 @@ function _bpRowsHtml(data, opts){
     h+=paint(items);
   }
   if(items.length){
-    var bsPct=now.hasBs&&pyHasBs&&pyBs?(now.bs-pyBs)/Math.abs(pyBs)*100:null;
-    h+='<div class="bp-bk-box bp-bk-total"><div class="bp-bk-date"><b>Total</b><span>All shows</span></div><div class="bp-bk-lines"><div class="bp-bk-cols bp-bk-line bp-bk-now">';
-    h+=_bpStack(now.n+' bookings', '');
-    h+=_bpStack($k(now.fee), pyN?$k(pyFee):'');
+    h+='<div class="bp-bk-box bp-bk-total"><div class="bp-bk-date"><b>Total</b><span>All shows</span></div><div class="bp-bk-lines"><div class="bp-bk-cols bp-bk-line bp-bk-now'+(py?'':' bp-cols-now')+'">';
+    h+='<span class="bp-dj">'+now.n+' bookings</span>';
+    if(py) h+='<span class="bp-lyc"></span>';
+    h+='<span class="bp-fee">'+$k(now.fee)+'</span>';
+    if(py) h+='<span class="bp-lyc">'+(pyN?$k(pyFee):'\u2014')+'</span>';
     h+='<span></span>';
-    h+=_bpVsCell(now.hasBs?$k(now.bs):'—', pyHasBs?$k(pyBs):'—', _bpPctHtml(bsPct, false));
+    h+='<span class="bp-bsnow">'+(now.hasBs?$k(now.bs):'\u2014')+'</span>';
+    if(py) h+='<span class="bp-lyc">'+(pyHasBs?$k(pyBs):'\u2014')+'</span>';
     h+='</div></div>'+(simple?'':'<div class="bp-bk-appr"></div>')+'</div>';
   }
   h+='</div>';
@@ -758,6 +760,8 @@ function _bpDeckSlideHtml(data, n, of){
 function _bpPlanHtml(data){
   var h='<div id="bpSheet" class="bp-sheet">';
   h+=_bpSheetHead(data, 'Weekly Meeting');
+  h+='<div class="bp-deck-sec"><span>00</span>Approval process<em>Draft thresholds for Finance, Greg, and Greg and Mika</em></div>';
+  h+='<div class="bp-flow-embed">'+_bpApprovalInnerHtml()+'</div>';
   h+='<div class="bp-deck-sec bp-sec-1"><span>01</span>Budget vs pipeline<em>Budget and planned spend, then sales and margins versus LY</em></div>';
   h+=_bpSummaryHtml(data);
   h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Performances<em>Every show. Past nights use actual bottle service; upcoming nights use the target</em></div>';
@@ -1038,6 +1042,50 @@ function _bpBusy(on, msg){
   }
   el.innerHTML='<div><b>Preparing PDF</b><span>'+_escHtml(msg||'')+'</span></div>';
 }
+function _bpFlowCard(kicker, title, lane){
+  return '<div class="bp-flow-card'+(lane?' bp-flow-'+lane:'')+'"><span>'+kicker+'</span><b>'+title+'</b></div>';
+}
+function _bpApprovalInnerHtml(){
+  var h='<div class="bp-flow-thresholds">'
+    +'<div><span>Finance</span><b>Fee above $5K</b></div>'
+    +'<div><span>Greg</span><b>Over budget by 5%+</b></div>'
+    +'<div><span>Greg and Mika</span><b>Fee above $40K</b></div>'
+    +'<div class="bp-flow-tbd"><span>To be discussed</span><b>Thresholds are still a draft</b></div>'
+    +'</div>';
+  h+='<div class="bp-flow-grid">'
+    +'<div class="bp-flow-h">Process</div><div class="bp-flow-h">Threshold gate</div><div class="bp-flow-h">Executive approval</div><div class="bp-flow-h">Inside the app</div>'
+    +_bpFlowCard('Artistic dept', 'Brainstorm the artist', '')
+    +'<div class="bp-flow-gap"></div><div class="bp-flow-gap"></div>'
+    +_bpFlowCard('Booking app', 'One system for the booking', 'app')
+    +'<div class="bp-flow-gap"></div>'
+    +_bpFlowCard('Budget check', 'Within budget', 'ok')
+    +'<div class="bp-flow-gap"></div><div class="bp-flow-gap"></div>'
+    +'<div class="bp-flow-gap"></div>'
+    +_bpFlowCard('Budget check', 'Over by 5%+ or fee above $40K', 'warn')
+    +_bpFlowCard('Greg', 'Over budget by 5%+', 'exec')
+    +'<div class="bp-flow-gap"></div>'
+    +'<div class="bp-flow-gap"></div>'
+    +_bpFlowCard('Fee above $5K?', 'Yes goes to Finance. No goes to the offer', '')
+    +_bpFlowCard('Greg and Mika', 'Any fee above $40K', 'exec')
+    +_bpFlowCard('Finance approval', 'Approves in the app', 'app')
+    +_bpFlowCard('Offer sent', 'To the agency', '')
+    +_bpFlowCard('Agency response', 'Hold and follow up, confirm the terms, or pass and start over', '')
+    +'<div class="bp-flow-gap"></div><div class="bp-flow-gap"></div>'
+    +_bpFlowCard('Contract signed', 'Both parties sign', 'ok')
+    +'<div class="bp-flow-gap"></div><div class="bp-flow-gap"></div>'
+    +_bpFlowCard('Live Entertainment', 'Drops the contract in the app', 'app')
+    +'<div class="bp-flow-gap"></div><div class="bp-flow-gap"></div><div class="bp-flow-gap"></div>'
+    +_bpFlowCard('AP team', 'Drops the invoice, approves it, and it feeds R365', 'app')
+    +'</div>';
+  return h;
+}
+function _bpApprovalPageHtml(){
+  return '<div class="bp-page bp-portrait bp-flow">'
+    +'<div class="bp-flow-hd"><div><span class="bp-deck-kicker">Three Month Booking Plan</span><b>Approval Process</b><em>Artist booking approval · Riviera Dining Group · draft for discussion</em></div>'
+    +'<img src="assets/rdg-logo.png" alt="RDG"></div>'
+    +_bpApprovalInnerHtml()
+    +'</div>';
+}
 function _bpCoverHtml(title, sub, location){
   return '<div class="bp-page bp-cover">'
     +'<img class="bp-cover-logo" src="assets/rdg-logo.png" alt="RDG">'
@@ -1181,8 +1229,12 @@ function _bpPrintSheetHtml(data, onlyMonth){
   return h;
 }
 function _bpPdfCanvas(el){
-  var big=el.classList&&(el.classList.contains('bp-print')||el.classList.contains('bp-deck'));
-  return window.html2canvas(el,{scale:big?2:1.25,useCORS:true,logging:false,backgroundColor:'#ffffff',windowWidth:BP_PAGE_W});
+  var portrait=el.classList&&el.classList.contains('bp-portrait');
+  var big=el.classList&&(el.classList.contains('bp-print')||el.classList.contains('bp-deck')||portrait);
+  return window.html2canvas(el,{scale:big?2:1.25,useCORS:true,logging:false,backgroundColor:'#ffffff',windowWidth:portrait?1236:BP_PAGE_W}).then(function(cv){
+    if(portrait) cv._bpPortrait=true;
+    return cv;
+  });
 }
 function _bpRenderPage(html){
   var stage=document.createElement('div');
@@ -1215,9 +1267,10 @@ function _bpRenderPage(html){
 /* One canvas per page, scaled down to fit the whole page. */
 function _bpPdfFit(canvases){
   var pdf=new window.jspdf.jsPDF({orientation:'landscape', unit:'pt', format:'letter'});
-  var pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight(), m=18;
   canvases.forEach(function(cv, i){
-    if(i) pdf.addPage();
+    var portrait=!!cv._bpPortrait;
+    if(i) pdf.addPage('letter', portrait?'portrait':'landscape');
+    var pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight(), m=18;
     var s=Math.min((pw-2*m)/cv.width, (ph-2*m)/cv.height);
     var w=cv.width*s, h=cv.height*s;
     pdf.addImage(cv.toDataURL('image/jpeg', 0.88), 'JPEG', (pw-w)/2, m, w, h);
@@ -1347,6 +1400,12 @@ function _bpBuildLocationPages(){
   }).then(function(){
     _bpBusy(true, 'Three month plan');
     return _bpRenderPage(_bpCoverHtml('Three Month Booking Plan', period+' · Beach Club · CN Lounge · MILA', '')).then(function(cv){ canvases.push(cv); });
+  }).then(function(){
+    _bpBusy(true, 'Approval process');
+    return _bpRenderPage(_bpCoverHtml('Approval Process', 'Artist booking approval · draft for discussion', '')).then(function(cv){
+      canvases.push(cv);
+      return _bpRenderPage(_bpApprovalPageHtml());
+    }).then(function(cv){ canvases.push(cv); });
   }).then(function(){
     var chain=Promise.resolve();
     BP_VENUES.forEach(function(v, i){
