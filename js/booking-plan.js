@@ -242,8 +242,8 @@ function _bpPlayed(r){
   if(!r||!r.d) return false;
   return (typeof isPastPerformanceDate==='function')?isPastPerformanceDate(r.d):r.d<_bpToday();
 }
-/* Past nights use the posted actual (Toast when the calendar actual is still empty).
-   Nights that have not happened use the bottle-service target. */
+/* Played nights use the posted bottle-service actual (Toast only when that night has one show and the calendar actual is empty).
+   Nights that have not happened use the bottle-service target, never the actual. */
 function _bpShowBs(r){
   if(!r) return null;
   var venue=r.venue||r.v;
@@ -262,9 +262,6 @@ function _bpShowBs(r){
     var day=wmToastDay(venue, r.d);
     if(day!=null&&mates<=1) return +day;
   }
-  if(r.bs_m!=null&&r.bs_m!==''&&isFinite(+r.bs_m)) return +r.bs_m;
-  var locked=(typeof showTargets==='function')?showTargets(r):null;
-  if(locked&&locked.bs_m!=null&&isFinite(+locked.bs_m)) return +locked.bs_m;
   return null;
 }
 function _bpMonthBs(venue, from, to){
@@ -316,7 +313,7 @@ function _bpGapHtml(n, lowerBetter, unit){
 }
 function _bpPctHtml(pct, lowerBetter){ return _bpGapHtml(pct, lowerBetter, '%'); }
 function _bpPpHtml(pp, lowerBetter){ return _bpGapHtml(pp, lowerBetter, ' pp'); }
-/* Sales is bottle service: calendar DJ fee times the historical run rate.
+/* Bottle service sales: actual for nights already played, target for the rest.
    Live entertainment margin is that cost divided by those sales. */
 var BP_FIN_KEYS=['sales','live','ebitda','pySales','pyLive','pyEbitda'];
 function _bpFinNum(v){ return v!=null&&isFinite(+v)?+v:null; }
@@ -414,7 +411,7 @@ function _bpFinColHtml(month, fin, kind){
   return h;
 }
 function _bpFinLabsHtml(){
-  return '<div class="bp-sf-labs"><div></div><div></div><div class="bp-sf-lab">Sales</div><div class="bp-sf-lab">Live ent. margins</div></div>';
+  return '<div class="bp-sf-labs"><div></div><div></div><div class="bp-sf-lab">Bottle service sales</div><div class="bp-sf-lab">Live ent. margins</div></div>';
 }
 function _bpPlanBoxHtml(c, actual){
   var over=c.remaining!=null && c.remaining<0;
@@ -1358,6 +1355,11 @@ function _bpBuildLocationPages(){
       canvases.push(cv);
       return _bpRenderPage(_bpApprovalPageHtml());
     }).then(function(cv){ canvases.push(cv); });
+  }).then(function(){
+    _bpBusy(true, 'Weekly recap');
+    var anchor=(typeof wmReportingAnchor==='function')?wmReportingAnchor():null;
+    var recapSub=anchor&&typeof MN_FULL!=='undefined'?MN_FULL[anchor.monthIndex]+' '+anchor.year:_bpMeetingDateLabel();
+    return _bpRenderPage(_bpCoverHtml('Weekly Recap', recapSub, '')).then(function(cv){ canvases.push(cv); });
   }).then(function(){
     var actual=(typeof wmActualMonth==='function')?wmActualMonth():null;
     var pack=actual&&typeof mrPack==='function'?mrPack(actual):null;

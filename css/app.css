@@ -2045,6 +2045,7 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-deck-sec.bp-sec-1 em{color:#ffedd5}
 .bp-deck-sec.bp-sec-2{background:#9a3412;margin-top:2px}
 .bp-deck .bp-deck-sec{margin:2px 0}
+.bp-deck .bp-deck-sec.bp-sec-2{margin-top:12px}
 .bp-deck-sec.bp-sec-2 span{background:#ffedd5;color:#9a3412}
 .bp-deck-sec.bp-sec-2 em{color:#ffedd5}
 .bp-sheet .bp-deck-sec{margin:14px 0 8px;padding:7px 12px;font-size:13px}
@@ -2057,7 +2058,7 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-deck .bp-summary{margin-top:0}
 .bp-deck .bp-venue-block{margin-top:0}
 .bp-deck .bp-venue-name{display:none}
-.bp-deck .bp-eq{--bp-lbl:96px;column-gap:6px;row-gap:1px}
+.bp-deck .bp-eq{--bp-lbl:112px;column-gap:6px;row-gap:1px}
 .bp-deck .bp-eq-frame{margin:-6px}
 .bp-deck .bp-eq-actual-hd,.bp-deck .bp-eq-forecast-hd,.bp-deck .bp-eq-finhd{font-size:11px;padding:2px 8px}
 .bp-deck .bp-eq-subhd{margin:0}
@@ -2088,7 +2089,7 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-deck .bp-sf-yhs{font-size:10px;padding-bottom:2px}
 .bp-deck .bp-sf-vals{padding-top:1px;padding-bottom:1px}
 .bp-deck .bp-sf-vals b,.bp-deck .bp-sf-var,.bp-deck .bp-sf-var b{font-size:12px}
-.bp-deck .bp-sf-lab{font-size:10px}
+.bp-deck .bp-sf-lab{font-size:9px;line-height:1.1;white-space:normal}
 .bp-deck .bp-fc-row{height:15px}
 .bp-deck .bp-lbl-card .bp-fc-row > span,.bp-deck .bp-lbl-card .bp-split-line span,.bp-deck .bp-lbl-card .bp-budget-box span{font-size:11px}
 .bp-deck .bp-fc-row b,.bp-deck .bp-fc-row > .bp-pos,.bp-deck .bp-fc-row > .bp-neg{font-size:15px}
