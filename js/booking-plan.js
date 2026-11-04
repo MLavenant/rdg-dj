@@ -760,8 +760,6 @@ function _bpDeckSlideHtml(data, n, of){
 function _bpPlanHtml(data){
   var h='<div id="bpSheet" class="bp-sheet">';
   h+=_bpSheetHead(data, 'Weekly Meeting');
-  h+='<div class="bp-deck-sec"><span>00</span>Approval process<em>Draft thresholds for Finance, Greg, and Greg and Mika</em></div>';
-  h+='<div class="bp-flow-embed">'+_bpApprovalInnerHtml()+'</div>';
   h+='<div class="bp-deck-sec bp-sec-1"><span>01</span>Budget vs pipeline<em>Budget and planned spend, then sales and margins versus LY</em></div>';
   h+=_bpSummaryHtml(data);
   h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Performances<em>Every show. Past nights use actual bottle service; upcoming nights use the target</em></div>';
@@ -1042,49 +1040,8 @@ function _bpBusy(on, msg){
   }
   el.innerHTML='<div><b>Preparing PDF</b><span>'+_escHtml(msg||'')+'</span></div>';
 }
-function _bpFlowCard(kicker, title, lane){
-  return '<div class="bp-flow-card'+(lane?' bp-flow-'+lane:'')+'"><span>'+kicker+'</span><b>'+title+'</b></div>';
-}
-function _bpApprovalInnerHtml(){
-  var h='<div class="bp-flow-thresholds">'
-    +'<div><span>Finance</span><b>Fee above $5K</b></div>'
-    +'<div><span>Greg</span><b>Over budget by 5%+</b></div>'
-    +'<div><span>Greg and Mika</span><b>Fee above $40K</b></div>'
-    +'<div class="bp-flow-tbd"><span>To be discussed</span><b>Thresholds are still a draft</b></div>'
-    +'</div>';
-  h+='<div class="bp-flow-grid">'
-    +'<div class="bp-flow-h">Process</div><div class="bp-flow-h">Threshold gate</div><div class="bp-flow-h">Executive approval</div><div class="bp-flow-h">Inside the app</div>'
-    +_bpFlowCard('Artistic dept', 'Brainstorm the artist', '')
-    +'<div class="bp-flow-gap"></div><div class="bp-flow-gap"></div>'
-    +_bpFlowCard('Booking app', 'One system for the booking', 'app')
-    +'<div class="bp-flow-gap"></div>'
-    +_bpFlowCard('Budget check', 'Within budget', 'ok')
-    +'<div class="bp-flow-gap"></div><div class="bp-flow-gap"></div>'
-    +'<div class="bp-flow-gap"></div>'
-    +_bpFlowCard('Budget check', 'Over by 5%+ or fee above $40K', 'warn')
-    +_bpFlowCard('Greg', 'Over budget by 5%+', 'exec')
-    +'<div class="bp-flow-gap"></div>'
-    +'<div class="bp-flow-gap"></div>'
-    +_bpFlowCard('Fee above $5K?', 'Yes goes to Finance. No goes to the offer', '')
-    +_bpFlowCard('Greg and Mika', 'Any fee above $40K', 'exec')
-    +_bpFlowCard('Finance approval', 'Approves in the app', 'app')
-    +_bpFlowCard('Offer sent', 'To the agency', '')
-    +_bpFlowCard('Agency response', 'Hold and follow up, confirm the terms, or pass and start over', '')
-    +'<div class="bp-flow-gap"></div><div class="bp-flow-gap"></div>'
-    +_bpFlowCard('Contract signed', 'Both parties sign', 'ok')
-    +'<div class="bp-flow-gap"></div><div class="bp-flow-gap"></div>'
-    +_bpFlowCard('Live Entertainment', 'Drops the contract in the app', 'app')
-    +'<div class="bp-flow-gap"></div><div class="bp-flow-gap"></div><div class="bp-flow-gap"></div>'
-    +_bpFlowCard('AP team', 'Drops the invoice, approves it, and it feeds R365', 'app')
-    +'</div>';
-  return h;
-}
 function _bpApprovalPageHtml(){
-  return '<div class="bp-page bp-portrait bp-flow">'
-    +'<div class="bp-flow-hd"><div><span class="bp-deck-kicker">Three Month Booking Plan</span><b>Approval Process</b><em>Artist booking approval · Riviera Dining Group · draft for discussion</em></div>'
-    +'<img src="assets/rdg-logo.png" alt="RDG"></div>'
-    +_bpApprovalInnerHtml()
-    +'</div>';
+  return '<div class="bp-page bp-portrait bp-approval-src"><img src="assets/artist-booking-approval-process.png" alt="Artist booking approval process"></div>';
 }
 function _bpCoverHtml(title, sub, location){
   return '<div class="bp-page bp-cover">'
@@ -1230,9 +1187,11 @@ function _bpPrintSheetHtml(data, onlyMonth){
 }
 function _bpPdfCanvas(el){
   var portrait=el.classList&&el.classList.contains('bp-portrait');
+  var native=el.classList&&el.classList.contains('bp-approval-src');
   var big=el.classList&&(el.classList.contains('bp-print')||el.classList.contains('bp-deck')||portrait);
-  return window.html2canvas(el,{scale:big?2:1.25,useCORS:true,logging:false,backgroundColor:'#ffffff',windowWidth:portrait?1236:BP_PAGE_W}).then(function(cv){
+  return window.html2canvas(el,{scale:native?2:(big?2:1.25),useCORS:true,logging:false,backgroundColor:'#ffffff',windowWidth:native?720:(portrait?1236:BP_PAGE_W)}).then(function(cv){
     if(portrait) cv._bpPortrait=true;
+    if(native){ cv._bpNative=true; cv._bpPageW=720; cv._bpPageH=1190; }
     return cv;
   });
 }
@@ -1269,11 +1228,17 @@ function _bpPdfFit(canvases){
   var pdf=new window.jspdf.jsPDF({orientation:'landscape', unit:'pt', format:'letter'});
   canvases.forEach(function(cv, i){
     var portrait=!!cv._bpPortrait;
-    if(i) pdf.addPage('letter', portrait?'portrait':'landscape');
-    var pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight(), m=18;
+    var native=!!cv._bpNative;
+    if(i){
+      if(native) pdf.addPage([cv._bpPageW, cv._bpPageH]);
+      else pdf.addPage('letter', portrait?'portrait':'landscape');
+    }
+    var pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight(), m=native?0:18;
     var s=Math.min((pw-2*m)/cv.width, (ph-2*m)/cv.height);
     var w=cv.width*s, h=cv.height*s;
-    pdf.addImage(cv.toDataURL('image/jpeg', 0.88), 'JPEG', (pw-w)/2, m, w, h);
+    var fmt=native?'PNG':'JPEG';
+    var data=native?cv.toDataURL('image/png'):cv.toDataURL('image/jpeg', 0.88);
+    pdf.addImage(data, fmt, (pw-w)/2, m, w, h);
   });
   return pdf;
 }
@@ -1388,6 +1353,12 @@ function _bpBuildLocationPages(){
     _bpBusy(true, 'Cover page');
     return _bpRenderPage(_bpCoverHtml('Weekly Live Entertainment Meeting', _bpMeetingDateLabel(), '')).then(function(cv){ canvases.push(cv); });
   }).then(function(){
+    _bpBusy(true, 'Approval process');
+    return _bpRenderPage(_bpCoverHtml('Approval Process', 'Artist booking approval', '')).then(function(cv){
+      canvases.push(cv);
+      return _bpRenderPage(_bpApprovalPageHtml());
+    }).then(function(cv){ canvases.push(cv); });
+  }).then(function(){
     var actual=(typeof wmActualMonth==='function')?wmActualMonth():null;
     var pack=actual&&typeof mrPack==='function'?mrPack(actual):null;
     if(!pack) return;
@@ -1400,12 +1371,6 @@ function _bpBuildLocationPages(){
   }).then(function(){
     _bpBusy(true, 'Three month plan');
     return _bpRenderPage(_bpCoverHtml('Three Month Booking Plan', period+' · Beach Club · CN Lounge · MILA', '')).then(function(cv){ canvases.push(cv); });
-  }).then(function(){
-    _bpBusy(true, 'Approval process');
-    return _bpRenderPage(_bpCoverHtml('Approval Process', 'Artist booking approval · draft for discussion', '')).then(function(cv){
-      canvases.push(cv);
-      return _bpRenderPage(_bpApprovalPageHtml());
-    }).then(function(cv){ canvases.push(cv); });
   }).then(function(){
     var chain=Promise.resolve();
     BP_VENUES.forEach(function(v, i){

@@ -1965,6 +1965,8 @@ body.mobile-mode .sb-btn{min-height:44px}
 .bp-pdf-stage{position:absolute;left:-30000px;top:0;width:1600px}
 .bp-page{width:1600px;height:1236px;box-sizing:border-box;background:#fff;position:relative;overflow:hidden;font-family:inherit;color:#172033}
 .bp-page.bp-portrait{width:1236px;height:1600px}
+.bp-page.bp-approval-src{width:720px;height:1190px;padding:0;overflow:hidden}
+.bp-page.bp-approval-src img{width:720px;height:1190px;display:block}
 .bp-flow{display:flex;flex-direction:column;padding:28px 32px 22px;gap:14px}
 .bp-flow-hd{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:4px solid #0b2e40;padding-bottom:12px}
 .bp-flow-hd b{display:block;font-size:40px;font-weight:900;font-style:italic;text-transform:uppercase;color:#0b2e40;line-height:1}
