@@ -513,7 +513,7 @@ function _roiSummaryRuleKeys(){
 function _roiSummaryMeta(key, rules){
   if(key==='Casa Neos Beach Club') return {name:'Casa Neos Beach Club', period:'Regular rules'};
   if(typeof CNBC_SUMMER_ROOF_KEY!=='undefined'&&key===CNBC_SUMMER_ROOF_KEY) return {name:'CNBC Summer Rooftop',period:'Aug 1 – Oct 4'};
-  if(typeof CNBC_CURRENT_KEY!=='undefined'&&key===CNBC_CURRENT_KEY) return {name:'Casa Neos Beach Club',period:'Current waterfront'};
+  if(typeof CNBC_CURRENT_KEY!=='undefined'&&key===CNBC_CURRENT_KEY) return {name:'Casa Neos Beach Club',period:'Casa Neos Beach Club'};
   if(typeof CNL_OCT_KEY!=='undefined'&&key===CNL_OCT_KEY) return {name:'CN Lounge',period:'Oct 1 floor'};
   if(key==='Casa Neos Lounge') return {name:'CN Lounge Classic',period:'Before Sep 25'};
   if(typeof CNL_REMODEL_KEY!=='undefined'&&key===CNL_REMODEL_KEY) return {name:'CN Lounge Remodel',period:'Sep 25 – Sep 30'};
@@ -651,11 +651,12 @@ function renderRoiSpecialSection(){
       }
       var fp=ev.floorPlan==='summer'?'Sunset 20'
         :(ev.floorPlan==='casa-neos-beach-club-new'?'CNBC waterfront'
-        :(ev.floorPlan==='casa-neos-beach-club-basel'?'BC Basel'
+        :(ev.floorPlan==='casa-neos-beach-club-oct17'?'Casa Neos Beach Club'
+        :(ev.floorPlan==='casa-neos-beach-club-basel'?'Casa Neos Parcel'
         :(ev.floorPlan==='casa-neos-lounge-oct'?'CNL Oct 1'
         :(ev.floorPlan==='casa-neos-lounge-new'?'CNL remodel'
         :(ev.floorPlan==='casa-neos-lounge'?'CNL classic'
-        :(ev.floorPlan==='regular'?'Regular':'Auto'))))));
+        :(ev.floorPlan==='regular'?'Regular':'Auto')))))));
       var when=ev.start+(ev.end&&ev.end!==ev.start?' → '+ev.end:'');
       h+='<div class="roi-sp-card">';
       h+='<div class="roi-sp-card-main">';
@@ -727,6 +728,13 @@ function _roiOneDayFloorUid(venue, dateStr){
   });
   return found;
 }
+function _roiFloorName(drop){
+  if(!drop) return '';
+  var pub=(typeof roiFloorPlanPublicName==='function')?roiFloorPlanPublicName(drop.preset):'';
+  if(pub) return pub;
+  var pre=(typeof FV_3D_PLAN_PRESETS!=='undefined'&&FV_3D_PLAN_PRESETS[drop.preset])?FV_3D_PLAN_PRESETS[drop.preset]:null;
+  return (pre&&pre.label)||drop.label||drop.preset||'';
+}
 function renderRoiDayFloorPlan(){
   var venues=(typeof listActiveVenues==='function'?listActiveVenues():['Casa Neos Beach Club','MILA Lounge','Casa Neos Lounge']);
   if(!_roiFpDay.venue) _roiFpDay.venue=venues[0]||'';
@@ -736,8 +744,8 @@ function renderRoiDayFloorPlan(){
   var current='Pick a date to see the floor plan that day uses.';
   if(_roiFpDay.date){
     if(!drop) current='No saved floor plan covers this date. The built-in plan still shows in 3D View.';
-    else if(drop.oneDay) current='This day only uses '+((typeof FV_3D_PLAN_PRESETS!=='undefined'&&FV_3D_PLAN_PRESETS[drop.preset]&&FV_3D_PLAN_PRESETS[drop.preset].label)||drop.label||drop.preset)+'.';
-    else current='This date follows '+((typeof FV_3D_PLAN_PRESETS!=='undefined'&&FV_3D_PLAN_PRESETS[drop.preset]&&FV_3D_PLAN_PRESETS[drop.preset].label)||drop.label||drop.preset)+' from '+(drop.start||'the scheduled range')+'.';
+    else if(drop.oneDay) current='This day only uses '+_roiFloorName(drop)+'.';
+    else current='This date follows '+_roiFloorName(drop)+' from '+(drop.start||'the scheduled range')+'.';
   }
   var oneUid=_roiFpDay.date?_roiOneDayFloorUid(_roiFpDay.venue, _roiFpDay.date):'';
   var h='<div class="roi-date-bar" id="roiFpDayBar">';
@@ -1455,12 +1463,14 @@ function _roiFpPresetOptions(selected){
   }).join('');
 }
 function _roiFpPlanSummary(p){
+  var publicName=(p&&typeof roiFloorPlanPublicName==='function')?roiFloorPlanPublicName(p.preset):'';
   if(p&&p.plan&&p.plan.tables&&p.plan.tables.length){
     var n=p.plan.tables.reduce(function(s,t){ return s+((t.tables&&t.tables.length)||0); },0);
     var tiers=p.plan.tables.map(function(t){ return t.name+'×'+((t.tables&&t.tables.length)||0); }).join(' · ');
-    return {lbl:(p.plan.badge||p.plan.label||p.label||'Grabbed plan')+' · '+n+' tables', tiers:tiers, ready:true};
+    return {lbl:(publicName||p.plan.badge||p.plan.label||p.label||'Grabbed plan')+' · '+n+' tables', tiers:tiers, ready:true};
   }
   var preset=(typeof FV_3D_PLAN_PRESETS!=='undefined'&&p&&FV_3D_PLAN_PRESETS[p.preset])?FV_3D_PLAN_PRESETS[p.preset]:null;
+  if(publicName) return {lbl:publicName, tiers:'', ready:true};
   if(preset) return {lbl:preset.label||p.preset, tiers:'', ready:true};
   if(p&&p.status==='queued') return {lbl:'Queued grab…', tiers:'', ready:false};
   if(p&&p.status==='error') return {lbl:'Grab failed', tiers:p.error||'', ready:false};

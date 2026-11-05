@@ -5,8 +5,8 @@ function _calFloorPlanLine(r){
   if(!fp) return '';
   var sp=(typeof roiSpecialEventFor==='function')?roiSpecialEventFor(venue, r.d):null;
   var name=fp.label||'Floor plan';
-  if(/oct 17|current waterfront|current casa neos beach/i.test(name)) name='Current waterfront';
-  else if(/art basel/i.test(name)) name='Art Basel';
+  if(/parcel|art basel/i.test(name)) name='Casa Neos Parcel';
+  else if(/casa neos beach club|oct 17|current waterfront|current casa neos beach/i.test(name)) name='Casa Neos Beach Club';
   else if(/rooftop/i.test(name)) name='Rooftop';
   else if(/oct 1/i.test(name)) name='Oct 1 floor';
   else if(/remodel|after dark/i.test(name)) name='Remodel';

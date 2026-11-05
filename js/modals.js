@@ -2510,7 +2510,7 @@ function renderVenueRulesPanel(){
   venues.forEach(function(v){
     var label=v;
     var tip=v;
-    if(v===CNBC_CURRENT_KEY){ label='Casa Neos Beach Club'; tip='Current waterfront rules'; }
+    if(v===CNBC_CURRENT_KEY){ label='Casa Neos Beach Club'; tip='Casa Neos Beach Club floor plan'; }
     else if(v===CNBC_SUMMER_ROOF_KEY){ label='CNBC Summer Roof'; tip='Sunset Rituals · Aug 1–Oct 4 only'; }
     else if(typeof CNL_REMODEL_KEY!=='undefined' && v===CNL_REMODEL_KEY){ label='CN Lounge Remodel'; tip='After Dark remodel · Sep 25–30'; }
     else if(typeof CNL_OCT_KEY!=='undefined' && v===CNL_OCT_KEY){ label='CN Lounge'; tip='Oct 1 floor · Diamond 7, Prestige 3, Platinum 3, Gold 2'; }
@@ -2549,7 +2549,8 @@ function renderVenueRulesPanel(){
   var fpOpts=typeof roiFloorPlanOptionsForVenue==='function'?roiFloorPlanOptionsForVenue(_vrEditVenue):[];
   if(fpOpts.length){
     var curFp=rules.floorPlan||fpOpts[0].v;
-    if(curFp && !fpOpts.some(function(o){ return o.v===curFp; })) fpOpts=[{v:curFp, l:curFp}].concat(fpOpts);
+    var retiredBeach={'casa-neos-beach-club':1,'casa-neos-beach-club-summer':1,'casa-neos-beach-club-new':1};
+    if(curFp && !fpOpts.some(function(o){ return o.v===curFp; }) && !retiredBeach[curFp]) fpOpts=[{v:curFp, l:curFp}].concat(fpOpts);
     h+='<div class="vr-season-box">';
     h+='<div class="vr-season-lbl">3D floor plan for these ROI rules</div>';
     h+='<select id="vrFloorPlanSel" class="vr-floor-plan-sel">';
