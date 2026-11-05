@@ -756,7 +756,7 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .bgt-monthly{border-left:3px solid var(--ink)}
 .bgt-play-card{border-left:3px solid var(--ink)}
 .bgt-play-overview{border-left:3px solid var(--ink)}
-.bgt-monthly-grid{display:grid;grid-template-columns:140px repeat(12,minmax(78px,1fr)) 84px;min-width:980px}
+.bgt-monthly-grid{display:grid;grid-template-columns:168px repeat(12,minmax(78px,1fr)) 84px;min-width:980px}
 .bgt-monthly-cell{padding:6px 4px;text-align:center;border-right:0.5px solid var(--hair);border-bottom:0.5px solid var(--hair);min-width:0}
 .bgt-monthly-cell:nth-child(14n){border-right:none}
 .bgt-monthly-month{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);background:var(--card2)}

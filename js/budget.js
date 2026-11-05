@@ -155,7 +155,7 @@ function fmtPp(v){
 function bgtMonthCellHeader(){
   var h='<div class="bgt-monthly-cell bgt-monthly-month"></div>';
   for(var i=0;i<12;i++) h+='<div class="bgt-monthly-cell bgt-monthly-month">'+MNS[i]+'</div>';
-  h+='<div class="bgt-monthly-cell bgt-monthly-month bgt-monthly-ytd">YTD</div>';
+  h+='<div class="bgt-monthly-cell bgt-monthly-month bgt-monthly-ytd">Total</div>';
   return h;
 }
 function bgtMoneyCell(actual, budget, variance, favorableWhen){
@@ -259,92 +259,102 @@ function renderBudgetKpiStrip(t){
   el.style.display='none';
 }
 
-/* Table 1: Total Sales + Live Entertainment + margin (financial YTD) */
+/* Calendar bottle service for one fiscal month: actuals and targets. */
+function bgtMonthBottle(venue, year, mm){
+  var shows=SCHED.filter(function(r){
+    return (r.v||r.venue)===venue && r.d && r._s!=='empty' && inFiscalMonthFilter(r, year, mm);
+  });
+  var actual=0, target=0, hasA=false, hasT=false;
+  shows.forEach(function(r){
+    if(r.bs_a!=null){ actual+=+r.bs_a||0; hasA=true; }
+    var tgt=(typeof showTargets==='function')?showTargets(r):{bs_m:r.bs_m};
+    var bsT=(tgt&&tgt.bs_m!=null)?+tgt.bs_m:(r.bs_m!=null?+r.bs_m:null);
+    if(bsT!=null){ target+=bsT; hasT=true; }
+  });
+  if(!shows.length){
+    var h=hs(venue,year,mm);
+    if(h&&h.tBS){ actual=h.tBS; hasA=true; }
+  }
+  return {actual:hasA?Math.round(actual):null, target:hasT?Math.round(target):null};
+}
+function bgtMonthGuest(venue, year, mm){
+  var p=monthPerf(venue, year, mm);
+  var g=(typeof calGuestDjBudget==='function')?calGuestDjBudget(venue, year, mm):null;
+  var target=g?g.amount:(typeof getMonthlyBudget==='function'?getMonthlyBudget(venue, year, mm):null);
+  return {actual:p.tFee!=null?Math.round(p.tFee):null, target:target!=null?Math.round(+target):null};
+}
+function bgtGuestMargin(guest, bs){
+  if(guest==null||bs==null||!(+bs>0)) return null;
+  return Math.round(+guest/+bs*1000)/10;
+}
+function bgtCompareCell(actual, target, prior, favorableWhen){
+  var basis=target!=null?target:prior;
+  var variance=(actual!=null&&basis!=null)?(favorableWhen==='under'?(basis-actual):(actual-basis)):null;
+  var status=variance==null?' bgt-status-neutral':(variance>=0?' bgt-status-good':' bgt-status-bad');
+  return '<div class="bgt-monthly-cell'+status+'"><div class="bgt-monthly-value">'+(actual!=null?$k(actual):'-')+'</div>'
+    +'<div class="bgt-monthly-vs">Target '+(target!=null?$k(target):'-')+'</div>'
+    +'<div class="bgt-monthly-vs">PY '+(prior!=null?$k(prior):'-')+'</div></div>';
+}
+function bgtMarginPyCell(actual, prior){
+  var variance=(actual!=null&&prior!=null)?Math.round((actual-prior)*10)/10:null;
+  var status=variance==null?' bgt-status-neutral':(variance<=0?' bgt-status-good':' bgt-status-bad');
+  return '<div class="bgt-monthly-cell'+status+'"><div class="bgt-monthly-value">'+(actual!=null?actual+'%':'-')+'</div>'
+    +'<div class="bgt-monthly-vs">PY '+(prior!=null?prior+'%':'-')+'</div></div>';
+}
+
+/* Table 1: Bottle Service and Guest DJ from the calendar, full-year total. */
 function renderBudgetFinancialTable(){
   var host=document.getElementById('budgetTopLine');
   if(!host) return;
-  var lastMm=getBgtLastActualMonth(bgtVenue,bgtYear);
-  var cutLabel=lastMm?('YTD through '+MNS[lastMm-1]):'No P&L actuals yet';
-  var ytASales=0, ytALive=0, ytBSales=0, ytBLive=0, hasA=false, hasB=false;
-
-  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd">Live Entertainment &amp; Sales <span>'+cutLabel+'</span></div>';
+  var pyYear=+bgtYear-1;
+  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd">Bottle Service &amp; Guest DJ <span>Full year · from the calendar</span></div>';
   h+='<div class="bgt-monthly-grid">'+bgtMonthCellHeader();
 
-  /* Sales row */
-  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Total Sales</b><span>Actual vs budget</span></div>';
+  var bsA=0, bsT=0, bsP=0, hasBsA=false, hasBsT=false, hasBsP=false;
+  var gA=0, gT=0, gP=0, hasGA=false, hasGT=false, hasGP=false;
+  var months=[];
   for(var mi=1;mi<=12;mi++){
     var mm=padMm(mi);
-    var a=getBgtActual(bgtVenue,bgtYear,mm,'sales');
-    var b=getBgtPlan(bgtVenue,bgtYear,mm,'sales');
-    if(lastMm&&mi<=lastMm){
-      if(a!=null){ ytASales+=a; hasA=true; }
-      if(b!=null){ ytBSales+=b; hasB=true; }
-    }
-    var varS=(a!=null&&b!=null)?(a-b):null;
-    var salesStatus=varS==null?' bgt-status-neutral':(varS>=0?' bgt-status-good':' bgt-status-bad');
-    h+='<div class="bgt-monthly-cell'+salesStatus+'"><div class="bgt-monthly-value">'+(a!=null?$k(a):'-')+'</div>'
-      +'<div class="bgt-monthly-vs">Target '+(b!=null?$k(b):'-')+'</div></div>';
+    var bs=bgtMonthBottle(bgtVenue,bgtYear,mm);
+    var bsPy=bgtMonthBottle(bgtVenue,pyYear,mm);
+    var guest=bgtMonthGuest(bgtVenue,bgtYear,mm);
+    var guestPy=bgtMonthGuest(bgtVenue,pyYear,mm);
+    if(bs.actual!=null){ bsA+=bs.actual; hasBsA=true; }
+    if(bs.target!=null){ bsT+=bs.target; hasBsT=true; }
+    if(bsPy.actual!=null){ bsP+=bsPy.actual; hasBsP=true; }
+    if(guest.actual!=null){ gA+=guest.actual; hasGA=true; }
+    if(guest.target!=null){ gT+=guest.target; hasGT=true; }
+    if(guestPy.actual!=null){ gP+=guestPy.actual; hasGP=true; }
+    months.push({bs:bs, bsPy:bsPy, guest:guest, guestPy:guestPy});
   }
-  var ytSalesVar=hasA&&hasB?ytASales-ytBSales:null;
-  var ytSalesStatus=ytSalesVar==null?' bgt-status-neutral':(ytSalesVar>=0?' bgt-status-good':' bgt-status-bad');
-  h+='<div class="bgt-monthly-cell'+ytSalesStatus+'"><div class="bgt-monthly-value">'+(hasA?$k(ytASales):'-')+'</div>'
-    +'<div class="bgt-monthly-vs">Target '+(hasB?$k(ytBSales):'-')+'</div></div>';
 
-  /* Live Entertainment $ */
-  ytALive=0; ytBLive=0; hasA=false; hasB=false;
-  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live Entertainment</b><span>Total spend vs budget</span></div>';
-  for(var mi2=1;mi2<=12;mi2++){
-    var mm2=padMm(mi2);
-    var pnlLive=getBgtActual(bgtVenue,bgtYear,mm2,'live');
-    var catSpend=bgtMonthTotalSpend(bgtVenue,bgtYear,mm2);
-    var aL=catSpend>0?catSpend:(pnlLive!=null?pnlLive:null);
-    var bL=getBgtPlan(bgtVenue,bgtYear,mm2,'live');
-    if(lastMm&&mi2<=lastMm){
-      if(aL!=null){ ytALive+=aL; hasA=true; }
-      if(bL!=null){ ytBLive+=bL; hasB=true; }
-    }
-    var varL=(aL!=null&&bL!=null)?(bL-aL):null;
-    h+=bgtMoneyCell(aL,bL,varL,'under');
-  }
-  var ytLiveVar=(hasA&&hasB)?(ytBLive-ytALive):null;
-  h+=bgtMoneyCell(hasA?ytALive:null, hasB?ytBLive:null, ytLiveVar, 'under');
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Bottle Service Sales</b><span>vs target · vs prior year</span></div>';
+  months.forEach(function(row){
+    h+=bgtCompareCell(row.bs.actual, row.bs.target, row.bsPy.actual, 'over');
+  });
+  h+=bgtCompareCell(hasBsA?bsA:null, hasBsT?bsT:null, hasBsP?bsP:null, 'over');
 
-  /* Margin % */
-  var ytASales2=0, ytBSales2=0, ytALive2=0, ytBLive2=0, hasMA=false, hasMB=false;
-  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Live E Margin</b><span>Actual vs budget</span></div>';
-  for(var mi3=1;mi3<=12;mi3++){
-    var mm3=padMm(mi3);
-    var aS3=getBgtActual(bgtVenue,bgtYear,mm3,'sales');
-    var aL3=getBgtActual(bgtVenue,bgtYear,mm3,'live');
-    var bS3=getBgtPlan(bgtVenue,bgtYear,mm3,'sales');
-    var bL3=getBgtPlan(bgtVenue,bgtYear,mm3,'live');
-    var aP=pctLive(aS3,aL3);
-    var bP=pctLive(bS3,bL3);
-    var vP=(aP!=null&&bP!=null)?Math.round((aP-bP)*10)/10:null;
-    if(lastMm&&mi3<=lastMm){
-      if(aS3!=null){ ytASales2+=aS3; hasMA=true; }
-      if(aL3!=null) ytALive2+=aL3;
-      if(bS3!=null){ ytBSales2+=bS3; hasMB=true; }
-      if(bL3!=null) ytBLive2+=bL3;
-    }
-    h+=bgtPctCell(aP,bP,vP);
-  }
-  var ytAP=hasMA?pctLive(ytASales2,ytALive2):null;
-  var ytBP=hasMB?pctLive(ytBSales2,ytBLive2):null;
-  var ytVP=(ytAP!=null&&ytBP!=null)?Math.round((ytAP-ytBP)*10)/10:null;
-  h+=bgtPctCell(ytAP,ytBP,ytVP);
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Guest DJ</b><span>'+bgtYear+' vs target · vs prior year</span></div>';
+  months.forEach(function(row){
+    h+=bgtCompareCell(row.guest.actual, row.guest.target, row.guestPy.actual, 'under');
+  });
+  h+=bgtCompareCell(hasGA?gA:null, hasGT?gT:null, hasGP?gP:null, 'under');
 
-  /* ROI target completion: measured shows at or above their ROI target. */
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Margin</b><span>Guest DJ / Bottle Service · vs prior year</span></div>';
+  months.forEach(function(row){
+    h+=bgtMarginPyCell(bgtGuestMargin(row.guest.actual, row.bs.actual), bgtGuestMargin(row.guestPy.actual, row.bsPy.actual));
+  });
+  h+=bgtMarginPyCell(bgtGuestMargin(hasGA?gA:null, hasBsA?bsA:null), bgtGuestMargin(hasGP?gP:null, hasBsP?bsP:null));
+
   h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>ROI Beat &amp; Miss</b><span>Same rule as Calendar</span></div>';
-  var ytdRoi={beats:0,misses:0,measured:0,pct:null};
-  var roiCut=getDjYtdCutoff(bgtYear);
+  var totRoi={beats:0,misses:0,measured:0,pct:null};
   for(var mi4=1;mi4<=12;mi4++){
     var rc=bgtRoiCompletion(bgtVenue,bgtYear,padMm(mi4));
-    if(mi4<=roiCut){ ytdRoi.beats+=rc.beats; ytdRoi.misses+=rc.misses; ytdRoi.measured+=rc.measured; }
+    totRoi.beats+=rc.beats; totRoi.misses+=rc.misses; totRoi.measured+=rc.measured;
     h+=bgtRoiCell(rc);
   }
-  ytdRoi.pct=ytdRoi.measured?Math.round(ytdRoi.beats/ytdRoi.measured*100):null;
-  h+=bgtRoiCell(ytdRoi);
+  totRoi.pct=totRoi.measured?Math.round(totRoi.beats/totRoi.measured*100):null;
+  h+=bgtRoiCell(totRoi);
 
   h+='</div></div>';
   host.innerHTML=h;
@@ -367,10 +377,7 @@ function bgtOtherCategoryMonthTotal(venue, year, mm, catIds){
 function renderBudgetGuestDjTable(){
   var host=document.getElementById('budgetGuestDjTable');
   if(!host) return;
-  var cut=getDjYtdCutoff(bgtYear);
-  var cutLabel=(+bgtYear===parseInt(String(TODAY||'').slice(0,4),10))
-    ?('YTD through '+MNS[cut-1]+' (current month)')
-    :('Full year '+bgtYear);
+  var cutLabel='Full year';
   var rows=bgtSpendCategoryRows();
   var monthSpend=new Array(13).fill(0);
   var monthBudget=new Array(13).fill(null);
@@ -390,10 +397,8 @@ function renderBudgetGuestDjTable(){
       var variance=budget!=null?(budget-spend):null;
       monthSpend[mi]+=spend||0;
       if(budget!=null){ monthBudget[mi]=(monthBudget[mi]||0)+budget; monthHasB[mi]=true; }
-      if(mi<=cut){
-        ytSpend+=spend||0;
-        if(budget!=null){ ytBudget+=budget; hasB=true; }
-      }
+      ytSpend+=spend||0;
+      if(budget!=null){ ytBudget+=budget; hasB=true; }
       if(row.editable && oid){
         var src=bgtOtherCategoryMonthTotal(bgtVenue,bgtYear,mm,row.ids);
         var ov=getBgtCatSpendOverride(bgtVenue,bgtYear,mm,oid);
@@ -412,7 +417,7 @@ function renderBudgetGuestDjTable(){
   h+='<div class="bgt-monthly-cell bgt-monthly-label bgt-total-label"><b>Total Spend</b><span>All categories</span></div>';
   for(var tmi=1;tmi<=12;tmi++){
     var tSpend=monthSpend[tmi]||0;
-    if(tmi<=cut) ytTotSpend+=tSpend;
+    ytTotSpend+=tSpend;
     h+='<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+$k(tSpend)+'</div></div>';
   }
   h+='<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+$k(ytTotSpend)+'</div></div>';
@@ -423,7 +428,7 @@ function renderBudgetGuestDjTable(){
     var actualSpend=monthSpend[bmi]||0;
     budgetVals[bmi]={actual:actualSpend, target:liveTarget!=null?+liveTarget:null};
     varVals[bmi]=liveTarget!=null?(+liveTarget-actualSpend):null;
-    if(bmi<=cut && liveTarget!=null){ ytLiveTarget+=+liveTarget; ytHasLive=true; }
+    if(liveTarget!=null){ ytLiveTarget+=+liveTarget; ytHasLive=true; }
   }
   if(ytHasLive) ytVarTot=ytLiveTarget-ytTotSpend;
   h+='<div class="bgt-monthly-cell bgt-monthly-label bgt-total-label"><b>Budget</b><span>Actual and target</span></div>';
