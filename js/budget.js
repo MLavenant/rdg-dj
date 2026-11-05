@@ -196,14 +196,16 @@ function bgtRoiCompletion(venue, year, mm){
   });
   return {beats:beats, misses:misses, measured:measured, pct:measured?Math.round(beats/measured*100):null};
 }
-function bgtRoiCell(c){
+function bgtRoiCell(c, py){
   var neutral=!c||!c.measured;
-  var good=!neutral&&c.misses===0;
-  var status=neutral?' bgt-status-neutral':(good?' bgt-status-good':' bgt-status-bad');
-  return '<div class="bgt-monthly-cell'+status+'"><div class="bgt-monthly-value">'
-    +(neutral?'-':c.beats+' / '+c.misses)+'</div><div class="bgt-monthly-vs">beat / miss</div>'
-    +'<div class="bgt-monthly-var '+(neutral?'':(good?'pos':'neg'))+'">'
-    +(neutral?'-':c.pct+'% beat rate')+'</div></div>';
+  var pyNeutral=!py||!py.measured;
+  var variance=(!neutral&&!pyNeutral)?(c.pct-py.pct):null;
+  var tone=variance==null?(neutral?'':(c.misses===0?' pos':' neg')):(variance>=0?' pos':' neg');
+  return '<div class="bgt-monthly-cell bgt-trio-cell"><div class="bgt-trio">'
+    +bgtTrioRow('Act', neutral?'-':c.pct+'%', 'bgt-trio-act'+tone)
+    +bgtTrioRow('PY', pyNeutral?'-':py.pct+'%', '')
+    +bgtTrioRow('Beat', neutral?'-':(c.beats+' / '+c.misses), '')
+    +'</div></div>';
 }
 
 /* YTD Budget decision totals (financial cutoff = latest P&L month) */
@@ -277,29 +279,64 @@ function bgtMonthBottle(venue, year, mm){
   }
   return {actual:hasA?Math.round(actual):null, target:hasT?Math.round(target):null};
 }
+function bgtShowHasPlayed(r){
+  if(!r||!r.d) return false;
+  var today=(typeof miamiToday==='function')?miamiToday():(typeof TODAY!=='undefined'?TODAY:'');
+  return !!(today && String(r.d)<=String(today));
+}
 function bgtMonthGuest(venue, year, mm){
-  var p=monthPerf(venue, year, mm);
+  var shows=SCHED.filter(function(r){
+    return (r.v||r.venue)===venue && r.d && r._s!=='empty' && inFiscalMonthFilter(r, year, mm);
+  });
+  var played=0, forecast=0, hasP=false, hasF=false;
+  shows.forEach(function(r){
+    var f=+(r.cost||r.fee)||0;
+    if(!(f>0)) return;
+    if(bgtShowHasPlayed(r)){ played+=f; hasP=true; }
+    else { forecast+=f; hasF=true; }
+  });
+  if(!shows.length){
+    var p=monthPerf(venue, year, mm);
+    if(p.tFee!=null){ played=+p.tFee; hasP=true; }
+  }
   var g=(typeof calGuestDjBudget==='function')?calGuestDjBudget(venue, year, mm):null;
   var target=g?g.amount:(typeof getMonthlyBudget==='function'?getMonthlyBudget(venue, year, mm):null);
-  return {actual:p.tFee!=null?Math.round(p.tFee):null, target:target!=null?Math.round(+target):null};
+  return {
+    actual:hasP?Math.round(played):null,
+    forecast:hasF?Math.round(forecast):null,
+    target:target!=null?Math.round(+target):null
+  };
 }
 function bgtGuestMargin(guest, bs){
   if(guest==null||bs==null||!(+bs>0)) return null;
   return Math.round(+guest/+bs*1000)/10;
 }
-function bgtCompareCell(actual, target, prior, favorableWhen){
+function bgtTrioRow(label, value, cls){
+  return '<div class="bgt-trio-row"><span>'+label+'</span><b class="'+(cls||'')+'">'+value+'</b></div>';
+}
+function bgtForecastBox(amount){
+  if(!(amount>0)) return '';
+  return '<div class="bgt-forecast" title="Booked Guest DJ that has not played yet">'+$k(amount)+' to play</div>';
+}
+function bgtCompareCell(actual, target, prior, favorableWhen, forecast){
   var basis=target!=null?target:prior;
   var variance=(actual!=null&&basis!=null)?(favorableWhen==='under'?(basis-actual):(actual-basis)):null;
-  var status=variance==null?' bgt-status-neutral':(variance>=0?' bgt-status-good':' bgt-status-bad');
-  return '<div class="bgt-monthly-cell'+status+'"><div class="bgt-monthly-value">'+(actual!=null?$k(actual):'-')+'</div>'
-    +'<div class="bgt-monthly-vs">Target '+(target!=null?$k(target):'-')+'</div>'
-    +'<div class="bgt-monthly-vs">PY '+(prior!=null?$k(prior):'-')+'</div></div>';
+  var tone=variance==null?'':(variance>=0?' pos':' neg');
+  return '<div class="bgt-monthly-cell bgt-trio-cell"><div class="bgt-trio">'
+    +bgtTrioRow('Act', actual!=null?$k(actual):'-', 'bgt-trio-act'+tone)
+    +bgtTrioRow('Tgt', target!=null?$k(target):'-', '')
+    +bgtTrioRow('PY', prior!=null?$k(prior):'-', '')
+    +'</div>'+bgtForecastBox(forecast)+'</div>';
 }
 function bgtMarginPyCell(actual, prior){
   var variance=(actual!=null&&prior!=null)?Math.round((actual-prior)*10)/10:null;
-  var status=variance==null?' bgt-status-neutral':(variance<=0?' bgt-status-good':' bgt-status-bad');
-  return '<div class="bgt-monthly-cell'+status+'"><div class="bgt-monthly-value">'+(actual!=null?actual+'%':'-')+'</div>'
-    +'<div class="bgt-monthly-vs">PY '+(prior!=null?prior+'%':'-')+'</div></div>';
+  var tone=variance==null?'':(variance<=0?' pos':' neg');
+  var gap=variance==null?'-':((variance>0?'+':'')+variance+' pp');
+  return '<div class="bgt-monthly-cell bgt-trio-cell"><div class="bgt-trio">'
+    +bgtTrioRow('Act', actual!=null?actual+'%':'-', 'bgt-trio-act'+tone)
+    +bgtTrioRow('PY', prior!=null?prior+'%':'-', '')
+    +bgtTrioRow('vs PY', gap, tone?'bgt-trio-act'+tone:'')
+    +'</div></div>';
 }
 
 /* Table 1: Bottle Service and Guest DJ from the calendar, full-year total. */
@@ -307,11 +344,11 @@ function renderBudgetFinancialTable(){
   var host=document.getElementById('budgetTopLine');
   if(!host) return;
   var pyYear=+bgtYear-1;
-  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd">Bottle Service &amp; Guest DJ <span>Full year · from the calendar</span></div>';
+  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd">Bottle Service &amp; Guest DJ <span>Three numbers: actual, target, prior year. Outlined Guest DJ is booked and has not played.</span></div>';
   h+='<div class="bgt-monthly-grid">'+bgtMonthCellHeader();
 
   var bsA=0, bsT=0, bsP=0, hasBsA=false, hasBsT=false, hasBsP=false;
-  var gA=0, gT=0, gP=0, hasGA=false, hasGT=false, hasGP=false;
+  var gA=0, gT=0, gP=0, gF=0, hasGA=false, hasGT=false, hasGP=false, hasGF=false;
   var months=[];
   for(var mi=1;mi<=12;mi++){
     var mm=padMm(mi);
@@ -323,38 +360,43 @@ function renderBudgetFinancialTable(){
     if(bs.target!=null){ bsT+=bs.target; hasBsT=true; }
     if(bsPy.actual!=null){ bsP+=bsPy.actual; hasBsP=true; }
     if(guest.actual!=null){ gA+=guest.actual; hasGA=true; }
+    if(guest.forecast!=null){ gF+=guest.forecast; hasGF=true; }
     if(guest.target!=null){ gT+=guest.target; hasGT=true; }
     if(guestPy.actual!=null){ gP+=guestPy.actual; hasGP=true; }
-    months.push({bs:bs, bsPy:bsPy, guest:guest, guestPy:guestPy});
+    months.push({bs:bs, bsPy:bsPy, guest:guest, guestPy:guestPy, mm:mm});
   }
 
-  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Bottle Service Sales</b><span>vs target · vs prior year</span></div>';
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Bottle Service Sales</b><span>Actual · Target · Prior year</span></div>';
   months.forEach(function(row){
     h+=bgtCompareCell(row.bs.actual, row.bs.target, row.bsPy.actual, 'over');
   });
   h+=bgtCompareCell(hasBsA?bsA:null, hasBsT?bsT:null, hasBsP?bsP:null, 'over');
 
-  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Guest DJ</b><span>'+bgtYear+' vs target · vs prior year</span></div>';
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Guest DJ</b><span>Played nights only · outlined is still to play</span></div>';
   months.forEach(function(row){
-    h+=bgtCompareCell(row.guest.actual, row.guest.target, row.guestPy.actual, 'under');
+    h+=bgtCompareCell(row.guest.actual, row.guest.target, row.guestPy.actual, 'under', row.guest.forecast);
   });
-  h+=bgtCompareCell(hasGA?gA:null, hasGT?gT:null, hasGP?gP:null, 'under');
+  h+=bgtCompareCell(hasGA?gA:null, hasGT?gT:null, hasGP?gP:null, 'under', hasGF?gF:null);
 
-  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Margin</b><span>Guest DJ / Bottle Service · vs prior year</span></div>';
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>Margin</b><span>Played Guest DJ / Bottle Service</span></div>';
   months.forEach(function(row){
     h+=bgtMarginPyCell(bgtGuestMargin(row.guest.actual, row.bs.actual), bgtGuestMargin(row.guestPy.actual, row.bsPy.actual));
   });
   h+=bgtMarginPyCell(bgtGuestMargin(hasGA?gA:null, hasBsA?bsA:null), bgtGuestMargin(hasGP?gP:null, hasBsP?bsP:null));
 
-  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>ROI Beat &amp; Miss</b><span>Same rule as Calendar</span></div>';
+  h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>ROI Beat &amp; Miss</b><span>Played nights · actual, prior year, beat / miss</span></div>';
   var totRoi={beats:0,misses:0,measured:0,pct:null};
-  for(var mi4=1;mi4<=12;mi4++){
-    var rc=bgtRoiCompletion(bgtVenue,bgtYear,padMm(mi4));
+  var totPy={beats:0,misses:0,measured:0,pct:null};
+  months.forEach(function(row){
+    var rc=bgtRoiCompletion(bgtVenue,bgtYear,row.mm);
+    var py=bgtRoiCompletion(bgtVenue,pyYear,row.mm);
     totRoi.beats+=rc.beats; totRoi.misses+=rc.misses; totRoi.measured+=rc.measured;
-    h+=bgtRoiCell(rc);
-  }
+    totPy.beats+=py.beats; totPy.misses+=py.misses; totPy.measured+=py.measured;
+    h+=bgtRoiCell(rc, py);
+  });
   totRoi.pct=totRoi.measured?Math.round(totRoi.beats/totRoi.measured*100):null;
-  h+=bgtRoiCell(totRoi);
+  totPy.pct=totPy.measured?Math.round(totPy.beats/totPy.measured*100):null;
+  h+=bgtRoiCell(totRoi, totPy);
 
   h+='</div></div>';
   host.innerHTML=h;
