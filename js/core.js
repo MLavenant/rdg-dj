@@ -595,7 +595,7 @@ function ensureDefaultRoiFloorPlans(){
   }else{
     Object.keys(ROI_FLOOR_PLANS).forEach(function(uid){
       var p=ROI_FLOOR_PLANS[uid];
-      if(!p||p.preset!=='casa-neos-beach-club-oct17'||oct17PlanIsCurrent(p.plan)) return;
+      if(!p||p.preset!=='casa-neos-beach-club-oct17'||p.seeded===false||p.grabbed||oct17PlanIsCurrent(p.plan)) return;
       p.plan=_fv3dPlanPayloadFromPreset('casa-neos-beach-club-oct17');
       p.status='ready';
       p.updatedAt=new Date().toISOString();
@@ -627,7 +627,7 @@ function ensureDefaultRoiFloorPlans(){
   }else{
     Object.keys(ROI_FLOOR_PLANS).forEach(function(uid){
       var p=ROI_FLOOR_PLANS[uid];
-      if(!p||p.oneDay||p.preset!=='casa-neos-beach-club-basel'||baselPlanIsCurrent(p.plan)) return;
+      if(!p||p.oneDay||p.seeded===false||p.grabbed||p.preset!=='casa-neos-beach-club-basel'||baselPlanIsCurrent(p.plan)) return;
       p.label='Casa Neos Beach Club Art Basel';
       p.start='2026-12-04';
       p.end='2026-12-06';
@@ -669,12 +669,7 @@ function _fv3dPlanPayloadFromPreset(presetKey){
 function saveRoiFloorPlans(){
   try{ localStorage.setItem('rdg_roi_floor_plans', JSON.stringify(ROI_FLOOR_PLANS)); }catch(e){}
   if(window._fbSave) window._fbSave('roiFloorPlans', ROI_FLOOR_PLANS);
-  try{
-    if(typeof curView!=='undefined' && curView==='3d'){
-      if(typeof setFv3dDate==='function') setFv3dDate(getFv3dDate());
-      else { renderFv3dFloorVisual(); renderFv3dReference(); }
-    }
-  }catch(e2){}
+  if(typeof refreshAllRoiDerivedData==='function') refreshAllRoiDerivedData();
 }
 function roiFloorPlanDropFor(venue, dateStr){
   if(!venue||!dateStr||!ROI_FLOOR_PLANS) return null;
@@ -896,35 +891,32 @@ function setFv3dDate(dateStr){
     badge.style.background=info.color||'#334155';
   }
 }
-/* VIP / fee-guidance floor plan for a venue on a given date (CNBC swaps to rooftop Aug 1–Oct 4;
-   CN Lounge swaps to remodel from 2026-09-25; ROI floor-plan drops override both). */
+/* One floor plan for Calendar, 3D, and Weekly Flash.
+   MILA stays on its floor. Beach Club uses the current waterfront from Oct 17.
+   A newer Venue ROI Rules drop or one-day plan replaces that until the next override. */
 function getVipFloorPlan(venue, dateStr){
   var key=fv3dKeyForVenue(venue);
   var plan=key?fv3dResolvePlan(key, dateStr):null;
-  var sp=(typeof roiSpecialEventFor==='function')?roiSpecialEventFor(venue,dateStr):null;
-  if(sp&&sp.floorPlan==='regular'){
-    if(typeof _vipFloorPlan!=='undefined'&&_vipFloorPlan&&_vipFloorPlan[venue]) return Object.assign({},_vipFloorPlan[venue],{summer:false,remodel:false});
-    return {budget:0,tiers:{},summer:false,remodel:false};
-  }
-  if(plan && plan.tableKey && plan.tableKey!==key && FV_3D_TABLES[plan.tableKey]){
-    var alt=FV_3D_TABLES[plan.tableKey]||[];
-    var tierRef2={}; var budget2=0;
-    alt.forEach(function(t){
-      var name=t.name.charAt(0).toUpperCase()+t.name.slice(1).toLowerCase();
-      var n=(t.tables&&t.tables.length)||0;
-      budget2+=n;
-      tierRef2[name]={total:n,min:t.minimum||0,color:t.color||'#eee',textColor:'#333'};
-    });
-    return {
-      budget:budget2, tiers:tierRef2,
-      summer:plan.tableKey==='casa-neos-beach-club-summer',
-      remodel:plan.tableKey==='casa-neos-lounge-new',
-      oct:plan.tableKey==='casa-neos-lounge-oct',
-      label:plan.label||plan.badge||null
-    };
-  }
-  if(typeof _vipFloorPlan!=='undefined' && _vipFloorPlan && _vipFloorPlan[venue]) return _vipFloorPlan[venue];
-  return {budget:0, tiers:{}, summer:false};
+  var tableKey=plan&&plan.tableKey;
+  var tiers=(tableKey&&FV_3D_TABLES[tableKey])?FV_3D_TABLES[tableKey]:(key&&FV_3D_TABLES[key]?FV_3D_TABLES[key]:[]);
+  var tierRef={}; var budget=0;
+  tiers.forEach(function(t){
+    var name=String(t.name||'').charAt(0).toUpperCase()+String(t.name||'').slice(1).toLowerCase();
+    var n=(t.tables&&t.tables.length)||0;
+    budget+=n;
+    tierRef[name]={total:n,min:t.minimum||0,color:t.color||'#eee',textColor:'#333'};
+  });
+  var label=(plan&&(plan.badge||plan.label))||'';
+  if(!label&&key==='mila-lounge') label='MILA Lounge';
+  if(!label&&tableKey==='casa-neos-beach-club-oct17') label='Current waterfront';
+  return {
+    budget:budget, tiers:tierRef, tableKey:tableKey||key||'',
+    summer:tableKey==='casa-neos-beach-club-summer',
+    remodel:tableKey==='casa-neos-lounge-new',
+    oct:tableKey==='casa-neos-lounge-oct',
+    waterfront:tableKey==='casa-neos-beach-club-oct17'||tableKey==='casa-neos-beach-club-new',
+    label:label
+  };
 }
 
 function fv3dKeyForVenue(venue){
@@ -2238,6 +2230,9 @@ function _liveShowTargets(r){
 }
 /* Past nights return the locked snapshot. Today and future follow Venue ROI Rules. */
 function showTargets(r){
+  /* A special-day ROI is an explicit override and stays on every surface, including past nights. */
+  var sp=(r&&typeof roiSpecialEventFor==='function')?roiSpecialEventFor(r.v||r.venue, r.d):null;
+  if(sp) return _liveShowTargets(r);
   var lock=_showTargetLockFor(r);
   if(lock){
     return {
@@ -2248,7 +2243,8 @@ function showTargets(r){
   return _liveShowTargets(r);
 }
 function applyShowTargets(r){
-  if(r && isPastPerformanceDate(r.d)) return r;
+  var covered=r && typeof roiSpecialEventFor==='function' && roiSpecialEventFor(r.v||r.venue, r.d);
+  if(r && isPastPerformanceDate(r.d) && !covered) return r;
   var feeRaw=r.fee!=null?r.fee:r.cost;
   if(feeRaw!=null&&feeRaw!==''&&!(+feeRaw>0)){
     r.bs_m=null;
@@ -2263,7 +2259,8 @@ function applyShowTargets(r){
 function recalcAllSchedTargets(){
   SCHED.forEach(function(r){
     if(!r||r._s==='empty') return;
-    if(isPastPerformanceDate(r.d)) return;
+    var covered=typeof roiSpecialEventFor==='function' && roiSpecialEventFor(r.v||r.venue, r.d);
+    if(isPastPerformanceDate(r.d) && !covered) return;
     var feeRaw=r.fee!=null?r.fee:r.cost;
     if(feeRaw==null||feeRaw==='') return;
     applyShowTargets(r);

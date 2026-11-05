@@ -1390,6 +1390,9 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       if(typeof recalcAllSchedTargets==='function') recalcAllSchedTargets();
       if(typeof refreshForecastRoiCache==='function') refreshForecastRoiCache();
       try{
+        if(!roiTyping && typeof curView!=='undefined' && (curView==='calendar'||curView==='vip'||curView==='forecast'||curView==='rolling'||curView==='budget'||curView==='accounting') && typeof go==='function'){
+          go();
+        }
         if(typeof curView!=='undefined' && curView==='3d' && typeof setFv3dDate==='function'){
           setFv3dDate(typeof getFv3dDate==='function'?getFv3dDate():null);
           if(typeof updateFv3dRefreshStatus==='function') updateFv3dRefreshStatus();

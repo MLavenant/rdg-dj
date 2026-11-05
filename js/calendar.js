@@ -1,3 +1,23 @@
+function _calFloorPlanLine(r){
+  if(!r||typeof getVipFloorPlan!=='function') return '';
+  var venue=r.v||r.venue;
+  var fp=getVipFloorPlan(venue, r.d);
+  if(!fp) return '';
+  var sp=(typeof roiSpecialEventFor==='function')?roiSpecialEventFor(venue, r.d):null;
+  var name=fp.label||'Floor plan';
+  if(/oct 17|current waterfront|current casa neos beach/i.test(name)) name='Current waterfront';
+  else if(/art basel/i.test(name)) name='Art Basel';
+  else if(/rooftop/i.test(name)) name='Rooftop';
+  else if(/oct 1/i.test(name)) name='Oct 1 floor';
+  else if(/remodel|after dark/i.test(name)) name='Remodel';
+  else if(/mila/i.test(name)) name='MILA floor';
+  var bits=[];
+  if(sp&&sp.label) bits.push(sp.label);
+  bits.push(name);
+  if(fp.budget) bits.push(fp.budget+' tables');
+  var text=bits.join(' · ');
+  return '<div class="sc-fp" title="'+text.replace(/"/g,'&quot;')+'">'+text.replace(/</g,'&lt;')+'</div>';
+}
 function renderCal(){
   /* Never rebuild the table while DJ Status menu is open — Firebase echoes
      and soft refreshes used to wipe the <select> mid-pick. */
@@ -167,6 +187,7 @@ function renderCal(){
         h+='<td class="sc-dj-cell" data-show-idx="'+idx+'" data-uid="'+showUid+'" data-action="editShow" style="cursor:pointer" title="Click to edit show">'
           +'<b class="dj-clickname '+bCls+'">'+nm+'</b>'
           +'<span class="dj-fee-inline">'+$k(fee)+'</span>'
+          +_calFloorPlanLine(r)
           +(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')
           +'</td>';
         var djSt=getShowDjStatus(r, ds)||'';
