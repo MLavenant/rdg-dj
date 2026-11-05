@@ -2760,8 +2760,7 @@ function updateTierDay(v,ti,season,day,field,val){
   tier[season][day][field]=n;
   try{ localStorage.setItem('rdg_venue_roi_rules', JSON.stringify(VENUE_ROI_RULES)); }catch(e){}
   _roiPushCell(v+'/tiers/'+ti+'/'+season+'/'+day+'/'+field, n);
-  if(typeof recalcAllSchedTargets==='function') recalcAllSchedTargets();
-  if(typeof refreshForecastRoiCache==='function') refreshForecastRoiCache();
+  if(typeof refreshAllRoiDerivedData==='function') refreshAllRoiDerivedData();
   if(typeof roiRefreshVerifyBlocks==='function') roiRefreshVerifyBlocks(document.getElementById('vrBody'));
 }
 function updateTierTable(v,ti,season,day,cat,val){
@@ -2776,8 +2775,7 @@ function updateTierTable(v,ti,season,day,cat,val){
   tier[season][day].tables[cat]=n;
   try{ localStorage.setItem('rdg_venue_roi_rules', JSON.stringify(VENUE_ROI_RULES)); }catch(e){}
   _roiPushCell(v+'/tiers/'+ti+'/'+season+'/'+day+'/tables/'+cat, n);
-  if(typeof recalcAllSchedTargets==='function') recalcAllSchedTargets();
-  if(typeof refreshForecastRoiCache==='function') refreshForecastRoiCache();
+  if(typeof refreshAllRoiDerivedData==='function') refreshAllRoiDerivedData();
   if(typeof roiRefreshVerifyBlocks==='function') roiRefreshVerifyBlocks(document.getElementById('vrBody'));
 }
 function removeTier(v,ti){

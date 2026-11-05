@@ -1351,9 +1351,12 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       roiTyping=!!(ae && ae.closest && ae.closest('#vrBody input, #roiSpecialForm input'));
     }catch(eType){}
     if(data.venueRoiRules){
-      try{ window._roiRulesBaseline = JSON.parse(JSON.stringify(data.venueRoiRules)); }catch(eBase){ window._roiRulesBaseline = data.venueRoiRules; }
+      var localAhead=(window._roiLocalRev||0)>(window._roiAckRev||0);
       window._roiRulesBaselineReady = true;
-      VENUE_ROI_RULES = data.venueRoiRules;
+      if(!localAhead){
+        try{ window._roiRulesBaseline = JSON.parse(JSON.stringify(data.venueRoiRules)); }catch(eBase){ window._roiRulesBaseline = data.venueRoiRules; }
+        VENUE_ROI_RULES = data.venueRoiRules;
+      }
     }
     if(VENUE_ROI_RULES && typeof _roiApplyPendingToRules==='function') _roiApplyPendingToRules(VENUE_ROI_RULES);
     if(typeof _roiPaintOpenCells==='function') _roiPaintOpenCells();
@@ -1390,7 +1393,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       if(typeof recalcAllSchedTargets==='function') recalcAllSchedTargets();
       if(typeof refreshForecastRoiCache==='function') refreshForecastRoiCache();
       try{
-        if(!roiTyping && typeof curView!=='undefined' && (curView==='calendar'||curView==='vip'||curView==='forecast'||curView==='rolling'||curView==='budget'||curView==='accounting') && typeof go==='function'){
+        if(!roiTyping && typeof curView!=='undefined' && (curView==='calendar'||curView==='vip'||curView==='forecast'||curView==='rolling'||curView==='budget'||curView==='accounting'||curView==='mrecap'||curView==='summary'||curView==='allshows') && typeof go==='function'){
           go();
         }
         if(typeof curView!=='undefined' && curView==='3d' && typeof setFv3dDate==='function'){

@@ -886,8 +886,8 @@ function roiStandingRulesPreset(venue, dateStr){
   return null;
 }
 function roiApplyStandingPreset(drop, venue, dateStr){
+  /* Dated and one-day plans stay. An open-ended plan follows the Venue ROI Rules floor plan. */
   if(!drop||drop.end||drop.oneDay) return drop;
-  if(drop.preset!=='casa-neos-beach-club-oct17' && drop.preset!=='casa-neos-lounge-oct') return drop;
   var preset=roiStandingRulesPreset(venue, dateStr);
   if(!preset||preset===drop.preset) return drop;
   var plan=(typeof _fv3dPlanPayloadFromPreset==='function')?_fv3dPlanPayloadFromPreset(preset):null;
@@ -2133,8 +2133,9 @@ function loadSavedVenueRules(){
 }
 function saveVenueRules(){
   ensureVenueRulesFloorPlanBindings();
+  window._roiLocalRev=(window._roiLocalRev||0)+1;
   try{ localStorage.setItem('rdg_venue_roi_rules', JSON.stringify(VENUE_ROI_RULES)); }catch(e){}
-  if(typeof _roiCommitRulesTree==='function') _roiCommitRulesTree();
+  if(typeof _roiCommitRulesTree==='function') _roiCommitRulesTree(window._roiLocalRev);
   else if(window._fbSave) window._fbSave('venueRoiRules', VENUE_ROI_RULES);
   refreshAllRoiDerivedData();
 }
@@ -2393,13 +2394,15 @@ function saveShowTargetLock(r, roiTarget){
 function refreshAllRoiDerivedData(){
   recalcAllSchedTargets();
   if(typeof refreshForecastRoiCache==='function') refreshForecastRoiCache();
-  if(typeof go==='function') go();
-  if(curView==='forecast'&&typeof renderForecast==='function') renderForecast();
-  if(curView==='vip'&&typeof renderVIP==='function') renderVIP();
-  if(curView==='accounting'&&typeof renderAccounting==='function') renderAccounting();
-  if(curView==='budget'&&_budgetInited&&typeof renderBudget==='function') renderBudget();
-  if(curView==='rolling'&&typeof renderBookingPlan==='function') renderBookingPlan();
-  if(curView==='roi-rules'&&typeof renderRoiRulesPage==='function') renderRoiRulesPage();
+  var view=typeof curView!=='undefined'?curView:'';
+  /* Rebuild the open report. Leave the rules form alone while a cell is being typed. */
+  if(view!=='roi-rules' && typeof go==='function') go();
+  if(view==='3d'){
+    try{
+      if(typeof setFv3dDate==='function') setFv3dDate(typeof getFv3dDate==='function'?getFv3dDate():null);
+      else { if(typeof renderFv3dFloorVisual==='function') renderFv3dFloorVisual(); if(typeof renderFv3dReference==='function') renderFv3dReference(); }
+    }catch(e3d){}
+  }
 }
 
 function tierFor(fee){

@@ -426,17 +426,20 @@ function _roiMergeSavedRules(server, local, baseline){
   });
   return out;
 }
-function _roiCommitRulesTree(){
+function _roiCommitRulesTree(rev){
   if(!window._fbRef || !window._roiRulesBaselineReady){
     clearTimeout(window._roiCommitWait);
-    window._roiCommitWait=setTimeout(_roiCommitRulesTree, 400);
+    window._roiCommitWait=setTimeout(function(){ _roiCommitRulesTree(rev); }, 400);
     return;
   }
   var local=_roiClone(VENUE_ROI_RULES);
   var baseline=_roiClone(window._roiRulesBaseline||{});
+  var savedRev=rev||window._roiLocalRev||0;
   window._fbRef.child('venueRoiRules').transaction(function(cur){
     return _roiMergeSavedRules(cur||{}, local, baseline);
-  }, function(){}, false);
+  }, function(err, committed){
+    if(!err && committed && (window._roiAckRev||0)<savedRev) window._roiAckRev=savedRev;
+  }, false);
 }
 _roiLoadCellQueue();
 function renderRoiRulesPage(){
