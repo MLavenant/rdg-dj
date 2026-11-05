@@ -202,9 +202,9 @@ function bgtRoiCell(c, py){
   var variance=(!neutral&&!pyNeutral)?(c.pct-py.pct):null;
   var tone=variance==null?(neutral?'':(c.misses===0?' pos':' neg')):(variance>=0?' pos':' neg');
   return '<div class="bgt-monthly-cell bgt-trio-cell"><div class="bgt-trio">'
-    +bgtTrioRow('Act', neutral?'-':c.pct+'%', 'bgt-trio-act'+tone)
-    +bgtTrioRow('PY', pyNeutral?'-':py.pct+'%', '')
-    +bgtTrioRow('Beat', neutral?'-':(c.beats+' / '+c.misses), '')
+    +bgtTrioRow('Act', neutral?'-':c.pct+'%', 'bgt-trio-act'+tone, '', '')
+    +bgtTrioRow('PY', pyNeutral?'-':py.pct+'%', '', 'bgt-row-py', (!neutral&&!pyNeutral)?bgtMove(c.pct, py.pct, 'over'):'')
+    +bgtTrioRow('Beat', neutral?'-':(c.beats+' / '+c.misses), '', '', '')
     +'</div></div>';
 }
 
@@ -311,21 +311,32 @@ function bgtGuestMargin(guest, bs){
   if(guest==null||bs==null||!(+bs>0)) return null;
   return Math.round(+guest/+bs*1000)/10;
 }
-function bgtTrioRow(label, value, cls){
-  return '<div class="bgt-trio-row"><span>'+label+'</span><b class="'+(cls||'')+'">'+value+'</b></div>';
+function bgtMove(actual, base, favorableWhen){
+  if(actual==null||base==null||isNaN(+actual)||isNaN(+base)||!(Math.abs(+base)>0)||+actual===+base) return '';
+  var higher=+actual>+base;
+  var good=favorableWhen==='under'?+actual<+base:+actual>+base;
+  var pct=Math.abs(Math.round((+actual-+base)/Math.abs(+base)*1000)/10);
+  var pctTxt=(pct%1?pct:Math.round(pct))+'%';
+  return '<em class="bgt-delta '+(good?'good':'bad')+'"><i class="bgt-arr '+(higher?'up':'dn')+'"></i>'+pctTxt+'</em>';
+}
+function bgtTrioRow(label, value, cls, rowCls, arrow){
+  return '<div class="bgt-trio-row'+(rowCls?' '+rowCls:'')+'"><span>'+label+'</span><b class="'+(cls||'')+'">'+value+(arrow||'')+'</b></div>';
 }
 function bgtForecastBox(amount){
   if(!(amount>0)) return '';
   return '<div class="bgt-forecast" title="Booked Guest DJ that has not played yet">'+$k(amount)+' to play</div>';
 }
-function bgtCompareCell(actual, target, prior, favorableWhen, forecast){
+function bgtCompareCell(actual, target, prior, favorableWhen, forecast, kind){
+  var fmt=kind==='pct'?function(v){ return v==null?'-':v+'%'; }:function(v){ return v==null?'-':$k(v); };
   var basis=target!=null?target:prior;
   var variance=(actual!=null&&basis!=null)?(favorableWhen==='under'?(basis-actual):(actual-basis)):null;
   var tone=variance==null?'':(variance>=0?' pos':' neg');
+  var actLabel=kind==='year'?String(bgtYear):'Act';
+  var pyLabel=kind==='year'?String(+bgtYear-1):'PY';
   return '<div class="bgt-monthly-cell bgt-trio-cell"><div class="bgt-trio">'
-    +bgtTrioRow('Act', actual!=null?$k(actual):'-', 'bgt-trio-act'+tone)
-    +bgtTrioRow('Tgt', target!=null?$k(target):'-', '')
-    +bgtTrioRow('PY', prior!=null?$k(prior):'-', '')
+    +bgtTrioRow(actLabel, fmt(actual), 'bgt-trio-act'+tone, '', '')
+    +bgtTrioRow('Target', fmt(target), '', 'bgt-row-tgt', bgtMove(actual, target, favorableWhen))
+    +bgtTrioRow(pyLabel, fmt(prior), '', 'bgt-row-py', bgtMove(actual, prior, favorableWhen))
     +'</div>'+bgtForecastBox(forecast)+'</div>';
 }
 function bgtMarginPyCell(actual, prior){
@@ -333,9 +344,9 @@ function bgtMarginPyCell(actual, prior){
   var tone=variance==null?'':(variance<=0?' pos':' neg');
   var gap=variance==null?'-':((variance>0?'+':'')+variance+' pp');
   return '<div class="bgt-monthly-cell bgt-trio-cell"><div class="bgt-trio">'
-    +bgtTrioRow('Act', actual!=null?actual+'%':'-', 'bgt-trio-act'+tone)
-    +bgtTrioRow('PY', prior!=null?prior+'%':'-', '')
-    +bgtTrioRow('vs PY', gap, tone?'bgt-trio-act'+tone:'')
+    +bgtTrioRow('Act', actual!=null?actual+'%':'-', 'bgt-trio-act'+tone, '', '')
+    +bgtTrioRow('PY', prior!=null?prior+'%':'-', '', 'bgt-row-py', bgtMove(actual, prior, 'under'))
+    +bgtTrioRow('vs PY', gap, tone?'bgt-trio-act'+tone:'', '', '')
     +'</div></div>';
 }
 
@@ -399,7 +410,75 @@ function renderBudgetFinancialTable(){
   h+=bgtRoiCell(totRoi, totPy);
 
   h+='</div></div>';
+  h+=renderBudgetPnlTable();
   host.innerHTML=h;
+}
+
+function bgtNumOrNull(v){
+  if(v==null||v==='') return null;
+  var n=+v;
+  return isNaN(n)?null:n;
+}
+function bgtMarginOf(live, sales){
+  if(live==null||sales==null||!(+sales>0)) return null;
+  return Math.round(+live/+sales*1000)/10;
+}
+function renderBudgetPnlTable(){
+  var pyYear=+bgtYear-1;
+  var h='<div class="bgt-monthly" style="margin-top:14px"><div class="bgt-monthly-hd">Total Sales, Live Entertainment &amp; Margin <span>P&amp;L actuals. Target is yellow. '+pyYear+' is light green. Arrow is '+bgtYear+' versus that number. Totals use months that already have a '+bgtYear+' actual.</span></div>';
+  h+='<div class="bgt-monthly-grid">'+bgtMonthCellHeader();
+  var rows=[
+    {key:'sales', label:'Total Sales', sub:'Higher than target is better', fav:'over'},
+    {key:'live', label:'Total Live Entertainment', sub:'GL 6750 · lower than target is better', fav:'under'},
+    {key:'margin', label:'Margin', sub:'Live entertainment / total sales', fav:'under', pct:true}
+  ];
+  var months=[];
+  for(var mi=1;mi<=12;mi++){
+    var mm=padMm(mi);
+    var nowS=bgtNumOrNull(getBgtActual(bgtVenue,bgtYear,mm,'sales'));
+    var nowL=bgtNumOrNull(getBgtActual(bgtVenue,bgtYear,mm,'live'));
+    var pyS=bgtNumOrNull(getBgtActual(bgtVenue,pyYear,mm,'sales'));
+    var pyL=bgtNumOrNull(getBgtActual(bgtVenue,pyYear,mm,'live'));
+    var tgS=bgtNumOrNull(getBgtPlan(bgtVenue,bgtYear,mm,'sales'));
+    var tgL=bgtNumOrNull(getBgtPlan(bgtVenue,bgtYear,mm,'live'));
+    var hasNow=nowS!=null||nowL!=null;
+    months.push({
+      hasNow:hasNow,
+      sales:nowS, live:nowL, margin:bgtMarginOf(nowL, nowS),
+      salesT:tgS, liveT:tgL, marginT:bgtMarginOf(tgL, tgS),
+      salesP:pyS, liveP:pyL, marginP:bgtMarginOf(pyL, pyS)
+    });
+  }
+  rows.forEach(function(spec){
+    var aSum=0, tSum=0, pSum=0, hasA=false, hasT=false, hasP=false;
+    var aN=0, tN=0, sN=0, lN=0, tsN=0, tlN=0, psN=0, plN=0;
+    var aS=0, aL=0, tS=0, tL=0, pS=0, pL=0;
+    h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>'+spec.label+'</b><span>'+spec.sub+'</span></div>';
+    months.forEach(function(row){
+      var actual=row[spec.key], target=row[spec.key+'T'], prior=row[spec.key+'P'];
+      h+=bgtCompareCell(actual, target, prior, spec.fav, null, spec.pct?'pct':'year');
+      if(!row.hasNow) return;
+      if(spec.key==='margin'){
+        if(row.sales!=null){ aS+=row.sales; sN++; }
+        if(row.live!=null){ aL+=row.live; lN++; }
+        if(row.salesT!=null){ tS+=row.salesT; tsN++; }
+        if(row.liveT!=null){ tL+=row.liveT; tlN++; }
+        if(row.salesP!=null){ pS+=row.salesP; psN++; }
+        if(row.liveP!=null){ pL+=row.liveP; plN++; }
+      }else{
+        if(actual!=null){ aSum+=actual; hasA=true; aN++; }
+        if(target!=null){ tSum+=target; hasT=true; tN++; }
+        if(prior!=null){ pSum+=prior; hasP=true; }
+      }
+    });
+    if(spec.key==='margin'){
+      h+=bgtCompareCell(bgtMarginOf(lN?aL:null, sN?aS:null), bgtMarginOf(tlN?tL:null, tsN?tS:null), bgtMarginOf(plN?pL:null, psN?pS:null), 'under', null, 'pct');
+    }else{
+      h+=bgtCompareCell(hasA?Math.round(aSum):null, hasT?Math.round(tSum):null, hasP?Math.round(pSum):null, spec.fav, null, 'year');
+    }
+  });
+  h+='</div></div>';
+  return h;
 }
 
 function bgtOtherCategoryMonthTotal(venue, year, mm, catIds){
