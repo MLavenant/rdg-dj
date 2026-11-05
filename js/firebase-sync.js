@@ -1444,6 +1444,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       BGT_CUSTOM_CATS=data.bgtCustomCats;
       try{ localStorage.setItem('rdg_bgt_custom_cats_v1', JSON.stringify(BGT_CUSTOM_CATS)); }catch(e){}
     }
+    applyOfficialGuestDjBudgets();
     applyOfficialH2Budgets();
     if(data.flashPlOverlay){
       if(typeof _flashPlApplyRemote==='function') _flashPlApplyRemote(data.flashPlOverlay);
