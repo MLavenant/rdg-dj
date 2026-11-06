@@ -55,24 +55,24 @@ function buildSidebar() {
             + '<span class="sb-ic">'+b.ic+'</span>'+b.lb+'</button>';
     });
   }
-  section('View', [
+  section('Calendar', [
     {id:'calendar',   ic:'&#9783;',  lb:'Guest DJ Calendar'},
-    {id:'resident',   ic:'&#9783;',  lb:'Resident DJ Calendar'},
-    {id:'summary',    ic:'&#9776;',  lb:'Bottle Service Monthly Summary'},
-    {id:'leaderboard',ic:'&#9650;',  lb:'ROI Ranking'},
-    {id:'accounting', ic:'&#9998;',  lb:'Accounting'},
-    {id:'budget',     ic:'&#36;',    lb:'Budget'}
+    {id:'resident',   ic:'&#9783;',  lb:'Resident DJ Calendar'}
   ]);
   section('Reporting', [
-    {id:'vip',      ic:'&#9889;',  lb:'Weekly Flash'},
-    {id:'forecast', ic:'&#9650;',  lb:'Forecast'},
-    {id:'rolling',  ic:'&#9776;',  lb:'Weekly Meeting'},
-    {id:'mrecap',   ic:'&#9776;',  lb:'Monthly Recap'}
+    {id:'leaderboard', ic:'&#9650;',  lb:'ROI Ranking'},
+    {id:'vip',         ic:'&#9889;',  lb:'Weekly Flash'},
+    {id:'forecast',    ic:'&#9650;',  lb:'Forecast'},
+    {id:'mrecap',      ic:'&#9776;',  lb:'Monthly Recap'},
+    {id:'summary',     ic:'&#9776;',  lb:'Bottle Service Monthly Summary'}
+  ]);
+  section('Finance', [
+    {id:'budget',     ic:'&#36;',    lb:'Budget'},
+    {id:'accounting', ic:'&#9998;',  lb:'Accounting'},
+    {id:'finance',    ic:'&#10003;', lb:'Finance Approval'}
   ]);
   var adminItems=[
     {id:'roi-rules', ic:'&#127919;', lb:'Venue ROI Rules'},
-    {id:'3d',        ic:'&#127760;', lb:'3D View'},
-    {id:'finance',   ic:'&#10003;',  lb:'Finance Approval'},
     {id:'system',    ic:'&#9881;',   lb:'Settings'}
   ];
   if(typeof signInIsOwner==='function' && signInIsOwner()){

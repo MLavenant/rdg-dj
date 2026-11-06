@@ -3,12 +3,17 @@ function flashPyBits(venue, date){
   var f=resolvePyFields(venue, date);
   if(!f || !f.py_dj) return null;
   var fee=f.py_fee!=null && isFinite(+f.py_fee) ? +f.py_fee : null;
+  var bs=f.py_bs_a!=null && isFinite(+f.py_bs_a) ? +f.py_bs_a : null;
   var roi=f.py_roi_a!=null && isFinite(+f.py_roi_a) ? +f.py_roi_a : null;
-  if(roi==null && fee>0 && f.py_bs_a!=null && isFinite(+f.py_bs_a)) roi=+f.py_bs_a/fee;
-  return {dj:f.py_dj, fee:fee, roi:roi};
+  if(roi==null && fee>0 && bs!=null) roi=bs/fee;
+  return {dj:f.py_dj, fee:fee, roi:roi, bs:bs};
 }
 function flashPyEm(text){
   return '<em class="flash-py">'+text+'</em>';
+}
+function flashArrow(actual, prior, favorableWhen){
+  if(typeof bgtMove==='function') return bgtMove(actual, prior, favorableWhen);
+  return '';
 }
 function flashDetailPage(p, meta){
   var n=p.now||{}, y=p.py||{};
@@ -27,22 +32,22 @@ function flashDetailPage(p, meta){
   var marginPy=(typeof mrSideMargin==='function')?mrSideMargin(y):null;
   h+='<div><span>Live E margins</span><b>'+mrPct(marginNow)+'</b>'+mrLy(pyY+' '+mrPct(marginPy))+'</div>';
   h+='</div>';
-  h+='<table class="mr-pdf-tbl"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI actual</th><th>ROI target</th><th>Sales for the day</th><th>BS actual vs target</th></tr></thead><tbody>';
-  if(!p.rows||!p.rows.length) h+='<tr><td class="l" colspan="7">No performances this month.</td></tr>';
+  h+='<table class="mr-pdf-tbl"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI actual</th><th>ROI target</th><th>BS actual vs target</th></tr></thead><tbody>';
+  if(!p.rows||!p.rows.length) h+='<tr><td class="l" colspan="6">No performances this month.</td></tr>';
   (p.rows||[]).forEach(function(row){
     var tone=(typeof mrRoiClass==='function')?mrRoiClass(row):'';
     var py=flashPyBits(p.venue, row.d);
     var dj=py?flashPyEm(pyY+' '+_escHtml(py.dj)):'';
     var fee=py&&py.fee!=null?flashPyEm(mrMoney(py.fee)):'';
     var roi=py&&py.roi!=null?flashPyEm(typeof rx==='function'?rx(py.roi):''):'';
+    var bsPy=py&&py.bs!=null?flashPyEm(mrMoney(py.bs)):'';
     h+='<tr'+(tone?' class="'+tone+'"':'')+'>'
       +'<td class="l"><b>'+_escHtml(typeof mrDayLabel==='function'?mrDayLabel(row.d):row.d)+'</b></td>'
       +'<td class="l">'+_escHtml(row.dj)+dj+'</td>'
-      +'<td>'+mrMoney(row.fee)+fee+'</td>'
-      +'<td>'+(typeof rx==='function'?rx(row.roiA):'\u2014')+roi+'</td>'
+      +'<td>'+mrMoney(row.fee)+flashArrow(row.fee, py&&py.fee, 'under')+fee+'</td>'
+      +'<td>'+(typeof rx==='function'?rx(row.roiA):'\u2014')+flashArrow(row.roiA, py&&py.roi, 'over')+roi+'</td>'
       +'<td>'+(typeof rx==='function'?rx(row.roiT):'\u2014')+'</td>'
-      +'<td>'+mrMoney(row.sales)+'</td>'
-      +'<td class="wm-bs">'+(typeof wmBsVs==='function'?wmBsVs(row.bs, row.bsT):'')+'</td></tr>';
+      +'<td class="wm-bs">'+(typeof wmBsVs==='function'?wmBsVs(row.bs, row.bsT):'')+flashArrow(row.bs, py&&py.bs, 'over')+bsPy+'</td></tr>';
   });
   h+='</tbody></table></div></div>';
   return h;
@@ -136,6 +141,7 @@ function flashCaptureDeck(page){
     return window.html2canvas(clone,{scale:1.35,useCORS:true,logging:false,backgroundColor:'#ffffff',windowWidth:1600});
   }).then(function(canvas){
     if(stage.parentNode) stage.parentNode.removeChild(stage);
+    canvas._flashOnePage=true;
     return canvas;
   },function(err){
     if(stage.parentNode) stage.parentNode.removeChild(stage);
@@ -156,11 +162,69 @@ function flashCaptureCanvases(){
   });
   return chain.then(function(){ return canvases; });
 }
+function flashCanvasMostlyBlank(canvas){
+  try{
+    var w=48,h=28,c=document.createElement('canvas');
+    c.width=w; c.height=h;
+    var ctx=c.getContext('2d');
+    ctx.fillStyle='#fff';
+    ctx.fillRect(0,0,w,h);
+    ctx.drawImage(canvas,0,0,w,h);
+    var data=ctx.getImageData(0,0,w,h).data;
+    var ink=0, n=data.length/4;
+    for(var i=0;i<data.length;i+=4){
+      if(data[i]<245 || data[i+1]<245 || data[i+2]<245) ink++;
+    }
+    return ink/n<0.012;
+  }catch(e){ return false; }
+}
+function flashPdfFromCanvases(canvases, filename, asBlob, jpegQuality){
+  var quality=jpegQuality||0.98;
+  var pdf=new window.jspdf.jsPDF({unit:'in',format:'letter',orientation:'landscape',compress:true});
+  var first=true;
+  function place(canvas, fitOne){
+    if(!canvas || flashCanvasMostlyBlank(canvas)) return;
+    var pw=pdf.internal.pageSize.getWidth(), ph=pdf.internal.pageSize.getHeight(), margin=0.28;
+    var usableW=pw-margin*2, usableH=ph-margin*2;
+    var scaleW=usableW/canvas.width;
+    var scale=fitOne?Math.min(scaleW, usableH/canvas.height):scaleW;
+    if(fitOne || canvas.height*scale<=usableH+0.5){
+      if(!first) pdf.addPage('letter','landscape');
+      first=false;
+      var w=canvas.width*scale, h=canvas.height*scale;
+      pdf.addImage(canvas.toDataURL('image/jpeg',quality),'JPEG',margin+(usableW-w)/2, margin+(fitOne?(usableH-h)/2:0), w, h, undefined, 'FAST');
+      return;
+    }
+    var y0=0, pagePxH=usableH/scale;
+    while(y0<canvas.height-2){
+      var sliceH=Math.min(pagePxH, canvas.height-y0);
+      var slice=document.createElement('canvas');
+      slice.width=canvas.width;
+      slice.height=Math.max(1, Math.ceil(sliceH));
+      var ctx=slice.getContext('2d');
+      ctx.fillStyle='#ffffff';
+      ctx.fillRect(0,0,slice.width,slice.height);
+      ctx.drawImage(canvas, 0, y0, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+      y0+=sliceH;
+      if(flashCanvasMostlyBlank(slice)) continue;
+      if(!first) pdf.addPage('letter','landscape');
+      first=false;
+      pdf.addImage(slice.toDataURL('image/jpeg',quality),'JPEG',margin,margin,slice.width*scale,slice.height*scale,undefined,'FAST');
+    }
+  }
+  (canvases||[]).forEach(function(c){ place(c, !!c._flashOnePage); });
+  if(asBlob){
+    var bytes=new Uint8Array(pdf.output('arraybuffer'));
+    return Promise.resolve(new Blob([bytes],{type:'application/pdf'}));
+  }
+  pdf.save(filename);
+  return Promise.resolve(null);
+}
 function exportWeeklyFlashPdf(filename){
   filename=filename||('RDG-Weekly-Flash-'+new Date().toISOString().slice(0,10)+'.pdf');
   if(!flashPdfTargets().length) return Promise.reject(new Error('Weekly Flash pages are not ready'));
   return flashCaptureCanvases().then(function(canvases){
-    return _pdfFromCanvases(canvases, filename, false);
+    return flashPdfFromCanvases(canvases, filename, false);
   });
 }
 if(!window._flashFitBound){
@@ -190,6 +254,7 @@ function renderVIP(venueIdx){
   var meetingDate=(typeof _bpMeetingDateLabel==='function')?_bpMeetingDateLabel():weekOf;
 
   h += '<div class="flash-slide">'+_bpCoverHtml('Weekly Live Entertainment Meeting', meetingDate, '')+'</div>';
+  h += '<div class="flash-slide">'+_bpCoverHtml('Last Week', weekOf+' \u00b7 All locations', '')+'</div>';
 
   h += '<div class="vip-print-page vip-print-page2 flash-break">';
   h += _vipSectionTitle('PERFORMANCE SUMMARY', weekOf+' \u00b7 All locations');
@@ -201,7 +266,10 @@ function renderVIP(venueIdx){
   var mtd=(typeof wmActualMonth==='function')?wmActualMonth():null;
   var mtdPack=mtd&&typeof mrPack==='function'?mrPack(mtd):null;
   if(mtdPack && typeof mrComparePage==='function'){
+    var mtdSub=(mtdPack.meta&&(mtdPack.meta.label||mtdPack.meta.range))||'Month to date';
+    h += '<div class="flash-slide">'+_bpCoverHtml('MTD', mtdSub, '')+'</div>';
     h += '<div class="flash-slide">'+mrComparePage(mtdPack, {kicker:'Weekly Live Entertainment Meeting'})+'</div>';
+    h += '<div class="flash-slide">'+_bpCoverHtml('MTD', 'By location \u00b7 '+(mtdPack.meta&&mtdPack.meta.range?mtdPack.meta.range:mtdSub), '')+'</div>';
     (mtdPack.venues||[]).forEach(function(p){
       h += '<div class="flash-slide">'+flashDetailPage(p, mtdPack.meta||mtd)+'</div>';
     });

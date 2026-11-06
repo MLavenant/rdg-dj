@@ -3719,7 +3719,7 @@ function prepareVipFlashEmail(){
       });
       return snapChain.then(function(){
         var pdfName='RDG-DJ-ROI-Performance-W'+weekNum+'.pdf';
-        return _pdfFromCanvases(canvases, pdfName, true, 0.82).then(function(pdfBlob){
+        return flashPdfFromCanvases(canvases, pdfName, true, 0.82).then(function(pdfBlob){
           return _blobToBase64(pdfBlob).then(function(pdfB64){
             document.body.classList.remove('printing-vip');
             var html='<div style="font-family:Segoe UI,Arial,sans-serif;font-size:14px;color:#1c1c1e;line-height:1.55">';
