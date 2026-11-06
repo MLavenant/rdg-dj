@@ -784,7 +784,7 @@ function initPresence(){
 }
 function unlockSanity(){
   try{ if(sessionStorage.getItem('rdg_sanity_unlocked')==='1') return true; }catch(e){}
-  var pw=prompt('Sanity password:');
+  var pw=prompt('Settings password:');
   if(pw!=='matthias'){ if(pw!==null) alert('Incorrect password.'); return false; }
   try{ sessionStorage.setItem('rdg_sanity_unlocked','1'); }catch(e){}
   return true;

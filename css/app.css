@@ -1014,11 +1014,18 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 #view-calendar.view-on,#view-accounting.view-on,#view-resident.view-on{display:flex!important}
 #view-resident{flex:1;min-height:0;flex-direction:column;overflow:hidden}
 #view-resident .cal-nav,#view-resident #residentSlider{flex-shrink:0;background:var(--card)}
-#residentBody{flex:1 1 auto;min-height:0;margin:0 16px 16px;border-radius:var(--r-lg);overflow:auto;background:var(--card);box-shadow:var(--shadow-sm)}
+#residentBody{flex:1 1 auto;min-height:0;margin:0 16px 16px;border-radius:var(--r-lg);overflow-x:auto;overflow-y:hidden;background:var(--card);box-shadow:var(--shadow-sm)}
 #residentBody .res-tbl{border-collapse:separate;border-spacing:0}
-#residentBody .res-date-col{width:210px}
-#residentBody .res-name-col{width:128px}
-#residentBody .res-amt-col{width:52px}
+#residentBody .res-tbl tbody td{height:var(--res-row-h,16px);padding:0 3px!important;font-size:var(--res-font,10px);line-height:1;vertical-align:middle}
+#residentBody .res-date-col{width:168px}
+#residentBody .res-guest-col{width:108px}
+#residentBody .res-name-col{width:96px}
+#residentBody .res-amt-col{width:34px}
+#residentBody .res-total-col{width:48px}
+#residentBody .res-guest-cell{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
+#residentBody .res-guest-cell b{font-weight:800}
+#residentBody .res-total{font-weight:800;text-align:right;font-variant-numeric:tabular-nums}
+#residentBody .res-tone-total{background:#efeae3!important}
 #residentBody .res-group{text-align:center!important;font-size:10px;letter-spacing:.04em;font-weight:750}
 #residentBody .res-sub{font-size:8px;font-weight:650;text-align:center!important}
 #residentBody .res-split{box-shadow:inset 2px 0 0 #8d8376}
@@ -1030,7 +1037,7 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 #residentBody .res-tone-greeters{background:#f0d9f6!important}
 #residentBody .res-tone-mm{background:#ffd7b0!important}
 #residentBody .res-name,#residentBody .res-money{width:100%;box-sizing:border-box;border:0;border-radius:0;background:transparent;color:var(--ink);font:inherit;font-size:12px;font-weight:650;padding:2px 4px;outline:none;box-shadow:none}
-#residentBody .res-money{text-align:right;font-variant-numeric:tabular-nums}
+#residentBody .res-money{width:auto;min-width:2.1em;max-width:none;text-align:right;font-variant-numeric:tabular-nums;padding:0 1px}
 #residentBody .res-name:focus,#residentBody .res-money:focus{background:rgba(255,255,255,.55);outline:1px solid rgba(40,32,24,.28)}
 #residentBody td.res-cell{padding:1px 2px!important}
 #view-calendar .cal-nav,#view-accounting .cal-nav,#view-calendar #monthSlider,#view-accounting #acctSlider{flex-shrink:0;z-index:5;background:var(--card)}

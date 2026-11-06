@@ -73,7 +73,7 @@ function buildSidebar() {
     {id:'roi-rules', ic:'&#127919;', lb:'Venue ROI Rules'},
     {id:'3d',        ic:'&#127760;', lb:'3D View'},
     {id:'finance',   ic:'&#10003;',  lb:'Finance Approval'},
-    {id:'system',    ic:'&#9881;',   lb:'Sanity'}
+    {id:'system',    ic:'&#9881;',   lb:'Settings'}
   ];
   if(typeof signInIsOwner==='function' && signInIsOwner()){
     adminItems.push({id:'access', ic:'&#128100;', lb:'Access'});
