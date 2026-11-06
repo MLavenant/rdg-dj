@@ -63,7 +63,6 @@ function buildSidebar() {
     {id:'leaderboard', ic:'&#9650;',  lb:'ROI Ranking'},
     {id:'vip',         ic:'&#9889;',  lb:'Weekly Flash'},
     {id:'forecast',    ic:'&#9650;',  lb:'Forecast'},
-    {id:'mrecap',      ic:'&#9776;',  lb:'Monthly Recap'},
     {id:'summary',     ic:'&#9776;',  lb:'Bottle Service Monthly Summary'}
   ]);
   section('Finance', [

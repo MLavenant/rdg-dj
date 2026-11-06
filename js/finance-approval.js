@@ -1,10 +1,6 @@
 /* Finance Approval. April 2027 at Casa Neos Beach Club is the only calendar
    this status is offered on. The page itself lists every Finance to Approve show. */
 function unlockFinance(){
-  try{ if(sessionStorage.getItem('rdg_finance_unlocked')==='1') return true; }catch(e){}
-  var pw=prompt('Finance Approval password:');
-  if(pw!=='tk'){ if(pw!==null) alert('Incorrect password.'); return false; }
-  try{ sessionStorage.setItem('rdg_finance_unlocked','1'); }catch(e2){}
   return true;
 }
 function faInScope(show){

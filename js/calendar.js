@@ -3695,52 +3695,47 @@ function prepareVipFlashEmail(){
     document.body.classList.add('printing-vip');
     var el=document.getElementById('view-vip');
     if(!el) throw new Error('Weekly Flash view missing');
-    var snaps=[].slice.call(el.querySelectorAll('.vip-perf-block'));
-    if(typeof flashPdfTargets!=='function' || flashPdfTargets().length<2) throw new Error('Weekly Flash sections missing');
-    var width=Math.max(1200,Math.ceil(el.getBoundingClientRect().width||0));
+    var summary=el.querySelector('.vip-print-page2');
+    if(!summary || typeof flashPdfTargets!=='function' || flashPdfTargets().length<2) throw new Error('Weekly Flash sections missing');
+    var width=Math.max(1200,Math.ceil(summary.scrollWidth||el.getBoundingClientRect().width||0));
     var capOpts={scale:1.35};
     return flashCaptureCanvases().then(function(canvases){
-      var snapChain=Promise.resolve();
-      var snapResults=[];
-      snaps.forEach(function(snap, si){
-        snapChain=snapChain.then(function(){
-          return _captureDomToCanvas(snap, width, capOpts).then(function(c){
-            var jpeg=c.toDataURL('image/jpeg',0.8);
-            var venue=(venues[si]&&venues[si].venue)||('Venue '+(si+1));
-            snapResults.push({
-              venue:venue,
-              short:_fcastVenueShortFile(venue),
-              snapB64:jpeg.split(',')[1]||'',
-              cid:'vip'+si+'@rdg',
-              para:_generateVenueFlashParagraph(venues[si]||{})
-            });
-          });
-        });
-      });
-      return snapChain.then(function(){
+      return _captureDomToCanvas(summary, width, capOpts).then(function(shot){
+        var jpeg=shot.toDataURL('image/jpeg',0.82);
         var pdfName='RDG-DJ-ROI-Performance-W'+weekNum+'.pdf';
         return flashPdfFromCanvases(canvases, pdfName, true, 0.82).then(function(pdfBlob){
           return _blobToBase64(pdfBlob).then(function(pdfB64){
             document.body.classList.remove('printing-vip');
+            function blurb(d){
+              var full=(typeof _generateVenueFlashParagraph==='function')?_generateVenueFlashParagraph(d||{}):'';
+              var bits=String(full||'').match(/[^.!?]+[.!?]+/g)||(full?[full]:[]);
+              return bits.slice(0,2).join(' ').replace(/\s+/g,' ').trim();
+            }
+            var order=['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'];
+            var by={};
+            (venues||[]).forEach(function(v){ if(v&&v.venue) by[v.venue]=v; });
             var html='<div style="font-family:Segoe UI,Arial,sans-serif;font-size:14px;color:#1c1c1e;line-height:1.55">';
+            html+='<img src="cid:vipweek@rdg" alt="Last week performance" style="max-width:100%;border:1px solid #e5e5ea;border-radius:8px;display:block"/>';
+            html+='<h2 style="margin:18px 0 8px;font-size:18px;letter-spacing:.04em">PERFORMANCE SUMMARY</h2>';
             html+='<p>Hello all,</p>';
-            html+='<p>Please find the recap of our DJ ROI for last week at Casa Neos BC / Lounge &amp; Mila Lounge.</p>';
+            html+='<p>Please find the recap of our DJ ROI for last week at Casa Neos BC / Lounge &amp; Mila Lounge. Please note the ROI was adjusted last week.</p>';
             html+='<p><b>ROI :</b> '+thisRoi.beats+'/'+thisRoi.total
-              +' vs. '+priorRoi.beats+'/'+priorRoi.total+' last week</p>';
-            snapResults.forEach(function(r){
-              html+='<div style="margin:20px 0 8px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#48484a">'+r.venue+'</div>';
-              html+='<img src="cid:'+r.cid+'" alt="'+r.venue+' performance summary" style="max-width:100%;border:1px solid #e5e5ea;border-radius:8px;display:block"/>';
+              +' vs. '+priorRoi.beats+'/'+priorRoi.total+' last week.</p>';
+            order.forEach(function(name){
+              var v=by[name];
+              if(!v) return;
+              var sentence=blurb(v);
+              html+='<div style="margin:16px 0 4px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#48484a">'+name+'</div>';
+              if(sentence) html+='<p style="margin:0 0 8px">'+_escHtml(sentence)+'</p>';
             });
-            html+='<p style="margin-top:18px;font-size:12px;color:#8e8e93">Full Weekly Flash PDF attached (Budget, Performance, Tier Breakdown, Appendix).</p>';
+            html+='<p style="margin-top:18px;font-size:12px;color:#8e8e93">Full Weekly Flash PDF attached.</p>';
             html+='</div>';
             var eml=_buildForecastFlashEml({
               to:_VIP_EMAIL_TO,
               cc:_VIP_EMAIL_CC,
               subject:subject,
               htmlBody:html,
-              inlines:snapResults.map(function(r){
-                return {cid:r.cid, filename:r.short+'-roi.jpg', contentType:'image/jpeg', base64:r.snapB64};
-              }),
+              inlines:[{cid:'vipweek@rdg', filename:'last-week-performance.jpg', contentType:'image/jpeg', base64:jpeg.split(',')[1]||''}],
               attachments:[{filename:pdfName, contentType:'application/pdf', base64:pdfB64}]
             });
             _openBlobInApp(eml, 'DJ-ROI-Performance-Analysis-W'+weekNum+'.eml');

@@ -42,7 +42,7 @@ function flashDetailPage(p, meta){
     var bsPy=py&&py.bs!=null?mrMoney(py.bs):'\u2014';
     h+='<tr'+(tone?' class="'+tone+'"':'')+'>'
       +'<td class="l"><b>'+_escHtml(typeof mrDayLabel==='function'?mrDayLabel(row.d):row.d)+'</b></td>'
-      +'<td class="l flash-now"><b>'+_escHtml(row.dj)+'</b></td>'
+      +'<td class="l flash-now"><b>'+_escHtml(row.dj)+'</b>'+(py&&py.dj?flashPyEm(pyY+' '+_escHtml(py.dj)):'')+'</td>'
       +'<td class="flash-now"><b>'+mrMoney(row.fee)+'</b></td>'
       +flashPyCell(feePy, row.fee, py&&py.fee, 'under')
       +'<td class="flash-now"><b>'+(typeof rx==='function'?rx(row.roiA):'\u2014')+'</b></td>'
@@ -87,11 +87,10 @@ function flashStatCard(label, year, pyYear, now, py, hasPy){
   return {
     label:label, year:year, pyYear:pyYear, hasPy:hasPy!==false,
     rows:[
-      {label:'Total Sales', now:money(now.sales), py:money(py.sales), gap:gap(now.sales, py.sales)},
       {label:'<i class="bp-arr"></i>Bottle Service Sales', now:money(now.bs), py:money(py.bs), gap:gap(now.bs, py.bs)},
-      {label:'ROI % Beat', now:pct(now.beat), py:pct(py.beat), gap:pp(now.beat, py.beat)},
       {label:'Guest DJ', now:money(now.guest), py:money(py.guest), gap:gap(now.guest, py.guest, true)},
-      {label:'Live Ent. margins', now:pct(now.margin), py:pct(py.margin), gap:pp(now.margin, py.margin, true)}
+      {label:'Live Ent. margins', now:pct(now.margin), py:pct(py.margin), gap:pp(now.margin, py.margin, true)},
+      {label:'ROI % Beat', now:pct(now.beat), py:pct(py.beat), gap:pp(now.beat, py.beat)}
     ]
   };
 }
