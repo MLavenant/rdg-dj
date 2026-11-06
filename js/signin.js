@@ -107,7 +107,7 @@ function signInStartSlides(){
   _signInTimer=setInterval(function(){
     _signInSlide=(_signInSlide+1)%3;
     paint();
-  }, 10000);
+  }, 5000);
 }
 function _signInBytes(){
   var salt=new Uint8Array(16);

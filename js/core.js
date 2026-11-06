@@ -56,7 +56,8 @@ function buildSidebar() {
     });
   }
   section('View', [
-    {id:'calendar',   ic:'&#9783;',  lb:'Calendar'},
+    {id:'calendar',   ic:'&#9783;',  lb:'Guest DJ Calendar'},
+    {id:'resident',   ic:'&#9783;',  lb:'Resident DJ Calendar'},
     {id:'summary',    ic:'&#9776;',  lb:'Bottle Service Monthly Summary'},
     {id:'leaderboard',ic:'&#9650;',  lb:'ROI Ranking'},
     {id:'accounting', ic:'&#9998;',  lb:'Accounting'},
@@ -141,7 +142,7 @@ function setView(v) {
   try{
     if(_presenceRef) _presenceRef.update({view:v,lastSeen:firebase.database.ServerValue.TIMESTAMP});
   }catch(ePresence){}
-  ['calendar','summary','allshows','mrecap','leaderboard','budget','rolling','accounting','vip','forecast','basel','roi-rules','finance','system','ebitda','3d','access'].forEach(function(id){
+  ['calendar','resident','summary','allshows','mrecap','leaderboard','budget','rolling','accounting','vip','forecast','basel','roi-rules','finance','system','ebitda','3d','access'].forEach(function(id){
     var el = document.getElementById('view-'+id);
     if (!el) return;
     var on = id===v;
@@ -151,6 +152,12 @@ function setView(v) {
   var mainEl = document.querySelector('.main');
   if (mainEl) mainEl.classList.toggle('cal-mode', v==='calendar' || v==='accounting');
   document.querySelectorAll('.sb-btn[data-view]').forEach(function(b){b.classList.toggle('on', b.dataset.view===v);});
+  if (v === 'resident') {
+    clearGlobalCalChrome();
+    var resSub=document.getElementById('pgSub');
+    if(resSub) resSub.innerHTML='<span>Resident DJ Calendar</span>';
+    return;
+  }
   if (v === 'budget') {
     clearGlobalCalChrome();
     bgtVenue = curV; bgtYear = curYr; bgtMonth = null;
@@ -1464,6 +1471,12 @@ function syncLinkedTabsFromSched(rec){
   });
 }
 function go() {
+  if(curView==='resident'){
+    clearGlobalCalChrome();
+    var resSub=document.getElementById('pgSub');
+    if(resSub) resSub.innerHTML='<span>Resident DJ Calendar</span>';
+    return;
+  }
   clearPyMapCache();
   recalcSchedStatuses();
   renderKPIs();
