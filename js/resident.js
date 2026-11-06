@@ -23,7 +23,7 @@ function residentDay(venue, ds){
 function residentMoney(v){
   if(v==null || v==='') return '';
   var n=+v;
-  return isNaN(n) ? '' : String(n);
+  return isNaN(n) ? '' : (String(n)+'$');
 }
 function residentMoneySize(v){
   var s=residentMoney(v);
@@ -32,6 +32,25 @@ function residentMoneySize(v){
 function residentSizeMoney(el){
   if(!el) return;
   el.size=Math.max(3, String(el.value||'').length||0);
+}
+function residentFormatMoneyInput(el, n){
+  if(!el) return;
+  var shown=residentMoney(n);
+  var raw=String(el.value||'');
+  if(raw===shown){ residentSizeMoney(el); return; }
+  var pos=el.selectionStart||0;
+  var digitsBefore=0;
+  for(var i=0;i<pos && i<raw.length;i++){
+    if(/[0-9.]/.test(raw.charAt(i))) digitsBefore++;
+  }
+  el.value=shown;
+  var next=0, seen=0;
+  while(next<shown.length && seen<digitsBefore){
+    if(/[0-9.]/.test(shown.charAt(next))) seen++;
+    next++;
+  }
+  try{ el.setSelectionRange(next, next); }catch(e){}
+  residentSizeMoney(el);
 }
 function residentGuestNames(ds){
   if(typeof SCHED==='undefined') return '';
@@ -66,17 +85,19 @@ function residentEdit(el){
   if(field==='hotel' || field==='ground'){
     var raw=String(el.value||'').replace(/[^0-9.]/g,'');
     row[field]=raw==='' ? null : +raw;
+    residentFormatMoneyInput(el, row[field]);
   }else if(role){
     if(!row[role] || typeof row[role]!=='object') row[role]={};
     if(field==='amt'){
       var amt=String(el.value||'').replace(/[^0-9.]/g,'');
       row[role].amt=amt==='' ? null : +amt;
+      residentFormatMoneyInput(el, row[role].amt);
     }else{
       row[role].name=String(el.value||'');
+      residentSizeMoney(el);
     }
   }
   RESIDENT_DJ[key]=row;
-  residentSizeMoney(el);
   var tr=el.closest?el.closest('tr'):null;
   if(tr){
     var tot=tr.querySelector('.res-total');
@@ -138,12 +159,12 @@ function renderResidentCalendar(){
     var guests=residentGuestNames(ds);
     h+='<td class="sc-date-cell">'+dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
     h+='<td class="res-guest-cell" title="'+residentEsc(guests)+'"><b>'+residentEsc(guests)+'</b></td>';
-    h+='<td class="res-cell res-tone-hotel res-split"><input class="res-money" size="'+residentMoneySize(row.hotel)+'" inputmode="decimal" data-ds="'+ds+'" data-field="hotel" value="'+residentMoney(row.hotel)+'" oninput="residentSizeMoney(this)" onchange="residentEdit(this)"></td>';
-    h+='<td class="res-cell res-tone-ground res-split"><input class="res-money" size="'+residentMoneySize(row.ground)+'" inputmode="decimal" data-ds="'+ds+'" data-field="ground" value="'+residentMoney(row.ground)+'" oninput="residentSizeMoney(this)" onchange="residentEdit(this)"></td>';
+    h+='<td class="res-cell res-tone-hotel res-split"><input class="res-money" size="'+residentMoneySize(row.hotel)+'" inputmode="decimal" data-ds="'+ds+'" data-field="hotel" value="'+residentMoney(row.hotel)+'" oninput="residentEdit(this)"></td>';
+    h+='<td class="res-cell res-tone-ground res-split"><input class="res-money" size="'+residentMoneySize(row.ground)+'" inputmode="decimal" data-ds="'+ds+'" data-field="ground" value="'+residentMoney(row.ground)+'" oninput="residentEdit(this)"></td>';
     RESIDENT_ROLES.forEach(function(role){
       var cell=(row[role.id] && typeof row[role.id]==='object') ? row[role.id] : {};
       h+='<td class="res-cell res-tone-'+role.id+' res-split"><input class="res-name" data-ds="'+ds+'" data-role="'+role.id+'" data-field="name" value="'+residentEsc(cell.name||'')+'" onchange="residentEdit(this)"></td>';
-      h+='<td class="res-cell res-tone-'+role.id+'"><input class="res-money" size="'+residentMoneySize(cell.amt)+'" inputmode="decimal" data-ds="'+ds+'" data-role="'+role.id+'" data-field="amt" value="'+residentMoney(cell.amt)+'" oninput="residentSizeMoney(this)" onchange="residentEdit(this)"></td>';
+      h+='<td class="res-cell res-tone-'+role.id+'"><input class="res-money" size="'+residentMoneySize(cell.amt)+'" inputmode="decimal" data-ds="'+ds+'" data-role="'+role.id+'" data-field="amt" value="'+residentMoney(cell.amt)+'" oninput="residentEdit(this)"></td>';
     });
     h+='<td class="res-cell res-tone-total res-split res-total">'+residentMoney(residentRowTotal(row))+'</td>';
     h+='</tr>';

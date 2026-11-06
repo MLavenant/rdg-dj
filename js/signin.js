@@ -299,6 +299,17 @@ function signInClearCode(email){
   }).catch(function(){ alert('Could not clear that PIN.'); });
 }
 
+function rdgSignOut(){
+  try{ if(typeof closeMobileNav==='function') closeMobileNav(); }catch(eNav){}
+  try{
+    sessionStorage.removeItem('rdg_session_active');
+    sessionStorage.removeItem('rdg_session_activity');
+  }catch(e){}
+  try{ if(typeof _presenceRef!=='undefined' && _presenceRef) _presenceRef.remove(); }catch(e2){}
+  try{ if(window._fbDb) window._fbDb.goOffline(); }catch(e3){}
+  try{ if(typeof refreshPresenceChip==='function') refreshPresenceChip(); }catch(e4){}
+  _showSessionGate('signout');
+}
 function _showSessionGate(msg){
   var gate=document.getElementById('sessionGate');
   var emailEl=document.getElementById('signinEmail');
@@ -308,6 +319,7 @@ function _showSessionGate(msg){
   var pinReady=!!(saved && RDG_SIGNIN_ALLOW[saved] && signInCodeReady(saved));
   signInShowStep(pinReady?'code':'email');
   if(msg && /idle/i.test(msg)) signInNote(pinReady?'Signed out after 20 minutes idle. Enter your PIN.':'Signed out after 20 minutes idle. Enter your work email to continue.', false);
+  else if(msg && /signout/i.test(msg)) signInNote(pinReady?'Signed out. Enter your PIN.':'Signed out. Enter your work email to continue.', false);
   if(gate){
     gate.classList.remove('hidden');
     document.body.classList.add('session-locked');

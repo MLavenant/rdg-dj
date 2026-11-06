@@ -370,7 +370,7 @@ function renderBudgetFinancialTable(){
   var host=document.getElementById('budgetTopLine');
   if(!host) return;
   var pyYear=+bgtYear-1;
-  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd">Bottle Service &amp; Guest DJ <span>Act, target, and prior year are labeled once on the left.</span></div>';
+  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd bgt-hd-center"><b>GUEST DJ PERFORMANCE</b></div>';
   h+='<div class="bgt-monthly-grid">'+bgtMonthCellHeader();
 
   var bsA=0, bsT=0, bsP=0, hasBsA=false, hasBsT=false, hasBsP=false;
@@ -440,7 +440,7 @@ function bgtMarginOf(live, sales){
 }
 function renderBudgetPnlTable(){
   var pyYear=+bgtYear-1;
-  var h='<div class="bgt-monthly" style="margin-top:14px"><div class="bgt-monthly-hd">Total Sales, Live Entertainment &amp; Margin <span>Target is yellow. '+pyYear+' is light green. Arrow is '+bgtYear+' versus that number. Totals use months that already have a '+bgtYear+' actual.</span></div>';
+  var h='<div class="bgt-monthly" style="margin-top:14px"><div class="bgt-monthly-hd bgt-hd-center"><b>LIVE ENTERTAINMENT</b></div>';
   h+='<div class="bgt-monthly-grid">'+bgtMonthCellHeader();
   var rows=[
     {key:'sales', label:'Total Sales', sub:'Higher than target is better', fav:'over'},

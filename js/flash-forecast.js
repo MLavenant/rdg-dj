@@ -1,3 +1,116 @@
+function flashPyBits(venue, date){
+  if(typeof resolvePyFields!=='function' || !venue || !date) return null;
+  var f=resolvePyFields(venue, date);
+  if(!f || !f.py_dj) return null;
+  var fee=f.py_fee!=null && isFinite(+f.py_fee) ? +f.py_fee : null;
+  var roi=f.py_roi_a!=null && isFinite(+f.py_roi_a) ? +f.py_roi_a : null;
+  if(roi==null && fee>0 && f.py_bs_a!=null && isFinite(+f.py_bs_a)) roi=+f.py_bs_a/fee;
+  return {dj:f.py_dj, fee:fee, roi:roi};
+}
+function flashPyEm(text){
+  return '<em class="flash-py">'+text+'</em>';
+}
+function flashDetailPage(p, meta){
+  var n=p.now||{}, y=p.py||{};
+  var pyY=(meta&&meta.year?meta.year:2026)-1;
+  var bud=(typeof mrLiveBudget==='function')?mrLiveBudget(p.venue, meta):null;
+  var salesVar=(typeof mrVar==='function')?mrVar(n.sales, y.sales):{cls:'',text:''};
+  var bsVar=(typeof mrVar==='function')?mrVar(p.beat&&p.beat.bs, p.pyBeat&&p.pyBeat.bs):{cls:'',text:''};
+  var spendVar=(typeof mrSpendVar==='function')?mrSpendVar(n.live, bud):{cls:'',text:''};
+  var h='<div class="bp-page bp-deck mr-venue"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">'+_escHtml(p.label)+'</div><b>'+_escHtml(meta.label||'')+'</b><em>'+_escHtml(meta.range||'')+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body">';
+  h+='<div class="mr-pdf-metrics">';
+  h+='<div><span>Sales vs PY</span><b>'+mrMoney(n.sales)+'</b>'+mrLy(pyY+' '+mrMoney(y.sales))+'<i class="'+salesVar.cls+'">'+salesVar.text+'</i></div>';
+  h+='<div><span>BS vs '+pyY+'</span><b>'+mrMoney(p.beat&&p.beat.bs)+'</b>'+mrLy(pyY+' '+mrMoney(p.pyBeat&&p.pyBeat.bs))+'<i class="'+bsVar.cls+'">'+bsVar.text+'</i></div>';
+  h+='<div class="mr-bud"><span>Spend vs budget</span><b>'+mrMoney(n.live)+'</b><em>Budget '+mrMoney(bud)+'</em><i class="'+spendVar.cls+'">'+spendVar.text+'</i></div>';
+  h+='<div><span>ROI beat</span><b>'+mrPct(p.beat&&p.beat.rate)+'</b>'+mrLy(pyY+' '+mrPct(p.pyBeat&&p.pyBeat.rate))+'</div>';
+  var marginNow=(typeof mrSideMargin==='function')?mrSideMargin(n):null;
+  var marginPy=(typeof mrSideMargin==='function')?mrSideMargin(y):null;
+  h+='<div><span>Live E margins</span><b>'+mrPct(marginNow)+'</b>'+mrLy(pyY+' '+mrPct(marginPy))+'</div>';
+  h+='</div>';
+  h+='<table class="mr-pdf-tbl"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI actual</th><th>ROI target</th><th>Sales for the day</th><th>BS actual vs target</th></tr></thead><tbody>';
+  if(!p.rows||!p.rows.length) h+='<tr><td class="l" colspan="7">No performances this month.</td></tr>';
+  (p.rows||[]).forEach(function(row){
+    var tone=(typeof mrRoiClass==='function')?mrRoiClass(row):'';
+    var py=flashPyBits(p.venue, row.d);
+    var dj=py?flashPyEm(pyY+' '+_escHtml(py.dj)):'';
+    var fee=py&&py.fee!=null?flashPyEm(mrMoney(py.fee)):'';
+    var roi=py&&py.roi!=null?flashPyEm(typeof rx==='function'?rx(py.roi):''):'';
+    h+='<tr'+(tone?' class="'+tone+'"':'')+'>'
+      +'<td class="l"><b>'+_escHtml(typeof mrDayLabel==='function'?mrDayLabel(row.d):row.d)+'</b></td>'
+      +'<td class="l">'+_escHtml(row.dj)+dj+'</td>'
+      +'<td>'+mrMoney(row.fee)+fee+'</td>'
+      +'<td>'+(typeof rx==='function'?rx(row.roiA):'\u2014')+roi+'</td>'
+      +'<td>'+(typeof rx==='function'?rx(row.roiT):'\u2014')+'</td>'
+      +'<td>'+mrMoney(row.sales)+'</td>'
+      +'<td class="wm-bs">'+(typeof wmBsVs==='function'?wmBsVs(row.bs, row.bsT):'')+'</td></tr>';
+  });
+  h+='</tbody></table></div></div>';
+  return h;
+}
+function flashBookingSlides(){
+  if(typeof _bpCompute!=='function' || typeof BP_VENUES==='undefined' || typeof _bpDeckSlideHtml!=='function' || typeof _bpCoverHtml!=='function') return '';
+  var saved=(typeof _bpVenue!=='undefined')?_bpVenue:null;
+  var h='', period='';
+  try{
+    BP_VENUES.forEach(function(v, i){
+      _bpVenue=v;
+      var data=_bpCompute();
+      if(!period && data.months && data.months.length) period=data.months[0].label+' \u2013 '+data.months[data.months.length-1].label;
+      if(i===0) h+='<div class="flash-slide">'+_bpCoverHtml('Three Month Booking Plan', period+' \u00b7 Beach Club \u00b7 CN Lounge \u00b7 MILA', '')+'</div>';
+      h+='<div class="flash-slide">'+_bpDeckSlideHtml(data, i+1, BP_VENUES.length)+'</div>';
+    });
+  }catch(ePlan){}
+  if(typeof _bpVenue!=='undefined') _bpVenue=saved;
+  return h;
+}
+function flashFitDeck(page){
+  var body=page.querySelector('.bp-deck-body');
+  if(!body) return;
+  var old=body.querySelector('[data-flash-fit]');
+  if(old){
+    while(old.firstChild) body.insertBefore(old.firstChild, old);
+    old.remove();
+  }
+  var room=body.clientHeight, need=body.scrollHeight;
+  if(need>room && room>0){
+    var s=room/need*0.97;
+    var inner=document.createElement('div');
+    inner.setAttribute('data-flash-fit','1');
+    inner.style.transformOrigin='top left';
+    inner.style.transform='scale('+s.toFixed(4)+')';
+    inner.style.width=(100/s).toFixed(2)+'%';
+    while(body.firstChild) inner.appendChild(body.firstChild);
+    body.appendChild(inner);
+  }
+}
+function flashFitSlides(){
+  var host=document.getElementById('vipBody');
+  if(!host) return;
+  var avail=host.clientWidth;
+  if(avail<80){
+    flashFitSlides._tries=(flashFitSlides._tries||0)+1;
+    if(flashFitSlides._tries<8){ requestAnimationFrame(flashFitSlides); return; }
+  }
+  flashFitSlides._tries=0;
+  host.querySelectorAll('.flash-slide').forEach(function(slide){
+    var page=slide.querySelector('.bp-page');
+    if(!page) return;
+    page.style.transform='none';
+    slide.style.height='auto';
+    flashFitDeck(page);
+    var nat=page.offsetWidth||1600;
+    var scale=Math.min(1, (slide.clientWidth||avail)/nat);
+    page.style.transformOrigin='top left';
+    page.style.transform='scale('+scale+')';
+    slide.style.height=Math.ceil((page.offsetHeight||1236)*scale)+'px';
+  });
+}
+if(!window._flashFitBound){
+  window._flashFitBound=true;
+  window.addEventListener('resize', function(){
+    if(typeof curView!=='undefined' && curView==='vip') flashFitSlides();
+  });
+}
 function renderVIP(venueIdx){
   if(venueIdx!==undefined) _vipActiveVenue = venueIdx;
 
@@ -16,93 +129,37 @@ function renderVIP(venueIdx){
   window._flashPlEmptyShown=false;
 
   var h = '';
+  var meetingDate=(typeof _bpMeetingDateLabel==='function')?_bpMeetingDateLabel():weekOf;
 
-  /* Stacked full-width sections: Budget → Performance → Tiers → Appendix (1 page / location) */
-  h += '<div class="vip-print-page vip-print-page1 vip-stack-sec">';
-  h += _vipSectionTitle('BUDGET', 'Standing · All locations');
-  h += _vipAllBudgetStandingTable(venues.map(function(v){return v.venue;}), range.sun);
+  h += '<div class="flash-slide">'+_bpCoverHtml('Weekly Live Entertainment Meeting', meetingDate, '')+'</div>';
+
+  h += '<div class="vip-print-page vip-print-page2 flash-break">';
+  h += _vipSectionTitle('PERFORMANCE SUMMARY', weekOf+' \u00b7 All locations');
+  venues.forEach(function(d){
+    h += _vipRenderPerfSummary(d);
+  });
   h += '</div>';
 
-  /* One print page per location (Last week + MTD) */
-  venues.forEach(function(d){
-    h += '<div class="vip-print-page vip-print-page2 vip-stack-sec">';
-    h += _vipSectionTitle('PERFORMANCE SUMMARY', d.venue+' · Last week');
-    h += '<div class="vip-email-snap">';
-    h += '<div class="vip-band-hd">Last week</div>';
-    h += _vipRenderPerfSummary(d);
-    var para=_generateVenueFlashParagraph(d);
-    if(para) h += '<div class="vip-venue-narrative"><span class="vip-venue-narrative-bullet">\u2022</span> '+para+'</div>';
-    h += '<div class="vip-band-hd">MTD</div>';
-    h += _vipRenderFlashPlForVenue(d.venue, range.sun);
-    h += '</div>';
-    h += '</div>';
-  });
+  var mtd=(typeof wmActualMonth==='function')?wmActualMonth():null;
+  var mtdPack=mtd&&typeof mrPack==='function'?mrPack(mtd):null;
+  if(mtdPack && typeof mrComparePage==='function'){
+    h += '<div class="flash-slide">'+mrComparePage(mtdPack, {kicker:'Weekly Live Entertainment Meeting'})+'</div>';
+    (mtdPack.venues||[]).forEach(function(p){
+      h += '<div class="flash-slide">'+flashDetailPage(p, mtdPack.meta||mtd)+'</div>';
+    });
+  }
 
-  h += '<div class="vip-print-page vip-print-page3 vip-stack-sec">';
-  h += _vipSectionTitle('TIER BREAKDOWN', 'This week · All locations');
+  h += flashBookingSlides();
+
+  h += '<div class="vip-print-page vip-print-app flash-break">';
+  h += _vipSectionTitle('APPENDIX', 'Tier breakdown \u00b7 This week \u00b7 All locations');
   venues.forEach(function(d){
     h += _vipRenderTierBreakdown(d, rangeWkKey);
   });
   h += '</div>';
 
-  venues.forEach(function(d){
-    var blocks=_vipAppendixMonthBlocks(d.venue, range.sun);
-    if(!blocks.length){
-      h += '<div class="vip-print-page vip-print-app vip-stack-sec">';
-      h += _vipSectionTitle('APPENDIX', d.venue);
-      h += '<div class="vip-perf-block vip-venue-block">'
-        +_vipVenueBlockHd('YTD performances', d.venue, '')
-        +'<div style="padding:14px;font-size:11px;color:var(--ink3)">No performances booked this fiscal year.</div></div>';
-      h += '</div>';
-      return;
-    }
-    blocks.forEach(function(block, bi){
-      h += '<div class="vip-print-page vip-print-app vip-stack-sec">';
-      h += _vipSectionTitle('APPENDIX', bi===0 ? d.venue : (d.venue+' · continued'));
-      h += block;
-      h += '</div>';
-    });
-  });
-
-  /* Full table detail — Beach Club only when present */
-  var beach = venues.find(function(v){ return v.venue==='Casa Neos Beach Club'; });
-  if(beach){
-    var hasDetail = (beach.shows||[]).some(function(sh){return sh.tableDetail&&sh.tableDetail.length;});
-    if(hasDetail){
-      h += '<div class="vip-perf-block">';
-      h += '<div class="vip-perf-hd"><span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)">Full Table Detail — Casa Neos Beach Club</span></div>';
-      beach.shows.forEach(function(sh){
-        if(!sh.tableDetail||!sh.tableDetail.length) return;
-        h += '<div style="padding:8px 14px 4px;font-size:10px;font-weight:700;color:var(--ink2);border-top:0.5px solid var(--hair)">'+sh.dj+' \u2014 '+sh.label.replace(/,.*$/,'')+'</div>';
-        h += '<div class="tbl-wrap" style="margin:0"><table class="vip-tbl"><thead><tr>'
-           + '<th>Table</th><th>Tier</th><th class="r">Sales</th><th class="r">Min/Tbl</th><th class="r">vs Min</th>'
-           + '</tr></thead><tbody>';
-        sh.tableDetail.slice().sort(function(a,b){
-          if(a.tier==='Other'&&b.tier!=='Other') return 1;
-          if(b.tier==='Other'&&a.tier!=='Other') return -1;
-          return (b.sales||0)-(a.sales||0);
-        }).forEach(function(row){
-          var _excl = _vipExcludedTiers(beach.venue);
-          if(_excl.indexOf(row.tier)>=0) return;
-          var isOther=row.tier==='Other';
-          var minPT=(!isOther&&sh.tiers[row.tier])?sh.tiers[row.tier].minPerTable:0;
-          var diff=(row.sales||0)-minPT, zero=!row.sales;
-          h += '<tr'+(zero?' class="zero-row"':'')+(isOther?' style="opacity:.55"':'')+'>'+
-               '<td><b>'+row.table+'</b></td>'+
-               '<td><span class="tier-badge" style="background:'+(isOther?'#eee':TIER_COLORS[row.tier]||'#eee')+';color:'+(isOther?'#555':TIER_TEXT[row.tier]||'#333')+'">'+row.tier+'</span></td>'+
-               '<td class="r">'+(zero?'\u2014':$kv(row.sales))+'</td>'+
-               '<td class="r" style="'+_TARGET_BG+'">'+(minPT?$kv(minPT):'\u2014')+'</td>';
-          if(zero||isOther) h+='<td class="r" style="color:var(--ink4)">\u2014</td>';
-          else h+='<td class="r '+(diff>=0?'beat':'miss')+'">'+(diff>=0?'+':'')+$kv(diff)+'</td>';
-          h += '</tr>';
-        });
-        h += '</tbody></table></div>';
-      });
-      h += '</div>';
-    }
-  }
-
   document.getElementById('vipBody').innerHTML = h;
+  flashFitSlides();
   try{
     var stHost=document.getElementById('flashPlStatusHost');
     if(stHost && typeof _flashPlStatusChipHtml==='function') stHost.innerHTML=_flashPlStatusChipHtml();
@@ -1535,7 +1592,7 @@ function _ebitdaAccessCompareSummaryHtml(items){
         +'<div><span>Live Ent</span><b class="vip-cost">'+_flashMoneyTxt(wf.liveEnt)+'</b></div>'
         +'<div><span>EBITDA</span><b class="'+(wf.ebitda>=0?'beat':'miss')+'">'+_flashMoneyTxt(wf.ebitda)+'</b></div>'
         +'<div><span>EBITDA %</span><b>'+_flashEbitdaPct(wf.ebitda, wf.sales)+'</b></div>'
-        +'</div>';
+    +'</div>';
       h+='<div class="tbl-wrap">'+_flashEbitdaWaterfallTableHtml(wf, it.venue)+'</div>';
     }
     h+='</div>';
