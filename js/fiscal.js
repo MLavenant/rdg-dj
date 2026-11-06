@@ -716,17 +716,33 @@ function _presencePayload(){
     view:curView||'calendar'
   };
 }
+function _ensurePresenceRef(){
+  if(!window._fbDb) return null;
+  if(!_presenceSessionId){
+    try{ _presenceSessionId=sessionStorage.getItem('rdg_presence_session')||''; }catch(e){}
+    if(!_presenceSessionId){
+      _presenceSessionId='s_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,9);
+      try{ sessionStorage.setItem('rdg_presence_session',_presenceSessionId); }catch(e2){}
+    }
+  }
+  if(!_presenceRef) _presenceRef=window._fbDb.ref('rdgPresence/'+_presenceSessionId);
+  return _presenceRef;
+}
 function _writePresence(){
-  if(!_presenceRef) return;
   if(!_sessionIsActive() || !_presenceName()) return;
-  _presenceRef.update(_presencePayload());
+  var ref=_ensurePresenceRef();
+  if(!ref) return;
+  try{ ref.onDisconnect().remove(); }catch(e){}
+  try{ ref.set(_presencePayload()); }catch(e2){}
 }
 function _activePresenceRows(){
   var now=Date.now();
   return Object.keys(_presenceRows||{}).map(function(k){
     var row=_presenceRows[k]||{}; row._id=k; return row;
   }).filter(function(row){
-    return !row.lastSeen || now-(+row.lastSeen)<150000;
+    var seen=+row.lastSeen;
+    if(row.lastSeen && !(seen>0)) return true;
+    return !row.lastSeen || now-seen<150000;
   }).sort(function(a,b){ return String(a.name||'').localeCompare(String(b.name||'')); });
 }
 function refreshPresenceChip(){
@@ -734,11 +750,16 @@ function refreshPresenceChip(){
   var chip=document.getElementById('presenceChip');
   var txt=document.getElementById('presenceChipText');
   var me=_presenceName();
+  var signedIn=!!(me && _sessionIsActive());
+  if(signedIn && _presenceSessionId && !rows.some(function(r){ return r._id===_presenceSessionId; })){
+    rows=rows.concat([{_id:_presenceSessionId, name:me, lastSeen:Date.now()}]);
+    rows.sort(function(a,b){ return String(a.name||'').localeCompare(String(b.name||'')); });
+  }
   if(chip){
     chip.classList.toggle('online',!!rows.length);
-    chip.title=me ? ('Signed in as '+me+' · click to change name') : 'Enter your name to sign in';
+    chip.title=me ? ('Signed in as '+me) : 'Sign in';
   }
-  if(txt) txt.textContent=me && _sessionIsActive() ? (rows.length+' online · '+me) : (rows.length+' online · sign in');
+  if(txt) txt.textContent=signedIn ? (rows.length+' online · '+me) : (rows.length+' online · sign in');
 }
 function initPresence(){
   if(!window._fbDb) return;
@@ -750,11 +771,8 @@ function initPresence(){
       sessionStorage.setItem('rdg_presence_session',_presenceSessionId);
     }
     window._fbDb.ref('.info/connected').on('value',function(snap){
-      if(snap.val()!==true) return;
-      if(!_sessionIsActive() || !_presenceName()) return;
-      _presenceRef=window._fbDb.ref('rdgPresence/'+_presenceSessionId);
-      _presenceRef.onDisconnect().remove();
-      _presenceRef.set(_presencePayload());
+      if(snap.val()!==true){ _presenceRef=null; return; }
+      _writePresence();
     });
     window._fbDb.ref('rdgPresence').on('value',function(snap){
       _presenceRows=snap.val()||{};
