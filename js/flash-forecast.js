@@ -32,25 +32,133 @@ function flashDetailPage(p, meta){
   var marginPy=(typeof mrSideMargin==='function')?mrSideMargin(y):null;
   h+='<div><span>Live E margins</span><b>'+mrPct(marginNow)+'</b>'+mrLy(pyY+' '+mrPct(marginPy))+'</div>';
   h+='</div>';
-  h+='<table class="mr-pdf-tbl"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI actual</th><th>ROI target</th><th>BS actual vs target</th></tr></thead><tbody>';
-  if(!p.rows||!p.rows.length) h+='<tr><td class="l" colspan="6">No performances this month.</td></tr>';
+  h+='<table class="mr-pdf-tbl flash-show"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>'+pyY+' fee</th><th>ROI</th><th>'+pyY+' ROI</th><th>ROI target</th><th>BS actual</th><th>'+pyY+' BS</th><th>BS target</th></tr></thead><tbody>';
+  if(!p.rows||!p.rows.length) h+='<tr><td class="l" colspan="10">No performances this month.</td></tr>';
   (p.rows||[]).forEach(function(row){
     var tone=(typeof mrRoiClass==='function')?mrRoiClass(row):'';
     var py=flashPyBits(p.venue, row.d);
-    var dj=py?flashPyEm(pyY+' '+_escHtml(py.dj)):'';
-    var fee=py&&py.fee!=null?flashPyEm(mrMoney(py.fee)):'';
-    var roi=py&&py.roi!=null?flashPyEm(typeof rx==='function'?rx(py.roi):''):'';
-    var bsPy=py&&py.bs!=null?flashPyEm(mrMoney(py.bs)):'';
+    var feePy=py&&py.fee!=null?mrMoney(py.fee):'\u2014';
+    var roiPy=py&&py.roi!=null?(typeof rx==='function'?rx(py.roi):'\u2014'):'\u2014';
+    var bsPy=py&&py.bs!=null?mrMoney(py.bs):'\u2014';
     h+='<tr'+(tone?' class="'+tone+'"':'')+'>'
       +'<td class="l"><b>'+_escHtml(typeof mrDayLabel==='function'?mrDayLabel(row.d):row.d)+'</b></td>'
-      +'<td class="l">'+_escHtml(row.dj)+dj+'</td>'
-      +'<td>'+mrMoney(row.fee)+flashArrow(row.fee, py&&py.fee, 'under')+fee+'</td>'
-      +'<td>'+(typeof rx==='function'?rx(row.roiA):'\u2014')+flashArrow(row.roiA, py&&py.roi, 'over')+roi+'</td>'
-      +'<td>'+(typeof rx==='function'?rx(row.roiT):'\u2014')+'</td>'
-      +'<td class="wm-bs">'+(typeof wmBsVs==='function'?wmBsVs(row.bs, row.bsT):'')+flashArrow(row.bs, py&&py.bs, 'over')+bsPy+'</td></tr>';
+      +'<td class="l flash-now"><b>'+_escHtml(row.dj)+'</b></td>'
+      +'<td class="flash-now"><b>'+mrMoney(row.fee)+'</b></td>'
+      +flashPyCell(feePy, row.fee, py&&py.fee, 'under')
+      +'<td class="flash-now"><b>'+(typeof rx==='function'?rx(row.roiA):'\u2014')+'</b></td>'
+      +flashPyCell(roiPy, row.roiA, py&&py.roi, 'over')
+      +'<td class="flash-tgt">'+(typeof rx==='function'?rx(row.roiT):'\u2014')+'</td>'
+      +'<td class="flash-now"><b>'+mrMoney(row.bs)+'</b></td>'
+      +flashPyCell(bsPy, row.bs, py&&py.bs, 'over')
+      +'<td class="flash-tgt">'+mrMoney(row.bsT)+'</td></tr>';
   });
   h+='</tbody></table></div></div>';
   return h;
+}
+function flashGapMark(gap){
+  if(!gap || !gap.text || gap.text==='\u2014' || gap.text==='-') return '';
+  return ' <i class="'+(gap.cls||'')+'">'+gap.text+'</i>';
+}
+function flashPyCell(text, now, prior, favorable){
+  var gap=(prior!=null && typeof mrVar==='function')?mrVar(now, prior, favorable==='under'):null;
+  return '<td class="flash-py">'+text+flashGapMark(gap)+'</td>';
+}
+function flashCompareCards(title, sub, kicker, cards){
+  var h='<div class="bp-page bp-deck mr-fill flash-cards"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">'+_escHtml(kicker||'Weekly Live Entertainment Meeting')+'</div><b>'+_escHtml(title)+'</b><em>'+_escHtml(sub||'')+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body"><div class="mr-pdf-locs">';
+  (cards||[]).forEach(function(c){
+    var solo=!c.hasPy;
+    h+='<section class="mr-pdf-loc"><h3>'+_escHtml(c.label)+'</h3><div class="mr-cmp'+(solo?' mr-cmp-one':'')+'">';
+    h+='<span class="mr-c-hd"></span><span class="mr-c-hd">'+c.year+'</span>'+(solo?'':'<span class="mr-c-hd">'+c.pyYear+'</span>');
+    (c.rows||[]).forEach(function(r){
+      h+='<span class="mr-c-lab">'+r.label+'</span><b class="mr-c-now">'+r.now+'</b>';
+      if(!solo) h+='<b class="mr-c-py">'+r.py+flashGapMark(r.gap)+'</b>';
+    });
+    h+='</div></section>';
+  });
+  h+='</div></div></div>';
+  return h;
+}
+function flashStatCard(label, year, pyYear, now, py, hasPy){
+  now=now||{}; py=py||{};
+  function money(n){ return (typeof mrMoney==='function')?mrMoney(n):'\u2014'; }
+  function pct(n){ return (typeof mrPct==='function')?mrPct(n):'\u2014'; }
+  function gap(a,b,lower){ return (typeof mrVar==='function')?mrVar(a,b,!!lower):null; }
+  function pp(a,b,lower){ return (typeof mrPp==='function')?mrPp(a,b,!!lower):null; }
+  return {
+    label:label, year:year, pyYear:pyYear, hasPy:hasPy!==false,
+    rows:[
+      {label:'Total Sales', now:money(now.sales), py:money(py.sales), gap:gap(now.sales, py.sales)},
+      {label:'<i class="bp-arr"></i>Bottle Service Sales', now:money(now.bs), py:money(py.bs), gap:gap(now.bs, py.bs)},
+      {label:'ROI % Beat', now:pct(now.beat), py:pct(py.beat), gap:pp(now.beat, py.beat)},
+      {label:'Guest DJ', now:money(now.guest), py:money(py.guest), gap:gap(now.guest, py.guest, true)},
+      {label:'Live Ent. margins', now:pct(now.margin), py:pct(py.margin), gap:pp(now.margin, py.margin, true)}
+    ]
+  };
+}
+function flashShowBsMin(venue, sh){
+  var bsMin=sh&&sh.bsMin!=null?+sh.bsMin:null;
+  if(!(bsMin>0) && typeof showTargets==='function'){
+    var tgt=showTargets({v:venue, venue:venue, d:sh&&sh.date, fee:+(sh&&sh.fee)||0, cost:+(sh&&sh.fee)||0});
+    if(tgt && tgt.bs_m!=null) bsMin=+tgt.bs_m;
+  }
+  return bsMin;
+}
+function flashWeekVenueStats(v){
+  var bs=0, fee=0, sales=0, beats=0, measured=0, hasBs=false, hasFee=false, hasSales=false;
+  (v.shows||[]).forEach(function(sh){
+    if(sh.bsActual!=null && isFinite(+sh.bsActual)){ bs+=+sh.bsActual; hasBs=true; }
+    if(sh.fee!=null && isFinite(+sh.fee)){ fee+=+sh.fee; hasFee=true; }
+    var min=flashShowBsMin(v.venue, sh);
+    if(sh.bsActual!=null && min>0){ measured++; if(+sh.bsActual>=min) beats++; }
+    if(typeof mrDaySales==='function' && sh.date){
+      var s=mrDaySales(v.venue, sh.date);
+      if(s!=null && isFinite(+s)){ sales+=+s; hasSales=true; }
+    }
+  });
+  return {sales:hasSales?sales:null, bs:hasBs?bs:null, guest:hasFee?fee:null, margin:(hasFee&&sales>0)?fee/sales:null, beat:measured?beats/measured:null};
+}
+function flashWeekPyStats(v){
+  var bs=0, fee=0, sales=0, beats=0, measured=0, hasBs=false, hasFee=false, hasSales=false, any=false;
+  (v.shows||[]).forEach(function(sh){
+    if(typeof resolvePyFields!=='function') return;
+    var f=resolvePyFields(v.venue, sh.date);
+    if(!f || !f.py_dj) return;
+    any=true;
+    if(f.py_bs_a!=null && isFinite(+f.py_bs_a)){ bs+=+f.py_bs_a; hasBs=true; }
+    if(f.py_fee!=null && isFinite(+f.py_fee)){ fee+=+f.py_fee; hasFee=true; }
+    if(f.py_beat!=null){ measured++; if(+f.py_beat) beats++; }
+    else if(f.py_bs_a!=null && f.py_bs_m>0){ measured++; if(+f.py_bs_a>=+f.py_bs_m) beats++; }
+    if(f.py_date && typeof mrDaySales==='function'){
+      var s=mrDaySales(v.venue, f.py_date);
+      if(s!=null && isFinite(+s)){ sales+=+s; hasSales=true; }
+    }
+  });
+  return {any:any, sales:hasSales?sales:null, bs:hasBs?bs:null, guest:hasFee?fee:null, margin:(hasFee&&sales>0)?fee/sales:null, beat:measured?beats/measured:null};
+}
+function flashWeekCardPage(venues, range){
+  var year=range&&range.mon?+String(range.mon).slice(0,4):2026;
+  var order=['MILA Lounge','Casa Neos Lounge','Casa Neos Beach Club'];
+  var by={};
+  (venues||[]).forEach(function(v){ by[v.venue]=v; });
+  var cards=order.map(function(vn){
+    var v=by[vn]||{venue:vn, shows:[]};
+    var py=flashWeekPyStats(v);
+    var label=(typeof mrLabel==='function')?mrLabel(vn):vn;
+    return flashStatCard(label, year, year-1, flashWeekVenueStats(v), py, py.any);
+  });
+  var sub=(typeof _fmtVipWeekLabel==='function')?_fmtVipWeekLabel(typeof _vipWeekOffset!=='undefined'?_vipWeekOffset:0):'';
+  return flashCompareCards('Last Week', sub, 'Weekly Live Entertainment Meeting', cards);
+}
+function flashMtdCardPage(pack){
+  var meta=pack.meta||{};
+  var year=meta.year||2026;
+  var cards=(pack.venues||[]).map(function(p){
+    var n=p.now||{}, y=p.py||{};
+    var now={sales:n.sales, bs:p.beat&&p.beat.bs, guest:n.guest, margin:(typeof mrSideMargin==='function')?mrSideMargin(n):null, beat:p.beat&&p.beat.rate};
+    var py={sales:y.sales, bs:p.pyBeat&&p.pyBeat.bs, guest:y.guest, margin:(typeof mrSideMargin==='function')?mrSideMargin(y):null, beat:p.pyBeat&&p.pyBeat.rate};
+    return flashStatCard(p.label, year, year-1, now, py, !!p.py);
+  });
+  return flashCompareCards(meta.label||'Month to date', meta.range||'', 'Weekly Live Entertainment Meeting', cards);
 }
 function flashPlanMoney(n){
   if(n==null||!isFinite(+n)) return '\u2014';
@@ -335,6 +443,7 @@ function renderVIP(venueIdx){
 
   h += '<div class="flash-slide">'+_bpCoverHtml('Weekly Live Entertainment Meeting', meetingDate, '')+'</div>';
   h += '<div class="flash-slide">'+_bpCoverHtml('Last Week', weekOf+' \u00b7 All locations', '')+'</div>';
+  h += '<div class="flash-slide">'+flashWeekCardPage(venues, range)+'</div>';
 
   h += '<div class="vip-print-page vip-print-page2 flash-break">';
   h += _vipSectionTitle('PERFORMANCE SUMMARY', weekOf+' \u00b7 All locations');
@@ -348,7 +457,7 @@ function renderVIP(venueIdx){
   if(mtdPack && typeof mrComparePage==='function'){
     var mtdSub=(mtdPack.meta&&(mtdPack.meta.label||mtdPack.meta.range))||'Month to date';
     h += '<div class="flash-slide">'+_bpCoverHtml('MTD', mtdSub, '')+'</div>';
-    h += '<div class="flash-slide">'+mrComparePage(mtdPack, {kicker:'Weekly Live Entertainment Meeting'})+'</div>';
+    h += '<div class="flash-slide">'+flashMtdCardPage(mtdPack)+'</div>';
     h += '<div class="flash-slide">'+_bpCoverHtml('MTD', 'By location \u00b7 '+(mtdPack.meta&&mtdPack.meta.range?mtdPack.meta.range:mtdSub), '')+'</div>';
     (mtdPack.venues||[]).forEach(function(p){
       h += '<div class="flash-slide">'+flashDetailPage(p, mtdPack.meta||mtd)+'</div>';
