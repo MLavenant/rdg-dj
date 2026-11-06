@@ -49,7 +49,7 @@ function signInShowStep(step){
     if(el) el.hidden = name!==step;
   });
   if(step==='email'){
-    signInNote('Use your work email. If you have already created a sign-in code, you will enter it next.', false);
+    signInNote("Use your work email. If you've saved face unlock or a sign-in code, we'll use it.", false);
   }else if(step==='create'){
     signInNote('Create a 6-digit code for this email. You will enter it each time you sign in. It cannot be changed from this page.', false);
   }else{
@@ -235,6 +235,74 @@ function submitSignInCode(){
   }).catch(function(){
     if(btn){ btn.disabled=false; btn.textContent='Enter'; }
     signInNote('Could not check the code. Try again.', true);
+  });
+}
+function signInFaceRef(email){
+  if(!window._fbDb) return null;
+  return window._fbDb.ref('rdg/signInFace/'+signInKey(email));
+}
+function signInFaceCreate(email){
+  var userId=new Uint8Array(16);
+  crypto.getRandomValues(userId);
+  return navigator.credentials.create({
+    publicKey:{
+      challenge:signInRandomBytes(32),
+      rp:{name:'RDG Live Entertainment'},
+      user:{id:userId, name:email, displayName:RDG_SIGNIN_ALLOW[email]||email},
+      pubKeyCredParams:[{type:'public-key', alg:-7},{type:'public-key', alg:-257}],
+      authenticatorSelection:{authenticatorAttachment:'platform', userVerification:'required', residentKey:'preferred'},
+      timeout:60000
+    }
+  }).then(function(cred){
+    if(!cred) return false;
+    var ref=signInFaceRef(email);
+    if(!ref) return false;
+    return ref.set({id:_signInBufToB64(cred.rawId), createdAt:Date.now()}).then(function(){ return true; });
+  });
+}
+function signInFaceGet(idB64){
+  return navigator.credentials.get({
+    publicKey:{
+      challenge:signInRandomBytes(32),
+      allowCredentials:[{type:'public-key', id:_signInFromB64(idB64)}],
+      userVerification:'required',
+      timeout:60000
+    }
+  }).then(function(cred){ return !!cred; });
+}
+function signInRandomBytes(n){
+  var bytes=new Uint8Array(n);
+  crypto.getRandomValues(bytes);
+  return bytes;
+}
+function _signInBufToB64(buf){
+  return _signInB64(new Uint8Array(buf));
+}
+function submitSignInFace(){
+  var email=signInNormalizeEmail((document.getElementById('signinEmail')||{}).value);
+  if(!email){ signInNote('Enter your work email, then unlock with face.', true); return; }
+  if(!RDG_SIGNIN_ALLOW[email]){ signInNote('This email does not have access.', true); return; }
+  if(!window.PublicKeyCredential || !navigator.credentials){
+    signInNote('This device has no face unlock. Continue with your email and code.', true);
+    return;
+  }
+  _signInEmail=email;
+  signInRememberEmail(email);
+  var ref=signInFaceRef(email);
+  if(!ref){ signInNote('Still connecting. Try again in a moment.', true); return; }
+  var btn=document.getElementById('signinFaceBtn');
+  if(btn) btn.disabled=true;
+  ref.once('value').then(function(snap){
+    var rec=snap.val();
+    if(rec&&rec.id) return signInFaceGet(rec.id);
+    return signInFaceCreate(email);
+  }).then(function(ok){
+    if(btn) btn.disabled=false;
+    if(ok) signInFinish(email);
+  }).catch(function(err){
+    if(btn) btn.disabled=false;
+    if(err&&err.name==='NotAllowedError') signInNote('Face unlock was cancelled. Continue with your email and code.', true);
+    else signInNote('Face unlock is not available on this device. Continue with your email and code.', true);
   });
 }
 function signInClearCode(email){

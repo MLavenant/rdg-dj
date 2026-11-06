@@ -2376,25 +2376,31 @@ body.mobile-mode .sb-btn{min-height:44px}
 .signin-brand{position:absolute;top:28px;left:32px;display:flex;align-items:center;gap:10px;color:#fff;letter-spacing:.22em;text-transform:uppercase;font-size:11px;font-weight:600}
 .signin-brand img{width:28px;height:28px;object-fit:contain;filter:brightness(0) invert(1)}
 .signin-hero-title{position:absolute;left:36px;bottom:42px;margin:0;color:#fff;font-family:Georgia,"Iowan Old Style","Palatino Linotype",Palatino,serif;font-weight:500;font-size:54px;line-height:.95;letter-spacing:-.02em;text-shadow:0 10px 30px rgba(0,0,0,.35)}
-.signin-panel{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 32px 64px;background:#f6f1e8}
-.signin-panel-body{width:min(380px,100%);display:flex;flex-direction:column;align-items:center;text-align:center}
-.signin-mark{width:54px;height:54px;object-fit:contain;margin-bottom:8px}
-.signin-wordmark{font-family:Georgia,"Iowan Old Style",Palatino,serif;font-size:42px;letter-spacing:.28em;line-height:1;margin-left:.28em;color:#3a342c}
-.signin-wordmark-sub{margin-top:6px;font-size:11px;letter-spacing:.28em;text-transform:lowercase;color:#8a8175}
-.signin-kicker{margin-top:28px;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:#9a9084}
-.signin-panel h2{margin:8px 0 8px;font-family:Georgia,"Iowan Old Style",Palatino,serif;font-size:40px;font-weight:500;color:#2c2824}
-.signin-panel p{margin:0 0 22px;max-width:340px;font-size:14px;line-height:1.45;color:#8d8478}
-.signin-panel label{align-self:flex-start;margin:12px 0 6px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8d8478}
+.signin-panel{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 36px 64px;background:#f4f1eb}
+.signin-panel-body{width:min(360px,100%);display:flex;flex-direction:column;align-items:center;text-align:center}
+.signin-mark{width:72px;height:44px;margin-bottom:6px;stroke:#9a938a;fill:none;stroke-width:1.25;stroke-linecap:round}
+.signin-wordmark{font-family:"Segoe UI",Helvetica,Arial,sans-serif;font-weight:400;font-size:34px;letter-spacing:.46em;line-height:1;margin-left:.46em;color:#8d8680}
+.signin-wordmark-sub{margin-top:8px;font-size:10px;letter-spacing:.24em;text-transform:lowercase;color:#b3aba1}
+.signin-kicker{margin-top:34px;font-size:11px;font-weight:650;letter-spacing:.34em;text-transform:uppercase;color:#9c958c}
+.signin-panel h2{margin:10px 0 10px;font-family:Georgia,"Iowan Old Style","Palatino Linotype",Palatino,serif;font-size:46px;font-weight:500;color:#2c2926}
+.signin-panel p{margin:0 0 26px;max-width:330px;font-size:15px;line-height:1.45;color:#8f8880}
+.signin-panel label{align-self:flex-start;margin:0 0 8px;font-size:11px;font-weight:650;letter-spacing:.16em;text-transform:uppercase;color:#8f8880}
 #signinStepEmail,#signinStepCreate,#signinStepCode{width:100%;display:flex;flex-direction:column;align-items:stretch}
-.signin-field{display:flex;align-items:center;gap:8px;border:1px solid #e4dcd0;background:#fff;border-radius:12px;padding:0 14px;height:48px}
-.signin-field span{color:#b3aa9e;font-size:16px}
-.signin-field input,.signin-code{border:0;outline:none;background:transparent;font:inherit;font-size:15px;color:#2c2824;width:100%}
-.signin-code{height:48px;border:1px solid #e4dcd0;background:#fff;border-radius:12px;padding:0 14px;letter-spacing:.35em;text-align:center}
+#signinStepEmail[hidden],#signinStepCreate[hidden],#signinStepCode[hidden]{display:none !important}
+.signin-field{display:flex;align-items:center;gap:10px;border:1px solid #e7e1d8;background:#fff;border-radius:10px;padding:0 14px;height:52px;color:#b7afa6}
+.signin-field input,.signin-code{border:0;outline:none;background:transparent;font:inherit;font-size:15px;color:#3a342c;width:100%}
+.signin-field input::placeholder{color:#c5beb6}
+.signin-code{height:52px;border:1px solid #e7e1d8;background:#fff;border-radius:10px;padding:0 14px;letter-spacing:.35em;text-align:center}
 .signin-field input:focus,.signin-code:focus{outline:none}
-.signin-field:focus-within,.signin-code:focus{border-color:#c4b8a6}
-.signin-btn{margin-top:16px;height:48px;border:0;border-radius:12px;background:#ddd6cb;color:#5e574e;font:inherit;font-size:15px;cursor:pointer}
-.signin-btn:hover{background:#d3ccc0}
+.signin-field:focus-within,.signin-code:focus{border-color:#cfc6bb}
+.signin-btn{margin-top:14px;height:52px;border:0;border-radius:10px;background:#c9c2b8;color:#fff;font:inherit;font-size:16px;font-weight:650;cursor:pointer}
+.signin-btn:hover{background:#beb7ac}
 .signin-btn:disabled{opacity:.6;cursor:default}
+.signin-or{display:flex;align-items:center;gap:14px;margin:18px 0 12px;color:#c8c0b6;font-size:11px;letter-spacing:.18em}
+.signin-or:before,.signin-or:after{content:"";flex:1;height:1px;background:#e6e0d6}
+.signin-face{height:52px;border-radius:10px;border:1px solid #e6e0d6;background:#f7f4ef;color:#8f8880;display:flex;align-items:center;justify-content:center;gap:8px;font:inherit;font-size:15px;cursor:pointer}
+.signin-face:hover{background:#fff}
+.signin-face:disabled{opacity:.6;cursor:default}
 .signin-back{align-self:flex-start;margin:0 0 4px;padding:0;border:0;background:none;color:#8d8478;font:inherit;font-size:12px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
 .signin-foot{position:absolute;left:0;right:0;bottom:22px;text-align:center;font-size:11px;letter-spacing:.04em;color:#b3aa9e}
 .signin-note-bad{color:#9a3412}

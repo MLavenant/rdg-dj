@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RDG DJ Dashboard v5.197</title>
+<title>RDG DJ Dashboard v5.198</title>
 <!-- Firebase Realtime Database SDK -->
-  <link rel="stylesheet" href="css/app.css?v=5.197">
-<script>window.RDG_APP_VERSION='5.197';</script>
+  <link rel="stylesheet" href="css/app.css?v=5.198">
+<script>window.RDG_APP_VERSION='5.198';</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
@@ -15,57 +15,68 @@
 <div id="sessionGate" class="signin-landing" role="dialog" aria-modal="true" aria-labelledby="signinTitle">
   <section class="signin-hero" aria-hidden="true">
     <div class="signin-track" id="signinTrack">
-      <img src="assets/signin/slide-night.jpg?v=5.197" alt="">
-      <img src="assets/signin/slide-lounge.png?v=5.197" alt="">
-      <img src="assets/signin/slide-dining.jpg?v=5.197" alt="">
+      <img src="assets/signin/slide-night.jpg?v=5.198" alt="">
+      <img src="assets/signin/slide-lounge.png?v=5.198" alt="">
+      <img src="assets/signin/slide-dining.jpg?v=5.198" alt="">
     </div>
     <div class="signin-hero-shade"></div>
     <div class="signin-brand">
-      <img src="assets/rdg-logo.png?v=5.197" alt="">
+      <img src="assets/rdg-logo.png?v=5.198" alt="">
       <span>Riviera Dining Group</span>
     </div>
     <h1 class="signin-hero-title">Live Entertainment<br>DASHBOARD</h1>
   </section>
   <section class="signin-panel">
     <div class="signin-panel-body">
-      <img class="signin-mark" src="assets/rdg-logo.png?v=5.197" alt="RDG">
+      <svg class="signin-mark" viewBox="0 0 88 52" aria-hidden="true">
+        <path d="M6 46c12-24 64-24 76 0"/>
+        <path d="M16 42c10-18 46-18 56 0"/>
+        <path d="M26 38c8-13 28-13 36 0"/>
+        <path d="M34 34c5-8 15-8 20 0"/>
+        <path d="M40 30c3-4.5 5-4.5 8 0"/>
+      </svg>
       <div class="signin-wordmark">RDG</div>
-      <div class="signin-wordmark-sub">Riviera Dining Group</div>
+      <div class="signin-wordmark-sub">riviera dining group</div>
       <div class="signin-kicker">Welcome back</div>
       <h2 id="signinTitle">Sign in</h2>
-      <p id="signinNote">Use your work email. If you have already created a sign-in code, you will enter it next.</p>
+      <p id="signinNote">Use your work email. If you've saved face unlock or a sign-in code, we'll use it.</p>
       <div id="signinStepEmail">
         <label for="signinEmail">Email</label>
         <div class="signin-field">
-          <span aria-hidden="true">&#9993;</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M4 7l8 6 8-6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
           <input id="signinEmail" type="email" autocomplete="username" inputmode="email" placeholder="you@rivieradininggroup.com" onkeydown="if(event.key==='Enter'){event.preventDefault();submitSignInEmail();}">
         </div>
         <button type="button" class="signin-btn" id="signinEmailBtn" onclick="submitSignInEmail()">Continue</button>
+        <div class="signin-or"><span>OR</span></div>
+        <button type="button" class="signin-face" id="signinFaceBtn" onclick="submitSignInFace()">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="9" cy="10.5" r=".9" fill="currentColor"/><circle cx="15" cy="10.5" r=".9" fill="currentColor"/><path d="M9 14.2c1.1 1.1 4.9 1.1 6 0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Unlock with face
+        </button>
       </div>
       <div id="signinStepCreate" hidden>
         <button type="button" class="signin-back" onclick="signInShowStep('email')">Back</button>
         <label for="signinCreate">Create a 6-digit code</label>
-        <input id="signinCreate" class="signin-code" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢">
+        <input id="signinCreate" class="signin-code" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="******">
         <label for="signinConfirm">Confirm the code</label>
-        <input id="signinConfirm" class="signin-code" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢" onkeydown="if(event.key==='Enter'){event.preventDefault();submitSignInCreate();}">
+        <input id="signinConfirm" class="signin-code" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="******" onkeydown="if(event.key==='Enter'){event.preventDefault();submitSignInCreate();}">
         <button type="button" class="signin-btn" id="signinCreateBtn" onclick="submitSignInCreate()">Save code and enter</button>
       </div>
       <div id="signinStepCode" hidden>
         <button type="button" class="signin-back" onclick="signInShowStep('email')">Back</button>
         <label for="signinCode">Sign-in code</label>
-        <input id="signinCode" class="signin-code" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢" onkeydown="if(event.key==='Enter'){event.preventDefault();submitSignInCode();}">
+        <input id="signinCode" class="signin-code" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password" placeholder="******" onkeydown="if(event.key==='Enter'){event.preventDefault();submitSignInCode();}">
         <button type="button" class="signin-btn" id="signinCodeBtn" onclick="submitSignInCode()">Enter</button>
       </div>
     </div>
-    <div class="signin-foot">Riviera Dining Group â€” Internal use only</div>
+    <div class="signin-foot">Riviera Dining Group - Internal use only</div>
   </section>
 </div>
 <div class="shell">
 <aside class="sidebar">
   <div class="sb-logo">
-    <img src="assets/rdg-logo.png?v=5.197" alt="RDG" class="sb-logo-img">
+    <img src="assets/rdg-logo.png?v=5.198" alt="RDG" class="sb-logo-img">
     <div class="sb-logo-title">DJ Dashboard</div>
-    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v5.197 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
+    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v5.198 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
   </div>
   <div id="sidebar"></div>
   <button type="button" class="mobile-nav-close" id="mobileNavClose" onclick="closeMobileNav()">&#10005; Close menu</button>
@@ -243,7 +254,7 @@
     <div class="pg-section" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
       <div>
         <div class="pg-title2">BASEL Tracker</div>
-        <div id="baselMeta" style="font-size:10px;color:var(--ink3)">MILA Lounge TuesdayÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“Sunday Ãƒâ€šÃ‚Â· Beach Club and CN Lounge FridayÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Å“Sunday Ãƒâ€šÃ‚Â· same sales method as Forecast, plus referrer</div>
+        <div id="baselMeta" style="font-size:10px;color:var(--ink3)">MILA Lounge TuesdayÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œSunday ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Beach Club and CN Lounge FridayÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œSunday ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· same sales method as Forecast, plus referrer</div>
       </div>
       <div class="no-print">
         <button type="button" class="btn-pdf" onclick="exportViewPdf('basel')">Export PDF</button>
@@ -327,7 +338,7 @@
   <div id="view-ebitda" style="display:none">
     <div class="pg-section">
       <div class="pg-title2">EBITDA Access</div>
-      <div style="font-size:10px;color:var(--ink3);margin-top:2px">Full P&amp;L waterfall per DJ day ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Sales through EBITDA ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· matches EBIDTA Calculation workbook</div>
+      <div style="font-size:10px;color:var(--ink3);margin-top:2px">Full P&amp;L waterfall per DJ day ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· Sales through EBITDA ÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· matches EBIDTA Calculation workbook</div>
     </div>
     <div id="ebitdaBody" style="padding:14px 16px;display:flex;flex-direction:column;gap:14px"></div>
   </div>
@@ -520,30 +531,30 @@
     </div>
   </div>
 </div>
-<script src="js/vendor/xlsx.js?v=5.197"></script>
-<script src="data/sched-baked.js?v=5.197"></script>
-<script src="data/flash-py-2025.js?v=5.197"></script>
-<script src="data/flash-excel-catalog.js?v=5.197"></script>
-<script src="js/state-prelude.js?v=5.197"></script>
-<script src="js/logos.js?v=5.197"></script>
-<script src="js/state.js?v=5.197"></script>
-<script src="js/fiscal.js?v=5.197"></script>
-<script src="js/signin.js?v=5.197"></script>
-<script src="js/core.js?v=5.197"></script>
-<script src="js/budget.js?v=5.197"></script>
-<script src="js/firebase-sync.js?v=5.197"></script>
-<script src="js/calendar.js?v=5.197"></script>
-<script src="js/flash-forecast.js?v=5.197"></script>
-<script src="js/accounting.js?v=5.197"></script>
-<script src="js/modals.js?v=5.197"></script>
-<script src="js/roi-rules.js?v=5.197"></script>
-<script src="js/booking-plan.js?v=5.197"></script>
-<script src="data/dj-monthly-recap.js?v=5.197"></script>
-<script src="data/wm-mtd.js?v=5.197"></script>
-<script src="js/monthly-recap.js?v=5.197"></script>
-<script src="js/finance-approval.js?v=5.197"></script>
-<script src="data/dj-sales-prevision.js?v=5.197"></script>
-<script src="js/sales-prevision.js?v=5.197"></script>
+<script src="js/vendor/xlsx.js?v=5.198"></script>
+<script src="data/sched-baked.js?v=5.198"></script>
+<script src="data/flash-py-2025.js?v=5.198"></script>
+<script src="data/flash-excel-catalog.js?v=5.198"></script>
+<script src="js/state-prelude.js?v=5.198"></script>
+<script src="js/logos.js?v=5.198"></script>
+<script src="js/state.js?v=5.198"></script>
+<script src="js/fiscal.js?v=5.198"></script>
+<script src="js/signin.js?v=5.198"></script>
+<script src="js/core.js?v=5.198"></script>
+<script src="js/budget.js?v=5.198"></script>
+<script src="js/firebase-sync.js?v=5.198"></script>
+<script src="js/calendar.js?v=5.198"></script>
+<script src="js/flash-forecast.js?v=5.198"></script>
+<script src="js/accounting.js?v=5.198"></script>
+<script src="js/modals.js?v=5.198"></script>
+<script src="js/roi-rules.js?v=5.198"></script>
+<script src="js/booking-plan.js?v=5.198"></script>
+<script src="data/dj-monthly-recap.js?v=5.198"></script>
+<script src="data/wm-mtd.js?v=5.198"></script>
+<script src="js/monthly-recap.js?v=5.198"></script>
+<script src="js/finance-approval.js?v=5.198"></script>
+<script src="data/dj-sales-prevision.js?v=5.198"></script>
+<script src="js/sales-prevision.js?v=5.198"></script>
 </body>
 </html>
 
