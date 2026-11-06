@@ -8,7 +8,8 @@ var RDG_SIGNIN_ALLOW = {
   'greg@rivieradininggroup.com': 'Greg',
   'michael@rivieradininggroup.com': 'Michael',
   'alexandra@rivieradininggroup.com': 'Alexandra',
-  'matthias@rivieradininggroup.com': 'Matthias'
+  'matthias@rivieradininggroup.com': 'Matthias',
+  'takuma@rivieradininggroup.com': 'Takuma'
 };
 var RDG_SIGNIN_OWNER = 'matthias@rivieradininggroup.com';
 var _signInEmail = '';

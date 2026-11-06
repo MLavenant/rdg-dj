@@ -88,6 +88,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .topbar-controls{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;min-width:0;flex:1 1 auto;max-width:100%}
 .topbar-controls #venTabs,.topbar-controls #yrPills{display:flex;gap:4px;flex-wrap:wrap;max-width:100%;width:auto}
 .pg-title{font-size:16px;font-weight:900;letter-spacing:-.4px}
+.app-ver{margin-left:6px;font-size:10px;font-weight:650;letter-spacing:.04em;color:var(--ink4);vertical-align:middle}
 .pg-sub{font-size:10px;color:var(--ink3)}
 .ven-tab:hover{background:var(--card3);transform:translateY(-1px)}
 .ven-tab.on{box-shadow:var(--shadow-sm)}
@@ -2375,6 +2376,7 @@ body.mobile-mode .sb-btn{min-height:44px}
 .signin-hero-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.38) 0%,rgba(0,0,0,.05) 32%,rgba(0,0,0,.15) 58%,rgba(0,0,0,.72) 100%);pointer-events:none}
 .signin-brand{position:absolute;top:28px;left:32px;display:flex;align-items:center;gap:10px;color:#fff;letter-spacing:.22em;text-transform:uppercase;font-size:11px;font-weight:600}
 .signin-brand img{width:28px;height:28px;object-fit:contain;filter:brightness(0) invert(1)}
+.signin-version{margin-left:4px;font-size:10px;letter-spacing:.08em;font-weight:650;opacity:.8}
 .signin-hero-title{position:absolute;left:36px;bottom:42px;margin:0;color:#fff;font-family:Georgia,"Iowan Old Style","Palatino Linotype",Palatino,serif;font-weight:500;font-size:54px;line-height:.95;letter-spacing:-.02em;text-shadow:0 10px 30px rgba(0,0,0,.35)}
 .signin-panel{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 36px 64px;background:#f4f1eb}
 .signin-panel-body{width:min(360px,100%);display:flex;flex-direction:column;align-items:center;text-align:center}
