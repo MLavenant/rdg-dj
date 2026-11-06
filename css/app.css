@@ -1015,12 +1015,24 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 #view-resident{flex:1;min-height:0;flex-direction:column;overflow:hidden}
 #view-resident .cal-nav,#view-resident #residentSlider{flex-shrink:0;background:var(--card)}
 #residentBody{flex:1 1 auto;min-height:0;margin:0 16px 16px;border-radius:var(--r-lg);overflow:auto;background:var(--card);box-shadow:var(--shadow-sm)}
-#residentBody .res-group{text-align:center!important;font-size:10px;letter-spacing:.04em}
-#residentBody .res-sub{font-size:8px;font-weight:650;color:var(--ink3);text-align:center!important}
-#residentBody .res-name,#residentBody .res-money{width:100%;box-sizing:border-box;border:0.5px solid var(--rule);border-radius:6px;background:#fff;color:var(--ink);font:inherit;font-size:11px;padding:4px 6px;outline:none}
-#residentBody .res-money{text-align:right;min-width:72px}
-#residentBody .res-name:focus,#residentBody .res-money:focus{border-color:var(--blue)}
-#residentBody td.res-cell{padding:3px 4px!important}
+#residentBody .res-tbl{border-collapse:separate;border-spacing:0}
+#residentBody .res-date-col{width:210px}
+#residentBody .res-name-col{width:128px}
+#residentBody .res-amt-col{width:52px}
+#residentBody .res-group{text-align:center!important;font-size:10px;letter-spacing:.04em;font-weight:750}
+#residentBody .res-sub{font-size:8px;font-weight:650;text-align:center!important}
+#residentBody .res-split{box-shadow:inset 2px 0 0 #8d8376}
+#residentBody .res-tone-hotel{background:#e7f6d4!important}
+#residentBody .res-tone-ground{background:#d5efbf!important}
+#residentBody .res-tone-resident_dj{background:#bfe8c9!important}
+#residentBody .res-tone-light_jockey{background:#ffe7a3!important}
+#residentBody .res-tone-kryo{background:#d5e4ff!important}
+#residentBody .res-tone-greeters{background:#f0d9f6!important}
+#residentBody .res-tone-mm{background:#ffd7b0!important}
+#residentBody .res-name,#residentBody .res-money{width:100%;box-sizing:border-box;border:0;border-radius:0;background:transparent;color:var(--ink);font:inherit;font-size:12px;font-weight:650;padding:2px 4px;outline:none;box-shadow:none}
+#residentBody .res-money{text-align:right;font-variant-numeric:tabular-nums}
+#residentBody .res-name:focus,#residentBody .res-money:focus{background:rgba(255,255,255,.55);outline:1px solid rgba(40,32,24,.28)}
+#residentBody td.res-cell{padding:1px 2px!important}
 #view-calendar .cal-nav,#view-accounting .cal-nav,#view-calendar #monthSlider,#view-accounting #acctSlider{flex-shrink:0;z-index:5;background:var(--card)}
 .main > [id^="view-"]:not(#view-calendar):not(#view-accounting):not(#view-resident){flex:1;min-height:0;overflow:auto}
 #calBody,#acctBody{flex:1 1 auto;min-height:0;margin:0 16px 16px;border-radius:var(--r-lg);overflow:auto!important;max-height:none!important;box-shadow:var(--shadow-sm);background:var(--card)}

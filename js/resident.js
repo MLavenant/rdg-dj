@@ -68,17 +68,19 @@ function renderResidentCalendar(){
   var sliderEl=document.getElementById('residentSlider');
   if(sliderEl) sliderEl.innerHTML=slider;
 
-  var h='<table class="sched-tbl"><thead>';
+  var h='<table class="sched-tbl res-tbl"><colgroup><col class="res-date-col"><col class="res-amt-col"><col class="res-amt-col">';
+  RESIDENT_ROLES.forEach(function(){ h+='<col class="res-name-col"><col class="res-amt-col">'; });
+  h+='</colgroup><thead>';
   h+='<tr>';
   h+='<th class="sc-date" rowspan="2">Date</th>';
-  h+='<th class="sc-num" rowspan="2">Hotel</th>';
-  h+='<th class="sc-num" rowspan="2">Ground</th>';
+  h+='<th class="res-group res-tone-hotel res-split" rowspan="2">Hotel</th>';
+  h+='<th class="res-group res-tone-ground res-split" rowspan="2">Ground</th>';
   RESIDENT_ROLES.forEach(function(role){
-    h+='<th class="res-group" colspan="2">'+role.label+'</th>';
+    h+='<th class="res-group res-tone-'+role.id+' res-split" colspan="2">'+role.label+'</th>';
   });
   h+='</tr><tr>';
-  RESIDENT_ROLES.forEach(function(){
-    h+='<th class="res-sub">Name</th><th class="res-sub">$</th>';
+  RESIDENT_ROLES.forEach(function(role){
+    h+='<th class="res-sub res-tone-'+role.id+' res-split">Name</th><th class="res-sub res-tone-'+role.id+'">$</th>';
   });
   h+='</tr></thead><tbody>';
 
@@ -96,12 +98,12 @@ function renderResidentCalendar(){
     var row=residentDay(curV, ds);
     h+='<tr class="'+dc+'">';
     h+='<td class="sc-date-cell">'+dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
-    h+='<td class="res-cell"><input class="res-money" inputmode="decimal" data-ds="'+ds+'" data-field="hotel" value="'+residentMoney(row.hotel)+'" placeholder="$" onchange="residentEdit(this)"></td>';
-    h+='<td class="res-cell"><input class="res-money" inputmode="decimal" data-ds="'+ds+'" data-field="ground" value="'+residentMoney(row.ground)+'" placeholder="$" onchange="residentEdit(this)"></td>';
+    h+='<td class="res-cell res-tone-hotel res-split"><input class="res-money" inputmode="decimal" data-ds="'+ds+'" data-field="hotel" value="'+residentMoney(row.hotel)+'" onchange="residentEdit(this)"></td>';
+    h+='<td class="res-cell res-tone-ground res-split"><input class="res-money" inputmode="decimal" data-ds="'+ds+'" data-field="ground" value="'+residentMoney(row.ground)+'" onchange="residentEdit(this)"></td>';
     RESIDENT_ROLES.forEach(function(role){
       var cell=(row[role.id] && typeof row[role.id]==='object') ? row[role.id] : {};
-      h+='<td class="res-cell"><input class="res-name" data-ds="'+ds+'" data-role="'+role.id+'" data-field="name" value="'+residentEsc(cell.name||'')+'" placeholder="Name" onchange="residentEdit(this)"></td>';
-      h+='<td class="res-cell"><input class="res-money" inputmode="decimal" data-ds="'+ds+'" data-role="'+role.id+'" data-field="amt" value="'+residentMoney(cell.amt)+'" placeholder="$" onchange="residentEdit(this)"></td>';
+      h+='<td class="res-cell res-tone-'+role.id+' res-split"><input class="res-name" data-ds="'+ds+'" data-role="'+role.id+'" data-field="name" value="'+residentEsc(cell.name||'')+'" onchange="residentEdit(this)"></td>';
+      h+='<td class="res-cell res-tone-'+role.id+'"><input class="res-money" inputmode="decimal" data-ds="'+ds+'" data-role="'+role.id+'" data-field="amt" value="'+residentMoney(cell.amt)+'" onchange="residentEdit(this)"></td>';
     });
     h+='</tr>';
   });
