@@ -1393,6 +1393,18 @@ function _collectRoiSpCustomRules(){
   return rules;
 }
 
+/* Existing special covering exactly this venue + date range (most recently saved), or null. */
+function _roiSpSameNightUid(venue, start, end){
+  var found=null, foundAt='';
+  Object.keys(ROI_SPECIAL_EVENTS||{}).forEach(function(k){
+    var ev=ROI_SPECIAL_EVENTS[k];
+    if(!ev||ev.venue!==venue||ev.start!==start||ev.end!==end) return;
+    var at=String(ev.updatedAt||'');
+    if(!found||at>foundAt){ found=k; foundAt=at; }
+  });
+  return found;
+}
+
 function saveRoiSpecialForm(uid){
   var meta=window._roiSpEditing||{};
   var label=meta.label||'';
@@ -1414,8 +1426,15 @@ function saveRoiSpecialForm(uid){
   rec.rules=_collectRoiSpCustomRules();
   rec.rulesVenue=null;
 
-  var newUid=uid==='__new__'?_roiSpeUid():uid;
+  /* One special per venue + night: a new save replaces the existing one for that night
+     (instead of stacking a copy that the calendar would keep ignoring). */
+  var newUid=uid==='__new__'?(_roiSpSameNightUid(venue,start,end)||_roiSpeUid()):uid;
   rec._uid=newUid;
+  Object.keys(ROI_SPECIAL_EVENTS||{}).forEach(function(k){
+    if(k===newUid) return;
+    var other=ROI_SPECIAL_EVENTS[k];
+    if(other&&other.venue===venue&&other.start===start&&other.end===end) delete ROI_SPECIAL_EVENTS[k];
+  });
   ROI_SPECIAL_EVENTS[newUid]=rec;
   saveRoiSpecialEvents();
   _roiEditSpecialUid=null;

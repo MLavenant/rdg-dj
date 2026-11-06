@@ -2166,7 +2166,8 @@ function roiSpecialEventFor(venue, dateStr){
     if(!ev||ev.venue!==venue) return;
     if(dateStr<ev.start||dateStr>ev.end) return;
     if(ev.days&&ev.days.length&&ev.days.indexOf(day)===-1) return;
-    if(!best||ev.start>best.start) best=ev;
+    /* Latest start wins; on the same start the most recent save wins (never an older duplicate). */
+    if(!best||ev.start>best.start||(ev.start===best.start&&String(ev.updatedAt||'')>String(best.updatedAt||''))) best=ev;
   });
   return best;
 }
