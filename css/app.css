@@ -2396,12 +2396,8 @@ body.mobile-mode .sb-btn{min-height:44px}
 .signin-btn{margin-top:14px;height:52px;border:0;border-radius:10px;background:#c9c2b8;color:#fff;font:inherit;font-size:16px;font-weight:650;cursor:pointer}
 .signin-btn:hover{background:#beb7ac}
 .signin-btn:disabled{opacity:.6;cursor:default}
-.signin-or{display:flex;align-items:center;gap:14px;margin:18px 0 12px;color:#c8c0b6;font-size:11px;letter-spacing:.18em}
-.signin-or:before,.signin-or:after{content:"";flex:1;height:1px;background:#e6e0d6}
-.signin-face{height:52px;border-radius:10px;border:1px solid #e6e0d6;background:#f7f4ef;color:#8f8880;display:flex;align-items:center;justify-content:center;gap:8px;font:inherit;font-size:15px;cursor:pointer}
-.signin-face:hover{background:#fff}
-.signin-face:disabled{opacity:.6;cursor:default}
-.signin-back{align-self:flex-start;margin:0 0 4px;padding:0;border:0;background:none;color:#8d8478;font:inherit;font-size:12px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+.signin-who{margin:0 0 8px;font-size:14px;color:#3a342c;text-align:center}
+.signin-back{align-self:center;margin:0 0 12px;padding:0;border:0;background:none;color:#8d8478;font:inherit;font-size:12px;letter-spacing:.08em;cursor:pointer}
 .signin-foot{position:absolute;left:0;right:0;bottom:22px;text-align:center;font-size:11px;letter-spacing:.04em;color:#b3aa9e}
 .signin-note-bad{color:#9a3412}
 @media(max-width:860px){

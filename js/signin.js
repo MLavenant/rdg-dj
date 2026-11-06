@@ -48,13 +48,52 @@ function signInShowStep(step){
     var el=document.getElementById('signinStep'+name.charAt(0).toUpperCase()+name.slice(1));
     if(el) el.hidden = name!==step;
   });
+  var who=document.getElementById('signinWho');
+  if(who) who.textContent=_signInEmail||'';
   if(step==='email'){
-    signInNote("Use your work email. If you've saved face unlock or a sign-in code, we'll use it.", false);
+    signInNote('Use your work email. After your PIN is set, you enter that PIN to get in.', false);
   }else if(step==='create'){
-    signInNote('Create a 6-digit code for this email. You will enter it each time you sign in. It cannot be changed from this page.', false);
+    signInNote('Create a 6-digit PIN for '+(_signInEmail||'this email')+'. Next time you only enter this PIN.', false);
   }else{
-    signInNote('Enter the 6-digit code for '+_signInEmail+'.', false);
+    signInNote('Enter your PIN.', false);
   }
+}
+function signInCodeReady(email){
+  try{ return localStorage.getItem('rdg_signin_ready')===signInNormalizeEmail(email); }catch(e){ return false; }
+}
+function signInMarkReady(email){
+  try{ localStorage.setItem('rdg_signin_ready', signInNormalizeEmail(email)); }catch(e){}
+}
+function signInDbOnline(){
+  try{ if(window._fbDb && window._fbDb.goOnline) window._fbDb.goOnline(); }catch(e){}
+}
+function signInOnce(ref){
+  return new Promise(function(resolve, reject){
+    var done=false;
+    var timer=setTimeout(function(){
+      if(done) return;
+      done=true;
+      reject(new Error('timeout'));
+    }, 12000);
+    try{
+      ref.once('value', function(snap){
+        if(done) return;
+        done=true;
+        clearTimeout(timer);
+        resolve(snap.val());
+      }, function(err){
+        if(done) return;
+        done=true;
+        clearTimeout(timer);
+        reject(err||new Error('read'));
+      });
+    }catch(e){
+      if(done) return;
+      done=true;
+      clearTimeout(timer);
+      reject(e);
+    }
+  });
 }
 function signInStartSlides(){
   var track=document.getElementById('signinTrack');
@@ -130,9 +169,10 @@ function signInFinish(email){
     return;
   }
   signInRememberEmail(email);
+  signInMarkReady(email);
   signInClearFails();
   var btn=document.getElementById('signinCodeBtn')||document.getElementById('signinCreateBtn');
-  if(btn){ btn.disabled=true; btn.textContent='Checking…'; }
+  if(btn){ btn.disabled=true; btn.textContent='Entering…'; }
   _ensureLatestAppThen(function(){
     try{
       sessionStorage.setItem('rdg_session_active','1');
@@ -143,7 +183,7 @@ function signInFinish(email){
     _writePresence();
     refreshPresenceChip();
     if(typeof buildSidebar==='function') buildSidebar();
-    if(btn){ btn.disabled=false; btn.textContent=btn.id==='signinCreateBtn'?'Save code and enter':'Enter'; }
+    if(btn){ btn.disabled=false; btn.textContent=btn.id==='signinCreateBtn'?'Save PIN and enter':'Enter'; }
   });
 }
 function submitSignInEmail(){
@@ -157,16 +197,17 @@ function submitSignInEmail(){
     return;
   }
   _signInEmail=email;
+  signInDbOnline();
   var ref=signInCodeRef(email);
   if(!ref){ signInNote('Still connecting. Try again in a moment.', true); return; }
   var btn=document.getElementById('signinEmailBtn');
   if(btn){ btn.disabled=true; btn.textContent='Checking…'; }
-  ref.once('value').then(function(snap){
+  signInOnce(ref).then(function(rec){
     if(btn){ btn.disabled=false; btn.textContent='Continue'; }
-    var rec=snap.val();
-    if(rec && rec.hash && rec.salt) signInShowStep('code');
-    else signInShowStep('create');
-    var focus=document.getElementById(rec&&rec.hash?'signinCode':'signinCreate');
+    var has=!!(rec && rec.hash && rec.salt);
+    if(has) signInMarkReady(email);
+    signInShowStep(has?'code':'create');
+    var focus=document.getElementById(has?'signinCode':'signinCreate');
     if(focus) focus.focus();
   }).catch(function(){
     if(btn){ btn.disabled=false; btn.textContent='Continue'; }
@@ -179,8 +220,9 @@ function submitSignInCreate(){
   if(!RDG_SIGNIN_ALLOW[email]){ signInNote('This email does not have access.', true); return; }
   var pin=signInDigits((document.getElementById('signinCreate')||{}).value);
   var confirm=signInDigits((document.getElementById('signinConfirm')||{}).value);
-  if(pin.length!==6){ signInNote('The code must be 6 digits.', true); return; }
-  if(pin!==confirm){ signInNote('The two codes do not match.', true); return; }
+  if(pin.length!==6){ signInNote('The PIN must be 6 digits.', true); return; }
+  if(pin!==confirm){ signInNote('The two PINs do not match.', true); return; }
+  signInDbOnline();
   var ref=signInCodeRef(email);
   if(!ref){ signInNote('Still connecting. Try again in a moment.', true); return; }
   var btn=document.getElementById('signinCreateBtn');
@@ -192,18 +234,21 @@ function submitSignInCreate(){
       return {salt:salt, hash:hash, createdAt:Date.now()};
     });
   }).then(function(res){
-    if(btn){ btn.disabled=false; btn.textContent='Save code and enter'; }
+    if(btn){ btn.disabled=false; btn.textContent='Save PIN and enter'; }
     document.getElementById('signinCreate').value='';
     document.getElementById('signinConfirm').value='';
     if(!res.committed){
-      signInNote('A code is already set for this email. Enter it instead.', true);
+      signInMarkReady(email);
+      signInNote('A PIN is already set for this email. Enter it.', true);
       signInShowStep('code');
+      var again=document.getElementById('signinCode');
+      if(again) again.focus();
       return;
     }
     signInFinish(email);
   }).catch(function(){
-    if(btn){ btn.disabled=false; btn.textContent='Save code and enter'; }
-    signInNote('Could not save the code. Try again.', true);
+    if(btn){ btn.disabled=false; btn.textContent='Save PIN and enter'; }
+    signInNote('Could not save the PIN. Try again.', true);
   });
 }
 function submitSignInCode(){
@@ -211,123 +256,67 @@ function submitSignInCode(){
   var email=_signInEmail;
   if(!RDG_SIGNIN_ALLOW[email]){ signInNote('This email does not have access.', true); return; }
   var pin=signInDigits((document.getElementById('signinCode')||{}).value);
-  if(pin.length!==6){ signInNote('Enter the 6-digit code.', true); return; }
+  if(pin.length!==6){ signInNote('Enter your 6-digit PIN.', true); return; }
+  signInDbOnline();
   var ref=signInCodeRef(email);
   if(!ref){ signInNote('Still connecting. Try again in a moment.', true); return; }
   var btn=document.getElementById('signinCodeBtn');
-  if(btn){ btn.disabled=true; btn.textContent='Checking…'; }
-  ref.once('value').then(function(snap){
-    var rec=snap.val();
+  if(btn){ btn.disabled=true; btn.textContent='Entering…'; }
+  signInOnce(ref).then(function(rec){
     if(!rec || !rec.hash || !rec.salt){
       if(btn){ btn.disabled=false; btn.textContent='Enter'; }
+      try{ localStorage.removeItem('rdg_signin_ready'); }catch(e){}
       signInShowStep('create');
-      return signInHash('000000', _signInB64(_signInBytes()));
+      return;
     }
     return signInHash(pin, rec.salt).then(function(hash){
       if(btn){ btn.disabled=false; btn.textContent='Enter'; }
       document.getElementById('signinCode').value='';
       if(hash!==rec.hash){
-        if(!signInFail()) signInNote('Incorrect sign-in code.', true);
+        if(!signInFail()) signInNote('Incorrect PIN.', true);
         return;
       }
       signInFinish(email);
     });
   }).catch(function(){
     if(btn){ btn.disabled=false; btn.textContent='Enter'; }
-    signInNote('Could not check the code. Try again.', true);
-  });
-}
-function signInFaceRef(email){
-  if(!window._fbDb) return null;
-  return window._fbDb.ref('rdg/signInFace/'+signInKey(email));
-}
-function signInFaceCreate(email){
-  var userId=new Uint8Array(16);
-  crypto.getRandomValues(userId);
-  return navigator.credentials.create({
-    publicKey:{
-      challenge:signInRandomBytes(32),
-      rp:{name:'RDG Live Entertainment'},
-      user:{id:userId, name:email, displayName:RDG_SIGNIN_ALLOW[email]||email},
-      pubKeyCredParams:[{type:'public-key', alg:-7},{type:'public-key', alg:-257}],
-      authenticatorSelection:{authenticatorAttachment:'platform', userVerification:'required', residentKey:'preferred'},
-      timeout:60000
-    }
-  }).then(function(cred){
-    if(!cred) return false;
-    var ref=signInFaceRef(email);
-    if(!ref) return false;
-    return ref.set({id:_signInBufToB64(cred.rawId), createdAt:Date.now()}).then(function(){ return true; });
-  });
-}
-function signInFaceGet(idB64){
-  return navigator.credentials.get({
-    publicKey:{
-      challenge:signInRandomBytes(32),
-      allowCredentials:[{type:'public-key', id:_signInFromB64(idB64)}],
-      userVerification:'required',
-      timeout:60000
-    }
-  }).then(function(cred){ return !!cred; });
-}
-function signInRandomBytes(n){
-  var bytes=new Uint8Array(n);
-  crypto.getRandomValues(bytes);
-  return bytes;
-}
-function _signInBufToB64(buf){
-  return _signInB64(new Uint8Array(buf));
-}
-function submitSignInFace(){
-  var email=signInNormalizeEmail((document.getElementById('signinEmail')||{}).value);
-  if(!email){ signInNote('Enter your work email, then unlock with face.', true); return; }
-  if(!RDG_SIGNIN_ALLOW[email]){ signInNote('This email does not have access.', true); return; }
-  if(!window.PublicKeyCredential || !navigator.credentials){
-    signInNote('This device has no face unlock. Continue with your email and code.', true);
-    return;
-  }
-  _signInEmail=email;
-  signInRememberEmail(email);
-  var ref=signInFaceRef(email);
-  if(!ref){ signInNote('Still connecting. Try again in a moment.', true); return; }
-  var btn=document.getElementById('signinFaceBtn');
-  if(btn) btn.disabled=true;
-  ref.once('value').then(function(snap){
-    var rec=snap.val();
-    if(rec&&rec.id) return signInFaceGet(rec.id);
-    return signInFaceCreate(email);
-  }).then(function(ok){
-    if(btn) btn.disabled=false;
-    if(ok) signInFinish(email);
-  }).catch(function(err){
-    if(btn) btn.disabled=false;
-    if(err&&err.name==='NotAllowedError') signInNote('Face unlock was cancelled. Continue with your email and code.', true);
-    else signInNote('Face unlock is not available on this device. Continue with your email and code.', true);
+    signInNote('Could not check the PIN. Try again.', true);
   });
 }
 function signInClearCode(email){
   if(!signInIsOwner()) return;
   email=signInNormalizeEmail(email);
   if(!RDG_SIGNIN_ALLOW[email]) return;
-  if(!confirm('Clear the sign-in code for '+email+'? They will create a new one next time.')) return;
+  if(!confirm('Clear the PIN for '+email+'? They will create a new one next time.')) return;
+  signInDbOnline();
   var ref=signInCodeRef(email);
   if(!ref) return;
-  ref.remove().then(function(){ renderAccess(); }).catch(function(){ alert('Could not clear that code.'); });
+  ref.remove().then(function(){
+    if(signInCodeReady(email)){ try{ localStorage.removeItem('rdg_signin_ready'); }catch(e){} }
+    renderAccess();
+  }).catch(function(){ alert('Could not clear that PIN.'); });
 }
 
 function _showSessionGate(msg){
   var gate=document.getElementById('sessionGate');
   var emailEl=document.getElementById('signinEmail');
-  var saved=signInSavedEmail();
-  if(emailEl && saved && !emailEl.value) emailEl.value=saved;
-  signInShowStep('email');
-  if(msg && /idle/i.test(msg)) signInNote('Signed out after 20 minutes idle. Enter your work email to continue.', false);
+  var saved=signInNormalizeEmail(signInSavedEmail());
+  if(emailEl && saved) emailEl.value=saved;
+  _signInEmail=saved;
+  var pinReady=!!(saved && RDG_SIGNIN_ALLOW[saved] && signInCodeReady(saved));
+  signInShowStep(pinReady?'code':'email');
+  if(msg && /idle/i.test(msg)) signInNote(pinReady?'Signed out after 20 minutes idle. Enter your PIN.':'Signed out after 20 minutes idle. Enter your work email to continue.', false);
   if(gate){
     gate.classList.remove('hidden');
     document.body.classList.add('session-locked');
   }
   signInStartSlides();
-  setTimeout(function(){ try{ if(emailEl) emailEl.focus(); }catch(e){} }, 40);
+  setTimeout(function(){
+    try{
+      var focus=document.getElementById(pinReady?'signinCode':'signinEmail');
+      if(focus) focus.focus();
+    }catch(e){}
+  }, 40);
 }
 function _hideSessionGate(){
   var gate=document.getElementById('sessionGate');
@@ -369,3 +358,7 @@ function renderAccess(){
     el.innerHTML='<div class="bsl-empty">Could not load access.</div>';
   });
 }
+
+/* fiscal.js opens the gate before this file loads. Open it again so a saved
+   email lands on the PIN, not the email form. */
+try{ if(typeof _sessionIsActive==='function' && !_sessionIsActive()) _showSessionGate(); }catch(eGate){}
