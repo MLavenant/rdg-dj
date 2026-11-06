@@ -15,6 +15,9 @@ var RDG_SIGNIN_OWNER = 'matthias@rivieradininggroup.com';
 var _signInEmail = '';
 var _signInSlide = 0;
 var _signInTimer = null;
+var _signInBusy = false;
+var _signInCachedRec = null;
+var _signInCachedEmail = '';
 
 function signInNormalizeEmail(raw){
   return String(raw||'').trim().toLowerCase();
@@ -57,7 +60,42 @@ function signInShowStep(step){
     signInNote('Create a 6-digit PIN for '+(_signInEmail||'this email')+'. Next time you only enter this PIN.', false);
   }else{
     signInNote('Enter your PIN.', false);
+    signInPrefetch(_signInEmail);
+    signInPaintCodeBtn();
   }
+}
+function signInPrefetch(email){
+  email=signInNormalizeEmail(email);
+  if(!email) return;
+  signInDbOnline();
+  var ref=signInCodeRef(email);
+  if(!ref) return;
+  signInOnce(ref).then(function(rec){
+    if(signInNormalizeEmail(_signInEmail)!==email) return;
+    _signInCachedRec=rec||null;
+    _signInCachedEmail=email;
+  }).catch(function(){});
+}
+function signInPaintCodeBtn(){
+  var el=document.getElementById('signinCode');
+  var btn=document.getElementById('signinCodeBtn');
+  if(!btn || _signInBusy) return;
+  var pin=signInDigits(el&&el.value);
+  var ready=pin.length===6;
+  btn.classList.toggle('signin-btn-ready', ready);
+  btn.textContent=ready?'Enter':'';
+}
+function signInPinTyped(){
+  var el=document.getElementById('signinCode');
+  if(!el) return;
+  var pin=signInDigits(el.value);
+  if(el.value!==pin){
+    var pos=el.selectionStart||pin.length;
+    el.value=pin;
+    try{ el.setSelectionRange(pos, pos); }catch(e){}
+  }
+  signInPaintCodeBtn();
+  if(pin.length===6) submitSignInCode();
 }
 function signInCodeReady(email){
   try{ return localStorage.getItem('rdg_signin_ready')===signInNormalizeEmail(email); }catch(e){ return false; }
@@ -167,6 +205,8 @@ function signInDigits(raw){
 function signInFinish(email){
   var name=RDG_SIGNIN_ALLOW[email]||'';
   if(!_setPresenceName(name)){
+    _signInBusy=false;
+    signInPaintCodeBtn();
     signInNote('This email cannot sign in.', true);
     return;
   }
@@ -174,18 +214,32 @@ function signInFinish(email){
   signInMarkReady(email);
   signInClearFails();
   var btn=document.getElementById('signinCodeBtn')||document.getElementById('signinCreateBtn');
-  if(btn){ btn.disabled=true; btn.textContent='Entering…'; }
-  _ensureLatestAppThen(function(){
+  if(btn){ btn.disabled=true; btn.classList.add('signin-btn-ready'); btn.textContent='Entering…'; }
+  var opened=false;
+  function openApp(){
+    if(opened) return;
+    opened=true;
+    _signInBusy=false;
     try{
       sessionStorage.setItem('rdg_session_active','1');
       sessionStorage.setItem('rdg_session_activity', String(Date.now()));
     }catch(e){}
     _hideSessionGate();
     try{ if(window._fbDb) window._fbDb.goOnline(); }catch(eOn){}
+    try{ if(typeof initResidentDj==='function') initResidentDj(); }catch(eRes){}
     _writePresence();
     refreshPresenceChip();
     if(typeof buildSidebar==='function') buildSidebar();
-    if(btn){ btn.disabled=false; btn.textContent=btn.id==='signinCreateBtn'?'Save PIN and enter':'Enter'; }
+    if(btn){
+      btn.disabled=false;
+      btn.textContent=btn.id==='signinCreateBtn'?'Save PIN and enter':'Enter';
+    }
+  }
+  /* Open as soon as the version check returns, and don't wait on a slow page fetch. */
+  var cap=setTimeout(openApp, 450);
+  _ensureLatestAppThen(function(){
+    clearTimeout(cap);
+    openApp();
   });
 }
 function submitSignInEmail(){
@@ -205,6 +259,8 @@ function submitSignInEmail(){
   var btn=document.getElementById('signinEmailBtn');
   if(btn){ btn.disabled=true; btn.textContent='Checking…'; }
   signInOnce(ref).then(function(rec){
+    _signInCachedRec=rec||null;
+    _signInCachedEmail=email;
     if(btn){ btn.disabled=false; btn.textContent='Continue'; }
     var has=!!(rec && rec.hash && rec.salt);
     if(has) signInMarkReady(email);
@@ -253,35 +309,58 @@ function submitSignInCreate(){
     signInNote('Could not save the PIN. Try again.', true);
   });
 }
+function signInCodeFailed(){
+  _signInBusy=false;
+  var btn=document.getElementById('signinCodeBtn');
+  if(btn) btn.disabled=false;
+  signInPaintCodeBtn();
+}
 function submitSignInCode(){
+  if(_signInBusy) return;
   if(signInLocked()){ signInNote('Too many tries. Wait a minute, then try again.', true); return; }
   var email=_signInEmail;
   if(!RDG_SIGNIN_ALLOW[email]){ signInNote('This email does not have access.', true); return; }
   var pin=signInDigits((document.getElementById('signinCode')||{}).value);
-  if(pin.length!==6){ signInNote('Enter your 6-digit PIN.', true); return; }
+  if(pin.length!==6){ signInPaintCodeBtn(); return; }
   signInDbOnline();
   var ref=signInCodeRef(email);
   if(!ref){ signInNote('Still connecting. Try again in a moment.', true); return; }
+  _signInBusy=true;
   var btn=document.getElementById('signinCodeBtn');
-  if(btn){ btn.disabled=true; btn.textContent='Entering…'; }
-  signInOnce(ref).then(function(rec){
+  if(btn){ btn.disabled=true; btn.classList.add('signin-btn-ready'); btn.textContent='Entering…'; }
+  function check(rec){
     if(!rec || !rec.hash || !rec.salt){
-      if(btn){ btn.disabled=false; btn.textContent='Enter'; }
+      signInCodeFailed();
       try{ localStorage.removeItem('rdg_signin_ready'); }catch(e){}
+      _signInCachedRec=null;
       signInShowStep('create');
       return;
     }
     return signInHash(pin, rec.salt).then(function(hash){
-      if(btn){ btn.disabled=false; btn.textContent='Enter'; }
-      document.getElementById('signinCode').value='';
+      var box=document.getElementById('signinCode');
+      if(box) box.value='';
       if(hash!==rec.hash){
+        signInCodeFailed();
         if(!signInFail()) signInNote('Incorrect PIN.', true);
         return;
       }
       signInFinish(email);
     });
+  }
+  var cached=(_signInCachedEmail===email && _signInCachedRec && _signInCachedRec.hash) ? _signInCachedRec : null;
+  if(cached){
+    Promise.resolve(check(cached)).catch(function(){
+      signInCodeFailed();
+      signInNote('Could not check the PIN. Try again.', true);
+    });
+    return;
+  }
+  signInOnce(ref).then(function(rec){
+    _signInCachedRec=rec||null;
+    _signInCachedEmail=email;
+    return check(rec);
   }).catch(function(){
-    if(btn){ btn.disabled=false; btn.textContent='Enter'; }
+    signInCodeFailed();
     signInNote('Could not check the PIN. Try again.', true);
   });
 }
@@ -311,6 +390,7 @@ function rdgSignOut(){
   _showSessionGate('signout');
 }
 function _showSessionGate(msg){
+  signInDbOnline();
   var gate=document.getElementById('sessionGate');
   var emailEl=document.getElementById('signinEmail');
   var saved=signInNormalizeEmail(signInSavedEmail());

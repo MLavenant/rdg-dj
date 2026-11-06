@@ -103,7 +103,44 @@ function residentEdit(el){
     var tot=tr.querySelector('.res-total');
     if(tot) tot.textContent=residentMoney(residentRowTotal(row));
   }
-  try{ if(window._fbSave) window._fbSave('residentDj/'+key, row); }catch(e){}
+  residentSave(key);
+}
+var _residentSaveTimers={};
+function residentSave(key){
+  clearTimeout(_residentSaveTimers[key]);
+  _residentSaveTimers[key]=setTimeout(function(){
+    if(!window._fbDb) return;
+    var row=RESIDENT_DJ[key];
+    /* Own path. Never SCHED, acctData, or the guest calendar. */
+    try{ window._fbDb.ref('rdg/residentDj/'+key).set(row||null); }catch(e){}
+  }, 160);
+}
+function residentPaintFromStore(){
+  var body=document.getElementById('residentBody');
+  if(!body || typeof curView==='undefined' || curView!=='resident') return;
+  var inputs=body.querySelectorAll('input[data-ds]');
+  if(!inputs.length){ renderResidentCalendar(); return; }
+  var seen={};
+  inputs.forEach(function(el){
+    if(el===document.activeElement) return;
+    var ds=el.getAttribute('data-ds');
+    var field=el.getAttribute('data-field');
+    var role=el.getAttribute('data-role')||'';
+    var row=residentDay(curV, ds);
+    if(field==='hotel' || field==='ground') el.value=residentMoney(row[field]);
+    else if(role){
+      var cell=(row[role] && typeof row[role]==='object') ? row[role] : {};
+      el.value=field==='amt' ? residentMoney(cell.amt) : (cell.name||'');
+    }
+    if(field==='amt' || field==='hotel' || field==='ground') residentSizeMoney(el);
+    seen[ds]=row;
+  });
+  body.querySelectorAll('tr').forEach(function(tr){
+    var tot=tr.querySelector('.res-total');
+    var any=tr.querySelector('input[data-ds]');
+    if(!tot || !any) return;
+    tot.textContent=residentMoney(residentRowTotal(residentDay(curV, any.getAttribute('data-ds'))));
+  });
 }
 function residentJumpMonth(m){
   curM=m;
@@ -163,7 +200,7 @@ function renderResidentCalendar(){
     h+='<td class="res-cell res-tone-ground res-split"><input class="res-money" size="'+residentMoneySize(row.ground)+'" inputmode="decimal" data-ds="'+ds+'" data-field="ground" value="'+residentMoney(row.ground)+'" oninput="residentEdit(this)"></td>';
     RESIDENT_ROLES.forEach(function(role){
       var cell=(row[role.id] && typeof row[role.id]==='object') ? row[role.id] : {};
-      h+='<td class="res-cell res-tone-'+role.id+' res-split"><input class="res-name" data-ds="'+ds+'" data-role="'+role.id+'" data-field="name" value="'+residentEsc(cell.name||'')+'" onchange="residentEdit(this)"></td>';
+      h+='<td class="res-cell res-tone-'+role.id+' res-split"><input class="res-name" data-ds="'+ds+'" data-role="'+role.id+'" data-field="name" value="'+residentEsc(cell.name||'')+'" oninput="residentEdit(this)"></td>';
       h+='<td class="res-cell res-tone-'+role.id+'"><input class="res-money" size="'+residentMoneySize(cell.amt)+'" inputmode="decimal" data-ds="'+ds+'" data-role="'+role.id+'" data-field="amt" value="'+residentMoney(cell.amt)+'" oninput="residentEdit(this)"></td>';
     });
     h+='<td class="res-cell res-tone-total res-split res-total">'+residentMoney(residentRowTotal(row))+'</td>';
@@ -200,12 +237,7 @@ function initResidentDj(){
   window._residentDjListening=true;
   window._fbDb.ref('rdg/residentDj').on('value', function(snap){
     RESIDENT_DJ=snap.val()||{};
-    var typing=false;
-    try{
-      var ae=document.activeElement;
-      typing=!!(ae && ae.closest && ae.closest('#residentBody'));
-    }catch(e){}
-    if(!typing && typeof curView!=='undefined' && curView==='resident') renderResidentCalendar();
+    residentPaintFromStore();
   });
 }
 try{ initResidentDj(); }catch(eRes){}

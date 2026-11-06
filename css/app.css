@@ -2440,9 +2440,11 @@ body.mobile-mode .sb-btn{min-height:44px}
 .signin-code{height:52px;border:1px solid #e7e1d8;background:#fff;border-radius:10px;padding:0 14px;letter-spacing:.35em;text-align:center}
 .signin-field input:focus,.signin-code:focus{outline:none}
 .signin-field:focus-within,.signin-code:focus{border-color:#cfc6bb}
-.signin-btn{margin-top:14px;height:52px;border:0;border-radius:10px;background:#c9c2b8;color:#fff;font:inherit;font-size:16px;font-weight:650;cursor:pointer}
-.signin-btn:hover{background:#beb7ac}
-.signin-btn:disabled{opacity:.6;cursor:default}
+.signin-btn{margin-top:14px;height:52px;border:0;border-radius:10px;background:#e4ddd4;color:#fff;font:inherit;font-size:16px;font-weight:650;cursor:pointer;transition:background .15s ease}
+.signin-btn:hover{background:#d9d2c8}
+.signin-btn.signin-btn-ready{background:#6f6861}
+.signin-btn.signin-btn-ready:hover{background:#5f5953}
+.signin-btn:disabled{cursor:default}
 .signin-who{margin:0 0 8px;font-size:14px;color:#3a342c;text-align:center}
 .signin-back{align-self:center;margin:0 0 12px;padding:0;border:0;background:none;color:#8d8478;font:inherit;font-size:12px;letter-spacing:.08em;cursor:pointer}
 .signin-foot{position:absolute;left:0;right:0;bottom:22px;text-align:center;font-size:11px;letter-spacing:.04em;color:#b3aa9e}
