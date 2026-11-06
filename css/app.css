@@ -756,7 +756,7 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .bgt-monthly{border-left:3px solid var(--ink)}
 .bgt-play-card{border-left:3px solid var(--ink)}
 .bgt-play-overview{border-left:3px solid var(--ink)}
-.bgt-monthly-grid{display:grid;grid-template-columns:176px repeat(12,minmax(92px,1fr)) 100px;min-width:1100px}
+.bgt-monthly-grid{display:grid;grid-template-columns:200px repeat(12,minmax(112px,1fr)) 124px;min-width:1680px}
 .bgt-monthly-cell{padding:6px 4px;text-align:center;border-right:0.5px solid var(--hair);border-bottom:0.5px solid var(--hair);min-width:0}
 .bgt-monthly-cell:nth-child(14n){border-right:none}
 .bgt-monthly-month{font-size:8px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);background:var(--card2)}
@@ -765,10 +765,12 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .bgt-monthly-label b{font-size:12px}.bgt-monthly-label span{font-size:9px;color:var(--ink3);margin-top:2px}
 .bgt-monthly-value{font-size:15px;font-weight:900;line-height:1.15;white-space:nowrap}
 .bgt-monthly-vs{font-size:11px;color:var(--ink3);margin-top:3px;white-space:nowrap}
-.bgt-trio{display:flex;flex-direction:column;gap:2px;text-align:left}
-.bgt-trio-row{display:flex;justify-content:space-between;align-items:baseline;gap:4px;color:var(--ink)}
+.bgt-trio{display:flex;flex-direction:column;gap:2px;text-align:center}
+.bgt-trio-row{display:flex;justify-content:center;align-items:center;gap:4px;color:var(--ink);min-height:22px}
 .bgt-trio-row span{font-size:8px;font-weight:800;letter-spacing:.03em;text-transform:none;color:var(--ink2);flex:0 0 auto}
-.bgt-trio-row b{font-size:12px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:3px}
+.bgt-trio-row b{font-size:13px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:3px;width:100%}
+.bgt-legend{display:flex;flex-direction:column;gap:2px;margin-top:6px}
+.bgt-legend-row{min-height:22px;display:flex;align-items:center;padding:0 6px;border-radius:4px;font-size:11px;font-weight:800}
 .bgt-row-tgt{background:#fff3bf;border-radius:4px;padding:1px 3px}
 .bgt-row-py{background:#d9f5e3;border-radius:4px;padding:1px 3px}
 .bgt-delta{font-style:normal;font-size:9px;font-weight:900;display:inline-flex;align-items:center;gap:2px}
@@ -2362,4 +2364,46 @@ body.mobile-mode .sb-btn{min-height:44px}
 .fa-empty{color:#64748b;padding:12px 0}
 @media(max-width:900px){
   .mr-grid{grid-template-columns:1fr}
+}
+
+/* Sign-in landing */
+.signin-landing{position:fixed;inset:0;z-index:400;display:grid;grid-template-columns:1.08fr 0.92fr;background:#f3efe7;color:#2a2622}
+.signin-landing.hidden{display:none}
+.signin-hero{position:relative;overflow:hidden;min-height:100%;background:#1a1612}
+.signin-track{display:flex;height:100%;width:300%;transition:transform .9s cubic-bezier(.4,0,.2,1);will-change:transform}
+.signin-track img{width:33.3333%;height:100%;object-fit:cover;flex:none}
+.signin-hero-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.38) 0%,rgba(0,0,0,.05) 32%,rgba(0,0,0,.15) 58%,rgba(0,0,0,.72) 100%);pointer-events:none}
+.signin-brand{position:absolute;top:28px;left:32px;display:flex;align-items:center;gap:10px;color:#fff;letter-spacing:.22em;text-transform:uppercase;font-size:11px;font-weight:600}
+.signin-brand img{width:28px;height:28px;object-fit:contain;filter:brightness(0) invert(1)}
+.signin-hero-title{position:absolute;left:36px;bottom:42px;margin:0;color:#fff;font-family:Georgia,"Iowan Old Style","Palatino Linotype",Palatino,serif;font-weight:500;font-size:54px;line-height:.95;letter-spacing:-.02em;text-shadow:0 10px 30px rgba(0,0,0,.35)}
+.signin-panel{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 32px 64px;background:#f6f1e8}
+.signin-panel-body{width:min(380px,100%);display:flex;flex-direction:column;align-items:center;text-align:center}
+.signin-mark{width:54px;height:54px;object-fit:contain;margin-bottom:8px}
+.signin-wordmark{font-family:Georgia,"Iowan Old Style",Palatino,serif;font-size:42px;letter-spacing:.28em;line-height:1;margin-left:.28em;color:#3a342c}
+.signin-wordmark-sub{margin-top:6px;font-size:11px;letter-spacing:.28em;text-transform:lowercase;color:#8a8175}
+.signin-kicker{margin-top:28px;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:#9a9084}
+.signin-panel h2{margin:8px 0 8px;font-family:Georgia,"Iowan Old Style",Palatino,serif;font-size:40px;font-weight:500;color:#2c2824}
+.signin-panel p{margin:0 0 22px;max-width:340px;font-size:14px;line-height:1.45;color:#8d8478}
+.signin-panel label{align-self:flex-start;margin:12px 0 6px;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:#8d8478}
+#signinStepEmail,#signinStepCreate,#signinStepCode{width:100%;display:flex;flex-direction:column;align-items:stretch}
+.signin-field{display:flex;align-items:center;gap:8px;border:1px solid #e4dcd0;background:#fff;border-radius:12px;padding:0 14px;height:48px}
+.signin-field span{color:#b3aa9e;font-size:16px}
+.signin-field input,.signin-code{border:0;outline:none;background:transparent;font:inherit;font-size:15px;color:#2c2824;width:100%}
+.signin-code{height:48px;border:1px solid #e4dcd0;background:#fff;border-radius:12px;padding:0 14px;letter-spacing:.35em;text-align:center}
+.signin-field input:focus,.signin-code:focus{outline:none}
+.signin-field:focus-within,.signin-code:focus{border-color:#c4b8a6}
+.signin-btn{margin-top:16px;height:48px;border:0;border-radius:12px;background:#ddd6cb;color:#5e574e;font:inherit;font-size:15px;cursor:pointer}
+.signin-btn:hover{background:#d3ccc0}
+.signin-btn:disabled{opacity:.6;cursor:default}
+.signin-back{align-self:flex-start;margin:0 0 4px;padding:0;border:0;background:none;color:#8d8478;font:inherit;font-size:12px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+.signin-foot{position:absolute;left:0;right:0;bottom:22px;text-align:center;font-size:11px;letter-spacing:.04em;color:#b3aa9e}
+.signin-note-bad{color:#9a3412}
+@media(max-width:860px){
+  .signin-landing{grid-template-columns:1fr;grid-template-rows:34vh 1fr;overflow:auto}
+  .signin-hero{min-height:34vh}
+  .signin-hero-title{font-size:34px;left:20px;bottom:18px}
+  .signin-brand{top:16px;left:16px}
+  .signin-panel{padding:28px 20px 56px}
+  .signin-wordmark{font-size:34px}
+  .signin-panel h2{font-size:32px}
 }

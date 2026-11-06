@@ -704,7 +704,8 @@ function _askPresenceName(force){
   return _presenceName();
 }
 function editPresenceName(){
-  _showSessionGate('Update the first name others see on this computer.');
+  if(_sessionIsActive()) return;
+  _showSessionGate('Enter your work email to continue.');
 }
 function _presencePayload(){
   return {
