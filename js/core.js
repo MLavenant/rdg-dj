@@ -155,7 +155,8 @@ function setView(v) {
   if (v === 'resident') {
     clearGlobalCalChrome();
     var resSub=document.getElementById('pgSub');
-    if(resSub) resSub.innerHTML='<span>Resident DJ Calendar</span>';
+    if(resSub) resSub.innerHTML='<span>'+(typeof curV!=='undefined'?curV:'')+' · Resident DJ</span>';
+    if(typeof renderResidentCalendar==='function') renderResidentCalendar();
     return;
   }
   if (v === 'budget') {
@@ -1474,7 +1475,8 @@ function go() {
   if(curView==='resident'){
     clearGlobalCalChrome();
     var resSub=document.getElementById('pgSub');
-    if(resSub) resSub.innerHTML='<span>Resident DJ Calendar</span>';
+    if(resSub) resSub.innerHTML='<span>'+curV+' · Resident DJ</span>';
+    if(typeof renderResidentCalendar==='function') renderResidentCalendar();
     return;
   }
   clearPyMapCache();

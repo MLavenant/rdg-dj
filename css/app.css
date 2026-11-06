@@ -1011,9 +1011,18 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 
 /* Calendar/Accounting freeze: nav + months stay; table scrolls underneath */
 #view-calendar,#view-accounting{flex:1;min-height:0;display:none;flex-direction:column;overflow:hidden}
-#view-calendar.view-on,#view-accounting.view-on{display:flex!important}
+#view-calendar.view-on,#view-accounting.view-on,#view-resident.view-on{display:flex!important}
+#view-resident{flex:1;min-height:0;flex-direction:column;overflow:hidden}
+#view-resident .cal-nav,#view-resident #residentSlider{flex-shrink:0;background:var(--card)}
+#residentBody{flex:1 1 auto;min-height:0;margin:0 16px 16px;border-radius:var(--r-lg);overflow:auto;background:var(--card);box-shadow:var(--shadow-sm)}
+#residentBody .res-group{text-align:center!important;font-size:10px;letter-spacing:.04em}
+#residentBody .res-sub{font-size:8px;font-weight:650;color:var(--ink3);text-align:center!important}
+#residentBody .res-name,#residentBody .res-money{width:100%;box-sizing:border-box;border:0.5px solid var(--rule);border-radius:6px;background:#fff;color:var(--ink);font:inherit;font-size:11px;padding:4px 6px;outline:none}
+#residentBody .res-money{text-align:right;min-width:72px}
+#residentBody .res-name:focus,#residentBody .res-money:focus{border-color:var(--blue)}
+#residentBody td.res-cell{padding:3px 4px!important}
 #view-calendar .cal-nav,#view-accounting .cal-nav,#view-calendar #monthSlider,#view-accounting #acctSlider{flex-shrink:0;z-index:5;background:var(--card)}
-.main > [id^="view-"]:not(#view-calendar):not(#view-accounting){flex:1;min-height:0;overflow:auto}
+.main > [id^="view-"]:not(#view-calendar):not(#view-accounting):not(#view-resident){flex:1;min-height:0;overflow:auto}
 #calBody,#acctBody{flex:1 1 auto;min-height:0;margin:0 16px 16px;border-radius:var(--r-lg);overflow:auto!important;max-height:none!important;box-shadow:var(--shadow-sm);background:var(--card)}
 .cal-month-recap{display:none;flex-shrink:0;margin:0 16px 8px;padding:8px 12px;background:var(--card);border:0.5px solid var(--hair);border-left:3px solid var(--ink);border-radius:12px;box-shadow:var(--shadow-sm);gap:10px;flex-wrap:wrap;align-items:center;z-index:6}
 #view-calendar.cal-list-fit .cal-month-recap{display:flex}
