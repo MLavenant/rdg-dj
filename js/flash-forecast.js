@@ -105,6 +105,64 @@ function flashFitSlides(){
     slide.style.height=Math.ceil((page.offsetHeight||1236)*scale)+'px';
   });
 }
+function flashPdfTargets(){
+  var body=document.getElementById('vipBody');
+  var out=[];
+  if(!body) return out;
+  Array.prototype.forEach.call(body.children, function(child){
+    if(child.classList.contains('flash-slide')){
+      var page=child.querySelector('.bp-page');
+      if(page) out.push({kind:'deck', el:page});
+    }else if(child.classList.contains('vip-print-page')){
+      out.push({kind:'flow', el:child});
+    }
+  });
+  return out;
+}
+function flashCaptureDeck(page){
+  var stage=document.createElement('div');
+  stage.style.cssText='position:fixed;left:0;top:0;width:1600px;height:1236px;overflow:hidden;background:#fff;z-index:2147483646;pointer-events:none';
+  var clone=page.cloneNode(true);
+  clone.style.transform='none';
+  clone.style.transformOrigin='top left';
+  clone.style.width='1600px';
+  clone.style.height='1236px';
+  clone.style.position='relative';
+  clone.style.margin='0';
+  stage.appendChild(clone);
+  document.body.appendChild(stage);
+  var fonts=document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve();
+  return fonts.then(function(){
+    return window.html2canvas(clone,{scale:1.35,useCORS:true,logging:false,backgroundColor:'#ffffff',windowWidth:1600});
+  }).then(function(canvas){
+    if(stage.parentNode) stage.parentNode.removeChild(stage);
+    return canvas;
+  },function(err){
+    if(stage.parentNode) stage.parentNode.removeChild(stage);
+    throw err;
+  });
+}
+function flashCaptureCanvases(){
+  var targets=flashPdfTargets();
+  var canvases=[];
+  var host=document.getElementById('vipBody');
+  var width=Math.max(1200, Math.ceil(host&&host.getBoundingClientRect?host.getBoundingClientRect().width:1200));
+  var chain=Promise.resolve();
+  targets.forEach(function(t){
+    chain=chain.then(function(){
+      var job=t.kind==='deck'?flashCaptureDeck(t.el):(typeof _captureDomToCanvas==='function'?_captureDomToCanvas(t.el, width, {scale:1.35}):Promise.reject(new Error('PDF capture missing')));
+      return job.then(function(c){ canvases.push(c); });
+    });
+  });
+  return chain.then(function(){ return canvases; });
+}
+function exportWeeklyFlashPdf(filename){
+  filename=filename||('RDG-Weekly-Flash-'+new Date().toISOString().slice(0,10)+'.pdf');
+  if(!flashPdfTargets().length) return Promise.reject(new Error('Weekly Flash pages are not ready'));
+  return flashCaptureCanvases().then(function(canvases){
+    return _pdfFromCanvases(canvases, filename, false);
+  });
+}
 if(!window._flashFitBound){
   window._flashFitBound=true;
   window.addEventListener('resize', function(){
@@ -151,8 +209,10 @@ function renderVIP(venueIdx){
 
   h += flashBookingSlides();
 
+  h += '<div class="flash-slide">'+_bpCoverHtml('Appendix', 'Tier breakdown \u00b7 This week \u00b7 All locations', '')+'</div>';
+
   h += '<div class="vip-print-page vip-print-app flash-break">';
-  h += _vipSectionTitle('APPENDIX', 'Tier breakdown \u00b7 This week \u00b7 All locations');
+  h += _vipSectionTitle('TIER BREAKDOWN', 'This week \u00b7 All locations');
   venues.forEach(function(d){
     h += _vipRenderTierBreakdown(d, rangeWkKey);
   });

@@ -3335,26 +3335,30 @@ function exportViewPdf(viewId){
     } else if(exportType==='forecast' || exportType==='vip'){
       var pages;
       if(exportType==='vip'){
-        pages=[].slice.call(el.querySelectorAll('.vip-print-page'));
+        filename='RDG-Weekly-Flash-'+new Date().toISOString().slice(0,10)+'.pdf';
+        exportJob=exportWeeklyFlashPdf(filename);
+        pages=null;
       } else {
         pages=[el.querySelector('.fcast-print-page1'), el.querySelector('.fcast-print-page2')].filter(Boolean);
       }
-      if(pages.length<2){
+      if(exportType!=='vip' && pages.length<2){
         cleanup();
         alert('PDF sections unavailable');
         return;
       }
-      var width=Math.max(1200,Math.ceil(el.getBoundingClientRect().width||0));
-      var canvases=[];
-      var chain=Promise.resolve();
-      pages.forEach(function(page){
-        chain=chain.then(function(){
-          return _captureDomToCanvas(page,width).then(function(c){ canvases.push(c); });
+      if(exportType!=='vip'){
+        var width=Math.max(1200,Math.ceil(el.getBoundingClientRect().width||0));
+        var canvases=[];
+        var chain=Promise.resolve();
+        pages.forEach(function(page){
+          chain=chain.then(function(){
+            return _captureDomToCanvas(page,width).then(function(c){ canvases.push(c); });
+          });
         });
-      });
-      exportJob=chain.then(function(){
-        return _pdfFromCanvases(canvases, filename, false);
-      });
+        exportJob=chain.then(function(){
+          return _pdfFromCanvases(canvases, filename, false);
+        });
+      }
     } else {
       if(!window.html2pdf){
         cleanup();
@@ -3691,19 +3695,11 @@ function prepareVipFlashEmail(){
     document.body.classList.add('printing-vip');
     var el=document.getElementById('view-vip');
     if(!el) throw new Error('Weekly Flash view missing');
-    var pages=[].slice.call(el.querySelectorAll('.vip-print-page'));
-    var snaps=[].slice.call(el.querySelectorAll('.vip-email-snap'));
-    if(pages.length<2) throw new Error('Weekly Flash sections missing');
+    var snaps=[].slice.call(el.querySelectorAll('.vip-perf-block'));
+    if(typeof flashPdfTargets!=='function' || flashPdfTargets().length<2) throw new Error('Weekly Flash sections missing');
     var width=Math.max(1200,Math.ceil(el.getBoundingClientRect().width||0));
-    var canvases=[];
-    var chain=Promise.resolve();
     var capOpts={scale:1.35};
-    pages.forEach(function(page){
-      chain=chain.then(function(){
-        return _captureDomToCanvas(page,width,capOpts).then(function(c){ canvases.push(c); });
-      });
-    });
-    return chain.then(function(){
+    return flashCaptureCanvases().then(function(canvases){
       var snapChain=Promise.resolve();
       var snapResults=[];
       snaps.forEach(function(snap, si){

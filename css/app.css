@@ -745,7 +745,7 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .vip-print-page,.vip-print-page1,.vip-print-page2,.vip-print-page3,.vip-print-app{display:flex;flex-direction:column;gap:12px}
 .flash-slide{width:100%;overflow:hidden;margin:0 0 28px}
 .flash-break{margin:0 0 28px}
-.flash-py{display:block;margin-top:2px;font-size:9px;font-style:normal;font-weight:700;color:#64748b;line-height:1.2}
+.flash-py{display:block;margin-top:2px;font-size:12px;font-style:normal;font-weight:700;color:#64748b;line-height:1.25}
 @media print{
   .flash-slide{height:auto!important;overflow:visible!important;page-break-after:always;break-after:page}
   .flash-slide .bp-page{transform:none!important}
