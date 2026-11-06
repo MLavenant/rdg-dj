@@ -4593,6 +4593,45 @@ function renderBaselTracker(targetEl, forceAll){
   if(!picked) filter = 'all';
   var isAll = filter==='all' && venues.length>1;
   var data = isAll ? raw : (picked || venues[0]);
+  function venueFullName(v){
+    if(v && v.name) return v.name;
+    if(v && v.key==='casa_neos_bc') return 'Casa Neos Beach Club';
+    if(v && v.key==='mila_lounge') return 'MILA Lounge';
+    if(v && v.key==='casa_neos_lounge') return 'Casa Neos Lounge';
+    return '';
+  }
+  /* Tables on that night's floor plan (Basel Beach Club is 48, so 3 nights = 144). */
+  function nightInventory(venueName, dateStr){
+    if(!venueName||!dateStr||typeof getVipFloorPlan!=='function') return 0;
+    var plan=getVipFloorPlan(venueName, dateStr);
+    var n=plan?+plan.budget:0;
+    return n>0?n:0;
+  }
+  function spanInventory(v){
+    var name=venueFullName(v);
+    var sum=0;
+    (v.nights||[]).forEach(function(n){ if(n&&n.date) sum+=nightInventory(name, n.date); });
+    return sum;
+  }
+  function dateInventory(dateStr){
+    if(!isAll) return nightInventory(venueFullName(data), dateStr);
+    var sum=0;
+    venues.forEach(function(v){
+      var open=(v.nights||[]).some(function(n){ return n&&n.date===dateStr; });
+      if(open) sum+=nightInventory(venueFullName(v), dateStr);
+    });
+    return sum;
+  }
+  function occLabel(sold, inventory){
+    sold=+sold||0;
+    var tables=sold===1?'table':'tables';
+    if(!(inventory>0)) return sold+' '+tables;
+    return sold+' of '+inventory+' '+tables+' · '+pct(sold, inventory)+'%';
+  }
+  function occWidth(sold, inventory){
+    if(!(inventory>0)) return 0;
+    return Math.min(100, pct(+sold||0, inventory));
+  }
   function venueShort(v){ return BASEL_VENUE_SHORT[v.key] || v.name; }
   function venueCol(v){ return BASEL_VENUE_COLORS[v.key] || '#475569'; }
   function artistLabel(dj, date, venueName){
@@ -4638,7 +4677,7 @@ function renderBaselTracker(targetEl, forceAll){
     + '<div class="bsl-hero-title">BASEL Tracker'+(isAll?'':' · '+esc(venueShort(data)))+'</div>'
     + '<div class="bsl-hero-sub">'+esc(venueLine)+'</div></div>'
     + '<div class="bsl-hero-right"><div class="bsl-hero-total">'+money(total)+'</div>'
-    + '<div class="bsl-hero-sub">'+(data.totalBookings||0)+' tables · '+refs.length+' referrers</div>'
+    + '<div class="bsl-hero-sub">'+occLabel(data.totalBookings, isAll?venues.reduce(function(s,v){ return s+spanInventory(v); },0):spanInventory(data))+' · '+refs.length+' referrers</div>'
     + (when ? '<div class="bsl-hero-upd">FourVenues · updated '+esc(when)+'</div>' : '')
     + '</div></div>';
 
@@ -4646,12 +4685,13 @@ function renderBaselTracker(targetEl, forceAll){
     h += '<div class="bsl-section-hd">By venue</div><div class="bsl-venue-grid">';
     venues.forEach(function(v){
       var col = venueCol(v);
-      var share = pct(+v.totalRevenue||0, total);
+      var sold = +v.totalBookings||0;
+      var inv = spanInventory(v);
       h += '<div class="bsl-venue" style="border-left-color:'+col+'">'
         + '<div class="bsl-venue-name" style="color:'+col+'">'+esc(venueShort(v))+'</div>'
         + '<div class="bsl-venue-total">'+money(v.totalRevenue)+'</div>'
-        + '<div class="bsl-day-meta">'+(v.totalBookings||0)+' table'+((v.totalBookings||0)===1?'':'s')+' · '+share+'% of weekend</div>'
-        + '<div class="bsl-bar"><span style="width:'+share+'%;background:'+col+'"></span></div>'
+        + '<div class="bsl-day-meta">'+occLabel(sold, inv)+'</div>'
+        + '<div class="bsl-bar"><span style="width:'+occWidth(sold, inv)+'%;background:'+col+'"></span></div>'
         + '<div class="bsl-venue-days">';
       (v.nights||[]).forEach(function(n, i){
         var c = baselDayColor(n.date, i);
@@ -4672,15 +4712,16 @@ function renderBaselTracker(targetEl, forceAll){
       return {name:r.name, revenue:cell?+cell.revenue||0:0, bookings:cell?+cell.bookings||0:0};
     }).filter(function(x){ return x.revenue>0 || x.bookings>0; })
       .sort(function(a,b){ return b.revenue-a.revenue; });
-    var share = pct(+n.totalRevenue||0, total);
+    var daySold = +n.bookings||0;
+    var dayInv = dateInventory(d);
     h += '<div class="bsl-day" style="border-top-color:'+c.bg+'">'
       + '<div class="bsl-day-hd" style="background:'+c.bg+'">'
       + '<span>'+dayLabel(d,{weekday:'long'})+'</span><span>'+dayLabel(d,{month:'short',day:'numeric'})+'</span></div>'
       + '<div class="bsl-day-body">';
     if(!isAll) h += '<div class="bsl-day-dj" style="color:'+c.ink+'">'+esc(artistLabel(n.dj, d, data.name))+'</div>';
     h += '<div class="bsl-day-sales">'+money(n.totalRevenue)+'</div>'
-      + '<div class="bsl-day-meta">'+(n.bookings||0)+' tables · '+share+'% of weekend</div>'
-      + '<div class="bsl-bar"><span style="width:'+share+'%;background:'+c.bg+'"></span></div>';
+      + '<div class="bsl-day-meta">'+occLabel(daySold, dayInv)+'</div>'
+      + '<div class="bsl-bar"><span style="width:'+occWidth(daySold, dayInv)+'%;background:'+c.bg+'"></span></div>';
     if(isAll){
       h += '<div class="bsl-day-refs-hd" style="color:'+c.ink+'">Venues</div>';
       venues.forEach(function(v){
