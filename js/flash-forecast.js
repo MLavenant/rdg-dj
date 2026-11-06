@@ -52,20 +52,100 @@ function flashDetailPage(p, meta){
   h+='</tbody></table></div></div>';
   return h;
 }
+function flashPlanMoney(n){
+  if(n==null||!isFinite(+n)) return '\u2014';
+  return (typeof $k==='function')?$k(n):String(n);
+}
+function flashPlanRoi(bs, fee){
+  if(!(fee>0)||bs==null||!isFinite(+bs)) return '\u2014';
+  return (typeof rx==='function')?rx(bs/fee):(bs/fee).toFixed(1)+'x';
+}
+function flashPlanSlide(data, n, of){
+  var ms=data.months||[];
+  var venue=_bpVenue;
+  var cells=(data.grid&&data.grid[venue])||[];
+  var h='<div class="bp-page bp-deck flash-plan">';
+  h+='<div class="bp-deck-hd"><div><span class="bp-deck-kicker">Three Month Booking Plan \u00b7 '+n+' of '+of+'</span>'
+    +'<b>'+_escHtml(venue)+'</b>'
+    +'<em>'+_escHtml(ms.length?(ms[0].label+' \u2013 '+ms[ms.length-1].label):'')+'</em></div>'
+    +'<img src="assets/rdg-logo.png" alt="RDG"></div>';
+  h+='<div class="bp-deck-body">';
+  h+='<div class="bp-deck-sec bp-sec-1"><span>01</span>Guest DJ spend<em>Spend, target, and prior year. Expected bottle service is the target for nights not yet played.</em></div>';
+  h+='<table class="flash-plan-sum"><thead><tr><th class="l">Month</th><th>Guest DJ spend</th><th>Target</th><th>Prior year</th><th>Expected bottle service</th></tr></thead><tbody>';
+  var tot={spend:0,target:0,py:0,bs:0,hasT:false,hasPy:false,hasBs:false};
+  cells.forEach(function(c){
+    var spend=c.planned||0;
+    var guest=(typeof calGuestDjBudget==='function')?calGuestDjBudget(venue, c.month.year, c.month.mm):null;
+    var target=guest&&guest.amount!=null&&isFinite(+guest.amount)?+guest.amount:c.budget;
+    var py=c.py&&c.py.fee!=null?c.py.fee:null;
+    var bs=0, hasBs=false;
+    (c.rows||[]).forEach(function(r){
+      var night=(typeof _bpShowBs==='function')?_bpShowBs(r):r.bs_m;
+      if(night!=null&&isFinite(+night)){ bs+=+night; hasBs=true; }
+    });
+    tot.spend+=spend;
+    if(target!=null){ tot.target+=target; tot.hasT=true; }
+    if(py!=null){ tot.py+=py; tot.hasPy=true; }
+    if(hasBs){ tot.bs+=bs; tot.hasBs=true; }
+    h+='<tr><td class="l"><b>'+_escHtml(c.month.short||c.month.label)+'</b><span>'+_escHtml(c.month.range||'')+'</span></td>'
+      +'<td><b>'+flashPlanMoney(spend)+'</b>'+flashArrow(spend, target, 'under')+'</td>'
+      +'<td>'+flashPlanMoney(target)+'</td>'
+      +'<td><span class="flash-py">'+flashPlanMoney(py)+'</span>'+flashArrow(spend, py, 'under')+'</td>'
+      +'<td><b>'+flashPlanMoney(hasBs?bs:null)+'</b></td></tr>';
+  });
+  h+='<tr class="flash-plan-total"><td class="l"><b>3 months</b></td>'
+    +'<td><b>'+flashPlanMoney(tot.spend)+'</b>'+flashArrow(tot.spend, tot.hasT?tot.target:null, 'under')+'</td>'
+    +'<td>'+flashPlanMoney(tot.hasT?tot.target:null)+'</td>'
+    +'<td><span class="flash-py">'+flashPlanMoney(tot.hasPy?tot.py:null)+'</span></td>'
+    +'<td><b>'+flashPlanMoney(tot.hasBs?tot.bs:null)+'</b></td></tr>';
+  h+='</tbody></table>';
+  h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Performance vs prior year<em>Prior year is the DJ fee, bottle service actual, and ROI only.</em></div>';
+  h+='<table class="flash-plan-shows"><thead><tr><th class="l">Date</th><th class="l">Artist</th><th>Fee</th><th>BS expected</th><th>ROI</th><th class="py">PY fee</th><th class="py">PY bottle service</th><th class="py">PY ROI</th></tr></thead><tbody>';
+  cells.forEach(function(c){
+    var rows=(c.rows||[]).slice().sort(function(a,b){ return a.d<b.d?-1:(a.d>b.d?1:0); });
+    if(!rows.length){
+      h+='<tr class="flash-plan-month"><td class="l" colspan="8"><b>'+_escHtml(c.month.label)+'</b> <span>No performances</span></td></tr>';
+      return;
+    }
+    h+='<tr class="flash-plan-month"><td class="l" colspan="8"><b>'+_escHtml(c.month.label)+'</b> <span>'+_escHtml(c.month.range||'')+'</span></td></tr>';
+    rows.forEach(function(r){
+      var ly=(typeof _bpLyShow==='function')?_bpLyShow(venue, r.d):null;
+      var bs=(typeof _bpShowBs==='function')?_bpShowBs(r):r.bs_m;
+      h+='<tr><td class="l"><b>'+(typeof _bpDay==='function'?_bpDay(r.d):_escHtml(r.d))+'</b></td>'
+        +'<td class="l">'+_escHtml(r.dj||'TBD')+'</td>'
+        +'<td>'+flashPlanMoney(r.fee)+'</td>'
+        +'<td>'+flashPlanMoney(bs)+'</td>'
+        +'<td>'+flashPlanRoi(bs, r.fee)+'</td>'
+        +'<td class="py">'+(ly&&ly.fee!=null?flashPlanMoney(ly.fee):'\u2014')+'</td>'
+        +'<td class="py">'+(ly&&ly.bs!=null?flashPlanMoney(ly.bs):'\u2014')+'</td>'
+        +'<td class="py">'+flashPlanRoi(ly&&ly.bs, ly&&ly.fee)+'</td></tr>';
+    });
+  });
+  if(!cells.length) h+='<tr><td class="l" colspan="8">No performances in this window.</td></tr>';
+  h+='</tbody></table>';
+  h+='</div>';
+  h+='<div class="bp-deck-ft"><span>Prepared '+(typeof _bpFmtDate==='function'?_escHtml(_bpFmtDate(_bpNow())):'')+'</span><span>Riviera Dining Group \u00b7 Entertainment</span></div>';
+  h+='</div>';
+  return h;
+}
 function flashBookingSlides(){
-  if(typeof _bpCompute!=='function' || typeof BP_VENUES==='undefined' || typeof _bpDeckSlideHtml!=='function' || typeof _bpCoverHtml!=='function') return '';
-  var saved=(typeof _bpVenue!=='undefined')?_bpVenue:null;
+  if(typeof _bpCompute!=='function' || typeof BP_VENUES==='undefined' || typeof _bpCoverHtml!=='function') return '';
+  var savedVenue=(typeof _bpVenue!=='undefined')?_bpVenue:null;
+  var savedOffset=(typeof _bpOffset!=='undefined')?_bpOffset:0;
   var h='', period='';
   try{
+    /* Months 4, 5 and 6 from the meeting month: February, March, April when the meeting is November. */
+    _bpOffset=3;
     BP_VENUES.forEach(function(v, i){
       _bpVenue=v;
       var data=_bpCompute();
       if(!period && data.months && data.months.length) period=data.months[0].label+' \u2013 '+data.months[data.months.length-1].label;
       if(i===0) h+='<div class="flash-slide">'+_bpCoverHtml('Three Month Booking Plan', period+' \u00b7 Beach Club \u00b7 CN Lounge \u00b7 MILA', '')+'</div>';
-      h+='<div class="flash-slide">'+_bpDeckSlideHtml(data, i+1, BP_VENUES.length)+'</div>';
+      h+='<div class="flash-slide">'+flashPlanSlide(data, i+1, BP_VENUES.length)+'</div>';
     });
   }catch(ePlan){}
-  if(typeof _bpVenue!=='undefined') _bpVenue=saved;
+  if(typeof _bpOffset!=='undefined') _bpOffset=savedOffset;
+  if(typeof _bpVenue!=='undefined') _bpVenue=savedVenue;
   return h;
 }
 function flashFitDeck(page){
