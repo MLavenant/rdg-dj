@@ -101,7 +101,8 @@ function signInStartSlides(){
   if(!track) return;
   if(_signInTimer) return;
   function paint(){
-    track.style.transform='translateX('+(-_signInSlide*33.3333)+'%)';
+    var slides=track.querySelectorAll('.signin-slide');
+    for(var i=0;i<slides.length;i++) slides[i].classList.toggle('on', i===_signInSlide);
   }
   paint();
   _signInTimer=setInterval(function(){
