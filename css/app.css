@@ -763,10 +763,6 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 #vipBody > .vip-print-page .vip-past-tbl td{padding:8px 10px}
 #vipBody > .vip-print-page .vip-past-tbl th:first-child,
 #vipBody > .vip-print-page .vip-past-tbl td:first-child{width:16%}
-.flash-cards.mr-fill .mr-pdf-locs{top:108px !important;bottom:24px !important;height:auto !important;transform:none !important}
-.flash-cards .mr-pdf-loc{height:100%;justify-content:center}
-.flash-cards .mr-cmp{row-gap:28px !important}
-.flash-cards .mr-cmp .mr-c-now,.flash-cards .mr-cmp .mr-c-py{font-size:26px !important}
 .flash-cards .mr-cmp{grid-template-columns:minmax(148px,1.15fr) max-content max-content !important}
 .flash-cards .mr-cmp-one{grid-template-columns:minmax(148px,1.15fr) max-content !important}
 .flash-cards .mr-c-py i{font-style:normal;font-weight:800;font-size:.72em;margin-left:8px}
@@ -1061,12 +1057,12 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 #view-resident{flex:1;min-height:0;flex-direction:column;overflow:hidden}
 #view-resident .cal-nav,#view-resident #residentSlider{flex-shrink:0;background:var(--card)}
 #residentBody{flex:1 1 auto;min-height:0;margin:0 16px 16px;border-radius:var(--r-lg);overflow-x:auto;overflow-y:hidden;background:var(--card);box-shadow:var(--shadow-sm)}
-#residentBody .res-tbl{border-collapse:separate;border-spacing:0}
+#residentBody .res-tbl{width:max-content;border-collapse:separate;border-spacing:0}
 #residentBody .res-tbl tbody td{height:var(--res-row-h,16px);padding:0 3px!important;font-size:var(--res-font,10px);line-height:1;vertical-align:middle}
 #residentBody .res-date-col{width:168px}
 #residentBody .res-guest-col{width:96px}
-#residentBody .res-name-col{width:64px}
-#residentBody .res-amt-col{width:28px}
+#residentBody .res-name-col{width:44px}
+#residentBody .res-amt-col{width:72px}
 #residentBody .res-total-col{width:48px}
 #residentBody .res-guest-cell{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px}
 #residentBody .res-guest-cell b{font-weight:800}
@@ -1075,19 +1071,28 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 #residentBody .res-group{text-align:center!important;font-size:10px;letter-spacing:.04em;font-weight:750}
 #residentBody .res-sub{font-size:8px;font-weight:650;text-align:center!important}
 #residentBody .res-split{box-shadow:inset 2px 0 0 #8d8376}
-#residentBody .res-tone-hotel{background:#e7f6d4!important}
-#residentBody .res-tone-ground{background:#d5efbf!important}
-#residentBody .res-tone-resident_dj{background:#bfe8c9!important}
-#residentBody .res-tone-light_jockey{background:#ffe7a3!important}
-#residentBody .res-tone-kryo{background:#d5e4ff!important}
-#residentBody .res-tone-greeters{background:#f0d9f6!important}
-#residentBody .res-tone-mm{background:#ffd7b0!important}
+#residentBody .res-tone-hotel,
+#residentBody .res-tone-ground,
+#residentBody .res-tone-resident_dj,
+#residentBody .res-tone-light_jockey,
+#residentBody .res-tone-kryo,
+#residentBody .res-tone-greeters,
+#residentBody .res-tone-mm{background:#eceae6!important}
+#residentBody td.res-due{background:#fde8e8!important}
+#residentBody td.res-paid{background:#d9f5e3!important}
+#residentBody td.res-pay{position:relative;padding-right:22px!important}
+#residentBody .res-flag{border:0;background:transparent;cursor:pointer;padding:0;line-height:1}
+#residentBody .res-flag-paid{position:absolute;right:14px;top:0;height:100%;color:#9a3412;font:inherit;font-size:8px;font-weight:800}
+#residentBody td.res-paid .res-flag-paid{color:#166534}
+#residentBody .res-flag-note{position:absolute;right:2px;top:50%;width:10px;height:10px;margin-top:-5px;border-radius:50%;background:#c4bfb8}
+#residentBody .res-flag-note.on{background:#0b2e40}
 #residentBody .res-name,#residentBody .res-money{width:auto;box-sizing:border-box;border:0;border-radius:0;background:transparent;color:var(--ink);font:inherit;font-size:12px;font-weight:650;padding:2px 3px;outline:none;box-shadow:none}
-#residentBody .res-name{min-width:3.2em;max-width:16em}
+#residentBody .res-name{min-width:2.4em;max-width:14em}
 #residentBody .res-money{min-width:1.8em;max-width:none;text-align:right;font-variant-numeric:tabular-nums;padding:0 1px}
 #residentBody td.res-picked{box-shadow:inset 0 0 0 2px #0b2e40}
 #residentBody .res-name:focus,#residentBody .res-money:focus{background:rgba(255,255,255,.55);outline:1px solid rgba(40,32,24,.28)}
 #residentBody td.res-cell{padding:1px 2px!important}
+#residentBody td.res-pay .res-money{padding-right:34px}
 #view-calendar .cal-nav,#view-accounting .cal-nav,#view-calendar #monthSlider,#view-accounting #acctSlider{flex-shrink:0;z-index:5;background:var(--card)}
 .main > [id^="view-"]:not(#view-calendar):not(#view-accounting):not(#view-resident){flex:1;min-height:0;overflow:auto}
 #calBody,#acctBody{flex:1 1 auto;min-height:0;margin:0 16px 16px;border-radius:var(--r-lg);overflow:auto!important;max-height:none!important;box-shadow:var(--shadow-sm);background:var(--card)}
@@ -2440,6 +2445,9 @@ body.mobile-mode .sb-btn{min-height:44px}
 .fa-yes,.fa-no{width:32px;height:32px;border-radius:8px;border:0;font-size:18px;cursor:pointer;margin-right:6px}
 .fa-yes{background:#dcfce7;color:#166534}
 .fa-no{background:#fee2e2;color:#b91c1c}
+.fa-tbl tr.fa-yes td{background:#d9f5e3}
+.fa-tbl tr.fa-no td{background:#fde8e8}
+.fa-yes.on,.fa-no.on{outline:2px solid currentColor}
 .fa-empty{color:#64748b;padding:12px 0}
 @media(max-width:900px){
   .mr-grid{grid-template-columns:1fr}

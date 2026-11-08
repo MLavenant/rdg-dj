@@ -32,24 +32,18 @@ function flashDetailPage(p, meta){
   var marginPy=(typeof mrSideMargin==='function')?mrSideMargin(y):null;
   h+='<div><span>Live E margins</span><b>'+mrPct(marginNow)+'</b>'+mrLy(pyY+' '+mrPct(marginPy))+'</div>';
   h+='</div>';
-  h+='<table class="mr-pdf-tbl flash-show"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>'+pyY+' fee</th><th>ROI</th><th>'+pyY+' ROI</th><th>ROI target</th><th>BS actual</th><th>'+pyY+' BS</th><th>BS target</th></tr></thead><tbody>';
-  if(!p.rows||!p.rows.length) h+='<tr><td class="l" colspan="10">No performances this month.</td></tr>';
+  h+='<table class="mr-pdf-tbl flash-show"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI</th><th>ROI target</th><th>BS actual</th><th>BS target</th></tr></thead><tbody>';
+  if(!p.rows||!p.rows.length) h+='<tr><td class="l" colspan="7">No performances this month.</td></tr>';
   (p.rows||[]).forEach(function(row){
     var tone=(typeof mrRoiClass==='function')?mrRoiClass(row):'';
     var py=flashPyBits(p.venue, row.d);
-    var feePy=py&&py.fee!=null?mrMoney(py.fee):'\u2014';
-    var roiPy=py&&py.roi!=null?(typeof rx==='function'?rx(py.roi):'\u2014'):'\u2014';
-    var bsPy=py&&py.bs!=null?mrMoney(py.bs):'\u2014';
     h+='<tr'+(tone?' class="'+tone+'"':'')+'>'
       +'<td class="l"><b>'+_escHtml(typeof mrDayLabel==='function'?mrDayLabel(row.d):row.d)+'</b></td>'
       +'<td class="l flash-now"><b>'+_escHtml(row.dj)+'</b>'+(py&&py.dj?flashPyEm(pyY+' '+_escHtml(py.dj)):'')+'</td>'
-      +'<td class="flash-now"><b>'+mrMoney(row.fee)+'</b></td>'
-      +flashPyCell(feePy, row.fee, py&&py.fee, 'under')
-      +'<td class="flash-now"><b>'+(typeof rx==='function'?rx(row.roiA):'\u2014')+'</b></td>'
-      +flashPyCell(roiPy, row.roiA, py&&py.roi, 'over')
+      +flashUnder(mrMoney(row.fee), py&&py.fee!=null?(pyY+' '+mrMoney(py.fee)):'', row.fee, py&&py.fee, 'under')
+      +flashUnder((typeof rx==='function'?rx(row.roiA):'\u2014'), py&&py.roi!=null?(pyY+' '+(typeof rx==='function'?rx(py.roi):'')):'', row.roiA, py&&py.roi, 'over')
       +'<td class="flash-tgt">'+(typeof rx==='function'?rx(row.roiT):'\u2014')+'</td>'
-      +'<td class="flash-now"><b>'+mrMoney(row.bs)+'</b></td>'
-      +flashPyCell(bsPy, row.bs, py&&py.bs, 'over')
+      +flashUnder(mrMoney(row.bs), py&&py.bs!=null?(pyY+' '+mrMoney(py.bs)):'', row.bs, py&&py.bs, 'over')
       +'<td class="flash-tgt">'+mrMoney(row.bsT)+'</td></tr>';
   });
   h+='</tbody></table></div></div>';
@@ -59,9 +53,10 @@ function flashGapMark(gap){
   if(!gap || !gap.text || gap.text==='\u2014' || gap.text==='-') return '';
   return ' <i class="'+(gap.cls||'')+'">'+gap.text+'</i>';
 }
-function flashPyCell(text, now, prior, favorable){
-  var gap=(prior!=null && typeof mrVar==='function')?mrVar(now, prior, favorable==='under'):null;
-  return '<td class="flash-py">'+text+flashGapMark(gap)+'</td>';
+function flashUnder(main, priorText, now, prior, favorable){
+  var gap=(prior!=null && priorText && typeof mrVar==='function')?mrVar(now, prior, favorable==='under'):null;
+  var sub=priorText?flashPyEm(priorText+flashGapMark(gap)):'';
+  return '<td class="flash-now"><b>'+main+'</b>'+sub+'</td>';
 }
 function flashCompareCards(title, sub, kicker, cards){
   var h='<div class="bp-page bp-deck mr-fill flash-cards"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">'+_escHtml(kicker||'Weekly Live Entertainment Meeting')+'</div><b>'+_escHtml(title)+'</b><em>'+_escHtml(sub||'')+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body"><div class="mr-pdf-locs">';

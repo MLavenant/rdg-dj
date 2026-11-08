@@ -65,11 +65,14 @@ function buildSidebar() {
     {id:'forecast',    ic:'&#9650;',  lb:'Forecast'},
     {id:'summary',     ic:'&#9776;',  lb:'Bottle Service Monthly Summary'}
   ]);
-  section('Finance', [
+  var financeItems=[
     {id:'budget',     ic:'&#36;',    lb:'Budget'},
-    {id:'accounting', ic:'&#9998;',  lb:'Accounting'},
-    {id:'finance',    ic:'&#10003;', lb:'Finance Approval'}
-  ]);
+    {id:'accounting', ic:'&#9998;',  lb:'Accounting'}
+  ];
+  if(typeof financeIsTakuma==='function' && financeIsTakuma()){
+    financeItems.push({id:'finance', ic:'&#10003;', lb:'Finance Approval'});
+  }
+  section('Finance', financeItems);
   var adminItems=[
     {id:'roi-rules', ic:'&#127919;', lb:'Venue ROI Rules'},
     {id:'system',    ic:'&#9881;',   lb:'Settings'}
@@ -133,7 +136,10 @@ function selYr(yr) {
 var _budgetInited = false;
 function setView(v) {
   if(v==='system' && !unlockSanity()) return;
-  if(v==='finance' && !unlockFinance()) return;
+  if(v==='finance' && !unlockFinance()){
+    if(curView==='finance'){ curView=''; setView('calendar'); }
+    return;
+  }
   if(v==='ebitda' && !unlockEbitdaAccess()) return;
   if(v==='access' && (typeof signInIsOwner!=='function' || !signInIsOwner())) return;
   closeMobileNav();
@@ -217,7 +223,7 @@ function setView(v) {
   }
   if (v === 'finance') {
     clearGlobalCalChrome();
-    document.getElementById('pgSub').innerHTML = '<span>Finance Approval · April 2027 · Casa Neos Beach Club</span>';
+    document.getElementById('pgSub').innerHTML = '<span>Finance Approval · calendar performances</span>';
     if(typeof renderFinanceApproval==='function') renderFinanceApproval();
     return;
   }

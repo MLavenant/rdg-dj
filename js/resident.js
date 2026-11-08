@@ -31,13 +31,15 @@ function residentMoneySize(v){
 }
 function residentNameSize(v){
   var s=String(v||'');
-  return Math.max(6, Math.min(24, s.length||6));
+  return Math.max(4, Math.min(22, s.length||4));
 }
 function residentSizeMoney(el){
   if(!el) return;
   var name=el.getAttribute('data-field')==='name';
   var n=String(el.value||'').length;
-  el.size=name?Math.max(6, Math.min(24, n||6)):Math.max(3, n||0);
+  var ch=name?Math.max(4, Math.min(22, n||4)):Math.max(3, n||1);
+  el.size=ch;
+  el.style.width=ch+'ch';
 }
 function residentFormatMoneyInput(el, n){
   if(!el) return;
@@ -80,6 +82,64 @@ function residentRowTotal(row){
   });
   return n||null;
 }
+function residentBits(row, role, field){
+  row=row||{};
+  if(role){
+    var cell=(row[role] && typeof row[role]==='object') ? row[role] : {};
+    return {amt:cell.amt, paid:!!cell.paid, note:cell.note||''};
+  }
+  return {amt:row[field], paid:!!row[field+'Paid'], note:row[field+'Note']||''};
+}
+function residentApplyPay(td, bits){
+  if(!td) return;
+  bits=bits||{};
+  td.classList.remove('res-due','res-paid');
+  if(bits.paid) td.classList.add('res-paid');
+  else if(bits.amt!=null && bits.amt!=='' && isFinite(+bits.amt)) td.classList.add('res-due');
+  var note=td.querySelector('.res-flag-note');
+  if(note){
+    var text=String(bits.note||'').trim();
+    note.classList.toggle('on', !!text);
+    note.title=text||'Comment';
+  }
+}
+function residentFlag(btn){
+  if(!btn) return;
+  var ds=btn.getAttribute('data-ds');
+  var field=btn.getAttribute('data-field');
+  var role=btn.getAttribute('data-role')||'';
+  var key=residentKey(curV, ds);
+  var row=RESIDENT_DJ[key];
+  if(!row || typeof row!=='object') row={};
+  if(role){
+    if(!row[role] || typeof row[role]!=='object') row[role]={};
+    if(btn.getAttribute('data-act')==='paid') row[role].paid=!row[role].paid;
+    else {
+      var next=window.prompt('Comment', row[role].note||'');
+      if(next===null) return;
+      row[role].note=String(next).trim();
+    }
+  }else if(btn.getAttribute('data-act')==='paid'){
+    row[field+'Paid']=!row[field+'Paid'];
+  }else{
+    var typed=window.prompt('Comment', row[field+'Note']||'');
+    if(typed===null) return;
+    row[field+'Note']=String(typed).trim();
+  }
+  RESIDENT_DJ[key]=row;
+  residentApplyPay(btn.closest('td'), residentBits(row, role, field));
+  residentSave(key);
+}
+function residentMoneyTd(ds, field, role, tone, amt, paid, note){
+  var cls='res-cell res-pay res-tone-'+tone+(field==='amt'?'':' res-split');
+  if(paid) cls+=' res-paid';
+  else if(amt!=null && amt!=='' && isFinite(+amt)) cls+=' res-due';
+  var roleAttr=role?' data-role="'+role+'"':'';
+  var noted=String(note||'').trim();
+  return '<td class="'+cls+'"><input class="res-money" size="'+residentMoneySize(amt)+'" inputmode="decimal" data-ds="'+ds+'"'+roleAttr+' data-field="'+field+'" value="'+residentMoney(amt)+'" oninput="residentEdit(this)">'
+    +'<button type="button" class="res-flag res-flag-paid" data-act="paid" data-ds="'+ds+'"'+roleAttr+' data-field="'+field+'" title="Mark paid">Paid</button>'
+    +'<button type="button" class="res-flag res-flag-note'+(noted?' on':'')+'" data-act="note" data-ds="'+ds+'"'+roleAttr+' data-field="'+field+'" title="'+residentEsc(noted||'Comment')+'"></button></td>';
+}
 function residentEdit(el){
   if(!el) return;
   var ds=el.getAttribute('data-ds');
@@ -104,6 +164,7 @@ function residentEdit(el){
     }
   }
   RESIDENT_DJ[key]=row;
+  if(field==='hotel' || field==='ground' || field==='amt') residentApplyPay(el.closest('td'), residentBits(row, role, field));
   var tr=el.closest?el.closest('tr'):null;
   if(tr){
     var tot=tr.querySelector('.res-total');
@@ -139,6 +200,7 @@ function residentPaintFromStore(){
       el.value=field==='amt' ? residentMoney(cell.amt) : (cell.name||'');
     }
     residentSizeMoney(el);
+    if(field==='hotel' || field==='ground' || field==='amt') residentApplyPay(el.parentNode, residentBits(row, role, field));
     seen[ds]=row;
   });
   body.querySelectorAll('tr').forEach(function(tr){
@@ -202,12 +264,12 @@ function renderResidentCalendar(){
     var guests=residentGuestNames(ds);
     h+='<td class="sc-date-cell">'+dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
     h+='<td class="res-guest-cell" title="'+residentEsc(guests)+'"><b>'+residentEsc(guests)+'</b></td>';
-    h+='<td class="res-cell res-tone-hotel res-split"><input class="res-money" size="'+residentMoneySize(row.hotel)+'" inputmode="decimal" data-ds="'+ds+'" data-field="hotel" value="'+residentMoney(row.hotel)+'" oninput="residentEdit(this)"></td>';
-    h+='<td class="res-cell res-tone-ground res-split"><input class="res-money" size="'+residentMoneySize(row.ground)+'" inputmode="decimal" data-ds="'+ds+'" data-field="ground" value="'+residentMoney(row.ground)+'" oninput="residentEdit(this)"></td>';
+    h+=residentMoneyTd(ds, 'hotel', '', 'hotel', row.hotel, row.hotelPaid, row.hotelNote);
+    h+=residentMoneyTd(ds, 'ground', '', 'ground', row.ground, row.groundPaid, row.groundNote);
     RESIDENT_ROLES.forEach(function(role){
       var cell=(row[role.id] && typeof row[role.id]==='object') ? row[role.id] : {};
-      h+='<td class="res-cell res-tone-'+role.id+' res-split"><input class="res-name" size="'+residentNameSize(cell.name)+'" data-ds="'+ds+'" data-role="'+role.id+'" data-field="name" value="'+residentEsc(cell.name||'')+'" oninput="residentEdit(this)"></td>';
-      h+='<td class="res-cell res-tone-'+role.id+'"><input class="res-money" size="'+residentMoneySize(cell.amt)+'" inputmode="decimal" data-ds="'+ds+'" data-role="'+role.id+'" data-field="amt" value="'+residentMoney(cell.amt)+'" oninput="residentEdit(this)"></td>';
+      h+='<td class="res-cell res-tone-'+role.id+' res-split"><input class="res-name" style="width:'+residentNameSize(cell.name)+'ch" size="'+residentNameSize(cell.name)+'" data-ds="'+ds+'" data-role="'+role.id+'" data-field="name" value="'+residentEsc(cell.name||'')+'" oninput="residentEdit(this)"></td>';
+      h+=residentMoneyTd(ds, 'amt', role.id, role.id, cell.amt, cell.paid, cell.note);
     });
     h+='<td class="res-cell res-tone-total res-split res-total">'+residentMoney(residentRowTotal(row))+'</td>';
     h+='</tr>';
@@ -281,6 +343,7 @@ function residentPasteBlock(startEl, text){
 function residentCellFromEvent(e){
   var body=document.getElementById('residentBody');
   if(!body || !e || !e.target || !e.target.closest) return null;
+  if(e.target.closest('.res-flag')) return null;
   var el=e.target.closest('input');
   if(el && body.contains(el) && (el.classList.contains('res-name') || el.classList.contains('res-money'))) return el;
   var td=e.target.closest('td');
@@ -303,6 +366,13 @@ function residentApplyPaste(text){
 function residentPickInit(){
   if(_resPickOn) return;
   _resPickOn=true;
+  document.addEventListener('click', function(e){
+    var btn=e.target && e.target.closest ? e.target.closest('.res-flag') : null;
+    var body=document.getElementById('residentBody');
+    if(!btn || !body || !body.contains(btn) || typeof curView==='undefined' || curView!=='resident') return;
+    e.preventDefault();
+    residentFlag(btn);
+  });
   document.addEventListener('mousedown', function(e){
     var body=document.getElementById('residentBody');
     if(!body || typeof curView==='undefined' || curView!=='resident') return;
