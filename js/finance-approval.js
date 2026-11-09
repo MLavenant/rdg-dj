@@ -77,11 +77,19 @@ function faSetVenue(v){
   faVenue=v;
   renderFinanceApproval();
 }
+function faNeedsApproval(r){
+  if(!r||!r.d) return false;
+  var year=(typeof fiscalYearForDate==='function')?fiscalYearForDate(r.d):parseInt(String(r.d).slice(0,4),10);
+  if(year!==2026&&year!==2027) return false;
+  var st=(typeof getShowDjStatus==='function')?getShowDjStatus(r):(r.djStatus||null);
+  return !st||String(st)==='Finance to Approve';
+}
 function faShows(venue){
   var rows=[];
   (typeof SCHED!=='undefined'?SCHED:[]).forEach(function(r){
     if(!r||r._s==='empty'||!r.d) return;
     if((r.v||r.venue)!==venue) return;
+    if(!faNeedsApproval(r)) return;
     var dj=String(r.dj||'').trim();
     if(!dj||/^tbd$/i.test(dj)) return;
     var uid=(typeof ensureShowUid==='function')?ensureShowUid(r):((r.v||r.venue||'')+'|'+r.d+'|'+dj);
@@ -129,7 +137,7 @@ function renderFinanceApproval(){
   }
   var venue=faHere();
   var sub=document.getElementById('pgSub');
-  if(sub&&typeof curView!=='undefined'&&curView==='finance') sub.innerHTML='<span>'+_escHtml(venue)+' · Finance Approval</span>';
+  if(sub&&typeof curView!=='undefined'&&curView==='finance') sub.innerHTML='<span>'+_escHtml(venue)+' · 2026 and 2027 · Not set or Finance to Approve</span>';
   var rows=faShows(venue);
   var approved=0, pending=[];
   rows.forEach(function(item){
