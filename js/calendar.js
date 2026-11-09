@@ -1336,7 +1336,8 @@ function acctStatusClass(status){
   if(status.indexOf('Missing')===0) return 'acct-st-missing';
   if(status==='Confirmed'||status==='Invoice + Contract Signed'||status==='Contract + invoice received') return 'acct-st-confirmed';
   if(status==='Offer sent'||status==='Hold 1'||status==='Finance to Approve') return 'acct-st-pending';
-  if(status==='Refused') return 'acct-st-missing';
+  if(status==='Finance Approved') return 'acct-st-confirmed';
+  if(status==='Finance declined'||status==='Refused') return 'acct-st-missing';
   return 'acct-st-notset';
 }
 function _acctCanonicalApStatus(st){
@@ -1430,6 +1431,16 @@ function updateAcctDjStatus(ds,val,sel){
   var prev=acct.djStatus||'';
   var next=val||'';
   if(prev===next) return;
+  var dayShow=null;
+  (typeof SCHED!=='undefined'?SCHED:[]).forEach(function(r){
+    if(dayShow||!r||r._s==='empty'||r.d!==ds) return;
+    if(typeof curV!=='undefined' && (r.v||r.venue)!==curV) return;
+    dayShow=r;
+  });
+  if(dayShow && typeof faBlockLiveStatus==='function' && faBlockLiveStatus(dayShow, next, prev)){
+    try{ if(sel) sel.value=prev; }catch(eBlock){}
+    return;
+  }
   _pushAcctUndo('Change DJ status');
   var by=_acctSoftEditorName();
   acct.djStatus=next||null;
@@ -1540,6 +1551,10 @@ function updateShowDjStatus(idx,val,sel,uid){
   var next=val||'';
   var prev=getShowDjStatus(r,r.d)||'';
   if(prev===next) return;
+  if(typeof faBlockLiveStatus==='function' && faBlockLiveStatus(r, next, prev)){
+    try{ if(sel) sel.value=prev; }catch(eBlock){}
+    return;
+  }
   r.djStatus=next||null;
   ensureShowUid(r);
   if(typeof persistShowDjStatusOnly==='function') persistShowDjStatusOnly(r);
@@ -1573,8 +1588,12 @@ function updateShowDjStatus(idx,val,sel,uid){
   _calRequestRefresh(curView==='accounting'?'go':false);
 }
 function _djStatusSelectHtml(djSt, extraAttrs, show){
-  var opts=(typeof faStatusOptions==='function')?faStatusOptions(show, djSt||''):(typeof ACCT_DJ_STATUS!=='undefined'?ACCT_DJ_STATUS:['Offer sent','Hold 1','Confirmed']);
   var h='<select class="acct-status-sel '+acctStatusClass(djSt||null)+'" '+(extraAttrs||'')+'>';
+  if(show && typeof faInScope==='function' && faInScope(show) && typeof faStatusSelectOptionsHtml==='function'){
+    h+=faStatusSelectOptionsHtml(show, djSt||'');
+    return h+'</select>';
+  }
+  var opts=(typeof faStatusOptions==='function')?faStatusOptions(show, djSt||''):(typeof ACCT_DJ_STATUS!=='undefined'?ACCT_DJ_STATUS:['Offer sent','Hold 1','Confirmed']);
   /* Always keep Not set available (including when clearing a prior status) */
   h+='<option value=""'+(!djSt?' selected':'')+'>Not set</option>';
   h+=opts.map(function(opt){return '<option value="'+opt+'"'+(djSt===opt?' selected':'')+'>'+opt+'</option>';}).join('');
