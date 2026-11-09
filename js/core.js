@@ -69,7 +69,7 @@ function buildSidebar() {
     {id:'budget',     ic:'&#36;',    lb:'Budget'},
     {id:'accounting', ic:'&#9998;',  lb:'Accounting'}
   ];
-  if(typeof financeIsTakuma==='function' && financeIsTakuma()){
+  if(typeof financeCanApprove==='function' && financeCanApprove()){
     financeItems.push({id:'finance', ic:'&#10003;', lb:'Finance Approval'});
   }
   section('Finance', financeItems);

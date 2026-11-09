@@ -1,13 +1,17 @@
 /* Finance Approval. The status dropdown still offers Finance to Approve only
    for Casa Neos Beach Club in April 2027. The page lists every performance
-   on the calendar month and is visible only to Takuma. */
-var FINANCE_EMAIL='takuma@rivieradininggroup.com';
+   on the calendar month and is visible only to the approvers listed here. */
+var FINANCE_APPROVERS={
+  'matthias@rivieradininggroup.com':1,
+  'greg@rivieradininggroup.com':1,
+  'takuma@rivieradininggroup.com':1
+};
 var FINANCE_MARKS={};
-function financeIsTakuma(){
-  return typeof signInCurrentEmail==='function' && signInCurrentEmail()===FINANCE_EMAIL;
+function financeCanApprove(){
+  return typeof signInCurrentEmail==='function' && !!FINANCE_APPROVERS[signInCurrentEmail()];
 }
 function unlockFinance(){
-  return financeIsTakuma();
+  return financeCanApprove();
 }
 function faInScope(show){
   if(!show||!show.d) return false;
@@ -77,7 +81,7 @@ function financeJumpMonth(m){
   renderFinanceApproval();
 }
 function faMark(uid, mark){
-  if(!financeIsTakuma() || !uid) return;
+  if(!financeCanApprove() || !uid) return;
   var next=FINANCE_MARKS[uid]===mark?'':mark;
   if(next) FINANCE_MARKS[uid]=next;
   else delete FINANCE_MARKS[uid];
@@ -98,7 +102,7 @@ function renderFinanceApproval(){
   var host=document.getElementById('financeBody');
   if(!host) return;
   initFinanceMarks();
-  if(!financeIsTakuma()){
+  if(!financeCanApprove()){
     host.innerHTML='<div class="fa-empty">Finance Approval is not available for this sign-in.</div>';
     return;
   }
