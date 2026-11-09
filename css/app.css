@@ -2475,8 +2475,19 @@ body.mobile-mode .sb-btn{min-height:44px}
 .wm-bs span{color:#64748b;font-weight:650;margin:0 2px}
 .wm-bs-hit{color:#15803d}
 .wm-bs-miss{color:#b91c1c}
+.fa-bar{display:flex;align-items:center;gap:12px}
+.fa-bar label{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:750;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3)}
+.fa-bar select{font:inherit;font-size:14px;font-weight:700;text-transform:none;letter-spacing:0;color:var(--ink);background:#fff;border:1px solid #e4dfd8;border-radius:8px;padding:6px 10px}
+.fa-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fa-stat{background:#fff;border:1px solid #e4dfd8;border-radius:12px;padding:16px 18px}
+.fa-stat b{display:block;font-size:34px;font-weight:850;letter-spacing:-.04em;line-height:1}
+.fa-stat span{display:block;margin-top:6px;font-size:11px;font-weight:750;letter-spacing:.05em;text-transform:uppercase;color:#64748b}
+.fa-stat.is-yes b{color:#166534}
+.fa-stat.is-wait b{color:#b45309}
+.fa-break-hd{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#0b2e40}
 .fa-loc{margin:0 0 18px}
-.fa-loc h3{margin:0 0 8px;font-size:16px;color:#0b2e40}
+.fa-loc h3{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 8px;font-size:16px;color:#0b2e40}
+.fa-loc h3 em{font-style:normal;font-size:12px;font-weight:750;color:#b45309}
 .fa-tbl{width:100%;border-collapse:collapse;font-size:13px;background:#fff}
 .fa-tbl th,.fa-tbl td{padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:left}
 .fa-tbl th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#64748b}

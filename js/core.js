@@ -224,7 +224,7 @@ function setView(v) {
   }
   if (v === 'finance') {
     clearGlobalCalChrome();
-    document.getElementById('pgSub').innerHTML = '<span>Finance Approval · calendar performances</span>';
+    document.getElementById('pgSub').innerHTML = '<span>Finance Approval</span>';
     if(typeof renderFinanceApproval==='function') renderFinanceApproval();
     return;
   }
