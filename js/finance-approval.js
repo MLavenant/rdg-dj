@@ -3,7 +3,8 @@
 var FINANCE_APPROVERS={
   'matthias@rivieradininggroup.com':1,
   'greg@rivieradininggroup.com':1,
-  'takuma@rivieradininggroup.com':1
+  'takuma@rivieradininggroup.com':1,
+  'michael@rivieradininggroup.com':1
 };
 var FINANCE_MARKS={};
 function financeSignedInEmail(){
@@ -100,7 +101,7 @@ function faSetVenue(v){
   faVenue=v;
   renderFinanceApproval();
 }
-var faYear=null, faMonth=null, faPendingOpen=false;
+var faYear=null, faMonth=null, faPendingOpen=true;
 function faWhen(){
   if(faYear!==2026&&faYear!==2027){
     faYear=(typeof curYr!=='undefined'&&(curYr===2026||curYr===2027))?curYr:2027;
@@ -115,13 +116,14 @@ function faStatusOf(r){
   var st=(typeof getShowDjStatus==='function')?getShowDjStatus(r):(r&&r.djStatus)||null;
   return st?String(st):'';
 }
-function faNamedShow(r){
+function faBooking(r){
   if(!r||r._s==='empty'||!r.d) return false;
   var dj=String(r.dj||'').trim();
-  return !!(dj&&!/^tbd$/i.test(dj));
+  if(dj) return true;
+  return faFee(r)>0;
 }
 function faNeedsApproval(r){
-  if(!faNamedShow(r)) return false;
+  if(!faBooking(r)) return false;
   var year=(typeof fiscalYearForDate==='function')?fiscalYearForDate(r.d):parseInt(String(r.d).slice(0,4),10);
   if(year!==2026&&year!==2027) return false;
   var st=faStatusOf(r);
@@ -133,7 +135,7 @@ function faInMonth(r, year, mm){
 function faRoster(venue, year, mm){
   var rows=[];
   (typeof SCHED!=='undefined'?SCHED:[]).forEach(function(r){
-    if(!faNamedShow(r)||(r.v||r.venue)!==venue) return;
+    if(!faBooking(r)||(r.v||r.venue)!==venue) return;
     if(mm&&!faInMonth(r, year, mm)) return;
     var uid=(typeof ensureShowUid==='function')?ensureShowUid(r):((r.v||r.venue||'')+'|'+r.d+'|'+r.dj);
     rows.push({r:r, fee:faFee(r), uid:String(uid), status:faStatusOf(r)});
@@ -144,7 +146,7 @@ function faRoster(venue, year, mm){
 function faGuestPosition(venue, year, mm){
   var spend=0;
   (typeof SCHED!=='undefined'?SCHED:[]).forEach(function(r){
-    if(!faNamedShow(r)||(r.v||r.venue)!==venue||!faInMonth(r, year, mm)) return;
+    if(!faBooking(r)||(r.v||r.venue)!==venue||!faInMonth(r, year, mm)) return;
     spend+=faFee(r);
   });
   var g=(typeof calGuestDjBudget==='function')?calGuestDjBudget(venue, year, mm):null;
@@ -178,12 +180,12 @@ function faPrior(venue, r){
   else if(fee>0&&py&&py.py_bs_a!=null&&isFinite(+py.py_bs_a)) ret=+py.py_bs_a/fee;
   return {dj:py&&py.py_dj?py.py_dj:'', fee:fee, ret:ret};
 }
-function faMoneyGap(spend, budget){
-  if(budget==null) return 'Budget not set';
-  var gap=spend-budget;
-  if(gap>0.5) return 'Over by '+$k(gap);
-  if(gap<-0.5) return 'Under by '+$k(-gap);
-  return 'On budget';
+function faVariance(spend, budget){
+  if(budget==null||!isFinite(+budget)) return {text:'—', tone:''};
+  var gap=Math.round(+spend-+budget);
+  var tone=gap>0?' fa-bad':(gap<0?' fa-good':'');
+  var body=(typeof $k==='function')?$k(Math.abs(gap)):'$'+Math.abs(gap);
+  return {text:(gap>0?'+':(gap<0?'−':''))+body, tone:tone};
 }
 function renderFinanceApproval(){
   var host=document.getElementById('financeBody');
@@ -226,17 +228,20 @@ function renderFinanceApproval(){
   names.forEach(function(name, i){ html+='<option value="'+i+'"'+(i===when.month?' selected':'')+'>'+name+'</option>'; });
   html+='</select></label></div>';
   html+='<div class="fa-note">Green and red change DJ status only for Casa Neos Beach Club, April 2027. Every other status stays as it is.</div>';
-  html+='<div class="fa-pos"><div><span>Budget</span><b>'+(pos.budget!=null?$k(pos.budget):'—')+'</b></div>'
-    +'<div><span>Current position</span><b>'+$k(pos.spend)+'</b></div>'
-    +'<div><span>'+names[when.month]+'</span><b>'+faMoneyGap(pos.spend, pos.budget)+'</b></div></div>';
+  var gap=faVariance(pos.spend, pos.budget);
+  var ytdGap=faVariance(ytdS, hasB?ytdB:null);
+  html+='<div class="fa-pos"><div class="fa-bud"><span>Budget</span><b>'+(pos.budget!=null?$k(pos.budget):'—')+'</b></div>'
+    +'<div><span>Forecast</span><b>'+$k(pos.spend)+'</b></div>'
+    +'<div><span>Variance</span><b class="'+gap.tone.trim()+'">'+gap.text+'</b></div></div>';
   html+='<div class="fa-stats"><div class="fa-stat is-yes"><b>'+approved+'</b><span>Approved</span></div>'
     +'<button type="button" class="fa-stat is-wait'+(faPendingOpen?' on':'')+'" data-fa="pending"><b>'+pending.length+'</b><span>Pending approval</span></button></div>';
   html+='<div class="fa-break-hd">Guest DJ vs budget · '+when.year+'</div><div class="fa-months">';
   months.forEach(function(cell, i){
-    html+='<button type="button" class="fa-m'+(i===when.month?' on':'')+'" data-month="'+i+'"><b>'+names[i]+'</b>'
-      +'<span>'+$k(cell.spend)+' / '+(cell.budget!=null?$k(cell.budget):'—')+'</span></button>';
+    var tone=cell.budget==null?'':(cell.spend>cell.budget?' is-bad':' is-good');
+    html+='<button type="button" class="fa-m'+tone+(i===when.month?' on':'')+'" data-month="'+i+'"><b>'+names[i]+'</b>'
+      +'<span><em>'+$k(cell.spend)+'</em> / '+(cell.budget!=null?$k(cell.budget):'—')+'</span></button>';
   });
-  html+='</div><div class="fa-ytd"><b>YTD through '+names[when.month]+'</b><span>'+$k(ytdS)+' guest DJ / '+(hasB?$k(ytdB):'—')+' budget · '+faMoneyGap(ytdS, hasB?ytdB:null)+'</span></div>';
+  html+='</div><div class="fa-ytd"><b>YTD through '+names[when.month]+'</b><span>'+$k(ytdS)+' forecast / '+(hasB?$k(ytdB):'—')+' budget · <em class="'+ytdGap.tone.trim()+'">'+ytdGap.text+'</em></span></div>';
   if(faPendingOpen){
     html+='<div class="fa-break-hd">Pending approval · '+names[when.month]+' '+when.year+'</div>';
     if(!pending.length){

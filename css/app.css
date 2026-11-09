@@ -2485,7 +2485,15 @@ body.mobile-mode .sb-btn{min-height:44px}
 .fa-stat.is-yes b{color:#166534}
 .fa-stat.is-wait b{color:#b45309}
 .fa-break-hd{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#0b2e40}
-.fa-pos{display:flex;gap:22px;background:#fff;border:1px solid #e4dfd8;border-radius:12px;padding:12px 16px}
+.fa-pos{display:flex;gap:22px;align-items:stretch;background:#fff;border:1px solid #e4dfd8;border-radius:12px;padding:12px 16px}
+.fa-pos .fa-bud{background:#fff3bf;border-radius:10px;padding:8px 14px}
+.fa-good{color:#166534}
+.fa-bad{color:#b91c1c}
+.fa-m.is-good{background:#f0fdf4;border-color:#86efac}
+.fa-m.is-bad{background:#fef2f2;border-color:#fca5a5}
+.fa-m.is-good em{color:#166534;font-style:normal;font-weight:800}
+.fa-m.is-bad em{color:#b91c1c;font-style:normal;font-weight:800}
+.fa-ytd em{font-style:normal;font-weight:800}
 .fa-pos span{display:block;font-size:11px;font-weight:750;letter-spacing:.04em;text-transform:uppercase;color:#64748b}
 .fa-pos b{display:block;margin-top:3px;font-size:18px}
 .fa-note{font-size:12px;color:#64748b}
