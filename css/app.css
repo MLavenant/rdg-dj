@@ -674,7 +674,7 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .bgt-kpi-var{font-size:12px;font-weight:800;margin-top:6px}
 .bgt-monthly{margin:10px 0;background:var(--card);border:0.5px solid var(--rule);border-radius:10px;overflow:auto}
 .bgt-monthly-hd{padding:9px 12px;font-size:11px;font-weight:800;border-bottom:0.5px solid var(--hair);display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
-.bgt-hd-center{justify-content:center;text-align:center}
+.bgt-hd-center{justify-content:center;text-align:center;flex-direction:column;align-items:center}
 .bgt-hd-center b{font-size:13px;font-weight:900;letter-spacing:.16em}
 .bgt-monthly-hd span{font-size:9px;font-weight:600;color:var(--ink3)}
 .bgt-cat-add{margin-left:auto;font-size:10px;font-weight:800;padding:4px 10px;border-radius:8px;border:0.5px solid var(--rule);background:var(--card2);color:var(--ink2);cursor:pointer;font-family:inherit}

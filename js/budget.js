@@ -181,9 +181,10 @@ function bgtPctCell(actual, budget, variancePp){
   return '<div class="bgt-monthly-cell'+status+'"><div class="bgt-monthly-value">'+actualText+'</div>'
     +'<div class="bgt-monthly-vs">Target '+budgetText+'</div></div>';
 }
-function bgtRoiCompletion(venue, year, mm){
+function bgtRoiCompletion(venue, year, mm, through){
   var shows=SCHED.filter(function(r){
     if((r.v||r.venue)!==venue || r._s==='empty' || !r.d) return false;
+    if(through&&String(r.d)>String(through)) return false;
     return inFiscalMonthFilter(r, year, mm);
   });
   var beats=0, misses=0, measured=0;
@@ -261,22 +262,52 @@ function renderBudgetKpiStrip(t){
   el.style.display='none';
 }
 
-/* Calendar bottle service for one fiscal month: actuals and targets. */
-function bgtMonthBottle(venue, year, mm){
+function bgtToday(){
+  return (typeof miamiToday==='function')?miamiToday():String(typeof TODAY!=='undefined'?TODAY:'');
+}
+/* Open fiscal month is month-to-date through today. Prior year stops on the same weekday. */
+function bgtPeriodCutoff(year, mm){
+  var today=bgtToday();
+  if(!today||typeof fiscalInfoForDate!=='function'||typeof datesInFiscalPeriod!=='function') return {mode:'full'};
+  var info=fiscalInfoForDate(today);
+  var mi=fiscalMonthIndexFromMm(mm);
+  var y=+year;
+  if(y>info.year||(y===info.year&&mi>info.monthIndex)) return {mode:'future'};
+  if(y<info.year||mi<info.monthIndex) return {mode:'full'};
+  var dates=datesInFiscalPeriod(y, mi);
+  var pyDates=datesInFiscalPeriod(y-1, mi);
+  var idx=dates.indexOf(today);
+  if(idx<0){
+    if(dates.length&&today<dates[0]) return {mode:'future'};
+    idx=Math.max(0, dates.length-1);
+  }
+  return {
+    mode:'mtd',
+    through:dates[idx],
+    pyThrough:pyDates[Math.min(idx, Math.max(0, pyDates.length-1))]||dates[idx],
+    days:idx+1,
+    total:dates.length||1
+  };
+}
+/* Calendar bottle service for one fiscal month: actuals and targets. through caps an open month. */
+function bgtMonthBottle(venue, year, mm, through){
   var shows=SCHED.filter(function(r){
     return (r.v||r.venue)===venue && r.d && r._s!=='empty' && inFiscalMonthFilter(r, year, mm);
   });
-  var actual=0, target=0, hasA=false, hasT=false;
+  var actual=0, target=0, hasA=false, hasT=false, kept=0;
   shows.forEach(function(r){
+    if(through&&String(r.d)>String(through)) return;
+    kept++;
     if(r.bs_a!=null){ actual+=+r.bs_a||0; hasA=true; }
     var tgt=(typeof showTargets==='function')?showTargets(r):{bs_m:r.bs_m};
     var bsT=(tgt&&tgt.bs_m!=null)?+tgt.bs_m:(r.bs_m!=null?+r.bs_m:null);
     if(bsT!=null){ target+=bsT; hasT=true; }
   });
-  if(!shows.length){
+  if(!shows.length&&!through){
     var h=hs(venue,year,mm);
     if(h&&h.tBS){ actual=h.tBS; hasA=true; }
   }
+  if(through&&!kept) return {actual:null, target:null};
   return {actual:hasA?Math.round(actual):null, target:hasT?Math.round(target):null};
 }
 function bgtShowHasPlayed(r){
@@ -284,20 +315,27 @@ function bgtShowHasPlayed(r){
   var today=(typeof miamiToday==='function')?miamiToday():(typeof TODAY!=='undefined'?TODAY:'');
   return !!(today && String(r.d)<=String(today));
 }
-function bgtMonthGuest(venue, year, mm){
+function bgtMonthGuest(venue, year, mm, through){
   var shows=SCHED.filter(function(r){
     return (r.v||r.venue)===venue && r.d && r._s!=='empty' && inFiscalMonthFilter(r, year, mm);
   });
-  var played=0, forecast=0, hasP=false, hasF=false;
+  var played=0, forecast=0, hasP=false, hasF=false, kept=0;
   shows.forEach(function(r){
+    if(through&&String(r.d)>String(through)) return;
+    kept++;
     var f=+(r.cost||r.fee)||0;
     if(!(f>0)) return;
-    if(bgtShowHasPlayed(r)){ played+=f; hasP=true; }
+    var playedNight=through?String(r.d)<=String(through):bgtShowHasPlayed(r);
+    if(playedNight){ played+=f; hasP=true; }
     else { forecast+=f; hasF=true; }
   });
-  if(!shows.length){
+  if(!shows.length&&!through){
     var p=monthPerf(venue, year, mm);
     if(p.tFee!=null){ played=+p.tFee; hasP=true; }
+  }
+  if(through&&!kept){
+    var g0=(typeof calGuestDjBudget==='function')?calGuestDjBudget(venue, year, mm):null;
+    return {actual:null, forecast:null, target:g0&&g0.amount!=null?Math.round(+g0.amount):null};
   }
   var g=(typeof calGuestDjBudget==='function')?calGuestDjBudget(venue, year, mm):null;
   var target=g?g.amount:(typeof getMonthlyBudget==='function'?getMonthlyBudget(venue, year, mm):null);
@@ -365,12 +403,14 @@ function bgtMarginPyCell(actual, prior){
     +'</div></div>';
 }
 
-/* Table 1: Bottle Service and Guest DJ from the calendar, full-year total. */
+/* Table 1: Bottle Service and Guest DJ. The open month and the total stop at today. */
 function renderBudgetFinancialTable(){
   var host=document.getElementById('budgetTopLine');
   if(!host) return;
   var pyYear=+bgtYear-1;
-  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd bgt-hd-center"><b>GUEST DJ PERFORMANCE</b></div>';
+  var openNote='';
+  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd bgt-hd-center"><b>GUEST DJ PERFORMANCE</b>';
+  h+='</div>';
   h+='<div class="bgt-monthly-grid">'+bgtMonthCellHeader();
 
   var bsA=0, bsT=0, bsP=0, hasBsA=false, hasBsT=false, hasBsP=false;
@@ -378,27 +418,39 @@ function renderBudgetFinancialTable(){
   var months=[];
   for(var mi=1;mi<=12;mi++){
     var mm=padMm(mi);
-    var bs=bgtMonthBottle(bgtVenue,bgtYear,mm);
-    var bsPy=bgtMonthBottle(bgtVenue,pyYear,mm);
-    var guest=bgtMonthGuest(bgtVenue,bgtYear,mm);
-    var guestPy=bgtMonthGuest(bgtVenue,pyYear,mm);
-    if(bs.actual!=null){ bsA+=bs.actual; hasBsA=true; }
-    if(bs.target!=null){ bsT+=bs.target; hasBsT=true; }
-    if(bsPy.actual!=null){ bsP+=bsPy.actual; hasBsP=true; }
-    if(guest.actual!=null){ gA+=guest.actual; hasGA=true; }
-    if(guest.forecast!=null){ gF+=guest.forecast; hasGF=true; }
-    if(guest.target!=null){ gT+=guest.target; hasGT=true; }
-    if(guestPy.actual!=null){ gP+=guestPy.actual; hasGP=true; }
-    months.push({bs:bs, bsPy:bsPy, guest:guest, guestPy:guestPy, mm:mm});
+    var cut=bgtPeriodCutoff(bgtYear, mm);
+    var through=cut.mode==='mtd'?cut.through:null;
+    var pyThrough=cut.mode==='mtd'?cut.pyThrough:null;
+    var bs=bgtMonthBottle(bgtVenue,bgtYear,mm,through);
+    var bsPy=bgtMonthBottle(bgtVenue,pyYear,mm,pyThrough);
+    var guest=bgtMonthGuest(bgtVenue,bgtYear,mm,through);
+    var guestPy=bgtMonthGuest(bgtVenue,pyYear,mm,pyThrough);
+    if(cut.mode==='mtd'&&guest.target!=null&&cut.total) guest.target=Math.round(guest.target*cut.days/cut.total);
+    if(cut.mode==='mtd'&&!openNote){
+      var dayName=function(ds){ var d=_parseYmd(ds); return MNS[d.getMonth()]+' '+d.getDate(); };
+      openNote='Through '+dayName(through)+' · prior year through '+dayName(pyThrough);
+    }
+    var inTotal=cut.mode!=='future';
+    if(inTotal&&bs.actual!=null){ bsA+=bs.actual; hasBsA=true; }
+    if(inTotal&&bs.target!=null){ bsT+=bs.target; hasBsT=true; }
+    if(inTotal&&bsPy.actual!=null){ bsP+=bsPy.actual; hasBsP=true; }
+    if(inTotal&&guest.actual!=null){ gA+=guest.actual; hasGA=true; }
+    if(inTotal&&guest.forecast!=null){ gF+=guest.forecast; hasGF=true; }
+    if(inTotal&&guest.target!=null){ gT+=guest.target; hasGT=true; }
+    if(inTotal&&guestPy.actual!=null){ gP+=guestPy.actual; hasGP=true; }
+    months.push({bs:bs, bsPy:bsPy, guest:guest, guestPy:guestPy, mm:mm, cut:cut, inTotal:inTotal});
+  }
+  if(openNote){
+    h=h.replace('GUEST DJ PERFORMANCE</b>','GUEST DJ PERFORMANCE</b><span>'+openNote+'</span>');
   }
 
-  h+=bgtLabelCell('Bottle Service Sales', 'Actual · target · prior year', bgtCompareLines());
+  h+=bgtLabelCell('Bottle Service Sales', 'Open month through today', bgtCompareLines());
   months.forEach(function(row){
     h+=bgtCompareCell(row.bs.actual, row.bs.target, row.bsPy.actual, 'over');
   });
   h+=bgtCompareCell(hasBsA?bsA:null, hasBsT?bsT:null, hasBsP?bsP:null, 'over');
 
-  h+=bgtLabelCell('Guest DJ', 'Played nights only', bgtCompareLines());
+  h+=bgtLabelCell('Guest DJ', 'Open month through today', bgtCompareLines());
   months.forEach(function(row){
     h+=bgtCompareCell(row.guest.actual, row.guest.target, row.guestPy.actual, 'under');
   });
@@ -410,14 +462,18 @@ function renderBudgetFinancialTable(){
   });
   h+=bgtMarginPyCell(bgtGuestMargin(hasGA?gA:null, hasBsA?bsA:null), bgtGuestMargin(hasGP?gP:null, hasBsP?bsP:null));
 
-  h+=bgtLabelCell('ROI Beat &amp; Miss', 'Played nights', [{t:'Act'},{t:'Prior year',cls:'bgt-row-py'},{t:'Beat'}]);
+  h+=bgtLabelCell('ROI Beat &amp; Miss', 'Open month through today', [{t:'Act'},{t:'Prior year',cls:'bgt-row-py'},{t:'Beat'}]);
   var totRoi={beats:0,misses:0,measured:0,pct:null};
   var totPy={beats:0,misses:0,measured:0,pct:null};
   months.forEach(function(row){
-    var rc=bgtRoiCompletion(bgtVenue,bgtYear,row.mm);
-    var py=bgtRoiCompletion(bgtVenue,pyYear,row.mm);
-    totRoi.beats+=rc.beats; totRoi.misses+=rc.misses; totRoi.measured+=rc.measured;
-    totPy.beats+=py.beats; totPy.misses+=py.misses; totPy.measured+=py.measured;
+    var through=row.cut.mode==='mtd'?row.cut.through:null;
+    var pyThrough=row.cut.mode==='mtd'?row.cut.pyThrough:null;
+    var rc=bgtRoiCompletion(bgtVenue,bgtYear,row.mm,through);
+    var py=bgtRoiCompletion(bgtVenue,pyYear,row.mm,pyThrough);
+    if(row.inTotal){
+      totRoi.beats+=rc.beats; totRoi.misses+=rc.misses; totRoi.measured+=rc.measured;
+      totPy.beats+=py.beats; totPy.misses+=py.misses; totPy.measured+=py.measured;
+    }
     h+=bgtRoiCell(rc, py);
   });
   totRoi.pct=totRoi.measured?Math.round(totRoi.beats/totRoi.measured*100):null;
@@ -440,7 +496,7 @@ function bgtMarginOf(live, sales){
 }
 function renderBudgetPnlTable(){
   var pyYear=+bgtYear-1;
-  var h='<div class="bgt-monthly" style="margin-top:14px"><div class="bgt-monthly-hd bgt-hd-center"><b>LIVE ENTERTAINMENT</b></div>';
+  var h='<div class="bgt-monthly" style="margin-top:14px"><div class="bgt-monthly-hd bgt-hd-center"><b>LIVE ENTERTAINMENT</b><span class="bgt-pnl-note"></span></div>';
   h+='<div class="bgt-monthly-grid">'+bgtMonthCellHeader();
   var rows=[
     {key:'sales', label:'Total Sales', sub:'Higher than target is better', fav:'over'},
@@ -464,6 +520,9 @@ function renderBudgetPnlTable(){
       salesP:pyS, liveP:pyL, marginP:bgtMarginOf(pyL, pyS)
     });
   }
+  var lastActual=0;
+  months.forEach(function(row, i){ if(row.hasNow) lastActual=i; });
+  if(lastActual||months[0].hasNow) h=h.replace('class="bgt-pnl-note"></span>','class="bgt-pnl-note">Actuals through '+MNS[lastActual]+'</span>');
   rows.forEach(function(spec){
     var aSum=0, tSum=0, pSum=0, hasA=false, hasT=false, hasP=false;
     var aN=0, tN=0, sN=0, lN=0, tsN=0, tlN=0, psN=0, plN=0;
@@ -1084,8 +1143,9 @@ function renderBudgetSpendTracker(){
   renderBudgetPlanRecap();
 }
 
-/* P&L actuals: Total Sales + GL 6750 Live Entertainment (read-only). Budget inputs stay in BGT_PLAN. */
-var BGT_ACTUALS = {"Casa Neos Beach Club": {"2024": {"01": {"sales": 0.0, "live": 0.0}, "02": {"sales": 0.0, "live": 0.0}, "03": {"sales": 0.0, "live": 0.0}, "04": {"sales": 0.0, "live": 0.0}, "05": {"sales": 0.0, "live": 0.0}, "06": {"sales": 267272.95, "live": 5918.5}, "07": {"sales": 1323214.72, "live": 8322.05}, "08": {"sales": 1373253.97, "live": 3133.82}, "09": {"sales": 1518137.98, "live": 3900.0}, "10": {"sales": 997720.82, "live": 10026.6}, "11": {"sales": 1363086.75, "live": 22220.28}, "12": {"sales": 2348494.68, "live": 201907.82}}, "2025": {"01": {"sales": 2297283.81, "live": 96069.31}, "02": {"sales": 2557057.73, "live": 116322.75}, "03": {"sales": 3806628.3, "live": 151668.89}, "04": {"sales": 2996929.08, "live": 155896.19}, "05": {"sales": 3388786.61, "live": 324256.07}, "06": {"sales": 2909123.58, "live": 77694.02}, "07": {"sales": 1802384.45, "live": 60741.21}, "08": {"sales": 1930719.61, "live": 48635.54}, "09": {"sales": 2518777.6, "live": 72558.74}, "10": {"sales": 2078547.57, "live": 71536.13}, "11": {"sales": 2529366.22, "live": 138534.6}, "12": {"sales": 4417099.08, "live": 580481.12}}, "2026": {"01": {"sales": 3871217.7, "live": 633717.78}, "02": {"sales": 2949678.36, "live": 234848.9}, "03": {"sales": 4612961.61, "live": 644959.52}, "04": {"sales": 3169573.56, "live": 212641.69}, "05": {"sales": 3958106.03, "live": 398321.53}, "06": {"sales": 3411474.28, "live": 167020.28}, "07": {"sales": 2295953.07, "live": 98890.75}}}, "MILA Lounge": {"2024": {"01": {"sales": 1591149.05, "live": 121524.52}, "02": {"sales": 1820138.11, "live": 70757.61}, "03": {"sales": 1964112.82, "live": 221728.17}, "04": {"sales": 1542275.0, "live": 48752.45}, "05": {"sales": 1870989.13, "live": 132855.58}, "06": {"sales": 1504863.57, "live": 85748.01}, "07": {"sales": 1206631.4, "live": 60309.44}, "08": {"sales": 1106383.27, "live": 86495.44}, "09": {"sales": 1347146.89, "live": 85510.81}, "10": {"sales": 1297072.69, "live": 75250.14}, "11": {"sales": 1476368.31, "live": 143279.92}, "12": {"sales": 2378054.56, "live": 341196.98}}, "2025": {"01": {"sales": 1878325.12, "live": 130869.8}, "02": {"sales": 1785196.94, "live": 224185.8}, "03": {"sales": 2178833.88, "live": 236842.83}, "04": {"sales": 1482763.05, "live": 88902.46}, "05": {"sales": 1848554.41, "live": 271261.84}, "06": {"sales": 1370837.67, "live": 94253.62}, "07": {"sales": 913603.97, "live": 59224.33}, "08": {"sales": 1079194.08, "live": 82313.21}, "09": {"sales": 1360440.23, "live": 95878.4}, "10": {"sales": 1421583.2, "live": 87130.92}, "11": {"sales": 1518266.14, "live": 107781.35}, "12": {"sales": 2425031.34, "live": 364009.31}}, "2026": {"01": {"sales": 2216434.48, "live": 214408.65}, "02": {"sales": 1759429.07, "live": 133400.73}, "03": {"sales": 2447280.08, "live": 153918.74}, "04": {"sales": 1514845.24, "live": 101061.67}, "05": {"sales": 2114019.21, "live": 197496.84}, "06": {"sales": 1387232.27, "live": 135121.58}, "07": {"sales": 1021061.7, "live": 72816.05}}}, "Casa Neos Lounge": {"2026": {"01": {"sales": 0.0, "live": 0.0}, "02": {"sales": 0.0, "live": 0.0}, "03": {"sales": 1272552.61, "live": 195804.54}, "04": {"sales": 912125.58, "live": 92563.92}, "05": {"sales": 1441139.88, "live": 171294.27}, "06": {"sales": 1104175.23, "live": 140249.29}, "07": {"sales": 613353.3, "live": 90514.91}}}};
+/* P&L actuals: Total Sales + GL 6750 Live Entertainment (read-only). Budget inputs stay in BGT_PLAN.
+   2026 periods 1–10 are Restaurant365 through Oct 25, 2026. */
+var BGT_ACTUALS = {"Casa Neos Beach Club": {"2024": {"01": {"sales": 0.0, "live": 0.0}, "02": {"sales": 0.0, "live": 0.0}, "03": {"sales": 0.0, "live": 0.0}, "04": {"sales": 0.0, "live": 0.0}, "05": {"sales": 0.0, "live": 0.0}, "06": {"sales": 267272.95, "live": 5918.5}, "07": {"sales": 1323214.72, "live": 8322.05}, "08": {"sales": 1373253.97, "live": 3133.82}, "09": {"sales": 1518137.98, "live": 3900.0}, "10": {"sales": 997720.82, "live": 10026.6}, "11": {"sales": 1363086.75, "live": 22220.28}, "12": {"sales": 2348494.68, "live": 201907.82}}, "2025": {"01": {"sales": 2297283.81, "live": 96069.31}, "02": {"sales": 2557057.73, "live": 116322.75}, "03": {"sales": 3806628.3, "live": 151668.89}, "04": {"sales": 2996929.08, "live": 155896.19}, "05": {"sales": 3388786.61, "live": 324256.07}, "06": {"sales": 2909123.58, "live": 77694.02}, "07": {"sales": 1802384.45, "live": 60741.21}, "08": {"sales": 1930719.61, "live": 48635.54}, "09": {"sales": 2518777.6, "live": 72558.74}, "10": {"sales": 2078547.57, "live": 71536.13}, "11": {"sales": 2529366.22, "live": 138534.6}, "12": {"sales": 4417099.08, "live": 580481.12}}, "2026": {"01": {"sales": 3871217.7, "live": 633717.78}, "02": {"sales": 2949678.36, "live": 234848.9}, "03": {"sales": 4612961.61, "live": 644959.52}, "04": {"sales": 3169573.56, "live": 212641.69}, "05": {"sales": 3958106.03, "live": 398321.53}, "06": {"sales": 3411474.28, "live": 167020.28}, "07": {"sales": 2293149.34, "live": 106889.36}, "08": {"sales": 1649106.02, "live": 101477.78}, "09": {"sales": 2066576, "live": 111933.5}, "10": {"sales": 2169859, "live": 193079.4}}}, "MILA Lounge": {"2024": {"01": {"sales": 1591149.05, "live": 121524.52}, "02": {"sales": 1820138.11, "live": 70757.61}, "03": {"sales": 1964112.82, "live": 221728.17}, "04": {"sales": 1542275.0, "live": 48752.45}, "05": {"sales": 1870989.13, "live": 132855.58}, "06": {"sales": 1504863.57, "live": 85748.01}, "07": {"sales": 1206631.4, "live": 60309.44}, "08": {"sales": 1106383.27, "live": 86495.44}, "09": {"sales": 1347146.89, "live": 85510.81}, "10": {"sales": 1297072.69, "live": 75250.14}, "11": {"sales": 1476368.31, "live": 143279.92}, "12": {"sales": 2378054.56, "live": 341196.98}}, "2025": {"01": {"sales": 1878325.12, "live": 130869.8}, "02": {"sales": 1785196.94, "live": 224185.8}, "03": {"sales": 2178833.88, "live": 236842.83}, "04": {"sales": 1482763.05, "live": 88902.46}, "05": {"sales": 1848554.41, "live": 271261.84}, "06": {"sales": 1370837.67, "live": 94253.62}, "07": {"sales": 913603.97, "live": 59224.33}, "08": {"sales": 1079194.08, "live": 82313.21}, "09": {"sales": 1360440.23, "live": 95878.4}, "10": {"sales": 1421583.2, "live": 87130.92}, "11": {"sales": 1518266.14, "live": 107781.35}, "12": {"sales": 2425031.34, "live": 364009.31}}, "2026": {"01": {"sales": 2216434.48, "live": 214408.65}, "02": {"sales": 1759429.07, "live": 133400.73}, "03": {"sales": 2447280.08, "live": 153918.74}, "04": {"sales": 1514845.24, "live": 101061.67}, "05": {"sales": 2114019.21, "live": 197496.84}, "06": {"sales": 1387232.27, "live": 135121.58}, "07": {"sales": 1148443.02, "live": 75816.05}, "08": {"sales": 822836.29, "live": 90567.44}, "09": {"sales": 1333196.89, "live": 102260.17}, "10": {"sales": 1541727.34, "live": 148288.38}}}, "Casa Neos Lounge": {"2026": {"01": {"sales": 0.0, "live": 0.0}, "02": {"sales": 0.0, "live": 0.0}, "03": {"sales": 1272552.61, "live": 195804.54}, "04": {"sales": 912125.58, "live": 92563.92}, "05": {"sales": 1441139.88, "live": 171294.27}, "06": {"sales": 1104175.23, "live": 140249.29}, "07": {"sales": 659301.03, "live": 97964.91}, "08": {"sales": 485492.41, "live": 34016.17}, "09": {"sales": 598090.82, "live": 26108.37}, "10": {"sales": 635580.09, "live": 137448.89}}}};
 function getBgtActual(venue, year, mm, field){
   var row=(((BGT_ACTUALS[venue]||{})[String(year)]||{})[mm]||{});
   var v=row[field];
