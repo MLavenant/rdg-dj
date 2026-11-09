@@ -773,6 +773,10 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .flash-chart-key{display:flex;gap:14px;justify-content:center;margin-top:6px}
 .flash-chart-key span{font-size:11px;font-weight:750;color:#475569}
 .flash-chart-key span:before{content:'';display:inline-block;width:9px;height:9px;border-radius:2px;background:#1f2937;margin-right:5px}
+.flash-plan-shows tr.flash-plan-group th{text-align:center;background:#f8fafc;color:#0b2e40}
+.flash-plan-shows tr.flash-plan-group th.tgt,.flash-plan-shows td.tgt{background:#fff3bf}
+.flash-plan-shows tr.flash-plan-group th.py{background:#eefbf3}
+.flash-chart-key .is-year:before{background:#16a34a}
 .flash-chart-key .is-under:before{background:#16a34a}
 .flash-chart-key .is-over:before{background:#dc2626}
 .flash-chart-key .is-target:before{background:#f5c542}
@@ -1111,19 +1115,19 @@ body.res-view #venTabs,body.res-view #yrPills{display:none!important}
 #residentBody .res-tone-kryo,
 #residentBody .res-tone-greeters,
 #residentBody .res-tone-mm{background:#eceae6!important}
-#residentBody td.res-due{background:#fde8e8!important}
-#residentBody td.res-paid{background:#d9f5e3!important}
+#residentBody td.res-cell.res-due{background:#fde8e8!important}
+#residentBody td.res-cell.res-paid{background:#b7e4c7!important}
 #residentBody td.res-pay{position:relative}
-#residentBody .res-dot{position:absolute;right:4px;top:50%;width:13px;height:13px;margin-top:-6.5px;border-radius:50%;border:1.5px solid #b7b1a8;background:#fff;padding:0;cursor:pointer}
+#residentBody .res-dot{position:absolute;left:3px;top:50%;width:7px;height:7px;margin-top:-3.5px;border-radius:50%;border:1.5px solid #b7b1a8;background:#fff;padding:0;cursor:pointer}
 #residentBody td.res-paid .res-dot,#residentBody .res-dot.is-paid{background:#3d9a62;border-color:#2f7a4c}
 #residentBody .res-dot.has-note{box-shadow:inset 0 0 0 3px #0b2e40}
 #residentBody .res-name,#residentBody .res-money{width:auto;box-sizing:border-box;border:0;border-radius:0;background:transparent;color:var(--ink);font:inherit;font-size:12px;font-weight:650;padding:2px 3px;outline:none;box-shadow:none}
 #residentBody .res-name{width:100%;min-width:0;max-width:none}
-#residentBody .res-money{width:100%;min-width:0;max-width:none;text-align:right;font-variant-numeric:tabular-nums;padding:0 16px 0 1px}
+#residentBody .res-money{width:100%;min-width:0;max-width:none;text-align:right;font-variant-numeric:tabular-nums;padding:0 2px 0 12px}
 #residentBody td.res-picked{box-shadow:inset 0 0 0 2px #0b2e40}
 #residentBody .res-name:focus,#residentBody .res-money:focus{background:rgba(255,255,255,.55);outline:1px solid rgba(40,32,24,.28)}
 #residentBody td.res-cell{padding:1px 2px!important}
-#residentBody td.res-pay .res-money{padding-right:16px}
+#residentBody td.res-paid .res-money,#residentBody td.res-due .res-money{background:transparent}
 #view-calendar .cal-nav,#view-accounting .cal-nav,#view-calendar #monthSlider,#view-accounting #acctSlider{flex-shrink:0;z-index:5;background:var(--card)}
 .main > [id^="view-"]:not(#view-calendar):not(#view-accounting):not(#view-resident){flex:1;min-height:0;overflow:auto}
 #calBody,#acctBody{flex:1 1 auto;min-height:0;margin:0 16px 16px;border-radius:var(--r-lg);overflow:auto!important;max-height:none!important;box-shadow:var(--shadow-sm);background:var(--card)}
@@ -2516,11 +2520,13 @@ body.mobile-mode .sb-btn{min-height:44px}
 .signin-field input,.signin-code{border:0;outline:none;background:transparent;font:inherit;font-size:15px;color:#3a342c;width:100%}
 .signin-field input::placeholder{color:#c5beb6}
 .signin-code{height:52px;border:1px solid #e7e1d8;background:#fff;border-radius:10px;padding:0 14px;letter-spacing:.35em;text-align:center}
+@keyframes signInAutofill{from{opacity:1}to{opacity:1}}
+.signin-code:-webkit-autofill{animation-name:signInAutofill;animation-duration:.01s}
 .signin-field input:focus,.signin-code:focus{outline:none}
 .signin-field:focus-within,.signin-code:focus{border-color:#cfc6bb}
-.signin-btn{margin-top:14px;height:52px;border:0;border-radius:10px;background:#e4ddd4;color:#fff;font:inherit;font-size:16px;font-weight:650;cursor:pointer;transition:background .15s ease}
+.signin-btn{margin-top:14px;height:52px;border:0;border-radius:10px;background:#e4ddd4;color:#3f3a36;font:inherit;font-size:16px;font-weight:650;cursor:pointer;transition:background .15s ease,color .15s ease}
 .signin-btn:hover{background:#d9d2c8}
-.signin-btn.signin-btn-ready{background:#6f6861}
+.signin-btn.signin-btn-ready{background:#6f6861;color:#fff}
 .signin-btn.signin-btn-ready:hover{background:#5f5953}
 .signin-btn:disabled{cursor:default}
 .signin-who{margin:0 0 8px;font-size:14px;color:#3a342c;text-align:center}

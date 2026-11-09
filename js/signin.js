@@ -84,7 +84,7 @@ function signInPaintCodeBtn(){
   var pin=signInDigits(el&&el.value);
   var ready=pin.length===6;
   btn.classList.toggle('signin-btn-ready', ready);
-  btn.textContent=ready?'Enter':'';
+  btn.textContent='Enter';
 }
 function signInPinTyped(){
   var el=document.getElementById('signinCode');
@@ -457,3 +457,11 @@ function renderAccess(){
 /* fiscal.js opens the gate before this file loads. Open it again so a saved
    email lands on the PIN, not the email form. */
 try{ if(typeof _sessionIsActive==='function' && !_sessionIsActive()) _showSessionGate(); }catch(eGate){}
+(function(){
+  var el=document.getElementById('signinCode');
+  if(!el) return;
+  el.addEventListener('change', signInPinTyped);
+  el.addEventListener('animationstart', function(e){
+    if(e.animationName==='signInAutofill') setTimeout(signInPinTyped, 0);
+  });
+})();
