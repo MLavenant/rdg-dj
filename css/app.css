@@ -757,19 +757,26 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .flash-chart-hd{font-size:13px;font-weight:800;color:#0b2e40;margin:0 0 6px}
 .flash-chart-row{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:end}
 .flash-chart-m{display:flex;flex-direction:column;align-items:center}
-.flash-chart-bars{display:flex;align-items:flex-end;justify-content:center;gap:8px;width:100%;height:132px}
-.flash-chart-bar{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;width:54px}
-.flash-chart-bar b{font-size:11px;font-weight:800;color:#111;margin-bottom:4px;line-height:1}
-.flash-chart-bar .track{flex:1;width:100%;display:flex;align-items:flex-end}
+.flash-chart-bars{display:flex;align-items:flex-end;justify-content:center;gap:16px;width:100%;height:148px}
+.flash-chart-pair{display:flex;align-items:flex-end;gap:6px;height:100%}
+.flash-chart-bar{display:flex;flex-direction:column;justify-content:flex-end;height:100%;width:62px}
+.flash-chart-bar .track{height:100%;width:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
+.flash-chart-bar b{font-size:11px;font-weight:800;color:#111;margin:0 0 2px;line-height:1}
 .flash-chart-bar i{display:block;width:100%;border-radius:5px 5px 0 0;background:#1f2937}
+.flash-chart-bar.is-under i{background:#16a34a}
+.flash-chart-bar.is-under b{color:#15803d}
+.flash-chart-bar.is-over i{background:#dc2626}
+.flash-chart-bar.is-over b{color:#b91c1c}
 .flash-chart-bar.is-target i{background:#f5c542}
-.flash-chart-bar.is-py i{background:#cbd5e1}
+.flash-chart-bar.is-py i{background:#86efac}
 .flash-chart-m em{font-style:normal;font-size:12px;font-weight:800;color:#334155;margin-top:6px}
 .flash-chart-key{display:flex;gap:14px;justify-content:center;margin-top:6px}
 .flash-chart-key span{font-size:11px;font-weight:750;color:#475569}
 .flash-chart-key span:before{content:'';display:inline-block;width:9px;height:9px;border-radius:2px;background:#1f2937;margin-right:5px}
+.flash-chart-key .is-under:before{background:#16a34a}
+.flash-chart-key .is-over:before{background:#dc2626}
 .flash-chart-key .is-target:before{background:#f5c542}
-.flash-chart-key .is-py:before{background:#cbd5e1}
+.flash-chart-key .is-py:before{background:#86efac}
 .flash-plan-total td{border-top:2px solid #0b2e40;border-bottom:none;font-weight:800}
 .flash-plan-month td{background:#f8fafc;text-align:left;padding-top:8px}
 #vipBody > .vip-print-page{width:100%;align-self:stretch}
@@ -2408,6 +2415,8 @@ body.mobile-mode .sb-btn{min-height:44px}
 .mr-fill .bp-deck-hd img{height:148px}
 .mr-fill .bp-deck-body{display:block;overflow:visible}
 .mr-fill .mr-pdf-locs{position:absolute;left:24px;right:24px;top:50%;width:auto;height:auto;gap:16px;align-items:stretch;margin:0;transform:translateY(-50%)}
+.flash-cards.mr-fill .bp-deck-body{display:flex!important;align-items:center;justify-content:center;overflow:hidden;flex:1;min-height:0}
+.flash-cards.mr-fill .mr-pdf-locs{position:relative!important;top:auto!important;left:auto!important;right:auto!important;width:100%!important;height:auto!important;transform:none!important;margin:0!important}
 .mr-fill .mr-pdf-loc{height:auto;box-sizing:border-box;justify-content:flex-start;padding:22px 16px 24px}
 .mr-fill .mr-pdf-loc h3{font-size:36px;margin:0 0 16px;text-align:center}
 .mr-fill .mr-cmp{display:grid;grid-template-columns:minmax(150px,1fr) max-content max-content max-content;column-gap:0;row-gap:16px;align-items:center;width:100%}

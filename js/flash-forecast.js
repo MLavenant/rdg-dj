@@ -172,17 +172,33 @@ function flashPlanChart(title, groups, series){
   });
   if(!(max>0)) max=1;
   var h='<div class="flash-chart">'+(title?'<div class="flash-chart-hd">'+_escHtml(title)+'</div>':'')+'<div class="flash-chart-row">';
+  function bar(g, s){
+    var n=g[s.key];
+    var pct=(n!=null && isFinite(+n) && +n>0)?Math.max(8, Math.round(+n/max*100)):0;
+    var cls=s.cls;
+    if(s.key==='spend'){
+      if(g.target!=null && isFinite(+g.target) && n!=null && +n>+g.target) cls='is-over';
+      else if(g.target!=null && isFinite(+g.target)) cls='is-under';
+    }
+    return '<div class="flash-chart-bar '+cls+'"><span class="track"><b>'+(n!=null&&isFinite(+n)?flashPlanMoney(n):'\u2014')+'</b><i style="height:'+pct+'%"></i></span></div>';
+  }
   (groups||[]).forEach(function(g){
+    var lead=(series||[]).filter(function(s){ return s.key==='spend'; });
+    var rest=(series||[]).filter(function(s){ return s.key!=='spend'; });
     h+='<div class="flash-chart-m"><div class="flash-chart-bars">';
-    (series||[]).forEach(function(s){
-      var n=g[s.key];
-      var pct=(n!=null && isFinite(+n) && +n>0)?Math.max(8, Math.round(+n/max*100)):0;
-      h+='<div class="flash-chart-bar '+s.cls+'"><b>'+(n!=null&&isFinite(+n)?flashPlanMoney(n):'\u2014')+'</b><span class="track"><i style="height:'+pct+'%"></i></span></div>';
-    });
+    lead.forEach(function(s){ h+=bar(g, s); });
+    if(rest.length){
+      h+='<div class="flash-chart-pair">';
+      rest.forEach(function(s){ h+=bar(g, s); });
+      h+='</div>';
+    }
     h+='</div><em>'+_escHtml(g.label||'')+'</em></div>';
   });
   h+='</div><div class="flash-chart-key">';
-  (series||[]).forEach(function(s){ h+='<span class="'+s.cls+'">'+_escHtml(s.name)+'</span>'; });
+  (series||[]).forEach(function(s){
+    if(s.key==='spend') h+='<span class="is-under">Under target</span><span class="is-over">Over target</span>';
+    else h+='<span class="'+s.cls+'">'+_escHtml(s.name)+'</span>';
+  });
   h+='</div></div>';
   return h;
 }
@@ -220,19 +236,20 @@ function flashPlanSlide(data, n, of){
     {key:'pyBs', name:'PY actual', cls:'is-py'}
   ]);
   h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Performance vs prior year<em>Prior year is the DJ fee, bottle service actual, and ROI only.</em></div>';
-  h+='<table class="flash-plan-shows"><thead><tr><th class="l">Date</th><th class="l">Artist</th><th>Fee</th><th>BS expected</th><th>ROI</th><th class="py">PY fee</th><th class="py">PY bottle service</th><th class="py">PY ROI</th></tr></thead><tbody>';
+  h+='<table class="flash-plan-shows"><thead><tr><th class="l">Date</th><th class="l">Artist</th><th class="l py">PY artist</th><th>Fee</th><th>Bottle Service Target</th><th>ROI</th><th class="py">PY fee</th><th class="py">PY bottle service</th><th class="py">PY ROI</th></tr></thead><tbody>';
   cells.forEach(function(c){
     var rows=(c.rows||[]).slice().sort(function(a,b){ return a.d<b.d?-1:(a.d>b.d?1:0); });
     if(!rows.length){
-      h+='<tr class="flash-plan-month"><td class="l" colspan="8"><b>'+_escHtml(c.month.label)+'</b> <span>No performances</span></td></tr>';
+      h+='<tr class="flash-plan-month"><td class="l" colspan="9"><b>'+_escHtml(c.month.label)+'</b> <span>No performances</span></td></tr>';
       return;
     }
-    h+='<tr class="flash-plan-month"><td class="l" colspan="8"><b>'+_escHtml(c.month.label)+'</b> <span>'+_escHtml(c.month.range||'')+'</span></td></tr>';
+    h+='<tr class="flash-plan-month"><td class="l" colspan="9"><b>'+_escHtml(c.month.label)+'</b> <span>'+_escHtml(c.month.range||'')+'</span></td></tr>';
     rows.forEach(function(r){
       var ly=(typeof _bpLyShow==='function')?_bpLyShow(venue, r.d):null;
       var bs=(typeof _bpShowBs==='function')?_bpShowBs(r):r.bs_m;
       h+='<tr><td class="l"><b>'+(typeof _bpDay==='function'?_bpDay(r.d):_escHtml(r.d))+'</b></td>'
         +'<td class="l">'+_escHtml(r.dj||'TBD')+'</td>'
+        +'<td class="l py">'+_escHtml(ly&&ly.dj?ly.dj:'\u2014')+'</td>'
         +'<td>'+flashPlanMoney(r.fee)+'</td>'
         +'<td>'+flashPlanMoney(bs)+'</td>'
         +'<td>'+flashPlanRoi(bs, r.fee)+'</td>'
@@ -241,7 +258,7 @@ function flashPlanSlide(data, n, of){
         +'<td class="py">'+flashPlanRoi(ly&&ly.bs, ly&&ly.fee)+'</td></tr>';
     });
   });
-  if(!cells.length) h+='<tr><td class="l" colspan="8">No performances in this window.</td></tr>';
+  if(!cells.length) h+='<tr><td class="l" colspan="9">No performances in this window.</td></tr>';
   h+='</tbody></table>';
   h+='</div>';
   h+='<div class="bp-deck-ft"><span>Prepared '+(typeof _bpFmtDate==='function'?_escHtml(_bpFmtDate(_bpNow())):'')+'</span><span>Riviera Dining Group \u00b7 Entertainment</span></div>';
@@ -334,6 +351,24 @@ function flashCaptureDeck(page){
   clone.style.height='1236px';
   clone.style.position='relative';
   clone.style.margin='0';
+  /* html2canvas drops the card pages when they are shifted with a transform. */
+  clone.querySelectorAll('.mr-pdf-locs').forEach(function(el){
+    el.style.position='relative';
+    el.style.top='auto';
+    el.style.left='auto';
+    el.style.right='auto';
+    el.style.width='100%';
+    el.style.transform='none';
+  });
+  var deckBody=clone.querySelector('.bp-deck-body');
+  if(deckBody && clone.querySelector('.mr-pdf-locs')){
+    deckBody.style.display='flex';
+    deckBody.style.alignItems='center';
+    deckBody.style.justifyContent='center';
+    deckBody.style.overflow='hidden';
+    deckBody.style.height='auto';
+    deckBody.style.minHeight='860px';
+  }
   stage.appendChild(clone);
   document.body.appendChild(stage);
   var fonts=document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve();
