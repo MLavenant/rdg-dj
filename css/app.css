@@ -768,7 +768,7 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .flash-chart-bar.is-over i{background:#dc2626}
 .flash-chart-bar.is-over b{color:#b91c1c}
 .flash-chart-bar.is-target i{background:#f5c542}
-.flash-chart-bar.is-py i{background:#86efac}
+.flash-chart-bar.is-py i{background:#93c5fd}
 .flash-chart-m em{font-style:normal;font-size:12px;font-weight:800;color:#334155;margin-top:6px}
 .flash-chart-key{display:flex;gap:14px;justify-content:center;margin-top:6px}
 .flash-chart-key span{font-size:11px;font-weight:750;color:#475569}
@@ -780,7 +780,7 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .flash-chart-key .is-under:before{background:#16a34a}
 .flash-chart-key .is-over:before{background:#dc2626}
 .flash-chart-key .is-target:before{background:#f5c542}
-.flash-chart-key .is-py:before{background:#86efac}
+.flash-chart-key .is-py:before{background:#93c5fd}
 .flash-plan-total td{border-top:2px solid #0b2e40;border-bottom:none;font-weight:800}
 .flash-plan-month td{background:#f8fafc;text-align:left;padding-top:8px}
 #vipBody > .vip-print-page{width:100%;align-self:stretch}

@@ -7,8 +7,15 @@ var FINANCE_APPROVERS={
   'takuma@rivieradininggroup.com':1
 };
 var FINANCE_MARKS={};
+function financeSignedInEmail(){
+  var email='';
+  if(typeof signInCurrentEmail==='function') email=signInCurrentEmail();
+  if(!email && typeof signInSavedEmail==='function' && typeof signInNormalizeEmail==='function') email=signInNormalizeEmail(signInSavedEmail());
+  return email;
+}
 function financeCanApprove(){
-  return typeof signInCurrentEmail==='function' && !!FINANCE_APPROVERS[signInCurrentEmail()];
+  if(typeof signInIsOwner==='function' && signInIsOwner()) return true;
+  return !!FINANCE_APPROVERS[financeSignedInEmail()];
 }
 function unlockFinance(){
   return financeCanApprove();
@@ -151,3 +158,5 @@ function renderFinanceApproval(){
   };
 }
 try{ initFinanceMarks(); }catch(eFa){}
+/* Sidebar is built during boot, before this file loads. Rebuild so Matthias and Greg keep the item. */
+try{ if(typeof buildSidebar==='function') buildSidebar(); }catch(eSb){}
