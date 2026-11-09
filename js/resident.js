@@ -52,7 +52,8 @@ function residentSizeMoney(el){
   var n=String(el.value||'').length;
   var ch=name?Math.max(4, Math.min(22, n||4)):Math.max(3, n||1);
   el.size=ch;
-  if(!name) el.style.width=ch+'ch';
+  /* Amounts fill their cell (CSS width 100%) so the trailing $ is never clipped. */
+  if(name) el.style.width=ch+'ch';
 }
 function residentFormatMoneyInput(el, n){
   if(!el) return;
