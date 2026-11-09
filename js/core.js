@@ -144,6 +144,7 @@ function setView(v) {
   if(v==='access' && (typeof signInIsOwner!=='function' || !signInIsOwner())) return;
   closeMobileNav();
   curView = v;
+  document.body.classList.toggle('res-view', v==='resident');
   try{
     if(_presenceRef) _presenceRef.update({view:v,lastSeen:firebase.database.ServerValue.TIMESTAMP});
   }catch(ePresence){}
@@ -160,7 +161,7 @@ function setView(v) {
   if (v === 'resident') {
     clearGlobalCalChrome();
     var resSub=document.getElementById('pgSub');
-    if(resSub) resSub.innerHTML='<span>'+(typeof curV!=='undefined'?curV:'')+' · Resident DJ</span>';
+    if(resSub) resSub.innerHTML='<span>Resident DJ</span>';
     if(typeof renderResidentCalendar==='function') renderResidentCalendar();
     return;
   }
@@ -1480,7 +1481,7 @@ function go() {
   if(curView==='resident'){
     clearGlobalCalChrome();
     var resSub=document.getElementById('pgSub');
-    if(resSub) resSub.innerHTML='<span>'+curV+' · Resident DJ</span>';
+    if(resSub && typeof residentHere==='function') resSub.innerHTML='<span>'+residentHere().venue+' · Resident DJ</span>';
     if(typeof renderResidentCalendar==='function') renderResidentCalendar();
     return;
   }

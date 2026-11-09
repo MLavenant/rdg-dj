@@ -2,6 +2,8 @@
    Reads the same fiscal dates for the month strip. Never writes SCHED. */
 
 var RESIDENT_DJ = {};
+var RESIDENT_VENUES = ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge','AVA MM','MILA 3F','CLAUDIE','AVA CG','CASA HONO'];
+var resYear = null, resMonth = null, resVenue = null;
 var RESIDENT_ROLES = [
   {id:'resident_dj', label:'Resident DJ'},
   {id:'light_jockey', label:'Light Jockey'},
@@ -10,6 +12,17 @@ var RESIDENT_ROLES = [
   {id:'mm', label:'MM'}
 ];
 
+function residentHere(){
+  if(resYear==null){
+    var y=parseInt(String(typeof TODAY!=='undefined'?TODAY:'').slice(0,4),10);
+    resYear=y||2026;
+  }
+  if(resMonth==null) resMonth=(typeof curM!=='undefined')?curM:0;
+  if(!resVenue || RESIDENT_VENUES.indexOf(resVenue)<0){
+    resVenue=(typeof curV!=='undefined' && RESIDENT_VENUES.indexOf(curV)>=0)?curV:RESIDENT_VENUES[0];
+  }
+  return {year:resYear, month:resMonth, venue:resVenue};
+}
 function residentKey(venue, ds){
   return String(venue||'').replace(/[^a-zA-Z0-9]+/g,'_')+'__'+String(ds||'');
 }
@@ -39,7 +52,7 @@ function residentSizeMoney(el){
   var n=String(el.value||'').length;
   var ch=name?Math.max(4, Math.min(22, n||4)):Math.max(3, n||1);
   el.size=ch;
-  el.style.width=ch+'ch';
+  if(!name) el.style.width=ch+'ch';
 }
 function residentFormatMoneyInput(el, n){
   if(!el) return;
@@ -64,7 +77,7 @@ function residentGuestNames(ds){
   if(typeof SCHED==='undefined') return '';
   var names=[];
   SCHED.forEach(function(r){
-    if(!r || (r.v||r.venue)!==curV || r.d!==ds || r._s==='empty') return;
+    if(!r || (r.v||r.venue)!==residentHere().venue || r.d!==ds || r._s==='empty') return;
     var nm=r.dj==null?'':String(r.dj).trim();
     if(!nm || /^tbd$/i.test(nm)) return;
     if(typeof djLabel==='function') nm=djLabel(nm);
@@ -96,39 +109,63 @@ function residentApplyPay(td, bits){
   td.classList.remove('res-due','res-paid');
   if(bits.paid) td.classList.add('res-paid');
   else if(bits.amt!=null && bits.amt!=='' && isFinite(+bits.amt)) td.classList.add('res-due');
-  var note=td.querySelector('.res-flag-note');
-  if(note){
+  var dot=td.querySelector('.res-dot');
+  if(dot){
     var text=String(bits.note||'').trim();
-    note.classList.toggle('on', !!text);
-    note.title=text||'Comment';
+    dot.classList.toggle('is-paid', !!bits.paid);
+    dot.classList.toggle('has-note', !!text);
+    dot.title=text||'';
   }
 }
-function residentFlag(btn){
-  if(!btn) return;
-  var ds=btn.getAttribute('data-ds');
-  var field=btn.getAttribute('data-field');
-  var role=btn.getAttribute('data-role')||'';
-  var key=residentKey(curV, ds);
+function residentWriteFlag(ds, field, role, kind, value){
+  var key=residentKey(residentHere().venue, ds);
   var row=RESIDENT_DJ[key];
   if(!row || typeof row!=='object') row={};
   if(role){
     if(!row[role] || typeof row[role]!=='object') row[role]={};
-    if(btn.getAttribute('data-act')==='paid') row[role].paid=!row[role].paid;
-    else {
-      var next=window.prompt('Comment', row[role].note||'');
-      if(next===null) return;
-      row[role].note=String(next).trim();
-    }
-  }else if(btn.getAttribute('data-act')==='paid'){
-    row[field+'Paid']=!row[field+'Paid'];
+    if(kind==='paid') row[role].paid=!!value;
+    else row[role].note=String(value||'').trim();
+  }else if(kind==='paid'){
+    row[field+'Paid']=!!value;
   }else{
-    var typed=window.prompt('Comment', row[field+'Note']||'');
-    if(typed===null) return;
-    row[field+'Note']=String(typed).trim();
+    row[field+'Note']=String(value||'').trim();
   }
   RESIDENT_DJ[key]=row;
-  residentApplyPay(btn.closest('td'), residentBits(row, role, field));
+  var body=document.getElementById('residentBody');
+  var sel='td .res-dot[data-ds="'+ds+'"][data-field="'+field+'"]'+(role?'[data-role="'+role+'"]':'');
+  var dot=body?body.querySelector(sel):null;
+  if(dot) residentApplyPay(dot.closest('td'), residentBits(row, role, field));
   residentSave(key);
+}
+function residentOpenPop(btn){
+  var pop=document.getElementById('resPop');
+  if(!pop){
+    pop=document.createElement('div');
+    pop.id='resPop';
+    pop.className='res-pop';
+    pop.innerHTML='<label><input type="checkbox"> Paid</label><textarea rows="2" placeholder="Comment"></textarea>';
+    document.body.appendChild(pop);
+    pop.addEventListener('mousedown', function(e){ e.stopPropagation(); });
+    pop.querySelector('input').addEventListener('change', function(){
+      residentWriteFlag(pop.getAttribute('data-ds'), pop.getAttribute('data-field'), pop.getAttribute('data-role')||'', 'paid', this.checked);
+    });
+    pop.querySelector('textarea').addEventListener('change', function(){
+      residentWriteFlag(pop.getAttribute('data-ds'), pop.getAttribute('data-field'), pop.getAttribute('data-role')||'', 'note', this.value);
+    });
+  }
+  var ds=btn.getAttribute('data-ds');
+  var field=btn.getAttribute('data-field');
+  var role=btn.getAttribute('data-role')||'';
+  var bits=residentBits(residentDay(residentHere().venue, ds), role, field);
+  pop.setAttribute('data-ds', ds);
+  pop.setAttribute('data-field', field);
+  pop.setAttribute('data-role', role);
+  pop.querySelector('input').checked=!!bits.paid;
+  pop.querySelector('textarea').value=bits.note||'';
+  var box=btn.getBoundingClientRect();
+  pop.style.left=Math.max(8, Math.min(window.innerWidth-196, box.left-80))+'px';
+  pop.style.top=(box.bottom+6)+'px';
+  pop.classList.add('on');
 }
 function residentMoneyTd(ds, field, role, tone, amt, paid, note){
   var cls='res-cell res-pay res-tone-'+tone+(field==='amt'?'':' res-split');
@@ -137,15 +174,14 @@ function residentMoneyTd(ds, field, role, tone, amt, paid, note){
   var roleAttr=role?' data-role="'+role+'"':'';
   var noted=String(note||'').trim();
   return '<td class="'+cls+'"><input class="res-money" size="'+residentMoneySize(amt)+'" inputmode="decimal" data-ds="'+ds+'"'+roleAttr+' data-field="'+field+'" value="'+residentMoney(amt)+'" oninput="residentEdit(this)">'
-    +'<button type="button" class="res-flag res-flag-paid" data-act="paid" data-ds="'+ds+'"'+roleAttr+' data-field="'+field+'" title="Mark paid">Paid</button>'
-    +'<button type="button" class="res-flag res-flag-note'+(noted?' on':'')+'" data-act="note" data-ds="'+ds+'"'+roleAttr+' data-field="'+field+'" title="'+residentEsc(noted||'Comment')+'"></button></td>';
+    +'<button type="button" class="res-flag res-dot'+(paid?' is-paid':'')+(noted?' has-note':'')+'" data-ds="'+ds+'"'+roleAttr+' data-field="'+field+'" title="'+residentEsc(noted)+'"></button></td>';
 }
 function residentEdit(el){
   if(!el) return;
   var ds=el.getAttribute('data-ds');
   var field=el.getAttribute('data-field');
   var role=el.getAttribute('data-role')||'';
-  var key=residentKey(curV, ds);
+  var key=residentKey(residentHere().venue, ds);
   var row=RESIDENT_DJ[key];
   if(!row || typeof row!=='object') row={};
   if(field==='hotel' || field==='ground'){
@@ -193,7 +229,7 @@ function residentPaintFromStore(){
     var ds=el.getAttribute('data-ds');
     var field=el.getAttribute('data-field');
     var role=el.getAttribute('data-role')||'';
-    var row=residentDay(curV, ds);
+    var row=residentDay(residentHere().venue, ds);
     if(field==='hotel' || field==='ground') el.value=residentMoney(row[field]);
     else if(role){
       var cell=(row[role] && typeof row[role]==='object') ? row[role] : {};
@@ -207,28 +243,37 @@ function residentPaintFromStore(){
     var tot=tr.querySelector('.res-total');
     var any=tr.querySelector('input[data-ds]');
     if(!tot || !any) return;
-    tot.textContent=residentMoney(residentRowTotal(residentDay(curV, any.getAttribute('data-ds'))));
+    tot.textContent=residentMoney(residentRowTotal(residentDay(residentHere().venue, any.getAttribute('data-ds'))));
   });
 }
-function residentJumpMonth(m){
-  curM=m;
+function residentSetFilter(kind, value){
+  if(kind==='year') resYear=+value;
+  else if(kind==='month') resMonth=+value;
+  else if(kind==='venue' && RESIDENT_VENUES.indexOf(value)>=0) resVenue=value;
   if(curView==='resident') renderResidentCalendar();
 }
 function renderResidentCalendar(){
   var body=document.getElementById('residentBody');
-  var hd=document.getElementById('residentHd');
   if(!body) return;
   initResidentDj();
-  var yr=curYr, mo=curM;
+  var here=residentHere();
+  var yr=here.year, mo=here.month;
   var fiscalDates=datesInFiscalPeriod(yr, mo);
-  if(hd) hd.textContent=MN_FULL[mo]+' '+yr+' ('+fiscalPeriodShortRange(yr, mo)+')';
-  var slider='<div class="month-slider">';
-  for(var mi=0;mi<12;mi++){
-    slider+='<button type="button" class="ms-btn'+(mi===mo?' ms-on':'')+'" onclick="residentJumpMonth('+mi+')">'+MN_SH[mi]+'</button>';
+  var filters=document.getElementById('residentFilters');
+  if(filters){
+    var years=[];
+    for(var y=yr-1;y<=yr+1;y++) years.push(y);
+    var fh='<label>Year<select onchange="residentSetFilter(\'year\',this.value)">';
+    years.forEach(function(y){ fh+='<option'+(y===yr?' selected':'')+'>'+y+'</option>'; });
+    fh+='</select></label><label>Location<select onchange="residentSetFilter(\'venue\',this.value)">';
+    RESIDENT_VENUES.forEach(function(v){ fh+='<option'+(v===here.venue?' selected':'')+'>'+residentEsc(v)+'</option>'; });
+    fh+='</select></label><label>Month<select onchange="residentSetFilter(\'month\',this.value)">';
+    for(var mi=0;mi<12;mi++) fh+='<option value="'+mi+'"'+(mi===mo?' selected':'')+'>'+MN_FULL[mi]+'</option>';
+    fh+='</select></label><span>'+fiscalPeriodShortRange(yr, mo)+'</span>';
+    filters.innerHTML=fh;
   }
-  slider+='</div>';
-  var sliderEl=document.getElementById('residentSlider');
-  if(sliderEl) sliderEl.innerHTML=slider;
+  var sub=document.getElementById('pgSub');
+  if(sub && curView==='resident') sub.innerHTML='<span>'+residentEsc(here.venue)+' · Resident DJ</span>';
 
   var h='<table class="sched-tbl res-tbl"><colgroup><col class="res-date-col"><col class="res-guest-col"><col class="res-amt-col"><col class="res-amt-col">';
   RESIDENT_ROLES.forEach(function(){ h+='<col class="res-name-col"><col class="res-amt-col">'; });
@@ -259,7 +304,7 @@ function renderResidentCalendar(){
     else if(dow===5) dc+=' sc-fri';
     else if(dow===3||dow===4) dc+=' sc-wedthu';
     var dateStr=DOW_FULL[dow]+', '+MN_FULL[dObj.getMonth()]+' '+dObj.getDate()+', '+dObj.getFullYear();
-    var row=residentDay(curV, ds);
+    var row=residentDay(residentHere().venue, ds);
     h+='<tr class="'+dc+'">';
     var guests=residentGuestNames(ds);
     h+='<td class="sc-date-cell">'+dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
@@ -268,7 +313,7 @@ function renderResidentCalendar(){
     h+=residentMoneyTd(ds, 'ground', '', 'ground', row.ground, row.groundPaid, row.groundNote);
     RESIDENT_ROLES.forEach(function(role){
       var cell=(row[role.id] && typeof row[role.id]==='object') ? row[role.id] : {};
-      h+='<td class="res-cell res-tone-'+role.id+' res-split"><input class="res-name" style="width:'+residentNameSize(cell.name)+'ch" size="'+residentNameSize(cell.name)+'" data-ds="'+ds+'" data-role="'+role.id+'" data-field="name" value="'+residentEsc(cell.name||'')+'" oninput="residentEdit(this)"></td>';
+      h+='<td class="res-cell res-tone-'+role.id+' res-split"><input class="res-name" size="'+residentNameSize(cell.name)+'" data-ds="'+ds+'" data-role="'+role.id+'" data-field="name" value="'+residentEsc(cell.name||'')+'" oninput="residentEdit(this)"></td>';
       h+=residentMoneyTd(ds, 'amt', role.id, role.id, cell.amt, cell.paid, cell.note);
     });
     h+='<td class="res-cell res-tone-total res-split res-total">'+residentMoney(residentRowTotal(row))+'</td>';
@@ -371,9 +416,11 @@ function residentPickInit(){
     var body=document.getElementById('residentBody');
     if(!btn || !body || !body.contains(btn) || typeof curView==='undefined' || curView!=='resident') return;
     e.preventDefault();
-    residentFlag(btn);
+    residentOpenPop(btn);
   });
   document.addEventListener('mousedown', function(e){
+    var pop=document.getElementById('resPop');
+    if(pop && pop.classList.contains('on') && !(e.target.closest && (e.target.closest('#resPop') || e.target.closest('.res-dot')))) pop.classList.remove('on');
     var body=document.getElementById('residentBody');
     if(!body || typeof curView==='undefined' || curView!=='resident') return;
     var el=residentCellFromEvent(e);
