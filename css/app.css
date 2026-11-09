@@ -752,7 +752,8 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .flash-plan-sum th.l,.flash-plan-shows th.l,.flash-plan-sum td.l,.flash-plan-shows td.l{text-align:left}
 .flash-plan-sum td,.flash-plan-shows td{padding:6px 8px;border-bottom:1px solid #eef2f6;text-align:right;font-size:14px;font-variant-numeric:tabular-nums}
 .flash-plan-sum td.l span,.flash-plan-month span{display:inline;margin-left:8px;font-size:12px;font-weight:600;color:#64748b}
-.flash-plan-sum th.py,.flash-plan-shows th.py,.flash-plan-sum td.py,.flash-plan-shows td.py{color:#64748b;font-weight:650}
+.flash-plan-sum th.py,.flash-plan-sum td.py{color:#64748b;font-weight:650}
+.flash-plan-shows th.py,.flash-plan-shows td.py{background:#dbeafe;color:#16324f;font-weight:700;border:1px solid #8ebef0}
 .flash-chart{margin:0 0 14px}
 .flash-chart-hd{font-size:13px;font-weight:800;color:#0b2e40;margin:0 0 6px}
 .flash-chart-row{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:end}
@@ -773,9 +774,10 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .flash-chart-key{display:flex;gap:14px;justify-content:center;margin-top:6px}
 .flash-chart-key span{font-size:11px;font-weight:750;color:#475569}
 .flash-chart-key span:before{content:'';display:inline-block;width:9px;height:9px;border-radius:2px;background:#1f2937;margin-right:5px}
-.flash-plan-shows tr.flash-plan-group th{text-align:center;background:#f8fafc;color:#0b2e40}
-.flash-plan-shows tr.flash-plan-group th.tgt,.flash-plan-shows td.tgt{background:#fff3bf}
-.flash-plan-shows tr.flash-plan-group th.py{background:#eefbf3}
+.flash-plan-shows tr.flash-plan-group th{text-align:center;background:#f8fafc;color:#0b2e40;border-bottom:1px solid #cbd5e1}
+.flash-plan-shows tr.flash-plan-group th.tgt,.flash-plan-shows th.tgt,.flash-plan-shows td.tgt{background:#fff3bf;border:1px solid #e4c65a}
+.flash-plan-shows tr.flash-plan-group th.py,.flash-plan-shows thead th.py{background:#bfdbfe}
+.flash-plan-shows th.grp,.flash-plan-shows td.grp{border-left:2px solid #475569}
 .flash-chart-key .is-year:before{background:#16a34a}
 .flash-chart-key .is-under:before{background:#16a34a}
 .flash-chart-key .is-over:before{background:#dc2626}

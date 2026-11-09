@@ -103,12 +103,27 @@ function residentBits(row, role, field){
   }
   return {amt:row[field], paid:!!row[field+'Paid'], note:row[field+'Note']||''};
 }
+function residentPayCells(td){
+  var cells=td?[td]:[];
+  var dot=td&&td.querySelector?td.querySelector('.res-dot'):null;
+  var role=dot?dot.getAttribute('data-role'):'';
+  if(role && td.parentNode){
+    var name=td.parentNode.querySelector('input.res-name[data-role="'+role+'"]');
+    var nameTd=name&&name.closest?name.closest('td'):null;
+    if(nameTd && cells.indexOf(nameTd)<0) cells.push(nameTd);
+  }
+  return cells;
+}
 function residentApplyPay(td, bits){
   if(!td) return;
   bits=bits||{};
-  td.classList.remove('res-due','res-paid');
-  if(bits.paid) td.classList.add('res-paid');
-  else if(bits.amt!=null && bits.amt!=='' && isFinite(+bits.amt)) td.classList.add('res-due');
+  var paid=!!bits.paid;
+  var due=!paid && bits.amt!=null && bits.amt!=='' && isFinite(+bits.amt);
+  residentPayCells(td).forEach(function(cell){
+    cell.classList.remove('res-due','res-paid');
+    if(paid) cell.classList.add('res-paid');
+    else if(due) cell.classList.add('res-due');
+  });
   var dot=td.querySelector('.res-dot');
   if(dot){
     var text=String(bits.note||'').trim();
@@ -313,7 +328,10 @@ function renderResidentCalendar(){
     h+=residentMoneyTd(ds, 'ground', '', 'ground', row.ground, row.groundPaid, row.groundNote);
     RESIDENT_ROLES.forEach(function(role){
       var cell=(row[role.id] && typeof row[role.id]==='object') ? row[role.id] : {};
-      h+='<td class="res-cell res-tone-'+role.id+' res-split"><input class="res-name" size="'+residentNameSize(cell.name)+'" data-ds="'+ds+'" data-role="'+role.id+'" data-field="name" value="'+residentEsc(cell.name||'')+'" oninput="residentEdit(this)"></td>';
+      var nameCls='res-cell res-tone-'+role.id+' res-split';
+      if(cell.paid) nameCls+=' res-paid';
+      else if(cell.amt!=null && cell.amt!=='' && isFinite(+cell.amt)) nameCls+=' res-due';
+      h+='<td class="'+nameCls+'"><input class="res-name" size="'+residentNameSize(cell.name)+'" data-ds="'+ds+'" data-role="'+role.id+'" data-field="name" value="'+residentEsc(cell.name||'')+'" oninput="residentEdit(this)"></td>';
       h+=residentMoneyTd(ds, 'amt', role.id, role.id, cell.amt, cell.paid, cell.note);
     });
     h+='<td class="res-cell res-tone-total res-split res-total">'+residentMoney(residentRowTotal(row))+'</td>';
