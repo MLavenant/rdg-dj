@@ -103,15 +103,24 @@ function faSetVenue(v){
 }
 var faYear=null, faMonth=null, faPendingOpen=true;
 function faWhen(){
-  if(faYear!==2026&&faYear!==2027){
-    faYear=(typeof curYr!=='undefined'&&(curYr===2026||curYr===2027))?curYr:2027;
-  }
-  if(faMonth==null||faMonth<0||faMonth>11) faMonth=(typeof curM!=='undefined')?curM:0;
+  /* Opens on the live test: April 2027. */
+  if(faYear!==2026&&faYear!==2027) faYear=2027;
+  if(faMonth==null||faMonth<0||faMonth>11) faMonth=3;
   return {year:faYear, month:faMonth, mm:(typeof fiscalMm==='function')?fiscalMm(faMonth):((faMonth<9?'0':'')+(faMonth+1))};
 }
 function faSetYear(v){ faYear=+v; renderFinanceApproval(); }
 function faSetMonth(v){ faMonth=+v; renderFinanceApproval(); }
 function faTogglePending(){ faPendingOpen=!faPendingOpen; renderFinanceApproval(); }
+function faGoTest(){
+  faVenue='Casa Neos Beach Club';
+  faYear=2027;
+  faMonth=3;
+  faPendingOpen=true;
+  renderFinanceApproval();
+}
+function faTestHere(venue, year, month){
+  return venue==='Casa Neos Beach Club' && +year===2027 && +month===3;
+}
 function faStatusOf(r){
   var st=(typeof getShowDjStatus==='function')?getShowDjStatus(r):(r&&r.djStatus)||null;
   return st?String(st):'';
@@ -120,6 +129,8 @@ function faBooking(r){
   if(!r||r._s==='empty'||!r.d) return false;
   var dj=String(r.dj||'').trim();
   if(dj) return true;
+  /* Live test month: every open night on the calendar counts, even before a DJ or fee is set. */
+  if(faInScope(r)) return true;
   return faFee(r)>0;
 }
 function faNeedsApproval(r){
@@ -227,7 +238,11 @@ function renderFinanceApproval(){
   html+='</select></label><label>Month<select onchange="faSetMonth(this.value)">';
   names.forEach(function(name, i){ html+='<option value="'+i+'"'+(i===when.month?' selected':'')+'>'+name+'</option>'; });
   html+='</select></label></div>';
-  html+='<div class="fa-note">Green and red change DJ status only for Casa Neos Beach Club, April 2027. Every other status stays as it is.</div>';
+  if(faTestHere(venue, when.year, when.month)){
+    html+='<div class="fa-note is-live">Live test: green sets Finance Approved, red sets Finance declined. Every other month and location keeps its DJ status.</div>';
+  }else{
+    html+='<div class="fa-note">Green and red work only for Casa Neos Beach Club, April 2027. <button type="button" class="fa-go" data-fa="test">Open April 2027</button></div>';
+  }
   var gap=faVariance(pos.spend, pos.budget);
   var ytdGap=faVariance(ytdS, hasB?ytdB:null);
   html+='<div class="fa-pos"><div class="fa-bud"><span>Budget</span><b>'+(pos.budget!=null?$k(pos.budget):'—')+'</b></div>'
@@ -255,14 +270,15 @@ function renderFinanceApproval(){
         var uid=String(item.uid).replace(/"/g,'&quot;');
         var live=faInScope(r);
         html+='<tr><td>'+_escHtml(typeof _bpDay==='function'?_bpDay(r.d):r.d)+'</td>'
-          +'<td>'+_escHtml(r.dj||'')+'</td><td>'+$k(item.fee)+'</td>'
+          +'<td>'+_escHtml(String(r.dj||'').trim()||'TBD')+'</td><td>'+(item.fee>0?$k(item.fee):'—')+'</td>'
           +'<td>'+(tgt&&tgt.bs_m!=null?$k(tgt.bs_m):'—')+'</td>'
           +'<td>'+_escHtml(py.dj||'—')+'</td><td>'+(py.fee!=null?$k(py.fee):'—')+'</td>'
           +'<td>'+(py.ret!=null?((typeof rx==='function')?rx(py.ret):(py.ret).toFixed(1)+'x'):'—')+'</td>'
           +'<td class="fa-acts">'+(live
             ?'<button type="button" class="fa-yes" data-uid="'+uid+'" data-status="Finance Approved" title="Finance Approved">&#10003;</button>'
               +'<button type="button" class="fa-no" data-uid="'+uid+'" data-status="Finance declined" title="Finance declined">&#10007;</button>'
-            :'<span class="fa-hold">View only</span>')+'</td></tr>';
+            :'<button type="button" class="fa-yes fa-off" disabled title="Live only for Casa Neos Beach Club, April 2027">&#10003;</button>'
+              +'<button type="button" class="fa-no fa-off" disabled title="Live only for Casa Neos Beach Club, April 2027">&#10007;</button>')+'</td></tr>';
       });
       html+='</tbody></table>';
     }
@@ -272,6 +288,7 @@ function renderFinanceApproval(){
     var t=ev.target.closest?ev.target.closest('[data-fa],[data-month],[data-status]'):null;
     if(!t||!host.contains(t)) return;
     if(t.getAttribute('data-fa')==='pending'){ faTogglePending(); return; }
+    if(t.getAttribute('data-fa')==='test'){ faGoTest(); return; }
     if(t.hasAttribute('data-month')){ faSetMonth(t.getAttribute('data-month')); return; }
     if(t.getAttribute('data-status')) faDecide(t.getAttribute('data-uid'), t.getAttribute('data-status'));
   };

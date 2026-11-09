@@ -2508,6 +2508,9 @@ body.mobile-mode .sb-btn{min-height:44px}
 button.fa-stat{cursor:pointer}
 button.fa-stat.on{box-shadow:inset 0 0 0 2px #b45309}
 .fa-hold{font-size:11px;font-weight:700;color:#94a3b8}
+.fa-off{opacity:.35;cursor:not-allowed}
+.fa-note.is-live{color:#166534;font-weight:650}
+.fa-go{margin-left:8px;border:1px solid #0b2e40;background:#fff;color:#0b2e40;border-radius:8px;padding:3px 10px;font:inherit;font-size:12px;font-weight:750;cursor:pointer}
 .fa-loc{margin:0 0 18px}
 .fa-loc h3{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 8px;font-size:16px;color:#0b2e40}
 .fa-loc h3 em{font-style:normal;font-size:12px;font-weight:750;color:#b45309}
