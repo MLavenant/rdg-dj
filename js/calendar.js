@@ -401,18 +401,6 @@ function _calPlMonth(venue, year, mm){
   return { sales:sales, live:live, pct:pctLive(sales, live), hasPl:hasPl };
 }
 
-/** MTD cutoff for overlay BS sums: include only dates on/before today in the viewed period. */
-function _overlayMtdMaxDate(yr, mm){
-  if(typeof TODAY!=='string'||!TODAY) return null;
-  var info=(typeof fiscalInfoForDate==='function')?fiscalInfoForDate(TODAY):null;
-  if(!info) return TODAY;
-  var y=+yr, mi=(typeof fiscalMonthIndexFromMm==='function')?fiscalMonthIndexFromMm(mm):((parseInt(mm,10)||1)-1);
-  if(y<info.year) return null;          /* past fiscal year → full month */
-  if(y>info.year) return '0000-01-01';  /* future fiscal year → nothing */
-  if(mi<info.monthIndex) return null;   /* earlier period this year → full */
-  if(mi>info.monthIndex) return '0000-01-01'; /* later period → nothing yet */
-  return TODAY;                         /* current period → MTD */
-}
 function _overlaySumBs(shows, maxDate){
   var tBSM=0, tBSA=0, n=0;
   (shows||[]).forEach(function(r){
@@ -452,7 +440,7 @@ function calGuestDjSub(guestB){
   if(guestB&&guestB.guest) return 'Target minus other categories';
   return 'Live Entertainment budget';
 }
-/* Last-year strip: Fees / Budget / Variance + MTD BS Target / BS Actual (+ show detail). */
+/* Last-year strip: Fees / Budget / Variance + full-month BS Target / BS Actual. */
 function renderCalPriorYearRecap(yr, mm){
   var box=document.getElementById('calPriorYearRecap');
   if(!box) return;
@@ -477,15 +465,13 @@ function renderCalPriorYearRecap(yr, mm){
   var feeVar=budget!=null?budget-fees:null;
   var feePct=budget?Math.round(fees/budget*100):null;
   var varCls=feeVar!=null?(feeVar>=0?'hit':'low'):'';
-  var mtdMax=_overlayMtdMaxDate(py, mm);
-  var bs=_overlaySumBs(shows, mtdMax);
-  var mtdHint=mtdMax?('MTD thru '+mtdMax.slice(5)):'Full month';
+  var bs=_overlaySumBs(shows, null);
   var items=[
     {l:'Total DJ Fees',v:fees?$k(fees):'-'},
     {l:guestB.guest?'Guest DJ Budget':'Total Budget',v:budget!=null?$k(budget):'-',s:calGuestDjSub(guestB)},
     {l:'Budget Variance',v:feeVar!=null?$kv(feeVar):'-',s:feePct!=null?feePct+'% of budget used':'-',cls:varCls},
-    {l:'BS Target',v:bs.n?$k(bs.tBSM):'-',s:mtdHint},
-    {l:'BS Actual',v:bs.n?$k(bs.tBSA):'-',s:mtdHint}
+    {l:'BS Target',v:bs.n?$k(bs.tBSM):'-',s:'Full month'},
+    {l:'BS Actual',v:bs.n?$k(bs.tBSA):'-',s:'Full month'}
   ];
   box.innerHTML=hd+items.map(function(it){
     return '<div class="cal-py-item"><div class="cal-py-l">'+it.l+'</div><div class="cal-py-v'+(it.cls?' '+it.cls:'')+'">'+it.v+'</div>'
@@ -509,17 +495,15 @@ function renderCalMonthRecap(yr, mo, mm, showMap){
   var budget=guestB.amount;
   var feeVar=budget!=null?budget-fees:null;
   var feePct=budget?Math.round(fees/budget*100):null;
-  var mtdMax=_overlayMtdMaxDate(yr, mm);
-  var bs=_overlaySumBs(monthShows, mtdMax);
-  var mtdHint=mtdMax?(mtdMax==='0000-01-01'?'No MTD yet':('MTD thru '+mtdMax.slice(5))):'Full month';
+  var bs=_overlaySumBs(monthShows, null);
   box.style.display='flex';
   box.innerHTML=
     '<div class="cal-recap-hd">'+MN_SH[mo]+' '+yr+' actual<span>This year</span></div>'
     +'<div class="cal-recap-item"><div class="cal-recap-l">Total DJ Fees</div><div class="cal-recap-v">'+$k(fees||null)+'</div></div>'
     +'<div class="cal-recap-item"><div class="cal-recap-l">'+(guestB.guest?'Guest DJ Budget':'Total Budget')+'</div><div class="cal-recap-v">'+(budget!=null?$k(budget):'-')+'</div><div class="cal-recap-s">'+calGuestDjSub(guestB)+'</div></div>'
     +'<div class="cal-recap-item"><div class="cal-recap-l">Budget Variance</div><div class="cal-recap-v '+(feeVar!=null?(feeVar>=0?'hit':'low'):'')+'">'+(feeVar!=null?$kv(feeVar):'-')+'</div><div class="cal-recap-s">'+(feePct!=null?feePct+'% of budget used':'set budget in Budget tab')+'</div></div>'
-    +'<div class="cal-recap-item"><div class="cal-recap-l">BS Target</div><div class="cal-recap-v">'+(bs.n?$k(bs.tBSM):'-')+'</div><div class="cal-recap-s">'+mtdHint+'</div></div>'
-    +'<div class="cal-recap-item"><div class="cal-recap-l">BS Actual</div><div class="cal-recap-v">'+(bs.n?$k(bs.tBSA):'-')+'</div><div class="cal-recap-s">'+mtdHint+'</div></div>';
+    +'<div class="cal-recap-item"><div class="cal-recap-l">BS Target</div><div class="cal-recap-v">'+(bs.n?$k(bs.tBSM):'-')+'</div><div class="cal-recap-s">Full month</div></div>'
+    +'<div class="cal-recap-item"><div class="cal-recap-l">BS Actual</div><div class="cal-recap-v">'+(bs.n?$k(bs.tBSA):'-')+'</div><div class="cal-recap-s">Full month</div></div>';
 }
 
 function _show3dFloorCheckHtml(tiers, bsTarget){
