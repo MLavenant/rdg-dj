@@ -276,17 +276,17 @@ function flashPlanSlide(data, n, of){
     {key:'pyBs', name:String(pyYear), cls:'is-py'}
   ]);
   h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Performances<em>DJ fees beside '+pyYear+', then bottle service target against '+pyYear+'.</em></div>';
-  h+='<table class="flash-plan-shows"><colgroup><col class="c-date"><col class="c-artist"><col class="c-py"><col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num"></colgroup>'
+  h+='<table class="flash-plan-shows"><colgroup><col class="c-date"><col class="c-artist"><col class="c-py"><col class="c-yr"><col class="c-yr"><col class="c-var"><col class="c-yr"><col class="c-yr"><col class="c-var"></colgroup>'
     +'<thead><tr class="flash-plan-group"><th class="l" rowspan="2">Date</th><th class="l" rowspan="2">'+planYear+' artist</th><th class="l fp-py" rowspan="2">PY</th><th class="fp-fees" colspan="3">DJ fees</th><th class="fp-bs" colspan="3">Bottle service</th></tr>'
-    +'<tr><th>'+planYear+'</th><th>PY</th><th>Var.</th>'
-    +'<th class="fp-bs">'+planYear+'</th><th>PY</th><th>Var.</th></tr></thead><tbody>';
+    +'<tr><th>'+planYear+'</th><th class="fp-pyh">PY</th><th>Var.</th>'
+    +'<th class="fp-bs">'+planYear+'</th><th class="fp-pyh">PY</th><th>Var.</th></tr></thead><tbody>';
   cells.forEach(function(c){
     var rows=(c.rows||[]).slice().sort(function(a,b){ return a.d<b.d?-1:(a.d>b.d?1:0); });
     var feeNow=c.planned!=null?+c.planned:null;
     var feePy=c.py&&c.py.fee!=null?+c.py.fee:null;
     var bsNow=c.bsT!=null?+c.bsT:null;
     var bsPy=c.py&&c.py.bs!=null?+c.py.bs:null;
-    h+='<tr class="flash-plan-month"><td class="l"><b>'+_escHtml(c.month.label)+'</b></td><td></td><td class="fp-py"></td>'
+    h+='<tr class="flash-plan-month"><td class="l" colspan="3"><b>'+_escHtml(c.month.label)+'</b></td>'
       +'<td>'+(feeNow!=null?flashPlanMoney(feeNow):'\u2014')+'</td>'
       +'<td>'+(feePy!=null?flashPlanMoney(feePy):'\u2014')+'</td>'
       +'<td>'+flashPlanVar(feeNow, feePy, true)+'</td>'

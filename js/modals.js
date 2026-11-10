@@ -1158,6 +1158,10 @@ function saveEvent(){
   if(_editUid && !rec._uid) rec._uid=_editUid;
   ensureShowUid(rec);
   rec._writeKind='modal';
+  var prevFee=before?(before.fee!=null?before.fee:before.cost):null;
+  var nextFee=rec.fee;
+  var feeChanged=(prevFee==null||prevFee==='')!==(nextFee==null||nextFee==='') || (prevFee!=null && nextFee!=null && Math.round(+prevFee)!==Math.round(+nextFee));
+  window._showHistFeePending=feeChanged?{uid:rec._uid, from:(typeof showHistMoney==='function'?showHistMoney(prevFee):String(prevFee==null?'Not set':prevFee)), to:(typeof showHistMoney==='function'?showHistMoney(nextFee):String(nextFee==null?'Not set':nextFee))}:null;
   /* Normalize undefined → null so Firebase writes and in-memory state stay clean. */
   Object.keys(rec).forEach(function(k){ if(rec[k]===undefined) rec[k]=null; });
   if(_editIdx>=0){
@@ -1193,6 +1197,10 @@ function saveEvent(){
     persistSchedShow(rec, {
       onDone: function(err){
         if(!err){
+          if(window._showHistFeePending && window._showHistFeePending.uid===saveUid && typeof showHistPush==='function'){
+            showHistPush(saveUid, 'Fee', window._showHistFeePending.from, window._showHistFeePending.to);
+            window._showHistFeePending=null;
+          }
           setTimeout(function(){
             var p = window._schedPending && window._schedPending[saveUid];
             if(p && !p.confirmed && (Date.now()-p.at)>10000){

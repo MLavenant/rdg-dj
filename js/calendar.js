@@ -1688,6 +1688,7 @@ function updateShowDjStatus(idx,val,sel,uid){
   }
   r.djStatus=next||null;
   ensureShowUid(r);
+  showHistPush(r._uid, 'DJ Status', prev||'Not set', next||'Not set');
   if(typeof persistShowDjStatusOnly==='function') persistShowDjStatusOnly(r);
   else {
     try{ console.warn('persistShowDjStatusOnly missing — refusing full persist to protect fee/DJ'); }catch(eMiss){}
@@ -1793,6 +1794,112 @@ function _fmtAcctWhen(iso){
     return d.toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
   }catch(e){ return iso; }
 }
+function showHistActor(){
+  try{
+    var email=(typeof signInCurrentEmail==='function')?signInCurrentEmail():'';
+    if(email && typeof RDG_SIGNIN_ALLOW!=='undefined' && RDG_SIGNIN_ALLOW[email]) return RDG_SIGNIN_ALLOW[email];
+  }catch(e){}
+  return _acctSoftEditorName();
+}
+function showHistList(uid){
+  var raw=uid && window.SHOW_HISTORY ? window.SHOW_HISTORY[uid] : null;
+  if(!raw) return [];
+  var list=Array.isArray(raw)?raw:Object.keys(raw).map(function(k){ return raw[k]; });
+  return list.filter(function(e){ return e && e.at; });
+}
+function showHistPush(uid, field, fromVal, toVal){
+  if(!uid || !field) return;
+  var entry={
+    at:new Date().toISOString(),
+    by:showHistActor(),
+    field:field,
+    from:fromVal==null||fromVal===''?'Not set':String(fromVal),
+    to:toVal==null||toVal===''?'Not set':String(toVal)
+  };
+  window.SHOW_HISTORY=window.SHOW_HISTORY||{};
+  if(!window.SHOW_HISTORY[uid] || typeof window.SHOW_HISTORY[uid]!=='object' || Array.isArray(window.SHOW_HISTORY[uid])) window.SHOW_HISTORY[uid]={};
+  window._showHistSeq=(window._showHistSeq||0)+1;
+  window.SHOW_HISTORY[uid]['local_'+Date.now().toString(36)+'_'+window._showHistSeq]=entry;
+  try{
+    if(window._fbRef) window._fbRef.child('showHistory/'+uid).push(entry);
+  }catch(e){}
+}
+function showHistMoney(n){
+  if(n==null||n==='') return 'Not set';
+  var v=+n;
+  if(!isFinite(v)) return String(n);
+  return (typeof $k==='function')?$k(v):String(v);
+}
+function showCalHistory(uid, ds, djName){
+  if(typeof signInIsOwner!=='function' || !signInIsOwner()) return;
+  var seen={};
+  var list=[];
+  function add(e){
+    if(!e||!e.at) return;
+    var key=e.at+'|'+(e.field||'')+'|'+(e.from||'')+'|'+(e.to||'')+'|'+(e.by||'');
+    if(seen[key]) return;
+    seen[key]=1;
+    list.push(e);
+  }
+  showHistList(uid).forEach(add);
+  try{
+    var acct=_acctNormalize(getAcct(ds));
+    (acct.log||[]).forEach(function(e){
+      if(!e||!e.at) return;
+      var t=new Date(e.at).getTime();
+      var dup=list.some(function(x){
+        if((x.field||'')!==(e.field||'')) return false;
+        if(String(x.from||'Not set')!==String(e.from||'Not set')) return false;
+        if(String(x.to||'Not set')!==String(e.to||'Not set')) return false;
+        var xt=new Date(x.at).getTime();
+        return isFinite(t)&&isFinite(xt)&&Math.abs(xt-t)<8000;
+      });
+      if(!dup) add(e);
+    });
+  }catch(eLog){}
+  list.sort(function(a,b){ return a.at<b.at?1:(a.at>b.at?-1:0); });
+  var old=document.getElementById('acctHistModal');
+  if(old) old.remove();
+  var last=list[0];
+  var rows=list.map(function(e){
+    return '<div class="acct-hist-row"><b>'+_fmtAcctWhen(e.at)+'</b> &middot; '+(e.by||'?')
+      +'<br><span style="color:var(--ink3)">'+_escHtml(e.field||'Change')+': </span>'
+      +'<span style="color:var(--ink4)">'+_escHtml(e.from||'Not set')+'</span> \u2192 <b>'+_escHtml(e.to||'Not set')+'</b></div>';
+  }).join('') || '<div class="acct-hist-row" style="color:var(--ink3)">No edits yet. Changes made before this history are not on file.</div>';
+  var modal=document.createElement('div');
+  modal.id='acctHistModal';
+  modal.className='acct-hist-modal';
+  modal.innerHTML='<div class="acct-hist-card"><h3>Edit history</h3>'
+    +'<div style="font-size:11px;color:var(--ink3);margin-bottom:8px">'+_escHtml(ds||'')+' &middot; '+_escHtml(curV||'')+(djName?' &middot; '+_escHtml(djName):'')+'</div>'
+    +(last?'<div style="font-size:11px;margin-bottom:10px">Last edit: <b>'+_escHtml(last.by||'?')+'</b> &middot; '+_fmtAcctWhen(last.at)+'</div>':'')
+    +rows
+    +'<div style="margin-top:12px;text-align:right"><button type="button" id="acctHistClose" style="padding:6px 14px;border-radius:8px;border:none;background:var(--ink);color:#fff;font-weight:700;cursor:pointer">Close</button></div>'
+    +'</div>';
+  modal.addEventListener('click',function(ev){ if(ev.target===modal) modal.remove(); });
+  document.body.appendChild(modal);
+  var closeBtn=document.getElementById('acctHistClose');
+  if(closeBtn) closeBtn.addEventListener('click',function(){ modal.remove(); });
+}
+function wireShowCalHistory(){
+  if(window._showCalHistBound) return;
+  window._showCalHistBound=true;
+  document.addEventListener('contextmenu',function(e){
+    if(typeof signInIsOwner!=='function' || !signInIsOwner()) return;
+    var t=e.target;
+    if(!t||!t.closest) return;
+    var fee=t.closest('#calBody td.fee-cell');
+    var status=t.closest('#calBody [data-action="djStatus"]');
+    if(!fee && !status) return;
+    e.preventDefault();
+    var cell=fee||status.closest('td');
+    var tr=cell&&cell.closest?cell.closest('tr'):null;
+    var uid=fee?(fee.getAttribute('data-uid')||''):(status.getAttribute('data-uid')||'');
+    var ds=(status&&status.getAttribute('data-ds'))||(tr&&tr.getAttribute('data-cal-ds'))||'';
+    var djEl=tr&&tr.querySelector?tr.querySelector('.dj-clickname'):null;
+    showCalHistory(uid, ds, djEl?djEl.textContent:'');
+  }, true);
+}
+wireShowCalHistory();
 function showAcctHistory(ds){
   var acct=_acctNormalize(getAcct(ds));
   var log=acct.log||[];

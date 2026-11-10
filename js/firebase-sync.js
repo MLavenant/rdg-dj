@@ -1600,6 +1600,11 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
 
   /* ?? Pacing history listener (separate ref, read-only) ????????????????????? */
   window._pacingData = {};  // { "venue_YYYY-MM-DD": { "2026-07-10": {tables,revenue}, ... } }
+  window.SHOW_HISTORY=window.SHOW_HISTORY||{};
+  window._fbDb.ref('rdg/showHistory').on('value', function(snap){
+    window.SHOW_HISTORY=snap.val()||{};
+  });
+
   window._fbDb.ref('rdg/pacing').on('value', function(snap){
     window._pacingData = snap.val() || {};
     if(window._fbReady && curView==='forecast') renderForecast();
