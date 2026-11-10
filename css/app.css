@@ -751,16 +751,19 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .flash-plan .flash-py{display:inline;margin:0 0 0 6px;background:none;color:#64748b}
 .flash-plan-sum,.flash-plan-shows{width:100%;border-collapse:collapse;margin:0 0 8px}
 .flash-plan .flash-chart,.flash-plan .flash-chart-row,.flash-plan .flash-plan-shows,.flash-plan .bp-deck-sec{width:100%;max-width:none;box-sizing:border-box}
-.flash-plan .flash-chart-row{gap:0}
+.flash-plan .flash-chart-row{gap:40px}
+.flash-plan .flash-chart-m{align-items:stretch}
+.flash-plan .flash-chart-m em{display:block;margin:0 0 8px;font-size:18px;font-weight:800;text-align:center;color:#0b2e40}
+.flash-plan .flash-chart-key{margin-top:10px}
 .flash-plan .flash-chart-bars{width:100%;justify-content:stretch;gap:8px}
 .flash-plan .flash-chart-pair{flex:1 1 0;width:auto;height:100%;gap:8px}
 .flash-plan .flash-chart-bar{flex:1 1 0;width:auto;min-width:0}
 .flash-plan .flash-plan-shows{table-layout:fixed;width:100%}
-.flash-plan-shows col.c-date{width:8%}
+.flash-plan-shows col.c-date{width:10%}
 .flash-plan-shows col.c-artist{width:14%}
-.flash-plan-shows col.c-artist-py{width:18%}
-.flash-plan-shows col.c-fee{width:7.5%}
-.flash-plan-shows col.c-num{width:11.25%}
+.flash-plan-shows col.c-fee{width:8%}
+.flash-plan-shows col.c-status{width:12%}
+.flash-plan-shows col.c-num{width:17%}
 .flash-plan .flash-plan-shows th,.flash-plan .flash-plan-shows td{padding:3px 4px;font-size:12px}
 .flash-plan .flash-plan-shows td,.flash-plan .flash-plan-shows th{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .flash-plan-sum th,.flash-plan-shows th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#64748b;text-align:right;padding:7px 8px;border-bottom:1px solid #e2e8f0;font-weight:700}
