@@ -208,7 +208,7 @@ function _bpVenueMonth(venue, m){
   });
   var planned=confirmed+proposed;
   var forecast=(typeof bgtMonthTotalSpend==='function')?bgtMonthTotalSpend(venue, String(m.year), m.mm):planned;
-  var cats=(typeof bgtSpendCategoryRows==='function' && typeof bgtCategoryMonthSpend==='function')?bgtSpendCategoryRows().map(function(row){
+  var cats=(typeof bgtSpendCategoryRows==='function' && typeof bgtCategoryMonthSpend==='function')?bgtSpendCategoryRows(venue).map(function(row){
     return {label:row.label, amount:Math.round(bgtCategoryMonthSpend(venue, String(m.year), m.mm, row.ids)||0)};
   }):[];
   /* Every booking is judged on the whole month (confirmed + proposed vs budget), not a running total. */

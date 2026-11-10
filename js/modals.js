@@ -1182,6 +1182,7 @@ function saveEvent(){
   /* Paint FIRST from local SCHED + guard, then persist. Firebase's local echo of
      .set() is synchronous and used to rebuild SCHED before go() ran — leaving the
      old DJ name on screen until a later status change re-rendered. */
+  var finResetDj=(typeof faOnFeeChange==='function')?faOnFeeChange(before, rec):false;
   if(typeof window._guardSchedWrite==='function') window._guardSchedWrite(rec);
   if(typeof window._trackSchedPending==='function') window._trackSchedPending(rec, 'modal');
   go();
@@ -1223,6 +1224,8 @@ function saveEvent(){
     try{ console.warn('persistSchedShow failed', ePersist); }catch(e2){}
     try{ alert('Schedule save failed — hard refresh and retry.'); }catch(e3){}
   }
+  /* A raised fee sends the night back to Finance to Approve, so its DJ status clears too. */
+  if(finResetDj && saveUid) updateShowDjStatus(-1, '', null, saveUid);
   _editUid='';
   window._schedModalAdd=false;
   /* One paint is enough — a second go()/renderCal here plus the Firebase echo

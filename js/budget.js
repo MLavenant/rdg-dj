@@ -568,84 +568,65 @@ function bgtOtherCategoryMonthTotal(venue, year, mm, catIds){
   return found?Math.round(total):0;
 }
 
-/* Table 2: entertainment spend — Guest DJ from calendar; other cats editable month totals. */
+/* Table 2: entertainment spend. Each category is a Resident DJ Calendar column for this location.
+   Guest DJ comes from the Guest DJ Calendar. */
+function bgtOpenResident(){
+  if(typeof residentSetVenue==='function') residentSetVenue(bgtVenue);
+  setView('resident');
+}
 function renderBudgetGuestDjTable(){
   var host=document.getElementById('budgetGuestDjTable');
   if(!host) return;
-  var cutLabel='Full year';
-  var rows=bgtSpendCategoryRows();
-  var monthSpend=new Array(13).fill(0);
-  var monthBudget=new Array(13).fill(null);
-  var monthHasB=new Array(13).fill(false);
-  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd">Entertainment Spend by Category <span>'+cutLabel+' \u00b7 click cells to edit \u00b7 Guest DJ from calendar</span>'
-    +'<button type="button" class="bgt-cat-add" onclick="bgtAddSpendCategory()">+ Add category</button></div>';
+  var rows=bgtSpendCategoryRows(bgtVenue);
+  var guest=new Array(13).fill(0), other=new Array(13).fill(0);
+  function money(n){ return '<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+$k(n||0)+'</div></div>'; }
+  function label(name, sub, cls){ return '<div class="bgt-monthly-cell bgt-monthly-label'+(cls?' '+cls:'')+'"><b>'+_escHtml(name)+'</b><span>'+sub+'</span></div>'; }
+  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd">Entertainment Spend by Category <span>Full year \u00b7 categories come from the Resident DJ Calendar</span>'
+    +'<button type="button" class="bgt-cat-add" onclick="bgtOpenResident()">Open Resident DJ Calendar</button></div>';
   h+='<div class="bgt-monthly-grid">'+bgtMonthCellHeader();
   rows.forEach(function(row){
-    var ytSpend=0, ytBudget=0, hasB=false;
-    var oid=bgtCatOverrideId(row.ids);
-    var rem=row.custom?' <button type="button" class="bgt-cat-rm" onclick="event.stopPropagation();bgtRemoveCustomCategory(\''+oid+'\')" title="Remove">\u00d7</button>':'';
-    h+='<div class="bgt-monthly-cell bgt-monthly-label"><b>'+row.label+rem+'</b><span>'+row.sub+'</span></div>';
+    if(!row.ids) return;
+    var yt=0;
+    h+=label(row.label, row.sub);
     for(var mi=1;mi<=12;mi++){
-      var mm=padMm(mi);
-      var spend=bgtCategoryMonthSpend(bgtVenue,bgtYear,mm,row.ids);
-      var budget=row.ids?null:getMonthlyBudget(bgtVenue,bgtYear,mm);
-      var variance=budget!=null?(budget-spend):null;
-      monthSpend[mi]+=spend||0;
-      if(budget!=null){ monthBudget[mi]=(monthBudget[mi]||0)+budget; monthHasB[mi]=true; }
-      ytSpend+=spend||0;
-      if(budget!=null){ ytBudget+=budget; hasB=true; }
-      if(row.editable && oid){
-        var src=bgtOtherCategoryMonthTotal(bgtVenue,bgtYear,mm,row.ids);
-        var ov=getBgtCatSpendOverride(bgtVenue,bgtYear,mm,oid);
-        var tip=ov!=null?('Override · accounting was '+$k(src)):(src?('From accounting '+$k(src)+' · edit to override'):'Edit month total');
-        h+='<div class="bgt-monthly-cell bgt-cat-edit-cell" title="'+tip+'">';
-        h+='<input class="bgt-cat-inp" type="number" inputmode="decimal" data-cat="'+oid+'" data-mm="'+mm+'" value="'+(spend||'')+'" placeholder="0" onchange="onBgtCatSpendEdit(this)" onkeydown="if(event.key===\'Enter\'){this.blur();}">';
-        h+='</div>';
-      } else {
-        h+='<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+$k(spend||0)+'</div></div>';
-      }
+      var spend=bgtCategoryMonthSpend(bgtVenue,bgtYear,padMm(mi),row.ids)||0;
+      other[mi]+=spend; yt+=spend;
+      h+=money(spend);
     }
-    h+='<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+$k(ytSpend)+'</div></div>';
+    h+=money(yt);
   });
-  /* Total / Budget / Variance footer rows */
-  var ytTotSpend=0, ytTotBudget=0, ytHasB=false;
-  h+='<div class="bgt-monthly-cell bgt-monthly-label bgt-total-label"><b>Total Spend</b><span>All categories</span></div>';
-  for(var tmi=1;tmi<=12;tmi++){
-    var tSpend=monthSpend[tmi]||0;
-    ytTotSpend+=tSpend;
-    h+='<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+$k(tSpend)+'</div></div>';
+  for(var gi=1;gi<=12;gi++) guest[gi]=bgtCategoryMonthSpend(bgtVenue,bgtYear,padMm(gi),null)||0;
+  function sumRow(name, sub, vals){
+    var yt=0;
+    h+=label(name, sub, 'bgt-total-label');
+    for(var i=1;i<=12;i++){ yt+=vals[i]||0; h+=money(vals[i]); }
+    h+=money(yt);
+    return yt;
   }
-  h+='<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+$k(ytTotSpend)+'</div></div>';
-
-  var budgetVals={}, varVals={}, ytLiveTarget=0, ytHasLive=false, ytVarTot=null;
-  for(var bmi=1;bmi<=12;bmi++){
-    var liveTarget=getBgtPlan(bgtVenue,bgtYear,padMm(bmi),'live');
-    var actualSpend=monthSpend[bmi]||0;
-    budgetVals[bmi]={actual:actualSpend, target:liveTarget!=null?+liveTarget:null};
-    varVals[bmi]=liveTarget!=null?(+liveTarget-actualSpend):null;
-    if(liveTarget!=null){ ytLiveTarget+=+liveTarget; ytHasLive=true; }
+  var total=new Array(13).fill(0);
+  for(var ti=1;ti<=12;ti++) total[ti]=(guest[ti]||0)+(other[ti]||0);
+  sumRow('Guest DJ', 'Guest DJ Calendar', guest);
+  sumRow('Others', 'Resident DJ Calendar', other);
+  var ytTotal=sumRow('Total', 'Guest DJ + Others', total);
+  var ytBudget=0, hasYtBudget=false, budgets=[];
+  h+=label('Budget', 'Live Entertainment', 'bgt-total-label bgt-bud-label');
+  for(var bi=1;bi<=12;bi++){
+    var b=getBgtPlan(bgtVenue,bgtYear,padMm(bi),'live');
+    budgets[bi]=b!=null&&isFinite(+b)?+b:null;
+    if(budgets[bi]!=null){ ytBudget+=budgets[bi]; hasYtBudget=true; }
+    h+='<div class="bgt-monthly-cell bgt-bud-cell"><div class="bgt-monthly-value">'+(budgets[bi]!=null?$k(budgets[bi]):'-')+'</div></div>';
   }
-  if(ytHasLive) ytVarTot=ytLiveTarget-ytTotSpend;
-  h+='<div class="bgt-monthly-cell bgt-monthly-label bgt-total-label"><b>Budget</b><span>Actual and target</span></div>';
-  for(var ami=1;ami<=12;ami++){
-    var pair=budgetVals[ami];
-    h+=bgtMoneyCell(pair.actual, pair.target, varVals[ami], 'under');
-  }
-  h+=bgtMoneyCell(ytTotSpend, ytHasLive?ytLiveTarget:null, ytVarTot, 'under');
-  h+='<div class="bgt-monthly-cell bgt-monthly-label bgt-total-label"><b>Variance</b><span>Budget \u2212 Total Spend</span></div>';
-  for(var vmi=1;vmi<=12;vmi++){
-    var vv=varVals[vmi];
+  h+='<div class="bgt-monthly-cell bgt-bud-cell"><div class="bgt-monthly-value">'+(hasYtBudget?$k(ytBudget):'-')+'</div></div>';
+  function varCell(vv){
     var vCls=vv==null?' bgt-status-neutral':(vv>=0?' bgt-status-good':' bgt-status-bad');
     var vTone=vv==null?'':(vv>=0?'pos':'neg');
     var vTxt=vv==null?'-':((vv>=0?'Under ':'Over ')+$m(Math.abs(vv)));
-    h+='<div class="bgt-monthly-cell'+vCls+'"><div class="bgt-monthly-value '+(vTone||'')+'">'+(vv!=null?$kv(vv):'-')+'</div>'
+    return '<div class="bgt-monthly-cell'+vCls+'"><div class="bgt-monthly-value '+vTone+'">'+(vv!=null?$kv(vv):'-')+'</div>'
       +'<div class="bgt-monthly-var '+vTone+'">'+vTxt+'</div></div>';
   }
-  var yvCls=ytVarTot==null?' bgt-status-neutral':(ytVarTot>=0?' bgt-status-good':' bgt-status-bad');
-  var yvTone=ytVarTot==null?'':(ytVarTot>=0?'pos':'neg');
-  var yvTxt=ytVarTot==null?'-':((ytVarTot>=0?'Under ':'Over ')+$m(Math.abs(ytVarTot)));
-  h+='<div class="bgt-monthly-cell'+yvCls+'"><div class="bgt-monthly-value '+(yvTone||'')+'">'+(ytVarTot!=null?$kv(ytVarTot):'-')+'</div>'
-    +'<div class="bgt-monthly-var '+yvTone+'">'+yvTxt+'</div></div>';
+  h+=label('Variance', 'Budget \u2212 Total', 'bgt-total-label');
+  for(var vi=1;vi<=12;vi++) h+=varCell(budgets[vi]!=null?budgets[vi]-total[vi]:null);
+  h+=varCell(hasYtBudget?ytBudget-ytTotal:null);
   h+='</div></div>';
   host.innerHTML=h;
 }
@@ -1764,7 +1745,16 @@ function setBgtCatSpendOverride(venue, year, mm, catId, val){
   else BGT_CAT_SPEND[k]=Math.round(+val);
   saveBgtCatSpend();
 }
-function bgtSpendCategoryRows(){
+/* Guest DJ from the calendar, then one row per Resident DJ Calendar column for the location. */
+function bgtSpendCategoryRows(venue){
+  var rows=[{label:'Guest DJ', sub:'Guest DJ Calendar', ids:null, editable:false}];
+  var cols=(typeof residentCols==='function')?residentCols(venue||bgtVenue):[];
+  cols.forEach(function(col){
+    rows.push({label:col.label, sub:'Resident DJ Calendar', ids:['res:'+col.id], editable:false, resident:true});
+  });
+  return rows;
+}
+function bgtLegacySpendRows(){
   var rows=[
     {label:'Guest DJ', sub:'Calendar fees (read-only)', ids:null, editable:false},
     {label:'Resident DJ', sub:'Editable month total', ids:['resident_dj'], editable:true},
@@ -1787,6 +1777,13 @@ function bgtCatOverrideId(ids){
 }
 function bgtCategoryMonthSpend(venue, year, mm, ids){
   if(!ids||!ids.length) return (monthPerf(venue,year,mm).tFee)||0;
+  if(String(ids[0]).indexOf('res:')===0){
+    return (typeof residentMonthTotal==='function')?residentMonthTotal(venue, year, mm, String(ids[0]).slice(4)):0;
+  }
+  return bgtLegacyCategoryMonthSpend(venue, year, mm, ids);
+}
+function bgtLegacyCategoryMonthSpend(venue, year, mm, ids){
+  if(!ids||!ids.length) return (monthPerf(venue,year,mm).tFee)||0;
   var oid=bgtCatOverrideId(ids);
   var o=getBgtCatSpendOverride(venue,year,mm,oid);
   if(o!=null) return Math.round(o);
@@ -1794,7 +1791,7 @@ function bgtCategoryMonthSpend(venue, year, mm, ids){
 }
 function bgtMonthTotalSpend(venue, year, mm){
   var total=0;
-  bgtSpendCategoryRows().forEach(function(row){
+  bgtSpendCategoryRows(venue).forEach(function(row){
     total+=bgtCategoryMonthSpend(venue, year, mm, row.ids)||0;
   });
   return Math.round(total);

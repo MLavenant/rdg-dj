@@ -84,12 +84,13 @@ function renderCal(){
   var pyMap=buildPyMapForMonth(curV, yr, mm);
   var pyBlank={py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
 
+  var finCol=typeof faYearOn==='function' && faYearOn(curV, yr);
   var h='<table class="sched-tbl"><thead><tr>';
   h+='<th class="sc-ev">Event</th>';
   h+='<th class="sc-date">Date</th>';
   h+='<th class="sc-dj">DJ Guest</th>';
+  if(finCol) h+='<th class="acct-status-hd sc-fin-st" title="Set from Finance Approval">Finance Status</th>';
   h+='<th class="acct-status-hd sc-dj-st">DJ Status</th>';
-  h+='<th class="sc-vip" title="Request approval">Request</th>';
   h+='<th class="sc-3d" title="Open 3D floor plan with tier pricing">3D</th>';
   h+='<th class="sc-fee">Fee</th>';
   h+='<th class="sc-num">BS Target</th>';
@@ -130,7 +131,7 @@ function renderCal(){
       h+='<tr class="'+dc+'" data-cal-ds="'+ds+'" ondragover="swDragOver(event)" ondragleave="swDragLeave(event)" ondrop="swDropOnDate(event,\''+ds+'\')">';
       h+='<td class="sc-ev-cell">'+_evCellHtml(evLabel, ds)+'</td>';
       h+='<td class="sc-date-cell">'+dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
-      h+='<td colspan="9" class="sc-empty-day"><button type="button" class="sc-add-inline" data-action="addShow" data-ds="'+ds+'">+ Add show</button></td>';
+      h+='<td colspan="'+(finCol?9:8)+'" class="sc-empty-day"><button type="button" class="sc-add-inline" data-action="addShow" data-ds="'+ds+'">+ Add show</button></td>';
       h+='<td class="sc-sep"></td>';
       /* Show prior-year match on empty days so planners still see last year's lineup */
       h+=_pyCellsHtml(pyMap[ds]||pyBlank);
@@ -170,15 +171,12 @@ function renderCal(){
           +(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')
           +'</td>';
         var djSt=getShowDjStatus(r, ds)||'';
+        if(finCol){
+          h+='<td class="acct-status-cell sc-fin-cell"><div class="acct-status-wrap">'+faFinanceSelectHtml(r, ds, idx)+'</div></td>';
+        }
         h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
           +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status for this performance"', r)
           +'</div></td>';
-        var bpd=(typeof _bpData!=='undefined')?_bpData:null;
-        var apprNote=(bpd&&bpd.notes&&bpd.notes[showUid])||null;
-        var apprOn=!!(apprNote&&(String(apprNote.rationale||'').trim()||String(apprNote.benefits||'').trim()));
-        h+='<td class="sc-vip" onclick="event.stopPropagation()">';
-        h+='<button type="button" class="sc-appr-btn'+(apprOn?' has-note':'')+'" title="Request approval" onclick="bpOpenShowApproval('+idx+')">Request</button>';
-        h+='</td>';
         h+='<td class="sc-3d" onclick="event.stopPropagation()"><button type="button" class="sc-3d-btn" onclick="openShow3dModal('+idx+')" title="Open 3D floor plan and tier prices">3D</button></td>';
         h+='<td class="sc-num fee-cell '+(feeCls||'')+'" data-show-idx="'+idx+'" data-uid="'+showUid+'" data-action="editShow" style="cursor:pointer" title="Click to edit fee">'+$k(fee)+'</td>';
         h+='<td class="sc-num">'+$k(bsM)+'</td>';
@@ -204,6 +202,9 @@ function renderCal(){
       if(sel.dataset.idx!=null && sel.dataset.idx!=='') updateShowDjStatus(+sel.dataset.idx, sel.value, sel, sel.dataset.uid);
       else updateAcctDjStatus(sel.dataset.ds, sel.value, sel);
     });
+  });
+  document.querySelectorAll('#calBody [data-action="finStatus"]').forEach(function(sel){
+    _wireDjStatusSelect(sel, function(){ faSetFinanceFromSelect(sel); });
   });
   wireCalEditClicks();
   initCalColResize();
@@ -426,10 +427,11 @@ function calGuestDjBudget(venue, year, mm){
   if(live==null && typeof getMonthlyBudget==='function') live=getMonthlyBudget(venue, year, mm);
   if(month!==11 && month!==12) return {amount:live, guest:false};
   var other=0;
-  if(live!=null && typeof bgtSpendCategoryRows==='function' && typeof bgtCategoryMonthSpend==='function'){
-    bgtSpendCategoryRows().forEach(function(row){
+  /* Fixed month totals, not the Resident DJ Calendar, so this budget does not move with resident entries. */
+  if(live!=null && typeof bgtLegacySpendRows==='function' && typeof bgtLegacyCategoryMonthSpend==='function'){
+    bgtLegacySpendRows().forEach(function(row){
       if(!row||!row.ids) return;
-      other+=bgtCategoryMonthSpend(venue, String(year), mm, row.ids)||0;
+      other+=bgtLegacyCategoryMonthSpend(venue, String(year), mm, row.ids)||0;
     });
     return {amount:Math.round(+live-other), guest:true};
   }
@@ -1458,7 +1460,7 @@ function _calUiBusy(){
   }catch(eModal){}
   var ae=document.activeElement;
   if(!ae) return false;
-  if(ae.tagName==='SELECT' && ae.getAttribute('data-action')==='djStatus') return true;
+  if(ae.tagName==='SELECT' && (ae.getAttribute('data-action')==='djStatus'||ae.getAttribute('data-action')==='finStatus')) return true;
   if(ae.tagName==='SELECT' && ae.classList && ae.classList.contains('acct-status-sel')) return true;
   if(ae.tagName==='TEXTAREA' && ae.getAttribute('data-action')==='acctNote') return true;
   if(ae.tagName==='INPUT' && ae.getAttribute('data-action')==='acctAgency') return true;
@@ -1572,11 +1574,13 @@ function updateShowDjStatus(idx,val,sel,uid){
   _calRequestRefresh(curView==='accounting'?'go':false);
 }
 function _djStatusSelectHtml(djSt, extraAttrs, show){
-  var h='<select class="acct-status-sel '+acctStatusClass(djSt||null)+'" '+(extraAttrs||'')+'>';
   if(show && typeof faInScope==='function' && faInScope(show) && typeof faStatusSelectOptionsHtml==='function'){
-    h+=faStatusSelectOptionsHtml(show, djSt||'');
-    return h+'</select>';
+    var live=(typeof faDjStatus==='function')?faDjStatus(show):(djSt||'');
+    var locked=(typeof faDjLocked==='function')&&faDjLocked(show);
+    return '<select class="acct-status-sel '+acctStatusClass(live||null)+(locked?' fa-dj-locked':'')+'" '+(extraAttrs||'')
+      +(locked?' title="Locked until Finance Approved"':'')+'>'+faStatusSelectOptionsHtml(show, live)+'</select>';
   }
+  var h='<select class="acct-status-sel '+acctStatusClass(djSt||null)+'" '+(extraAttrs||'')+'>';
   var opts=(typeof faStatusOptions==='function')?faStatusOptions(show, djSt||''):(typeof ACCT_DJ_STATUS!=='undefined'?ACCT_DJ_STATUS:['Offer sent','Hold 1','Confirmed']);
   /* Always keep Not set available (including when clearing a prior status) */
   h+='<option value=""'+(!djSt?' selected':'')+'>Not set</option>';

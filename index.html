@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>RDG DJ Dashboard v5.234</title>
+<title>RDG DJ Dashboard v5.235</title>
 <!-- Firebase Realtime Database SDK -->
-  <link rel="stylesheet" href="css/app.css?v=5.234">
-<script>window.RDG_APP_VERSION='5.234';</script>
+  <link rel="stylesheet" href="css/app.css?v=5.235">
+<script>window.RDG_APP_VERSION='5.235';</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
@@ -15,19 +15,19 @@
 <div id="sessionGate" class="signin-landing" role="dialog" aria-modal="true" aria-labelledby="signinTitle">
   <section class="signin-hero" aria-hidden="true">
     <div class="signin-track" id="signinTrack">
-      <div class="signin-slide on"><img src="assets/signin/mila-lounge.jpg?v=5.234" alt=""></div>
-      <div class="signin-slide"><img src="assets/signin/beach-club.jpg?v=5.234" alt=""></div>
-      <div class="signin-slide"><img src="assets/signin/casa-neos-lounge.jpg?v=5.234" alt=""></div>
+      <div class="signin-slide on"><img src="assets/signin/mila-lounge.jpg?v=5.235" alt=""></div>
+      <div class="signin-slide"><img src="assets/signin/beach-club.jpg?v=5.235" alt=""></div>
+      <div class="signin-slide"><img src="assets/signin/casa-neos-lounge.jpg?v=5.235" alt=""></div>
     </div>
     <div class="signin-hero-shade"></div>
     <div class="signin-brand">
-      <img class="signin-lockup" src="assets/signin/rdg-lockup-white.png?v=5.234" alt="RDG Riviera Dining Group">
-      <span class="signin-version">v5.234</span>
+      <img class="signin-lockup" src="assets/signin/rdg-lockup-white.png?v=5.235" alt="RDG Riviera Dining Group">
+      <span class="signin-version">v5.235</span>
     </div>
   </section>
   <section class="signin-panel">
     <div class="signin-panel-body">
-      <img class="signin-panel-lockup" src="assets/signin/rdg-lockup.png?v=5.234" alt="RDG Riviera Dining Group">
+      <img class="signin-panel-lockup" src="assets/signin/rdg-lockup.png?v=5.235" alt="RDG Riviera Dining Group">
       <div class="signin-kicker">Welcome back</div>
       <h2 id="signinTitle">Sign in</h2>
       <p id="signinNote">Use your work email. After your PIN is set, you enter that PIN to get in.</p>
@@ -61,9 +61,9 @@
 <div class="shell">
 <aside class="sidebar">
   <div class="sb-logo">
-    <img src="assets/rdg-logo.png?v=5.234" alt="RDG" class="sb-logo-img">
+    <img src="assets/rdg-logo.png?v=5.235" alt="RDG" class="sb-logo-img">
     <div class="sb-logo-title">DJ Dashboard</div>
-    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v5.234 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
+    <div class="sb-logo-sub" style="display:flex;align-items:center;gap:5px">v5.235 <span id="fbSyncDot" title="Connecting..." style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#f59e0b;flex-shrink:0"></span></div>
   </div>
   <div id="sidebar"></div>
   <button type="button" class="sb-signout" onclick="rdgSignOut()">Sign out</button>
@@ -74,7 +74,7 @@
   <div class="topbar">
     <div class="topbar-left">
       <button type="button" class="mobile-nav-btn" id="mobileNavBtn" onclick="toggleMobileNav()" aria-label="Open menu">&#9776;</button>
-      <img id="topbarLogo" class="topbar-logo hidden" alt=""><div><div class="pg-title">DJ Scheduling <span class="app-ver">v5.234</span></div><div class="pg-sub" id="pgSub"></div></div>
+      <img id="topbarLogo" class="topbar-logo hidden" alt=""><div><div class="pg-title">DJ Scheduling <span class="app-ver">v5.235</span></div><div class="pg-sub" id="pgSub"></div></div>
     </div>
     <div class="topbar-controls">
       <div class="layout-toggle" id="layoutToggle" title="Auto detects phone width; override anytime">
@@ -339,7 +339,7 @@
   <div id="view-finance" style="display:none">
     <div class="pg-section">
       <div class="pg-title2">Finance Approval</div>
-      <div style="font-size:10px;color:var(--ink3);margin-top:2px">Opens on the year: approved, pending, and budget. A month shows forecast versus target. April 2027 Beach Club is the live test.</div>
+      <div style="font-size:10px;color:var(--ink3);margin-top:2px">Opens on the year: approved, pending, and budget. A month shows forecast versus target and the nights waiting for approval.</div>
     </div>
     <div id="financeBody" style="padding:14px 16px;display:flex;flex-direction:column;gap:14px"></div>
   </div>
@@ -524,31 +524,31 @@
     </div>
   </div>
 </div>
-<script src="js/vendor/xlsx.js?v=5.234"></script>
-<script src="data/sched-baked.js?v=5.234"></script>
-<script src="data/flash-py-2025.js?v=5.234"></script>
-<script src="data/flash-excel-catalog.js?v=5.234"></script>
-<script src="js/state-prelude.js?v=5.234"></script>
-<script src="js/logos.js?v=5.234"></script>
-<script src="js/state.js?v=5.234"></script>
-<script src="js/fiscal.js?v=5.234"></script>
-<script src="js/signin.js?v=5.234"></script>
-<script src="js/core.js?v=5.234"></script>
-<script src="js/budget.js?v=5.234"></script>
-<script src="js/firebase-sync.js?v=5.234"></script>
-<script src="js/calendar.js?v=5.234"></script>
-<script src="js/resident.js?v=5.234"></script>
-<script src="js/flash-forecast.js?v=5.234"></script>
-<script src="js/accounting.js?v=5.234"></script>
-<script src="js/modals.js?v=5.234"></script>
-<script src="js/roi-rules.js?v=5.234"></script>
-<script src="js/booking-plan.js?v=5.234"></script>
-<script src="data/dj-monthly-recap.js?v=5.234"></script>
-<script src="data/wm-mtd.js?v=5.234"></script>
-<script src="js/monthly-recap.js?v=5.234"></script>
-<script src="js/finance-approval.js?v=5.234"></script>
-<script src="data/dj-sales-prevision.js?v=5.234"></script>
-<script src="js/sales-prevision.js?v=5.234"></script>
+<script src="js/vendor/xlsx.js?v=5.235"></script>
+<script src="data/sched-baked.js?v=5.235"></script>
+<script src="data/flash-py-2025.js?v=5.235"></script>
+<script src="data/flash-excel-catalog.js?v=5.235"></script>
+<script src="js/state-prelude.js?v=5.235"></script>
+<script src="js/logos.js?v=5.235"></script>
+<script src="js/state.js?v=5.235"></script>
+<script src="js/fiscal.js?v=5.235"></script>
+<script src="js/signin.js?v=5.235"></script>
+<script src="js/core.js?v=5.235"></script>
+<script src="js/budget.js?v=5.235"></script>
+<script src="js/firebase-sync.js?v=5.235"></script>
+<script src="js/calendar.js?v=5.235"></script>
+<script src="js/resident.js?v=5.235"></script>
+<script src="js/flash-forecast.js?v=5.235"></script>
+<script src="js/accounting.js?v=5.235"></script>
+<script src="js/modals.js?v=5.235"></script>
+<script src="js/roi-rules.js?v=5.235"></script>
+<script src="js/booking-plan.js?v=5.235"></script>
+<script src="data/dj-monthly-recap.js?v=5.235"></script>
+<script src="data/wm-mtd.js?v=5.235"></script>
+<script src="js/monthly-recap.js?v=5.235"></script>
+<script src="js/finance-approval.js?v=5.235"></script>
+<script src="data/dj-sales-prevision.js?v=5.235"></script>
+<script src="js/sales-prevision.js?v=5.235"></script>
 </body>
 </html>
 

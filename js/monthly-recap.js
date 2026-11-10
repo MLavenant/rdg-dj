@@ -249,7 +249,7 @@ function wmMtdLiveSpend(venue, meta){
   var other=0;
   if(typeof bgtSpendCategoryRows==='function' && typeof bgtCategoryMonthSpend==='function'){
     var mm=wmFiscalMm(meta.period);
-    bgtSpendCategoryRows().forEach(function(row){
+    bgtSpendCategoryRows(venue).forEach(function(row){
       if(!row.ids) return;
       var n=bgtCategoryMonthSpend(venue, String(meta.year), mm, row.ids)||0;
       if(n){ other+=n; any=true; }
