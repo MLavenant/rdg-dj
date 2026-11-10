@@ -456,8 +456,7 @@ function faMonthTileHtml(venue, year, mi, names){
 function faQuarterHtml(venue, year, q, names){
   var from=q*3, to=from+2;
   var row=faRange(venue, year, from, to);
-  var h='<div class="fa-q"><header class="fa-q-hd"><div class="fa-q-title"><b>Q'+(q+1)+'</b><em>'+_escHtml(names[from]+' \u2013 '+names[to])+'</em></div>'
-    +faTrioHeadHtml()+'</header><div class="fa-q-months">';
+  var h='<div class="fa-q"><header class="fa-q-hd"><b>Q'+(q+1)+'</b></header>'+faTrioHeadHtml()+'<div class="fa-q-months">';
   for(var mi=from; mi<=to; mi++) h+=faMonthTileHtml(venue, year, mi, names);
   h+='</div>'+faTotalBar('Q'+(q+1)+' total', row.spend, row.budget, false);
   return h+'</div>';

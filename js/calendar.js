@@ -85,8 +85,6 @@ function renderCal(){
   var pyBlank={py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
 
   var finCol=typeof faYearOn==='function' && faYearOn(curV, yr);
-  var sumFee=0, anyFee=false, sumBsT=0, anyBsT=false, sumBsA=0, anyBsA=false;
-  var sumLyFee=0, anyLyFee=false, sumLyBsT=0, anyLyBsT=false, sumLyBsA=0, anyLyBsA=false;
   var h='<table class="sched-tbl"><thead><tr>';
   h+='<th class="sc-ev">Event</th>';
   h+='<th class="sc-date">Date</th>';
@@ -128,10 +126,6 @@ function renderCal(){
 
     var dateStr=DOW_FULL[dow]+', '+MN_FULL[dObj.getMonth()]+' '+dObj.getDate()+', '+dObj.getFullYear();
     var nrows=Math.max(1,shows.length);
-    var pyDay=pyMap[ds]||pyBlank;
-    if(pyDay.py_fee!=null && isFinite(+pyDay.py_fee)){ sumLyFee+=+pyDay.py_fee; anyLyFee=true; }
-    if(pyDay.py_bs_m!=null && isFinite(+pyDay.py_bs_m)){ sumLyBsT+=+pyDay.py_bs_m; anyLyBsT=true; }
-    if(pyDay.py_bs_a!=null && isFinite(+pyDay.py_bs_a)){ sumLyBsA+=+pyDay.py_bs_a; anyLyBsA=true; }
 
     if(!shows.length){
       h+='<tr class="'+dc+'" data-cal-ds="'+ds+'" ondragover="swDragOver(event)" ondragleave="swDragLeave(event)" ondrop="swDropOnDate(event,\''+ds+'\')">';
@@ -157,9 +151,6 @@ function renderCal(){
         var tgt=showTargets(r);
         var bsM=tgt.bs_m, roiT=tgt.roi_t;
         var fee=liveReady ? (guardBlank ? null : ((gLive && gLive.fee!=null)?gLive.fee:(r.fee||r.cost))) : null;
-        if(fee!=null && isFinite(+fee)){ sumFee+=+fee; anyFee=true; }
-        if(bsM!=null && isFinite(+bsM)){ sumBsT+=+bsM; anyBsT=true; }
-        if(r.bs_a!=null && isFinite(+r.bs_a)){ sumBsA+=+r.bs_a; anyBsA=true; }
         var bCls = perfTone(r.bs_a, bsM, fee, r.roi_a, roiT);
         var rCls = bCls;
         var tSty = toneStyle(bCls);
@@ -204,38 +195,7 @@ function renderCal(){
       });
     }
   }
-  var guestB=calGuestDjBudget(curV, yr, mm);
-  var gBudget=guestB?guestB.amount:null;
-  var gVar=gBudget!=null?gBudget-sumFee:null;
-  var resSum=(typeof residentMonthTotal==='function')?residentMonthTotal(curV, yr, mm, 'resident_dj'):null;
-  function footStack(rows){
-    return '<div class="cal-foot-stack">'+rows.map(function(row){
-      return '<span>'+row[0]+'</span><b'+(row[2]?' class="'+row[2]+'"':'')+'>'+row[1]+'</b>';
-    }).join('')+'</div>';
-  }
-  function footMoney(n, any){ return any?$k(n):'\u2014'; }
-  h+='</tbody><tfoot><tr class="cal-foot-row">';
-  h+='<td></td><td class="cal-foot-label">Total</td>';
-  h+= '<td>'+footStack([
-    ['Resident', resSum?$k(resSum):'\u2014'],
-    ['Budget', '\u2014'],
-    ['Var', '\u2014']
-  ])+'</td>';
-  if(finCol) h+='<td></td>';
-  h+='<td></td><td></td>';
-  h+='<td>'+footStack([
-    ['Total', footMoney(sumFee, anyFee)],
-    ['Budget', gBudget!=null?$k(gBudget):'\u2014'],
-    ['Var', gVar==null?'\u2014':(gVar>0?'+':'')+$k(gVar), gVar==null?'':(gVar>=0?'cal-foot-good':'cal-foot-bad')]
-  ])+'</td>';
-  h+='<td class="cal-foot-one">'+footMoney(sumBsT, anyBsT)+'</td>';
-  h+='<td class="cal-foot-one">'+footMoney(sumBsA, anyBsA)+'</td>';
-  h+='<td></td><td></td><td class="sc-sep"></td><td></td>';
-  h+='<td class="cal-foot-one">'+footMoney(sumLyFee, anyLyFee)+'</td>';
-  h+='<td class="cal-foot-one">'+footMoney(sumLyBsT, anyLyBsT)+'</td>';
-  h+='<td class="cal-foot-one">'+footMoney(sumLyBsA, anyLyBsA)+'</td>';
-  h+='<td></td><td></td><td></td>';
-  h+='</tr></tfoot></table>';
+  h+='</tbody></table>';
   document.getElementById('calBody').innerHTML=h;
   document.querySelectorAll('#calBody [data-action="djStatus"]').forEach(function(sel){
     _wireDjStatusSelect(sel, function(){
@@ -414,9 +374,7 @@ function fitCalListRows(days){
   var rows=body.querySelectorAll('.sched-tbl tbody tr').length||Math.max(28,days|0);
   var available=Math.max(180,body.clientHeight);
   var headH=18;
-  var foot=body.querySelector('.sched-tbl tfoot');
-  var footH=foot?Math.max(foot.offsetHeight, 34):0;
-  var rowH=Math.max(8,Math.floor(((available-headH-footH-8)/rows)*10)/10);
+  var rowH=Math.max(8,Math.floor(((available-headH-8)/rows)*10)/10);
   var font=Math.max(6.5,Math.min(10,rowH*.68));
   var mini=Math.max(6,Math.min(8,font-.5));
   var control=Math.max(9,Math.min(18,rowH-1));
@@ -1196,7 +1154,8 @@ function _acctDocDropHtml(ds, kind, docs){
   var label=kind==='invoice'?'Invoice':'Contract';
   var fresh=window._acctFreshDocs||{};
   var posted=window._acctFreshZones&&window._acctFreshZones[ds+'|'+kind];
-  var h='<div class="acct-doc-drop'+(posted?' acct-doc-posted':'')+'" data-ds="'+ds+'" data-kind="'+kind+'" data-action="docDrop" title="Drop one or more '+label+' PDFs, or click to choose. Files stay until you remove them.">'
+  var kept=(docs&&docs.length)?' acct-doc-kept':'';
+  var h='<div class="acct-doc-drop'+(posted?' acct-doc-posted':'')+kept+'" data-ds="'+ds+'" data-kind="'+kind+'" data-action="docDrop" title="Drop one or more '+label+' PDFs, or click to choose. Files stay until you remove them.">'
     +(posted?'<div class="acct-doc-saved">Saved</div>':'')
     +((docs&&docs.length)?'':'<div class="acct-doc-hint"><span class="acct-doc-ico">PDF</span><b>Drop '+label+'</b><span>or click</span></div>')
     +'<div class="acct-doc-list">';

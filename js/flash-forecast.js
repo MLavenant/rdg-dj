@@ -174,14 +174,13 @@ function flashPlanDelta(n, lowerIsBetter){
   var sign=v>0?'+':(v<0?'\u2212':'');
   return '<b class="'+cls+'">'+sign+flashPlanMoney(Math.abs(v))+'</b>';
 }
-/* Small up/down arrow and percent. lowerIsBetter marks a drop in DJ fee as green. */
-function flashPlanArrow(now, prior, lowerIsBetter){
-  if(now==null||prior==null||!(Math.abs(+prior)>0)||!isFinite(+now)||!isFinite(+prior)) return '';
-  var pct=Math.round((+now-+prior)/Math.abs(+prior)*100);
-  if(!isFinite(pct)) return '';
-  var cls=pct===0?'':((lowerIsBetter?pct<0:pct>0)?'fp-good':'fp-bad');
-  var arrow=pct>0?'\u25B2':(pct<0?'\u25BC':'\u2013');
-  return '<em class="fp-var '+cls+'"><i>'+arrow+'</i>'+Math.abs(pct)+'%</em>';
+/* Dollar variance with a small arrow. lowerIsBetter marks a drop in DJ fee as green. */
+function flashPlanVar(now, prior, lowerIsBetter){
+  if(now==null||prior==null||!isFinite(+now)||!isFinite(+prior)) return '<span class="fp-na">\u2014</span>';
+  var diff=+now-+prior;
+  var cls=diff===0?'':((lowerIsBetter?diff<0:diff>0)?'fp-good':'fp-bad');
+  var arrow=diff>0?'\u25B2':(diff<0?'\u25BC':'\u2013');
+  return '<b class="fp-var '+cls+'"><i>'+arrow+'</i>'+flashPlanMoney(Math.abs(diff))+'</b>';
 }
 function flashPlanBook(name, fee, status, varianceHtml, where){
   var st=status||'';
@@ -196,7 +195,7 @@ function flashPlanBook(name, fee, status, varianceHtml, where){
 function flashPlanMeter(actual, target){
   if(actual==null||!isFinite(+actual)) return '<span class="fp-na">No 2026 data</span>';
   if(target==null||!(+target>0)) return '<span class="fp-na">\u2014</span>';
-  return flashPlanArrow(actual, target, false)||'<span class="fp-na">\u2014</span>';
+  return flashPlanVar(actual, target, false);
 }
 function flashPlanChart(title, groups, series){
   var max=0;
@@ -277,24 +276,25 @@ function flashPlanSlide(data, n, of){
     {key:'pyBs', name:String(pyYear), cls:'is-py'}
   ]);
   h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Performances<em>DJ fees beside '+pyYear+', then bottle service target against '+pyYear+'.</em></div>';
-  h+='<table class="flash-plan-shows"><colgroup><col class="c-date"><col class="c-book"><col class="c-book"><col class="c-chg"><col class="c-num"><col class="c-num"><col class="c-vs"></colgroup>'
-    +'<thead><tr class="flash-plan-group"><th class="l" rowspan="2">Date</th><th class="fp-fees" colspan="3">DJ fees</th><th class="fp-bs" colspan="3">Bottle service</th></tr>'
-    +'<tr><th class="l">'+planYear+' booking</th><th class="l">'+pyYear+' booking</th><th>Change</th>'
-    +'<th class="fp-bs">'+planYear+' target</th><th>'+pyYear+' actual</th><th>PY vs target</th></tr></thead><tbody>';
+  h+='<table class="flash-plan-shows"><colgroup><col class="c-date"><col class="c-artist"><col class="c-py"><col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num"><col class="c-num"></colgroup>'
+    +'<thead><tr class="flash-plan-group"><th class="l" rowspan="2">Date</th><th class="l" rowspan="2">'+planYear+' artist</th><th class="l fp-py" rowspan="2">PY</th><th class="fp-fees" colspan="3">DJ fees</th><th class="fp-bs" colspan="3">Bottle service</th></tr>'
+    +'<tr><th>'+planYear+'</th><th>PY</th><th>Var.</th>'
+    +'<th class="fp-bs">'+planYear+'</th><th>PY</th><th>Var.</th></tr></thead><tbody>';
   cells.forEach(function(c){
     var rows=(c.rows||[]).slice().sort(function(a,b){ return a.d<b.d?-1:(a.d>b.d?1:0); });
     var feeNow=c.planned!=null?+c.planned:null;
     var feePy=c.py&&c.py.fee!=null?+c.py.fee:null;
     var bsNow=c.bsT!=null?+c.bsT:null;
     var bsPy=c.py&&c.py.bs!=null?+c.py.bs:null;
-    h+='<tr class="flash-plan-month"><td class="l"><b>'+_escHtml(c.month.label)+'</b>'+(c.month.range?' <span>'+_escHtml(c.month.range)+'</span>':'')+'</td>'
-      +'<td class="fp-month-vs" colspan="2">'+(feeNow!=null?flashPlanMoney(feeNow):'\u2014')+' vs '+(feePy!=null?flashPlanMoney(feePy):'\u2014')+'</td>'
-      +'<td>'+flashPlanDelta(feeNow!=null&&feePy!=null?feeNow-feePy:null, true)+'</td>'
+    h+='<tr class="flash-plan-month"><td class="l"><b>'+_escHtml(c.month.label)+'</b></td><td></td><td class="fp-py"></td>'
+      +'<td>'+(feeNow!=null?flashPlanMoney(feeNow):'\u2014')+'</td>'
+      +'<td>'+(feePy!=null?flashPlanMoney(feePy):'\u2014')+'</td>'
+      +'<td>'+flashPlanVar(feeNow, feePy, true)+'</td>'
       +'<td class="fp-bs">'+(bsNow!=null?flashPlanMoney(bsNow):'\u2014')+'</td>'
       +'<td>'+(bsPy!=null?flashPlanMoney(bsPy):'\u2014')+'</td>'
-      +'<td>'+flashPlanDelta(bsNow!=null&&bsPy!=null?bsPy-bsNow:null, false)+'</td></tr>';
+      +'<td>'+flashPlanVar(bsPy, bsNow, false)+'</td></tr>';
     if(!rows.length){
-      h+='<tr><td class="l fp-na" colspan="7">No performances</td></tr>';
+      h+='<tr><td class="l fp-na" colspan="9">No performances</td></tr>';
       return;
     }
     rows.forEach(function(r){
@@ -304,15 +304,17 @@ function flashPlanSlide(data, n, of){
       var pyBs=ly&&ly.bs!=null&&isFinite(+ly.bs)?+ly.bs:null;
       var fee=r.fee!=null&&isFinite(+r.fee)?+r.fee:null;
       h+='<tr><td class="l"><b>'+(typeof _bpDay==='function'?_bpDay(r.d):_escHtml(r.d))+'</b></td>'
-        +'<td class="l">'+flashPlanBook(r.dj||'TBD', fee, r.status, flashPlanArrow(fee, pyFee, true), 'inline')+'</td>'
-        +'<td class="l">'+(ly&&ly.dj?flashPlanBook(ly.dj, pyFee, '', flashPlanArrow(pyBs, bsTarget, false), 'below'):'<span class="fp-na">\u2014</span>')+'</td>'
-        +'<td>'+flashPlanDelta(fee!=null&&pyFee!=null?fee-pyFee:null, true)+'</td>'
+        +'<td class="l"><b class="fp-artist">'+_escHtml(r.dj||'TBD')+'</b></td>'
+        +'<td class="l fp-py">'+(ly&&ly.dj?_escHtml(ly.dj):'<span class="fp-na">\u2014</span>')+'</td>'
+        +'<td>'+(fee!=null?flashPlanMoney(fee):'\u2014')+'</td>'
+        +'<td>'+(pyFee!=null?flashPlanMoney(pyFee):'\u2014')+'</td>'
+        +'<td>'+flashPlanVar(fee, pyFee, true)+'</td>'
         +'<td class="fp-bs">'+flashPlanMoney(bsTarget)+'</td>'
         +'<td>'+(pyBs!=null?flashPlanMoney(pyBs):'\u2014')+'</td>'
-        +'<td>'+flashPlanMeter(pyBs, bsTarget)+'</td></tr>';
+        +'<td>'+flashPlanVar(pyBs, bsTarget, false)+'</td></tr>';
     });
   });
-  if(!cells.length) h+='<tr><td class="l" colspan="7">No performances in this window.</td></tr>';
+  if(!cells.length) h+='<tr><td class="l" colspan="9">No performances in this window.</td></tr>';
   h+='</tbody></table>';
   h+='</div>';
   h+='<div class="bp-deck-ft"><span>Prepared '+(typeof _bpFmtDate==='function'?_escHtml(_bpFmtDate(_bpNow())):'')+'</span><span>Riviera Dining Group \u00b7 Entertainment</span></div>';
