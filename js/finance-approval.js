@@ -5,7 +5,8 @@ var FINANCE_APPROVERS={
   'matthias@rivieradininggroup.com':1,
   'greg@rivieradininggroup.com':1,
   'takuma@rivieradininggroup.com':1,
-  'michael@rivieradininggroup.com':1
+  'michael@rivieradininggroup.com':1,
+  'fabien@rivieradininggroup.com':1
 };
 var FA_VENUES=['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'];
 var FA_FIN=['Finance to Approve','Finance Approved','Finance declined'];
@@ -194,8 +195,8 @@ function faDecide(uid, status){
   faSetFinance(r, status, 'finance approval');
   renderFinanceApproval();
 }
-/* Greg and Matthias see the quarter view and approve the larger nights.
-   Takuma (and Michael) keep the month cards and approve every other night. */
+/* Super owner (Greg) and Matthias see the quarter view and approve the larger nights.
+   Takuma, Michael, and Fabien keep the month cards and approve every other night. */
 function faViewer(){
   var email=String(financeSignedInEmail()||'').toLowerCase();
   if(email==='greg@rivieradininggroup.com'||email==='matthias@rivieradininggroup.com') return 'greg';
@@ -423,27 +424,37 @@ function faStatusLine(venue, year, scope){
   if(!n) return '<i class="fa-m-ok">All approved</i>';
   return '<i class="fa-m-wait"><i class="fa-warn-dot"></i>'+n+' pending approval</i>';
 }
-function faStackBox(name, forecast, budget, prior, scope){
+function faStackBox(name, forecast, budget, prior, scope, monthIndex){
   var call=faCall(forecast, budget, 'under');
   var tone=budget==null?'':(forecast>budget?' is-bad':' is-good');
-  return '<div class="fa-m'+tone+'"><b class="fa-m-name">'+_escHtml(name)+'</b>'
-    +'<div class="fa-m-bit"><span>Forecast</span><em>'+$k(forecast)+'</em></div>'
+  var monthAttr=(typeof monthIndex==='number')?' data-month="'+monthIndex+'"':'';
+  return '<div class="fa-m'+tone+'"'+monthAttr+'><b class="fa-m-name">'+_escHtml(name)+'</b>'
+    +'<div class="fa-m-trio">'
+    +'<div class="fa-m-bit"><span>Scheduled</span><em>'+$k(forecast)+'</em></div>'
     +'<div class="fa-m-bit"><span>Budget</span><b class="fa-m-bud">'+faMoney(budget)+'</b></div>'
     +'<div class="fa-m-bit"><span>Variance</span><b class="fa-m-var'+call.tone+'">'+_escHtml(call.text)+'</b></div>'
+    +'</div>'
     +'<div class="fa-m-py">Prior year '+faMoney(prior)+'</div>'
     +'<button type="button" class="fa-m-pend" data-fa="pending" data-scope="'+scope+'">'+faStatusLine(faHere(), faWhen().year, scope)+'</button></div>';
+}
+function faTotalBar(label, spend, budget){
+  var call=faCall(spend, budget, 'under');
+  return '<div class="fa-qbar"><span>'+_escHtml(label)+'</span>'
+    +'<b><i>Scheduled</i>'+faMoney(spend)+'</b>'
+    +'<b class="fa-m-bud"><i>Budget</i>'+faMoney(budget)+'</b>'
+    +'<b class="fa-m-var'+call.tone+'"><i>Variance</i>'+_escHtml(call.text)+'</b></div>';
 }
 function faMonthTileHtml(venue, year, mi, names){
   var mm=faMm(mi);
   var cell=faGuestPosition(venue, year, mm);
-  return faStackBox(names[mi], cell.spend, cell.budget, faPriorGuest(venue, year, mm), String(mi));
+  return faStackBox(names[mi], cell.spend, cell.budget, faPriorGuest(venue, year, mm), String(mi), mi);
 }
 function faQuarterHtml(venue, year, q, names){
   var from=q*3, to=from+2;
   var row=faRange(venue, year, from, to);
-  var h='<div class="fa-q"><div class="fa-q-hd">Q'+(q+1)+'</div>';
+  var h='<div class="fa-q"><div class="fa-q-hd">Q'+(q+1)+'</div><div class="fa-q-months">';
   for(var mi=from; mi<=to; mi++) h+=faMonthTileHtml(venue, year, mi, names);
-  h+=faStackBox('Total', row.spend, row.budget, row.priorGuest, 'q'+(q+1));
+  h+='</div>'+faTotalBar('Q'+(q+1)+' total', row.spend, row.budget);
   return h+'</div>';
 }
 function faPendingHtml(venue, year, scope, title){
@@ -521,15 +532,15 @@ function renderFinanceApproval(){
   names.forEach(function(name, i){ html+='<option value="'+i+'"'+(!when.total&&i===when.month?' selected':'')+'>'+name+'</option>'; });
   html+='</select></label></div>';
   html+='<div class="fa-rule">'+(greg
-    ?'You approve nights over $30K, and nights of at least $5K that are over 5% of that month\'s Guest DJ budget. Takuma approves the rest. Every night can be approved.'
-    :'You approve nights under $5K and nights within 5% of that month\'s Guest DJ budget. Greg approves nights over that, and every night over $30K.')+'</div>';
+    ?'Super owner. You approve nights over $30K, and nights of at least $5K that are over 5% of that month\'s Guest DJ budget. Admins approve the rest.'
+    :'Admin. You approve nights under $5K and nights within 5% of that month\'s Guest DJ budget. The Super owner approves nights over that, and every night over $30K.')+'</div>';
   if(!live) html+='<div class="fa-note">Finance approval applies to 2027 performances. 2026 is shown against budget only.</div>';
   var yearRow=faRange(venue, when.year, 0, 11);
   html+=faCardHtml('Budget · full year', yearRow, 'year', 'year');
   if(greg && when.total){
-    html+='<div class="fa-break-hd">Guest DJ vs budget · '+when.year+'</div><div class="fa-quarters">';
+    html+='<div class="fa-fit"><div class="fa-break-hd">Guest DJ · scheduled vs budget · '+when.year+'</div><div class="fa-quarters">';
     for(var q=0;q<4;q++) html+=faQuarterHtml(venue, when.year, q, names);
-    html+='</div><div class="fa-yearbox">'+faStackBox('Year total', yearRow.spend, yearRow.budget, yearRow.priorGuest, 'year')+'</div>';
+    html+='</div>'+faTotalBar(when.year+' total', yearRow.spend, yearRow.budget)+'</div>';
   }else if(!greg){
     var mi=when.total?((typeof TODAY!=='undefined'&&typeof fiscalInfoForDate==='function'&&fiscalInfoForDate(TODAY).year===when.year)?fiscalInfoForDate(TODAY).monthIndex:0):when.month;
     html+='<div class="fa-stack">'
@@ -537,8 +548,10 @@ function renderFinanceApproval(){
       +faCardHtml('YTD through '+names[mi], faRange(venue, when.year, 0, mi), 'y'+mi, 'ytd')
       +'</div>';
     if(live) html+='<button type="button" class="fa-pending-launch" data-fa="pending" data-scope="'+mi+'">'+faStatusLine(venue, when.year, String(mi))+'</button>';
+    html+=faTotalBar(when.year+' total', yearRow.spend, yearRow.budget);
   }else{
     html+=faCardHtml(names[when.month], faMonthRow(venue, when.year, when.month), String(when.month), 'month');
+    html+=faTotalBar(when.year+' total', yearRow.spend, yearRow.budget);
     if(!faPendingOn){ faPendingOn=true; faPendingScope=String(when.month); }
   }
   if(live && (faPendingOn || (greg && !when.total))){

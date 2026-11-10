@@ -3874,6 +3874,15 @@ function renderSystem(){
   );
 
   var h = '';
+  h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid #0b2e40">'
+    + '<div style="font-size:14px;font-weight:900">People</div>'
+    + '<div style="margin-top:4px;font-size:11px;color:var(--ink3)">Who can sign in, and what each group can do.</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px">'
+    + '<div style="background:#0b2e40;color:#fff;border-radius:8px;padding:8px 10px"><b style="display:block;font-size:11px;letter-spacing:.04em;text-transform:uppercase">Super owner</b><span style="display:block;margin-top:4px;font-size:12px">Greg</span><span style="display:block;font-size:10px;opacity:.8">greg@rivieradininggroup.com · all access</span></div>'
+    + '<div style="background:#f4f6f8;border-radius:8px;padding:8px 10px"><b style="display:block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#0b2e40">Admin</b><span style="display:block;margin-top:4px;font-size:12px;line-height:1.45">Takuma<br>Matthias<br>Mika<br>Fabien</span><span style="display:block;font-size:10px;color:#64748b">fabien@rivieradininggroup.com</span></div>'
+    + '<div style="background:#f4f6f8;border-radius:8px;padding:8px 10px"><b style="display:block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#0b2e40">Operators</b><span style="display:block;margin-top:4px;font-size:12px;line-height:1.45">Christophe<br>Hugo</span></div>'
+    + '<div style="background:#f4f6f8;border-radius:8px;padding:8px 10px"><b style="display:block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#0b2e40">AO</b><span style="display:block;margin-top:4px;font-size:12px;color:#64748b">No one yet. Add people here when you have them.</span></div>'
+    + '</div></div>';
   h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid '+(overallBad?'#ef4444':(overallWarn?'#f59e0b':'#22c55e'))+'">'
     + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'
     + '<div style="font-size:14px;font-weight:900">Overall</div>'

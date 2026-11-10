@@ -10,7 +10,8 @@ var RDG_SIGNIN_ALLOW = {
   'alexandra@rivieradininggroup.com': 'Alexandra',
   'matthias@rivieradininggroup.com': 'Matthias',
   'takuma@rivieradininggroup.com': 'Takuma',
-  'jessica@rivieradininggroup.com': 'Jessica'
+  'jessica@rivieradininggroup.com': 'Jessica',
+  'fabien@rivieradininggroup.com': 'Fabien'
 };
 var RDG_SIGNIN_OWNER = 'matthias@rivieradininggroup.com';
 var _signInEmail = '';
@@ -29,8 +30,12 @@ function signInKey(email){
 function signInCurrentEmail(){
   try{ return signInNormalizeEmail(sessionStorage.getItem('rdg_signin_email')||''); }catch(e){ return ''; }
 }
+function signInIsSuperOwner(){
+  return signInCurrentEmail()==='greg@rivieradininggroup.com';
+}
 function signInIsOwner(){
-  return signInCurrentEmail()===RDG_SIGNIN_OWNER;
+  var email=signInCurrentEmail();
+  return email===RDG_SIGNIN_OWNER || signInIsSuperOwner();
 }
 function signInRememberEmail(email){
   var v=signInNormalizeEmail(email);
