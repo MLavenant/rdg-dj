@@ -759,13 +759,30 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .flash-plan .flash-chart-pair{flex:1 1 0;width:auto;height:100%;gap:8px}
 .flash-plan .flash-chart-bar{flex:1 1 0;width:auto;min-width:0}
 .flash-plan .flash-plan-shows{table-layout:fixed;width:100%}
-.flash-plan-shows col.c-date{width:10%}
-.flash-plan-shows col.c-artist{width:14%}
-.flash-plan-shows col.c-fee{width:8%}
-.flash-plan-shows col.c-status{width:12%}
-.flash-plan-shows col.c-num{width:17%}
+.flash-plan-shows col.c-date{width:13%}
+.flash-plan-shows col.c-book{width:16%}
+.flash-plan-shows col.c-chg{width:10%}
+.flash-plan-shows col.c-num{width:11%}
+.flash-plan-shows col.c-vs{width:23%}
+.flash-plan .fp-book{display:flex;flex-direction:column;gap:1px;min-width:0;white-space:normal}
+.flash-plan .fp-book b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:750;line-height:1.2}
+.flash-plan .fp-book span{display:block;font-size:11px;font-weight:700;color:#64748b;line-height:1.15}
+.flash-plan .fp-book i{display:block;font-style:normal;font-size:10px;font-weight:700;color:#94a3b8;line-height:1.15}
+.flash-plan .fp-good{color:#15803d}
+.flash-plan .fp-bad{color:#dc2626}
+.flash-plan .fp-na{color:#94a3b8;font-weight:650}
+.flash-plan .fp-meter-row{display:flex;align-items:center;gap:6px;min-width:0;white-space:normal}
+.flash-plan .fp-meter-row b{flex:0 0 auto;font-size:12px;font-weight:800}
+.flash-plan .fp-meter{flex:1 1 auto;height:7px;background:#e7e5e4;border-radius:99px;overflow:hidden;min-width:28px}
+.flash-plan .fp-meter i{display:block;height:100%;border-radius:99px;background:#16a34a}
+.flash-plan .fp-bad .fp-meter i{background:#111827}
+.flash-plan .fp-meter-row em{flex:0 0 auto;font-style:normal;font-size:11px;font-weight:700;color:#64748b}
+.flash-plan-shows th.fp-fees{text-align:center;background:#f8fafc}
+.flash-plan-shows th.fp-bs,.flash-plan-shows td.fp-bs{border-left:2px solid #0b2e40}
+.flash-plan-shows .fp-month-vs{text-align:left;font-weight:800;color:#0b2e40}
 .flash-plan .flash-plan-shows th,.flash-plan .flash-plan-shows td{padding:3px 4px;font-size:12px}
-.flash-plan .flash-plan-shows td,.flash-plan .flash-plan-shows th{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.flash-plan .flash-plan-shows td,.flash-plan .flash-plan-shows th{overflow:hidden;vertical-align:middle}
+.flash-plan .flash-plan-shows td.l,.flash-plan .flash-plan-shows th.l{text-align:left}
 .flash-plan-sum th,.flash-plan-shows th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#64748b;text-align:right;padding:7px 8px;border-bottom:1px solid #e2e8f0;font-weight:700}
 .flash-plan-sum th.l,.flash-plan-shows th.l,.flash-plan-sum td.l,.flash-plan-shows td.l{text-align:left}
 .flash-plan-sum td,.flash-plan-shows td{padding:6px 8px;border-bottom:1px solid #eef2f6;text-align:right;font-size:14px;font-variant-numeric:tabular-nums}
@@ -955,10 +972,12 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
   background:#f3f0ea!important;color:#0b2e40!important;font-weight:800!important;
   letter-spacing:.03em;border-bottom:2px solid #0b2e40!important;box-shadow:none!important
 }
+#view-accounting:not(.acct-others-mode) .acct-tbl{border-collapse:separate;border-spacing:0}
 #view-accounting:not(.acct-others-mode) .acct-tbl th,
-#view-accounting:not(.acct-others-mode) .acct-tbl td{border-left:1px solid #cfc8bc}
-#view-accounting:not(.acct-others-mode) .acct-tbl th:first-child,
-#view-accounting:not(.acct-others-mode) .acct-tbl td:first-child{border-left:none}
+#view-accounting:not(.acct-others-mode) .acct-tbl td{
+  border:none!important;
+  box-shadow:inset -1px 0 0 #b7b1a6, inset 0 -1px 0 #d9d3c8;
+}
 #view-accounting:not(.acct-others-mode) .acct-tbl th.sc-dj,
 #view-accounting:not(.acct-others-mode) .acct-tbl td.sc-dj-cell,
 #view-accounting:not(.acct-others-mode) .acct-tbl th.acct-fin-hd,
@@ -966,7 +985,15 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 #view-accounting:not(.acct-others-mode) .acct-tbl th.acct-note-hd,
 #view-accounting:not(.acct-others-mode) .acct-tbl td.acct-note-cell,
 #view-accounting:not(.acct-others-mode) .acct-tbl th.acct-inv-hd,
-#view-accounting:not(.acct-others-mode) .acct-tbl td.acct-inv-cell{border-left:2px solid #0b2e40!important}
+#view-accounting:not(.acct-others-mode) .acct-tbl td.acct-inv-cell{
+  box-shadow:inset 2px 0 0 #0b2e40, inset 0 -1px 0 #d9d3c8;
+}
+#view-accounting:not(.acct-others-mode) #acctBody{overflow:hidden!important}
+#view-accounting:not(.acct-others-mode) .acct-tbl tbody tr{height:var(--acct-guest-row-h,auto)}
+#view-accounting:not(.acct-others-mode) .acct-doc-drop{min-height:0;height:100%;padding:3px}
+#view-accounting:not(.acct-others-mode) .acct-note-inp{min-height:0;height:100%;max-height:calc(var(--acct-guest-row-h, 48px) - 8px)}
+#view-accounting:not(.acct-others-mode) .acct-doc-cell,
+#view-accounting:not(.acct-others-mode) .acct-note-cell{padding:3px 4px!important}
 #view-accounting .acct-tbl td.acct-status-cell,
 #view-accounting .acct-tbl td.acct-fin-cell,
 #view-accounting .acct-tbl td.acct-ap-cell{vertical-align:top!important;padding-top:8px!important}
@@ -981,6 +1008,11 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 #view-accounting .acct-ap-cell .acct-status-wrap{display:flex;flex-direction:column;align-items:stretch;gap:4px;max-width:none;min-width:0}
 #view-accounting .acct-ap-cell .acct-status-sel{height:28px;margin:0;box-sizing:border-box}
 #view-accounting .acct-ap-cell .acct-last-edit{position:static;margin:0}
+#view-accounting:not(.acct-others-mode) .acct-tbl td.acct-status-cell,
+#view-accounting:not(.acct-others-mode) .acct-tbl td.acct-fin-cell,
+#view-accounting:not(.acct-others-mode) .acct-tbl td.acct-ap-cell{padding-top:3px!important}
+#view-accounting:not(.acct-others-mode) .acct-lock,
+#view-accounting:not(.acct-others-mode) .acct-ap-cell .acct-status-sel{height:22px}
 .acct-agency-hd{min-width:88px;max-width:110px;width:96px;text-align:center!important}
 .acct-agency-cell{min-width:88px;max-width:120px;vertical-align:middle!important;padding:3px 4px!important}
 .acct-agency-inp{width:100%;box-sizing:border-box;font-size:10px;font-weight:600;font-family:inherit;padding:4px 5px;border:0.5px solid var(--rule);border-radius:6px;background:#fff;color:var(--ink);outline:none}

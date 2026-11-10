@@ -211,15 +211,7 @@ function renderAccountingGuest(yr, mo, mm, days){
 
     var dateStr=DOW_FULL[dow]+', '+MN_FULL[dObj.getMonth()]+' '+dObj.getDate()+', '+dObj.getFullYear();
 
-    if(!shows.length){
-      if(_acctStatusFilter) continue;
-      h+='<tr class="'+dc+'">';
-      h+='<td class="sc-date-cell">'+dateStr+'</td>';
-      h+='<td colspan="9" class="sc-empty-day"></td>';
-      h+='<td class="sc-act">'+(isAccountingOnlyVenue(curAcctV)?'':'<button class="sc-add-btn" data-ds="'+ds+'" data-action="add">+</button>')+'</td>';
-      h+='</tr>';
-      continue;
-    }
+    if(!shows.length) continue;
     anyFilterMatch=true;
 
     var djFeeTotal=shows.reduce(function(s,r){return s+(r.fee||r.cost||0);},0);
@@ -288,6 +280,31 @@ function renderAccountingGuest(yr, mo, mm, days){
 
   document.getElementById('acctBody').innerHTML=h;
   wireAccountingEvents();
+  requestAnimationFrame(fitAccountingGuestRows);
+}
+
+function fitAccountingGuestRows(){
+  var body=document.getElementById('acctBody');
+  if(!body||acctSubTab!=='guest') return;
+  var table=body.querySelector('.acct-tbl');
+  if(!table) return;
+  body.style.removeProperty('--acct-guest-row-h');
+  var rows=table.querySelectorAll('tbody tr').length||1;
+  var head=table.querySelector('thead');
+  var headH=head?head.offsetHeight:28;
+  var available=body.clientHeight;
+  if(available<80) return;
+  var rowH=Math.floor((available-headH-2)/rows);
+  rowH=Math.max(30, Math.min(64, rowH));
+  body.style.setProperty('--acct-guest-row-h', rowH+'px');
+  if(table.scrollHeight>available+2 && rowH<=30) body.style.overflowY='auto';
+  else body.style.overflowY='hidden';
+  if(!window._acctGuestResizeBound){
+    window._acctGuestResizeBound=true;
+    window.addEventListener('resize',function(){
+      if(curView==='accounting'&&acctSubTab==='guest') fitAccountingGuestRows();
+    });
+  }
 }
 
 

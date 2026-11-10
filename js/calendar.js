@@ -1152,8 +1152,8 @@ function _acctGuessPdfPages(file){
 }
 function _acctDocDropHtml(ds, kind, docs){
   var label=kind==='invoice'?'Invoice':'Contract';
-  var h='<div class="acct-doc-drop" data-ds="'+ds+'" data-kind="'+kind+'" data-action="docDrop" title="Drop one or more '+label+' PDFs">'
-    +'<div class="acct-doc-hint">Drop PDFs<br><span style="font-weight:600">several files OK</span></div>'
+  var h='<div class="acct-doc-drop" data-ds="'+ds+'" data-kind="'+kind+'" data-action="docDrop" title="Drop one or more '+label+' PDFs, or click to choose">'
+    +((docs&&docs.length)?'':'<div class="acct-doc-hint">Drop PDFs<br><span style="font-weight:600">several files OK</span></div>')
     +'<div class="acct-doc-list">';
   (docs||[]).forEach(function(doc,idx){
     var pages=doc.pages!=null?('<span class="acct-doc-pages">'+doc.pages+'p</span>'):'';
@@ -1172,49 +1172,80 @@ function _acctStorageRef(){
     return window._fbStorage;
   }catch(e){ return null; }
 }
-function addAcctPdfFiles(ds, kind, files){
-  var list=Array.prototype.slice.call(files||[]).filter(function(f){
-    return f && (f.type==='application/pdf' || /\.pdf$/i.test(f.name||''));
+function _acctIsPdfFile(file){
+  if(!file) return false;
+  var name=String(file.name||'');
+  var type=String(file.type||'').toLowerCase();
+  return type==='application/pdf' || type==='application/x-pdf' || /\.pdf$/i.test(name);
+}
+function _acctReadDataUrl(file){
+  return new Promise(function(resolve, reject){
+    var reader=new FileReader();
+    reader.onload=function(){ resolve(String(reader.result||'')); };
+    reader.onerror=function(){ reject(reader.error||new Error('read')); };
+    reader.readAsDataURL(file);
   });
+}
+function addAcctPdfFiles(ds, kind, files){
+  var list=Array.prototype.slice.call(files||[]).filter(_acctIsPdfFile);
   if(!list.length){ alert('Please drop PDF files only.'); return; }
-  var storage=_acctStorageRef();
-  if(!storage){ alert('File storage is unavailable in this browser session.'); return; }
-  var acct=_acctNormalize(getAcct(ds));
   var key=_acctDocsKey(kind);
-  var drop=document.querySelector('#acctBody .acct-doc-drop[data-ds="'+ds+'"][data-kind="'+kind+'"]');
-  if(drop) drop.classList.add('acct-doc-busy');
   var venue=(typeof acctVenue==='function'?acctVenue():curAcctV)||curV||'venue';
   var by=_acctSoftEditorName();
+  var drop=document.querySelector('#acctBody .acct-doc-drop[data-ds="'+ds+'"][data-kind="'+kind+'"]');
+  if(drop) drop.classList.add('acct-doc-busy');
   Promise.all(list.map(function(file){
     return _acctGuessPdfPages(file).then(function(pages){
-      var stamp=Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
-      var path='rdg/acctDocs/'+_acctSafeFileName(venue)+'/'+ds+'/'+kind+'/'+stamp+'_'+_acctSafeFileName(file.name);
-      var ref=storage.ref(path);
-      return ref.put(file, {contentType:'application/pdf', customMetadata:{originalName:file.name||'document.pdf'}}).then(function(){
-        return ref.getDownloadURL();
-      }).then(function(url){
+      return _acctReadDataUrl(file).then(function(dataUrl){
+        var stamp=Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,7);
         return {
-          id:stamp,
-          name:file.name||'document.pdf',
-          url:url,
-          path:path,
-          size:file.size||null,
-          pages:pages,
-          uploadedAt:new Date().toISOString(),
-          uploadedBy:by
+          file:file,
+          doc:{
+            id:stamp,
+            name:file.name||'document.pdf',
+            url:dataUrl,
+            path:'',
+            size:file.size||null,
+            pages:pages,
+            uploadedAt:new Date().toISOString(),
+            uploadedBy:by
+          }
         };
       });
     });
-  })).then(function(docs){
+  })).then(function(items){
+    var acct=getAcct(ds);
     _pushAcctUndo('Upload accounting '+kind+' PDF');
-    acct[key]=(acct[key]||[]).concat(docs);
-    _acctPushLog(acct, kind==='invoice'?'Invoice PDF':'Contract PDF', '', docs.length+' file(s)', by);
-    _acctPersist();
+    acct[key]=(acct[key]||[]).concat(items.map(function(it){ return it.doc; }));
+    _acctPushLog(acct, kind==='invoice'?'Invoice PDF':'Contract PDF', '', items.length+' file(s)', by);
+    _acctPersistDay(ds);
     if(curView==='accounting') renderAccounting();
+    items.forEach(function(it){ _acctStorePdfFile(ds, kind, venue, it); });
   }).catch(function(err){
     console.error(err);
-    alert('Could not upload PDF. Check Firebase Storage rules allow uploads to rdg/acctDocs/.');
+    alert('Could not read that PDF. Try again, or choose the file from the box.');
     if(drop) drop.classList.remove('acct-doc-busy');
+  });
+}
+function _acctStorePdfFile(ds, kind, venue, item){
+  var storage=_acctStorageRef();
+  if(!storage||!item||!item.file||!item.doc) return;
+  var stamp=item.doc.id;
+  var path='rdg/acctDocs/'+_acctSafeFileName(venue)+'/'+ds+'/'+kind+'/'+stamp+'_'+_acctSafeFileName(item.file.name);
+  var ref=storage.ref(path);
+  ref.put(item.file, {contentType:'application/pdf', customMetadata:{originalName:item.file.name||'document.pdf'}}).then(function(){
+    return ref.getDownloadURL();
+  }).then(function(url){
+    var acct=getAcct(ds);
+    var docs=acct[_acctDocsKey(kind)]||[];
+    var doc=null;
+    for(var i=0;i<docs.length;i++) if(docs[i]&&docs[i].id===stamp) doc=docs[i];
+    if(!doc) return;
+    doc.url=url;
+    doc.path=path;
+    _acctPersistDay(ds);
+  }).catch(function(err){
+    console.error(err);
   });
 }
 function removeAcctPdf(ds, kind, idx){
@@ -1236,7 +1267,27 @@ function removeAcctPdf(ds, kind, idx){
   if(curView==='accounting') renderAccounting();
 }
 function wireAccountingDocDrops(){
+  if(!window._acctDocDragBound){
+    window._acctDocDragBound=true;
+    document.addEventListener('dragover',function(e){
+      var zone=e.target&&e.target.closest?e.target.closest('#acctBody [data-action="docDrop"]'):null;
+      if(!zone) return;
+      e.preventDefault();
+      if(e.dataTransfer) e.dataTransfer.dropEffect='copy';
+      zone.classList.add('dragover');
+    }, true);
+    document.addEventListener('drop',function(e){
+      var zone=e.target&&e.target.closest?e.target.closest('#acctBody [data-action="docDrop"]'):null;
+      if(!zone) return;
+      e.preventDefault();
+      e.stopPropagation();
+      zone.classList.remove('dragover');
+      if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length) addAcctPdfFiles(zone.dataset.ds, zone.dataset.kind, e.dataTransfer.files);
+    }, true);
+  }
   document.querySelectorAll('#acctBody [data-action="docDrop"]').forEach(function(zone){
+    if(zone.dataset.wired==='1') return;
+    zone.dataset.wired='1';
     var input=document.createElement('input');
     input.type='file';
     input.accept='application/pdf,.pdf';
@@ -1251,15 +1302,20 @@ function wireAccountingDocDrops(){
       if(input.files&&input.files.length) addAcctPdfFiles(zone.dataset.ds, zone.dataset.kind, input.files);
       input.value='';
     });
-    zone.addEventListener('dragenter',function(e){ e.preventDefault(); zone.classList.add('dragover'); });
-    zone.addEventListener('dragover',function(e){ e.preventDefault(); zone.classList.add('dragover'); });
     zone.addEventListener('dragleave',function(e){
       if(!zone.contains(e.relatedTarget)) zone.classList.remove('dragover');
     });
-    zone.addEventListener('drop',function(e){
-      e.preventDefault();
-      zone.classList.remove('dragover');
-      if(e.dataTransfer&&e.dataTransfer.files) addAcctPdfFiles(zone.dataset.ds, zone.dataset.kind, e.dataTransfer.files);
+    zone.querySelectorAll('.acct-doc-chip a').forEach(function(a){
+      a.addEventListener('click',function(e){
+        var href=a.getAttribute('href')||'';
+        if(href.indexOf('data:')!==0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        fetch(href).then(function(r){ return r.blob(); }).then(function(blob){
+          var url=URL.createObjectURL(blob);
+          window.open(url,'_blank');
+        }).catch(function(){});
+      });
     });
   });
   document.querySelectorAll('#acctBody [data-action="docDel"]').forEach(function(btn){
