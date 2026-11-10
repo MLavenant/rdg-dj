@@ -404,8 +404,8 @@ function faLineHtml(opts){
     +'<div class="fa-bud"><span>'+opts.leftName+'</span><b>'+faMoney(opts.leftVal)+'</b></div>'
     +'<div><span>'+opts.midName+'</span><b>'+faMoney(opts.midVal)+'</b></div>'
     +'<div class="fa-call'+call.tone+'"><button type="button" class="fa-gap" data-fa="pending" data-scope="'+opts.scope+'" title="Open pending approval"><span>'+_escHtml(call.word)+'</span><b>'+_escHtml(call.text)+'</b></button></div>'
-    +'<div><span>Prior year</span><b>'+faMoney(opts.prior)+'</b></div>'
-    +'<div class="fa-vs-prior"><span>vs prior</span><b>'+faSigned(opts.priorDelta)+'</b></div></div>';
+    +'<div><span>PY</span><b>'+faMoney(opts.prior)+'</b></div>'
+    +'<div class="fa-vs-prior"><span>vs PY</span><b>'+faSigned(opts.priorDelta)+'</b></div></div>';
 }
 function faCardHtml(title, row, scope, card){
   return '<section class="fa-vs" data-card="'+card+'"><h4>'+_escHtml(title)+'</h4>'
@@ -430,19 +430,24 @@ function faStackBox(name, forecast, budget, prior, scope, monthIndex){
   var monthAttr=(typeof monthIndex==='number')?' data-month="'+monthIndex+'"':'';
   return '<div class="fa-m'+tone+'"'+monthAttr+'><b class="fa-m-name">'+_escHtml(name)+'</b>'
     +'<div class="fa-m-trio">'
-    +'<div class="fa-m-bit"><span>Scheduled</span><em>'+$k(forecast)+'</em></div>'
-    +'<div class="fa-m-bit"><span>Budget</span><b class="fa-m-bud">'+faMoney(budget)+'</b></div>'
-    +'<div class="fa-m-bit"><span>Variance</span><b class="fa-m-var'+call.tone+'">'+_escHtml(call.text)+'</b></div>'
+    +'<div class="fa-m-bit"><em>'+$k(forecast)+'</em></div>'
+    +'<div class="fa-m-bit"><b class="fa-m-bud">'+faMoney(budget)+'</b></div>'
+    +'<div class="fa-m-bit"><b class="fa-m-var'+call.tone+'">'+_escHtml(call.text)+'</b></div>'
     +'</div>'
-    +'<div class="fa-m-py">Prior year '+faMoney(prior)+'</div>'
+    +'<div class="fa-m-py">PY '+faMoney(prior)+'</div>'
     +'<button type="button" class="fa-m-pend" data-fa="pending" data-scope="'+scope+'">'+faStatusLine(faHere(), faWhen().year, scope)+'</button></div>';
 }
-function faTotalBar(label, spend, budget){
+/* withLabels is only for the single full-year bar. Quarter bars sit under the one header per column. */
+function faTotalBar(label, spend, budget, withLabels){
   var call=faCall(spend, budget, 'under');
-  return '<div class="fa-qbar"><span>'+_escHtml(label)+'</span>'
-    +'<b><i>Scheduled</i>'+faMoney(spend)+'</b>'
-    +'<b class="fa-m-bud"><i>Budget</i>'+faMoney(budget)+'</b>'
-    +'<b class="fa-m-var'+call.tone+'"><i>Variance</i>'+_escHtml(call.text)+'</b></div>';
+  var lab=function(t){ return withLabels?'<i>'+t+'</i>':''; };
+  return '<div class="fa-qbar'+(withLabels?'':' fa-qbar-tight')+'"><span>'+_escHtml(label)+'</span>'
+    +'<b>'+lab('Scheduled')+faMoney(spend)+'</b>'
+    +'<b class="fa-m-bud">'+lab('Budget')+faMoney(budget)+'</b>'
+    +'<b class="fa-m-var'+call.tone+'">'+lab('Variance')+_escHtml(call.text)+'</b></div>';
+}
+function faTrioHeadHtml(){
+  return '<div class="fa-trio-hd"><span>Scheduled</span><span>Budget</span><span>Variance</span></div>';
 }
 function faMonthTileHtml(venue, year, mi, names){
   var mm=faMm(mi);
@@ -452,9 +457,9 @@ function faMonthTileHtml(venue, year, mi, names){
 function faQuarterHtml(venue, year, q, names){
   var from=q*3, to=from+2;
   var row=faRange(venue, year, from, to);
-  var h='<div class="fa-q"><div class="fa-q-hd">Q'+(q+1)+'</div><div class="fa-q-months">';
+  var h='<div class="fa-q"><div class="fa-q-hd">Q'+(q+1)+'</div>'+faTrioHeadHtml()+'<div class="fa-q-months">';
   for(var mi=from; mi<=to; mi++) h+=faMonthTileHtml(venue, year, mi, names);
-  h+='</div>'+faTotalBar('Q'+(q+1)+' total', row.spend, row.budget);
+  h+='</div>'+faTotalBar('Q'+(q+1)+' total', row.spend, row.budget, false);
   return h+'</div>';
 }
 function faPendingHtml(venue, year, scope, title){
@@ -540,7 +545,7 @@ function renderFinanceApproval(){
   if(greg && when.total){
     html+='<div class="fa-fit"><div class="fa-break-hd">Guest DJ · scheduled vs budget · '+when.year+'</div><div class="fa-quarters">';
     for(var q=0;q<4;q++) html+=faQuarterHtml(venue, when.year, q, names);
-    html+='</div>'+faTotalBar(when.year+' total', yearRow.spend, yearRow.budget)+'</div>';
+    html+='</div>'+faTotalBar(when.year+' total', yearRow.spend, yearRow.budget, true)+'</div>';
   }else if(!greg){
     var mi=when.total?((typeof TODAY!=='undefined'&&typeof fiscalInfoForDate==='function'&&fiscalInfoForDate(TODAY).year===when.year)?fiscalInfoForDate(TODAY).monthIndex:0):when.month;
     html+='<div class="fa-stack">'
@@ -548,10 +553,10 @@ function renderFinanceApproval(){
       +faCardHtml('YTD through '+names[mi], faRange(venue, when.year, 0, mi), 'y'+mi, 'ytd')
       +'</div>';
     if(live) html+='<button type="button" class="fa-pending-launch" data-fa="pending" data-scope="'+mi+'">'+faStatusLine(venue, when.year, String(mi))+'</button>';
-    html+=faTotalBar(when.year+' total', yearRow.spend, yearRow.budget);
+    html+=faTotalBar(when.year+' total', yearRow.spend, yearRow.budget, true);
   }else{
     html+=faCardHtml(names[when.month], faMonthRow(venue, when.year, when.month), String(when.month), 'month');
-    html+=faTotalBar(when.year+' total', yearRow.spend, yearRow.budget);
+    html+=faTotalBar(when.year+' total', yearRow.spend, yearRow.budget, true);
     if(!faPendingOn){ faPendingOn=true; faPendingScope=String(when.month); }
   }
   if(live && (faPendingOn || (greg && !when.total))){

@@ -2678,6 +2678,11 @@ button.fa-stat.on{box-shadow:inset 0 0 0 2px #b45309}
 #financeBody .fa-fit{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:6px}
 #financeBody .fa-quarters{flex:1 1 auto;min-height:0;gap:8px}
 #financeBody .fa-q{min-height:0;gap:4px}
+#financeBody .fa-quarters>.fa-q+.fa-q{border-left:1px solid #cbd5e1;padding-left:8px}
+.fa-trio-hd{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:0 8px;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#64748b}
+.fa-qbar.fa-qbar-tight{grid-template-columns:repeat(3,minmax(0,1fr));row-gap:2px;padding:5px 8px}
+.fa-qbar.fa-qbar-tight>span{grid-column:1/-1}
+.fa-qbar.fa-qbar-tight b{font-size:12px}
 #financeBody .fa-q-months{flex:1 1 auto;min-height:0;display:flex;flex-direction:column;gap:4px}
 #financeBody .fa-q .fa-m{flex:1 1 0;min-height:0;padding:6px 8px;gap:3px}
 #financeBody .fa-m-trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;align-items:end}
