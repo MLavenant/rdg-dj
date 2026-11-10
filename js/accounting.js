@@ -245,15 +245,15 @@ function renderAccountingGuest(yr, mo, mm, days){
         +'<input type="text" class="acct-agency-inp" data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="acctAgency" value="'+agencyEsc+'" placeholder="Agency" title="Agency name">'
         +'</td>';
       h+='<td class="sc-num acct-col-fee fee-cell '+(feeCls||'')+'">'+$k(r.fee||r.cost||null)+'</td>';
-      if(typeof faFinanceSelectHtml==='function' && typeof faInScope==='function' && faInScope(r)){
-        h+='<td class="acct-fin-cell">'+faFinanceSelectHtml(r, ds, idx)+'</td>';
-      }else{
-        h+='<td class="acct-fin-cell acct-fin-na">—</td>';
-      }
-      var djSt=getShowDjStatus(r, ds)||'';
-      h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
-        +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="djStatus"', r)
-        +'</div></td>';
+      var finSt=(typeof faFinanceStatus==='function' && typeof faInScope==='function' && faInScope(r))?faFinanceStatus(r):'';
+      var finTone=(finSt && typeof faFinanceTone==='function')?faFinanceTone(finSt):'';
+      h+='<td class="acct-fin-cell">'
+        +'<span class="acct-lock'+(finTone?' '+finTone:'')+'" title="Finance Status comes from the Guest DJ Calendar. Change it in Finance Approval.">'
+        +(finSt?_escHtml(finSt):'—')+'</span></td>';
+      var djSt=(typeof faInScope==='function' && faInScope(r) && typeof faDjStatus==='function')?(faDjStatus(r)||''):(getShowDjStatus(r, ds)||'');
+      h+='<td class="acct-status-cell">'
+        +'<span class="acct-lock" title="DJ Status comes from the Guest DJ Calendar. Change it there.">'
+        +(djSt?_escHtml(djSt):'Not set')+'</span></td>';
       if(ri===0){
         var apSt=acct.apStatus||'';
         var lastHint=acct.updatedBy?('Last: '+acct.updatedBy+' \u00b7 '+_fmtAcctWhen(acct.updatedAt)):'History';
