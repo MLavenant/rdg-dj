@@ -1460,7 +1460,10 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     var acctSig = data.acctData ? JSON.stringify(data.acctData) : '';
     var acctChanged = (acctSig !== window._lastAcctDataSig);
     if(acctChanged) window._lastAcctDataSig = acctSig;
-    if(data.acctData) acctData = data.acctData;
+    if(data.acctData){
+      if(typeof _acctAcceptRemote==='function') _acctAcceptRemote(data.acctData);
+      else acctData = data.acctData;
+    }
     if(data.acctOthersData){
       var fo=data.acctOthersData;
       Object.keys(fo||{}).forEach(function(k){

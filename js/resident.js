@@ -80,6 +80,13 @@ function residentSub(col, part){
   return col.id+(part==='paid'?'Paid':'Note');
 }
 function residentHasAmt(v){ return v!=null && v!=='' && isFinite(+v); }
+/* No per-column budget is stored yet, so Budget and Var stay blank until one exists. */
+function residentFootHtml(sum, budget){
+  var variance=budget!=null?Math.round(+budget-(+sum||0)):null;
+  var cls=variance==null?'':(variance>=0?'res-var-good':'res-var-bad');
+  function show(n){ return n==null?'\u2014':residentMoney(n); }
+  return '<div class="res-foot"><span>Total</span><b>'+show(sum)+'</b><span>Budget</span><b>'+show(budget)+'</b><span>Var</span><b class="'+cls+'">'+show(variance)+'</b></div>';
+}
 function residentRowTotal(row, venue){
   var n=0, any=false;
   residentCols(venue).forEach(function(col){
@@ -429,7 +436,17 @@ function renderResidentCalendar(){
     h+='<td class="res-cell res-tone-total res-split res-total">'+residentMoney(residentRowTotal(row, here.venue))+'</td>';
     h+='</tr>';
   });
-  h+='</tbody></table>';
+  var mm=(mo+1<10?'0':'')+(mo+1);
+  var grand=0, anyGrand=false;
+  h+='</tbody><tfoot><tr class="res-foot-row"><td class="sc-date-cell">Month</td><td></td>';
+  cols.forEach(function(col){
+    var sum=residentMonthTotal(here.venue, yr, mm, col.id);
+    if(sum){ grand+=sum; anyGrand=true; }
+    var cell=residentFootHtml(sum, null);
+    if(col.kind==='role') h+='<td class="res-split"></td><td>'+cell+'</td>';
+    else h+='<td class="res-split">'+cell+'</td>';
+  });
+  h+='<td class="res-split">'+residentFootHtml(anyGrand?grand:0, null)+'</td></tr></tfoot></table>';
   body.innerHTML=h;
   var table=body.querySelector('table');
   if(table) table.style.width=Math.max(tableW, body.clientWidth||0)+'px';
@@ -703,7 +720,9 @@ function fitResidentRows(){
   body._fitTries=0;
   var head=body.querySelector('thead');
   var headH=head?head.offsetHeight:36;
-  var rowH=Math.max(13, Math.floor(((available-headH-2)/rows)*10)/10);
+  var foot=body.querySelector('tfoot');
+  var footH=foot?Math.max(foot.offsetHeight, 36):0;
+  var rowH=Math.max(13, Math.floor(((available-headH-footH-2)/rows)*10)/10);
   var font=Math.max(8, Math.min(12, rowH*0.62));
   body.style.setProperty('--res-row-h', rowH+'px');
   body.style.setProperty('--res-font', font+'px');

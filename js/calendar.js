@@ -85,6 +85,8 @@ function renderCal(){
   var pyBlank={py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
 
   var finCol=typeof faYearOn==='function' && faYearOn(curV, yr);
+  var sumFee=0, anyFee=false, sumBsT=0, anyBsT=false, sumBsA=0, anyBsA=false;
+  var sumLyFee=0, anyLyFee=false, sumLyBsT=0, anyLyBsT=false, sumLyBsA=0, anyLyBsA=false;
   var h='<table class="sched-tbl"><thead><tr>';
   h+='<th class="sc-ev">Event</th>';
   h+='<th class="sc-date">Date</th>';
@@ -126,6 +128,10 @@ function renderCal(){
 
     var dateStr=DOW_FULL[dow]+', '+MN_FULL[dObj.getMonth()]+' '+dObj.getDate()+', '+dObj.getFullYear();
     var nrows=Math.max(1,shows.length);
+    var pyDay=pyMap[ds]||pyBlank;
+    if(pyDay.py_fee!=null && isFinite(+pyDay.py_fee)){ sumLyFee+=+pyDay.py_fee; anyLyFee=true; }
+    if(pyDay.py_bs_m!=null && isFinite(+pyDay.py_bs_m)){ sumLyBsT+=+pyDay.py_bs_m; anyLyBsT=true; }
+    if(pyDay.py_bs_a!=null && isFinite(+pyDay.py_bs_a)){ sumLyBsA+=+pyDay.py_bs_a; anyLyBsA=true; }
 
     if(!shows.length){
       h+='<tr class="'+dc+'" data-cal-ds="'+ds+'" ondragover="swDragOver(event)" ondragleave="swDragLeave(event)" ondrop="swDropOnDate(event,\''+ds+'\')">';
@@ -151,6 +157,9 @@ function renderCal(){
         var tgt=showTargets(r);
         var bsM=tgt.bs_m, roiT=tgt.roi_t;
         var fee=liveReady ? (guardBlank ? null : ((gLive && gLive.fee!=null)?gLive.fee:(r.fee||r.cost))) : null;
+        if(fee!=null && isFinite(+fee)){ sumFee+=+fee; anyFee=true; }
+        if(bsM!=null && isFinite(+bsM)){ sumBsT+=+bsM; anyBsT=true; }
+        if(r.bs_a!=null && isFinite(+r.bs_a)){ sumBsA+=+r.bs_a; anyBsA=true; }
         var bCls = perfTone(r.bs_a, bsM, fee, r.roi_a, roiT);
         var rCls = bCls;
         var tSty = toneStyle(bCls);
@@ -195,7 +204,38 @@ function renderCal(){
       });
     }
   }
-  h+='</tbody></table>';
+  var guestB=calGuestDjBudget(curV, yr, mm);
+  var gBudget=guestB?guestB.amount:null;
+  var gVar=gBudget!=null?gBudget-sumFee:null;
+  var resSum=(typeof residentMonthTotal==='function')?residentMonthTotal(curV, yr, mm, 'resident_dj'):null;
+  function footStack(rows){
+    return '<div class="cal-foot-stack">'+rows.map(function(row){
+      return '<span>'+row[0]+'</span><b'+(row[2]?' class="'+row[2]+'"':'')+'>'+row[1]+'</b>';
+    }).join('')+'</div>';
+  }
+  function footMoney(n, any){ return any?$k(n):'\u2014'; }
+  h+='</tbody><tfoot><tr class="cal-foot-row">';
+  h+='<td></td><td class="cal-foot-label">Total</td>';
+  h+= '<td>'+footStack([
+    ['Resident', resSum?$k(resSum):'\u2014'],
+    ['Budget', '\u2014'],
+    ['Var', '\u2014']
+  ])+'</td>';
+  if(finCol) h+='<td></td>';
+  h+='<td></td><td></td>';
+  h+='<td>'+footStack([
+    ['Total', footMoney(sumFee, anyFee)],
+    ['Budget', gBudget!=null?$k(gBudget):'\u2014'],
+    ['Var', gVar==null?'\u2014':(gVar>0?'+':'')+$k(gVar), gVar==null?'':(gVar>=0?'cal-foot-good':'cal-foot-bad')]
+  ])+'</td>';
+  h+='<td class="cal-foot-one">'+footMoney(sumBsT, anyBsT)+'</td>';
+  h+='<td class="cal-foot-one">'+footMoney(sumBsA, anyBsA)+'</td>';
+  h+='<td></td><td></td><td class="sc-sep"></td><td></td>';
+  h+='<td class="cal-foot-one">'+footMoney(sumLyFee, anyLyFee)+'</td>';
+  h+='<td class="cal-foot-one">'+footMoney(sumLyBsT, anyLyBsT)+'</td>';
+  h+='<td class="cal-foot-one">'+footMoney(sumLyBsA, anyLyBsA)+'</td>';
+  h+='<td></td><td></td><td></td>';
+  h+='</tr></tfoot></table>';
   document.getElementById('calBody').innerHTML=h;
   document.querySelectorAll('#calBody [data-action="djStatus"]').forEach(function(sel){
     _wireDjStatusSelect(sel, function(){
@@ -374,7 +414,9 @@ function fitCalListRows(days){
   var rows=body.querySelectorAll('.sched-tbl tbody tr').length||Math.max(28,days|0);
   var available=Math.max(180,body.clientHeight);
   var headH=18;
-  var rowH=Math.max(8,Math.floor(((available-headH-8)/rows)*10)/10);
+  var foot=body.querySelector('.sched-tbl tfoot');
+  var footH=foot?Math.max(foot.offsetHeight, 34):0;
+  var rowH=Math.max(8,Math.floor(((available-headH-footH-8)/rows)*10)/10);
   var font=Math.max(6.5,Math.min(10,rowH*.68));
   var mini=Math.max(6,Math.min(8,font-.5));
   var control=Math.max(9,Math.min(18,rowH-1));
@@ -469,7 +511,7 @@ function renderCalPriorYearRecap(yr, mm){
   var varCls=feeVar!=null?(feeVar>=0?'hit':'low'):'';
   var bs=_overlaySumBs(shows, null);
   var items=[
-    {l:'Total DJ Fees',v:fees?$k(fees):'-'},
+    {l:'Total Guest DJ Fees',v:fees?$k(fees):'-'},
     {l:guestB.guest?'Guest DJ Budget':'Total Budget',v:budget!=null?$k(budget):'-',s:calGuestDjSub(guestB)},
     {l:'Budget Variance',v:feeVar!=null?$kv(feeVar):'-',s:feePct!=null?feePct+'% of budget used':'-',cls:varCls},
     {l:'BS Target',v:bs.n?$k(bs.tBSM):'-',s:'Full month'},
@@ -501,7 +543,7 @@ function renderCalMonthRecap(yr, mo, mm, showMap){
   box.style.display='flex';
   box.innerHTML=
     '<div class="cal-recap-hd">'+MN_SH[mo]+' '+yr+' actual<span>This year</span></div>'
-    +'<div class="cal-recap-item"><div class="cal-recap-l">Total DJ Fees</div><div class="cal-recap-v">'+$k(fees||null)+'</div></div>'
+    +'<div class="cal-recap-item"><div class="cal-recap-l">Total Guest DJ Fees</div><div class="cal-recap-v">'+$k(fees||null)+'</div></div>'
     +'<div class="cal-recap-item"><div class="cal-recap-l">'+(guestB.guest?'Guest DJ Budget':'Total Budget')+'</div><div class="cal-recap-v">'+(budget!=null?$k(budget):'-')+'</div><div class="cal-recap-s">'+calGuestDjSub(guestB)+'</div></div>'
     +'<div class="cal-recap-item"><div class="cal-recap-l">Budget Variance</div><div class="cal-recap-v '+(feeVar!=null?(feeVar>=0?'hit':'low'):'')+'">'+(feeVar!=null?$kv(feeVar):'-')+'</div><div class="cal-recap-s">'+(feePct!=null?feePct+'% of budget used':'set budget in Budget tab')+'</div></div>'
     +'<div class="cal-recap-item"><div class="cal-recap-l">BS Target</div><div class="cal-recap-v">'+(bs.n?$k(bs.tBSM):'-')+'</div><div class="cal-recap-s">Full month</div></div>'
@@ -1152,19 +1194,89 @@ function _acctGuessPdfPages(file){
 }
 function _acctDocDropHtml(ds, kind, docs){
   var label=kind==='invoice'?'Invoice':'Contract';
-  var h='<div class="acct-doc-drop" data-ds="'+ds+'" data-kind="'+kind+'" data-action="docDrop" title="Drop one or more '+label+' PDFs, or click to choose">'
-    +((docs&&docs.length)?'':'<div class="acct-doc-hint">Drop PDFs<br><span style="font-weight:600">several files OK</span></div>')
+  var fresh=window._acctFreshDocs||{};
+  var posted=window._acctFreshZones&&window._acctFreshZones[ds+'|'+kind];
+  var h='<div class="acct-doc-drop'+(posted?' acct-doc-posted':'')+'" data-ds="'+ds+'" data-kind="'+kind+'" data-action="docDrop" title="Drop one or more '+label+' PDFs, or click to choose. Files stay until you remove them.">'
+    +(posted?'<div class="acct-doc-saved">Saved</div>':'')
+    +((docs&&docs.length)?'':'<div class="acct-doc-hint"><span class="acct-doc-ico">PDF</span><b>Drop '+label+'</b><span>or click</span></div>')
     +'<div class="acct-doc-list">';
   (docs||[]).forEach(function(doc,idx){
     var pages=doc.pages!=null?('<span class="acct-doc-pages">'+doc.pages+'p</span>'):'';
-    h+='<div class="acct-doc-chip">'
-      +'<a href="'+_escHtml(doc.url)+'" target="_blank" rel="noopener" title="'+_escHtml(doc.name)+'" onclick="event.stopPropagation()">'+_escHtml(doc.name||'PDF')+'</a>'
+    var landed=doc.id&&fresh[doc.id]?' acct-doc-landed':'';
+    h+='<div class="acct-doc-chip'+landed+'">'
+      +'<span class="acct-doc-badge">PDF</span>'
+      +'<a href="'+_escHtml(doc.url)+'" target="_blank" rel="noopener" title="'+_escHtml(doc.name||'PDF')+'" onclick="event.stopPropagation()">'+_escHtml(doc.name||'PDF')+'</a>'
       +pages
       +'<button type="button" class="acct-doc-del" data-ds="'+ds+'" data-kind="'+kind+'" data-idx="'+idx+'" data-action="docDel" title="Remove">&#10005;</button>'
       +'</div>';
   });
   h+='</div></div>';
   return h;
+}
+function _acctRememberDocs(ds, ids){
+  var acct=getAcct(ds);
+  var want={};
+  (ids||[]).forEach(function(id){ if(id) want[id]=1; });
+  window._acctDocHold=window._acctDocHold||{};
+  var prev=window._acctDocHold[ds]||{invoices:[],contracts:[]};
+  ['invoices','contracts'].forEach(function(field){
+    var kept=(prev[field]||[]).filter(function(d){ return d&&d.id&&!want[d.id]; });
+    (acct[field]||[]).forEach(function(d){ if(d&&d.id&&want[d.id]) kept.push(d); });
+    prev[field]=kept;
+  });
+  window._acctDocHold[ds]=prev;
+}
+function _acctForgetDoc(ds, id){
+  if(!id) return;
+  window._acctDocTomb=window._acctDocTomb||{};
+  window._acctDocTomb[id]=1;
+  var hold=window._acctDocHold&&window._acctDocHold[ds];
+  if(!hold) return;
+  ['invoices','contracts'].forEach(function(field){
+    hold[field]=(hold[field]||[]).filter(function(d){ return d&&d.id!==id; });
+  });
+}
+/* A live snapshot must not drop a PDF that was just saved here, and must not bring back one just deleted. */
+function _acctAcceptRemote(remote){
+  if(!remote||typeof remote!=='object'){ acctData=remote||{}; return; }
+  var hold=window._acctDocHold||{};
+  var tomb=window._acctDocTomb||{};
+  var rawIds={};
+  Object.keys(remote).forEach(function(k){
+    var day=remote[k];
+    if(!day||typeof day!=='object') return;
+    ['invoices','contracts'].forEach(function(field){
+      (day[field]||[]).forEach(function(d){ if(d&&d.id) rawIds[d.id]=1; });
+    });
+  });
+  Object.keys(tomb).forEach(function(id){ if(!rawIds[id]) delete tomb[id]; });
+  var rewrite={};
+  function applyDay(k, day){
+    ['invoices','contracts'].forEach(function(field){
+      var list=Array.isArray(day[field])?day[field].slice():[];
+      var kept=list.filter(function(d){ return d&&d.id&&!tomb[d.id]; });
+      var seen={};
+      kept.forEach(function(d){ seen[d.id]=1; });
+      var extra=((hold[k]&&hold[k][field])||[]).filter(function(d){ return d&&d.id&&!tomb[d.id]&&!seen[d.id]; });
+      if(hold[k]&&hold[k][field]) hold[k][field]=hold[k][field].filter(function(d){ return d&&d.id&&!seen[d.id]&&!tomb[d.id]; });
+      if(extra.length||kept.length!==list.length){
+        day[field]=kept.concat(extra);
+        rewrite[k]=1;
+      }
+    });
+  }
+  Object.keys(remote).forEach(function(k){
+    if(remote[k]&&typeof remote[k]==='object') applyDay(k, remote[k]);
+  });
+  acctData=remote;
+  var now=Date.now();
+  window._acctHoldRewrite=window._acctHoldRewrite||{};
+  Object.keys(rewrite).forEach(function(k){
+    var prev=window._acctHoldRewrite[k]||0;
+    if(now-prev<4000) return;
+    window._acctHoldRewrite[k]=now;
+    try{ _acctPersistDay(k); }catch(e){}
+  });
 }
 function _acctStorageRef(){
   try{
@@ -1218,6 +1330,11 @@ function addAcctPdfFiles(ds, kind, files){
     _pushAcctUndo('Upload accounting '+kind+' PDF');
     acct[key]=(acct[key]||[]).concat(items.map(function(it){ return it.doc; }));
     _acctPushLog(acct, kind==='invoice'?'Invoice PDF':'Contract PDF', '', items.length+' file(s)', by);
+    _acctRememberDocs(ds, items.map(function(it){ return it.doc.id; }));
+    window._acctFreshDocs=window._acctFreshDocs||{};
+    window._acctFreshZones=window._acctFreshZones||{};
+    items.forEach(function(it){ if(it.doc&&it.doc.id) window._acctFreshDocs[it.doc.id]=1; });
+    window._acctFreshZones[ds+'|'+kind]=1;
     _acctPersistDay(ds);
     if(curView==='accounting') renderAccounting();
     items.forEach(function(it){ _acctStorePdfFile(ds, kind, venue, it); });
@@ -1256,6 +1373,7 @@ function removeAcctPdf(ds, kind, idx){
   if(!doc) return;
   if(!confirm('Remove '+((doc.name)||'this PDF')+'?')) return;
   _pushAcctUndo('Remove accounting '+kind+' PDF');
+  _acctForgetDoc(ds, doc.id);
   docs.splice(idx,1);
   acct[key]=docs;
   _acctPushLog(acct, kind==='invoice'?'Invoice PDF':'Contract PDF', doc.name||'', 'removed', _acctSoftEditorName());
@@ -1324,6 +1442,14 @@ function wireAccountingDocDrops(){
       removeAcctPdf(btn.dataset.ds, btn.dataset.kind, parseInt(btn.dataset.idx,10));
     });
   });
+  if(window._acctFreshDocs&&Object.keys(window._acctFreshDocs).length){
+    var freshIds=window._acctFreshDocs;
+    var freshZones=window._acctFreshZones;
+    setTimeout(function(){
+      if(window._acctFreshDocs===freshIds) window._acctFreshDocs={};
+      if(window._acctFreshZones===freshZones) window._acctFreshZones={};
+    }, 1200);
+  }
 }
 function wireAccountingEvents(){
   document.querySelectorAll('#acctBody [data-action="add"]').forEach(function(btn){

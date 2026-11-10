@@ -174,22 +174,29 @@ function flashPlanDelta(n, lowerIsBetter){
   var sign=v>0?'+':(v<0?'\u2212':'');
   return '<b class="'+cls+'">'+sign+flashPlanMoney(Math.abs(v))+'</b>';
 }
-function flashPlanBook(name, fee, status){
+/* Small up/down arrow and percent. lowerIsBetter marks a drop in DJ fee as green. */
+function flashPlanArrow(now, prior, lowerIsBetter){
+  if(now==null||prior==null||!(Math.abs(+prior)>0)||!isFinite(+now)||!isFinite(+prior)) return '';
+  var pct=Math.round((+now-+prior)/Math.abs(+prior)*100);
+  if(!isFinite(pct)) return '';
+  var cls=pct===0?'':((lowerIsBetter?pct<0:pct>0)?'fp-good':'fp-bad');
+  var arrow=pct>0?'\u25B2':(pct<0?'\u25BC':'\u2013');
+  return '<em class="fp-var '+cls+'"><i>'+arrow+'</i>'+Math.abs(pct)+'%</em>';
+}
+function flashPlanBook(name, fee, status, varianceHtml, where){
   var st=status||'';
   if(typeof FA_FIN!=='undefined' && FA_FIN.indexOf(st)>=0) st='';
-  return '<div class="fp-book"><b>'+_escHtml(name||'\u2014')+'</b><span>'+(fee!=null?flashPlanMoney(fee):'\u2014')+'</span>'
+  var variance=varianceHtml||'';
+  var inline=where==='inline'&&variance?variance:'';
+  var below=where!=='inline'&&variance?('<div class="fp-under">'+variance+'</div>'):'';
+  return '<div class="fp-book"><b><span class="fp-nm">'+_escHtml(name||'\u2014')+'</span>'+inline+'</b><span>'+(fee!=null?flashPlanMoney(fee):'\u2014')+'</span>'
+    +below
     +(st?'<i>'+_escHtml(st)+'</i>':'')+'</div>';
 }
 function flashPlanMeter(actual, target){
   if(actual==null||!isFinite(+actual)) return '<span class="fp-na">No 2026 data</span>';
-  if(target==null||!(+target>0)) return flashPlanDelta(null);
-  var diff=+actual-+target;
-  var pct=Math.round(+actual/+target*100);
-  var cls=diff>=0?'fp-good':'fp-bad';
-  var width=Math.max(6, Math.min(100, pct));
-  var sign=diff>0?'+':(diff<0?'\u2212':'');
-  return '<div class="fp-meter-row '+cls+'"><b>'+sign+flashPlanMoney(Math.abs(diff))+'</b>'
-    +'<span class="fp-meter"><i style="width:'+width+'%"></i></span><em>'+pct+'%</em></div>';
+  if(target==null||!(+target>0)) return '<span class="fp-na">\u2014</span>';
+  return flashPlanArrow(actual, target, false)||'<span class="fp-na">\u2014</span>';
 }
 function flashPlanChart(title, groups, series){
   var max=0;
@@ -297,8 +304,8 @@ function flashPlanSlide(data, n, of){
       var pyBs=ly&&ly.bs!=null&&isFinite(+ly.bs)?+ly.bs:null;
       var fee=r.fee!=null&&isFinite(+r.fee)?+r.fee:null;
       h+='<tr><td class="l"><b>'+(typeof _bpDay==='function'?_bpDay(r.d):_escHtml(r.d))+'</b></td>'
-        +'<td class="l">'+flashPlanBook(r.dj||'TBD', fee, r.status)+'</td>'
-        +'<td class="l">'+(ly&&ly.dj?flashPlanBook(ly.dj, pyFee, ''):'<span class="fp-na">\u2014</span>')+'</td>'
+        +'<td class="l">'+flashPlanBook(r.dj||'TBD', fee, r.status, flashPlanArrow(fee, pyFee, true), 'inline')+'</td>'
+        +'<td class="l">'+(ly&&ly.dj?flashPlanBook(ly.dj, pyFee, '', flashPlanArrow(pyBs, bsTarget, false), 'below'):'<span class="fp-na">\u2014</span>')+'</td>'
         +'<td>'+flashPlanDelta(fee!=null&&pyFee!=null?fee-pyFee:null, true)+'</td>'
         +'<td class="fp-bs">'+flashPlanMoney(bsTarget)+'</td>'
         +'<td>'+(pyBs!=null?flashPlanMoney(pyBs):'\u2014')+'</td>'

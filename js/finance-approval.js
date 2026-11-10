@@ -404,8 +404,7 @@ function faLineHtml(opts){
     +'<div class="fa-bud"><span>'+opts.leftName+'</span><b>'+faMoney(opts.leftVal)+'</b></div>'
     +'<div><span>'+opts.midName+'</span><b>'+faMoney(opts.midVal)+'</b></div>'
     +'<div class="fa-call'+call.tone+'"><button type="button" class="fa-gap" data-fa="pending" data-scope="'+opts.scope+'" title="Open pending approval"><span>'+_escHtml(call.word)+'</span><b>'+_escHtml(call.text)+'</b></button></div>'
-    +'<div><span>PY</span><b>'+faMoney(opts.prior)+'</b></div>'
-    +'<div class="fa-vs-prior"><span>vs PY</span><b>'+faSigned(opts.priorDelta)+'</b></div></div>';
+    +'<div><span>PY</span><b>'+faMoney(opts.prior)+'</b></div></div>';
 }
 function faCardHtml(title, row, scope, card){
   return '<section class="fa-vs" data-card="'+card+'"><h4>'+_escHtml(title)+'</h4>'
@@ -457,7 +456,8 @@ function faMonthTileHtml(venue, year, mi, names){
 function faQuarterHtml(venue, year, q, names){
   var from=q*3, to=from+2;
   var row=faRange(venue, year, from, to);
-  var h='<div class="fa-q"><div class="fa-q-hd">Q'+(q+1)+'</div>'+faTrioHeadHtml()+'<div class="fa-q-months">';
+  var h='<div class="fa-q"><header class="fa-q-hd"><div class="fa-q-title"><b>Q'+(q+1)+'</b><em>'+_escHtml(names[from]+' \u2013 '+names[to])+'</em></div>'
+    +faTrioHeadHtml()+'</header><div class="fa-q-months">';
   for(var mi=from; mi<=to; mi++) h+=faMonthTileHtml(venue, year, mi, names);
   h+='</div>'+faTotalBar('Q'+(q+1)+' total', row.spend, row.budget, false);
   return h+'</div>';
