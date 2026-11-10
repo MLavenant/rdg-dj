@@ -143,10 +143,16 @@ function residentPut(ds, sub, value){
   }, 220);
 }
 function residentSaveCols(cols){
-  var vk=residentVenueKey(residentHere().venue);
+  /* One location only. Casa Neos Beach Club never writes Casa Neos Lounge's columns. */
+  var venue=residentHere().venue;
+  var vk=residentVenueKey(venue);
   if(!RESIDENT_COLS[vk]) RESIDENT_COLS[vk]={};
   RESIDENT_COLS[vk].cols=cols;
-  if(window._fbDb){ try{ window._fbDb.ref('rdg/residentCols/'+vk+'/cols').set(cols); }catch(e){} }
+  RESIDENT_COLS[vk].venue=venue;
+  if(window._fbDb){
+    try{ window._fbDb.ref('rdg/residentCols/'+vk+'/cols').set(cols); }catch(e){}
+    try{ window._fbDb.ref('rdg/residentCols/'+vk+'/venue').set(venue); }catch(e2){}
+  }
   renderResidentCalendar();
 }
 function residentSaveWidth(wkey, px){
@@ -300,11 +306,12 @@ function residentNewColId(label){
   return 'c_'+base+'_'+Date.now().toString(36);
 }
 function residentAddColumn(afterId){
-  var label=prompt('New column name');
+  var venue=residentHere().venue;
+  var label=prompt('New column for '+venue+' only');
   if(label==null) return;
   label=String(label).trim();
   if(!label) return;
-  var withName=confirm('Add a Name field next to the $ amount?\n\nOK = Name + $\nCancel = $ only');
+  var withName=confirm('Add a Name field next to the $ amount?\n\nOK = Name + $\nCancel = $ only\n\nSaved for '+venue+' only. Other locations stay as they are.');
   var cols=residentCols().slice();
   var col={id:residentNewColId(label), label:label, kind:withName?'role':'money'};
   var at=cols.length;
@@ -324,7 +331,7 @@ function residentRenameColumn(id){
 function residentDeleteColumn(id){
   var col=residentColById(id);
   if(!col) return;
-  if(!confirm('Delete the '+col.label+' column for '+residentHere().venue+'?\n\nAmounts already entered stay saved and come back if you add it again.')) return;
+  if(!confirm('Delete the '+col.label+' column for '+residentHere().venue+' only?\n\nOther locations are not changed. Amounts already entered stay saved and come back if you add this column again.')) return;
   residentSaveCols(residentCols().filter(function(c){ return c.id!==id; }));
 }
 

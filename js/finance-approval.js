@@ -151,9 +151,9 @@ function faSetFinanceFromSelect(sel){
   if(!r||!faInScope(r)){ faRefreshViews(); return; }
   var prev=faFinanceStatus(r);
   if(prev===next) return;
-  var can=financeCanApprove();
-  if(!can && (next==='Finance Approved'||next==='Finance declined'||prev==='Finance Approved'||prev==='Finance declined')){
-    try{ alert('Only Finance Approval can approve or decline this night.'); }catch(e){}
+  var terminal=next==='Finance Approved'||next==='Finance declined'||prev==='Finance Approved'||prev==='Finance declined';
+  if(terminal && !faCanDecide(r)){
+    try{ alert(faForGreg(r)?'Greg or Matthias approve this night.':'Takuma approves this night.'); }catch(e){}
     sel.value=prev;
     return;
   }
@@ -184,14 +184,53 @@ function faOnFeeChange(before, rec){
   return false;
 }
 function faDecide(uid, status){
-  if(!financeCanApprove()||!uid) return;
+  if(!uid) return;
   var r=faFindShow(uid);
   if(!r||!faInScope(r)) return;
+  if(!faCanDecide(r)){
+    try{ alert(faForGreg(r)?'Greg or Matthias approve this night.':'Takuma approves this night.'); }catch(e){}
+    return;
+  }
   faSetFinance(r, status, 'finance approval');
   renderFinanceApproval();
 }
+/* Greg and Matthias see the quarter view and approve the larger nights.
+   Takuma (and Michael) keep the month cards and approve every other night. */
+function faViewer(){
+  var email=String(financeSignedInEmail()||'').toLowerCase();
+  if(email==='greg@rivieradininggroup.com'||email==='matthias@rivieradininggroup.com') return 'greg';
+  if(!email && typeof signInIsOwner==='function' && signInIsOwner()) return 'greg';
+  return 'desk';
+}
+function faGregView(){ return faViewer()==='greg'; }
+function faMonthBudget(show){
+  if(!show||!show.d||typeof fiscalInfoForDate!=='function'||typeof calGuestDjBudget!=='function') return null;
+  var info=fiscalInfoForDate(show.d);
+  var g=calGuestDjBudget(show.v||show.venue, info.year, info.mm);
+  var n=g&&g.amount!=null?+g.amount:null;
+  return n!=null&&isFinite(n)?n:null;
+}
+/* Over $30K always. Over 5% of that month's Guest DJ budget when the fee is at least $5K.
+   Under $5K stays with Takuma even when it is over the budget. */
+function faForGreg(show){
+  var fee=faFee(show);
+  if(!(fee>=5000)) return false;
+  if(fee>30000) return true;
+  var budget=faMonthBudget(show);
+  if(!(budget>0)) return false;
+  return fee>budget*0.05;
+}
+function faCanDecide(show){
+  if(!financeCanApprove()||!show||!faInScope(show)) return false;
+  return faGregView()?faForGreg(show):!faForGreg(show);
+}
+function faWhyGreg(show){
+  if(!faForGreg(show)) return '';
+  if(faFee(show)>30000) return 'Over $30K';
+  return 'Over 5% of the month budget';
+}
 
-var faVenue=null, faYear=null, faMonth=null;
+var faVenue=null, faYear=null, faMonth=null, faPendingOn=false, faPendingScope=null;
 function faVenues(){ return FA_VENUES.slice(); }
 function faHere(){
   if(!faVenue||FA_VENUES.indexOf(faVenue)<0){
@@ -203,6 +242,7 @@ function faSetVenue(v){
   /* Own filter. Never curV, curM, or curYr. */
   if(FA_VENUES.indexOf(v)<0) return;
   faVenue=v;
+  faPendingOn=false;
   renderFinanceApproval();
 }
 function faWhen(){
@@ -212,9 +252,10 @@ function faWhen(){
   if(total) return {year:faYear, total:true, month:null, mm:null};
   return {year:faYear, total:false, month:faMonth, mm:(typeof fiscalMm==='function')?fiscalMm(faMonth):((faMonth<9?'0':'')+(faMonth+1))};
 }
-function faSetYear(v){ faYear=+v; renderFinanceApproval(); }
+function faSetYear(v){ faYear=+v; faPendingOn=false; renderFinanceApproval(); }
 function faSetMonth(v){
   faMonth=(v==null||v==='total'||v==='-1')?null:+v;
+  faPendingOn=false;
   renderFinanceApproval();
 }
 function faHorizon(year, names){
@@ -277,14 +318,20 @@ function faPrior(venue, r){
   return {dj:py&&py.py_dj?py.py_dj:'', fee:fee, sales:sales};
 }
 function faBottlePosition(venue, year, mm){
-  var sales=0, target=0, hasS=false, hasT=false;
+  var sales=0, target=0, prior=0, hasS=false, hasT=false, hasP=false;
   faRoster(venue, year, mm).forEach(function(item){
-    var tgt=(typeof showTargets==='function')?showTargets(item.r):null;
+    var r=item.r;
+    var tgt=(typeof showTargets==='function')?showTargets(r):null;
     if(tgt&&tgt.bs_m!=null&&isFinite(+tgt.bs_m)){ target+=+tgt.bs_m; hasT=true; }
-    var py=faPrior(venue, item.r);
-    if(py.sales!=null){ sales+=py.sales; hasS=true; }
+    if(r.bs_a!=null&&r.bs_a!==''&&isFinite(+r.bs_a)){ sales+=+r.bs_a; hasS=true; }
+    var py=(typeof resolvePyFields==='function')?resolvePyFields(venue, r.d):null;
+    if(py&&py.py_bs_a!=null&&isFinite(+py.py_bs_a)){ prior+=+py.py_bs_a; hasP=true; }
   });
-  return {sales:hasS?Math.round(sales):null, target:hasT?Math.round(target):null};
+  return {sales:hasS?Math.round(sales):null, target:hasT?Math.round(target):null, prior:hasP?Math.round(prior):null};
+}
+function faPriorGuest(venue, year, mm){
+  if(!(+year>2000)) return null;
+  return faGuestPosition(venue, +year-1, mm).spend;
 }
 function faMoney(n){ return (n==null||!isFinite(+n))?'—':$k(n); }
 function faCall(actual, target, goodWhen){
@@ -294,45 +341,164 @@ function faCall(actual, target, goodWhen){
   var good=goodWhen==='over'?gap>0:gap<0;
   return {word:gap>0?'Over':'Under', text:(gap>0?'+':'−')+$k(Math.abs(gap)), tone:good?' fa-good':' fa-bad'};
 }
+function faMm(mi){
+  return (typeof fiscalMm==='function')?fiscalMm(mi):((mi<9?'0':'')+(mi+1));
+}
+function faDelta(base, other){
+  if(base==null||other==null||!isFinite(+base)||!isFinite(+other)) return null;
+  return Math.round(+base-+other);
+}
+function faSigned(n){
+  if(n==null||!isFinite(+n)) return '—';
+  if(!n) return $k(0);
+  return (n>0?'+':'−')+$k(Math.abs(n));
+}
 function faRange(venue, year, from, to){
   var spend=0, budget=0, hasB=false, sales=0, bsT=0, hasS=false, hasT=false;
+  var priorG=0, priorB=0, hasPG=false, hasPB=false;
   for(var mi=from; mi<=to; mi++){
-    var mm=(typeof fiscalMm==='function')?fiscalMm(mi):((mi<9?'0':'')+(mi+1));
+    var mm=faMm(mi);
     var g=faGuestPosition(venue, year, mm);
     var bottle=faBottlePosition(venue, year, mm);
+    var pg=faPriorGuest(venue, year, mm);
     spend+=g.spend;
     if(g.budget!=null){ budget+=g.budget; hasB=true; }
     if(bottle.sales!=null){ sales+=bottle.sales; hasS=true; }
     if(bottle.target!=null){ bsT+=bottle.target; hasT=true; }
+    if(bottle.prior!=null){ priorB+=bottle.prior; hasPB=true; }
+    if(pg!=null){ priorG+=pg; hasPG=true; }
   }
-  return {spend:Math.round(spend), budget:hasB?Math.round(budget):null, sales:hasS?Math.round(sales):null, target:hasT?Math.round(bsT):null};
+  return {
+    spend:Math.round(spend), budget:hasB?Math.round(budget):null,
+    sales:hasS?Math.round(sales):null, target:hasT?Math.round(bsT):null,
+    priorGuest:hasPG?Math.round(priorG):null, priorBottle:hasPB?Math.round(priorB):null
+  };
 }
-function faLineHtml(label, midLabel, mid, target, call){
-  return '<div class="fa-line"><div class="fa-k">'+label+'</div>'
-    +'<div class="fa-bud"><span>Target</span><b>'+faMoney(target)+'</b></div>'
-    +'<div><span>'+midLabel+'</span><b>'+faMoney(mid)+'</b></div>'
-    +'<div class="fa-call'+call.tone+'"><span>'+_escHtml(call.word)+'</span><b>'+_escHtml(call.text)+'</b></div></div>';
+function faScopeRows(venue, year, scope){
+  var rows=[];
+  if(scope==null||scope==='year'||scope==='total') return faRoster(venue, year, null);
+  if(/^q[1-4]$/.test(String(scope))){
+    var q=+String(scope).slice(1)-1;
+    for(var mi=q*3; mi<q*3+3; mi++) rows=rows.concat(faRoster(venue, year, faMm(mi)));
+    return rows;
+  }
+  if(/^y\d+$/.test(String(scope))){
+    var to=+String(scope).slice(1);
+    for(var yi=0; yi<=to; yi++) rows=rows.concat(faRoster(venue, year, faMm(yi)));
+    return rows;
+  }
+  var one=+scope;
+  if(!(one>=0&&one<=11)) return rows;
+  return faRoster(venue, year, faMm(one));
 }
-function faCardHtml(title, row){
-  return '<section class="fa-vs"><h4>'+_escHtml(title)+'</h4>'
-    +faLineHtml('Guest DJ','Forecast',row.spend,row.budget,faCall(row.spend,row.budget,'under'))
-    +faLineHtml('Bottle service','Sales',row.sales,row.target,faCall(row.sales,row.target,'over'))
+function faQueue(rows, mineOnly){
+  var list=(rows||[]).filter(function(item){ return faNeedsApproval(item.r); });
+  if(mineOnly&&faGregView()) list=list.filter(function(item){ return faForGreg(item.r); });
+  if(mineOnly&&!faGregView()) list=list.filter(function(item){ return !faForGreg(item.r); });
+  return list;
+}
+function faLineHtml(opts){
+  var call=opts.call;
+  return '<div class="fa-line"><div class="fa-k">'+opts.label+'</div>'
+    +'<div class="fa-bud"><span>'+opts.leftName+'</span><b>'+faMoney(opts.leftVal)+'</b></div>'
+    +'<div><span>'+opts.midName+'</span><b>'+faMoney(opts.midVal)+'</b></div>'
+    +'<div class="fa-call'+call.tone+'"><button type="button" class="fa-gap" data-fa="pending" data-scope="'+opts.scope+'" title="Open pending approval"><span>'+_escHtml(call.word)+'</span><b>'+_escHtml(call.text)+'</b></button></div>'
+    +'<div><span>Prior year</span><b>'+faMoney(opts.prior)+'</b></div>'
+    +'<div class="fa-vs-prior"><span>vs prior</span><b>'+faSigned(opts.priorDelta)+'</b></div></div>';
+}
+function faCardHtml(title, row, scope, card){
+  return '<section class="fa-vs" data-card="'+card+'"><h4>'+_escHtml(title)+'</h4>'
+    +faLineHtml({label:'Guest DJ', leftName:'Budget', leftVal:row.budget, midName:'Scheduled', midVal:row.spend, call:faCall(row.spend, row.budget, 'under'), prior:row.priorGuest, priorDelta:faDelta(row.budget, row.priorGuest), scope:scope})
+    +faLineHtml({label:'Bottle service', leftName:'Target', leftVal:row.target, midName:'Sales', midVal:row.sales, call:faCall(row.sales, row.target, 'over'), prior:row.priorBottle, priorDelta:faDelta(row.target, row.priorBottle), scope:scope})
     +'</section>';
 }
+function faStatusLine(venue, year, scope){
+  if(!faYearOn(venue, year)) return '';
+  var roster=faScopeRows(venue, year, scope);
+  if(!roster.length) return '<i class="fa-m-none">No performances</i>';
+  var all=roster.filter(function(item){ return faNeedsApproval(item.r); });
+  var mine=faQueue(roster, true);
+  if(!all.length) return '<i class="fa-m-ok">All approved</i>';
+  var n=faGregView()?mine.length:all.length;
+  if(!n) return '<i class="fa-m-ok">All approved</i>';
+  return '<i class="fa-m-wait"><i class="fa-warn-dot"></i>'+n+' pending approval</i>';
+}
 function faMonthTileHtml(venue, year, mi, names){
-  var mm=(typeof fiscalMm==='function')?fiscalMm(mi):((mi<9?'0':'')+(mi+1));
+  var mm=faMm(mi);
   var cell=faGuestPosition(venue, year, mm);
+  var prior=faPriorGuest(venue, year, mm);
   var tone=cell.budget==null?'':(cell.spend>cell.budget?' is-bad':' is-good');
-  var line='';
-  if(faYearOn(venue, year)){
-    var c=faCounts(faRoster(venue, year, mm));
-    if(!c.total) line='<i class="fa-m-none">No performances</i>';
-    else if(c.pending) line='<i class="fa-m-wait">'+c.pending+' pending approval</i>';
-    else line='<i class="fa-m-ok">All approved</i>';
+  var call=faCall(cell.spend, cell.budget, 'under');
+  return '<div class="fa-m'+tone+'"><button type="button" class="fa-m-go" data-month="'+mi+'"><b>'+names[mi]+'</b></button>'
+    +'<div class="fa-m-row"><span class="fa-m-bud">Budget '+faMoney(cell.budget)+'</span><em>'+$k(cell.spend)+'</em></div>'
+    +'<button type="button" class="fa-m-gap'+call.tone+'" data-fa="pending" data-scope="'+mi+'" title="Open pending approval">'+_escHtml(call.text)+'</button>'
+    +'<div class="fa-m-py">Prior year '+faMoney(prior)+' <b>'+faSigned(faDelta(cell.budget, prior))+'</b></div>'
+    +faStatusLine(venue, year, String(mi))+'</div>';
+}
+function faQuarterHtml(venue, year, q, names){
+  var from=q*3, to=from+2;
+  var row=faRange(venue, year, from, to);
+  var call=faCall(row.spend, row.budget, 'under');
+  var tone=row.budget==null?'':(row.spend>row.budget?' is-bad':' is-good');
+  var h='<div class="fa-q"><div class="fa-q-hd">Q'+(q+1)+'</div>';
+  for(var mi=from; mi<=to; mi++) h+=faMonthTileHtml(venue, year, mi, names);
+  h+='<button type="button" class="fa-m fa-q-total'+tone+'" data-fa="pending" data-scope="q'+(q+1)+'">'
+    +'<b>Total</b><div class="fa-m-row"><span class="fa-m-bud">Budget '+faMoney(row.budget)+'</span><em>'+$k(row.spend)+'</em></div>'
+    +'<span class="fa-m-gap'+call.tone+'">'+_escHtml(call.text)+'</span>'
+    +'<div class="fa-m-py">Prior year '+faMoney(row.priorGuest)+' <b>'+faSigned(faDelta(row.budget, row.priorGuest))+'</b></div>'
+    +faStatusLine(venue, year, 'q'+(q+1))+'</button></div>';
+  return h;
+}
+function faPendingHtml(venue, year, scope, title){
+  var all=faScopeRows(venue, year, scope).filter(function(item){ return faNeedsApproval(item.r); });
+  var gregRows=all.filter(function(item){ return faForGreg(item.r); });
+  var rows=faGregView()?gregRows:all;
+  var aside=faGregView()?(all.length-gregRows.length):gregRows.length;
+  var asideWho=faGregView()?'Takuma':'Greg';
+  var head='<div class="fa-pending" id="faPending"><div class="fa-break-hd"><i class="fa-warn-dot"></i>Pending approval'
+    +(title?' · '+_escHtml(title):'')+'</div>';
+  if(!rows.length){
+    return head+'<div class="fa-empty fa-all-ok">All approved'+(aside?' · '+aside+' with '+asideWho:'')+'.</div></div>';
   }
-  return '<button type="button" class="fa-m'+tone+'" data-month="'+mi+'"><b>'+names[mi]+'</b>'
-    +'<div class="fa-m-row"><span class="fa-m-bud">Target '+faMoney(cell.budget)+'</span><em>'+$k(cell.spend)+'</em></div>'
-    +line+'</button>';
+  head+='<div class="fa-pending-note">'+(faGregView()?rows.length+' for you':rows.length+' pending approval')+(aside?' · '+aside+' with '+asideWho:'')+'</div>';
+  var h=head+'<table class="fa-tbl"><thead><tr><th class="fa-warn-side"></th><th>Date</th><th>DJ</th><th>Fee</th><th>Route</th><th>BS target</th><th>Prior DJ</th><th>Prior fee</th><th></th></tr></thead><tbody>';
+  rows.forEach(function(item){
+    var r=item.r;
+    var tgt=(typeof showTargets==='function')?showTargets(r):null;
+    var py=faPrior(venue, r);
+    var uid=String(item.uid).replace(/"/g,'&quot;');
+    var greg=faForGreg(r);
+    var can=faCanDecide(r);
+    var budget=faMonthBudget(r);
+    var pct=budget>0?Math.round(item.fee/budget*1000)/10+'% of budget':'';
+    h+='<tr class="fa-row-warn"><td class="fa-warn-side" title="Pending approval">!</td>'
+      +'<td>'+_escHtml(typeof _bpDay==='function'?_bpDay(r.d):r.d)+'</td>'
+      +'<td>'+_escHtml(String(r.dj||'').trim()||'TBD')+'</td>'
+      +'<td>'+(item.fee>0?$k(item.fee):'—')+(pct?'<i class="fa-pct">'+pct+'</i>':'')+'</td>'
+      +'<td><span class="fa-chip '+(greg?'fa-fs-wait':'fa-fs-none')+'">'+(greg?_escHtml(faWhyGreg(r)):'Takuma')+'</span></td>'
+      +'<td>'+(tgt&&tgt.bs_m!=null?$k(tgt.bs_m):'—')+'</td>'
+      +'<td>'+_escHtml(py.dj||'—')+'</td><td>'+(py.fee!=null?$k(py.fee):'—')+'</td>';
+    if(can){
+      h+='<td class="fa-acts"><button type="button" class="fa-yes" data-uid="'+uid+'" data-status="Finance Approved" title="Finance Approved">&#10003;</button>'
+        +'<button type="button" class="fa-no" data-uid="'+uid+'" data-status="Finance declined" title="Finance declined">&#10007;</button></td>';
+    }else{
+      h+='<td class="fa-hold">'+(greg?'Greg approves':'Takuma approves')+'</td>';
+    }
+    h+='</tr>';
+  });
+  return h+'</tbody></table></div>';
+}
+function faScopeTitle(scope, names){
+  if(scope==null||scope==='year'||scope==='total') return 'Full year';
+  if(/^q[1-4]$/.test(String(scope))) return 'Q'+String(scope).slice(1);
+  if(/^y\d+$/.test(String(scope))) return 'YTD through '+names[+String(scope).slice(1)];
+  var mi=+scope;
+  return (mi>=0&&mi<=11)?names[mi]:'';
+}
+function faMonthRow(venue, year, mi){
+  var g=faGuestPosition(venue, year, faMm(mi));
+  var bottle=faBottlePosition(venue, year, faMm(mi));
+  return {spend:g.spend, budget:g.budget, sales:bottle.sales, target:bottle.target, priorGuest:faPriorGuest(venue, year, faMm(mi)), priorBottle:bottle.prior};
 }
 function renderFinanceApproval(){
   var host=document.getElementById('financeBody');
@@ -345,13 +511,14 @@ function renderFinanceApproval(){
   var venue=faHere();
   var when=faWhen();
   var live=faYearOn(venue, when.year);
+  var greg=faGregView();
   var names=(typeof MN_FULL!=='undefined')?MN_FULL:['January','February','March','April','May','June','July','August','September','October','November','December'];
   var sub=document.getElementById('pgSub');
   if(sub&&typeof curView!=='undefined'&&curView==='finance'){
     sub.innerHTML='<span>'+_escHtml(venue)+' · '+(when.total?when.year:(names[when.month]+' '+when.year))+'</span>';
   }
   var html='<div class="fa-bar">';
-  if(!when.total) html+='<button type="button" class="fa-back" data-fa="total" title="Back to the year total">&#8592; Total</button>';
+  if(!when.total) html+='<button type="button" class="fa-back" data-fa="total" title="Back to the year">&#8592; Total</button>';
   html+='<label>Location<select onchange="faSetVenue(this.value)">';
   FA_VENUES.forEach(function(v){ html+='<option'+(v===venue?' selected':'')+'>'+_escHtml(v)+'</option>'; });
   html+='</select></label><label>Year<select onchange="faSetYear(this.value)">';
@@ -360,53 +527,53 @@ function renderFinanceApproval(){
   html+='<option value="total"'+(when.total?' selected':'')+'>Total</option>';
   names.forEach(function(name, i){ html+='<option value="'+i+'"'+(!when.total&&i===when.month?' selected':'')+'>'+name+'</option>'; });
   html+='</select></label></div>';
+  html+='<div class="fa-rule">'+(greg
+    ?'You approve nights over $30K, and nights of at least $5K that are over 5% of that month\'s Guest DJ budget. Takuma approves the rest. Every night can be approved.'
+    :'You approve nights under $5K and nights within 5% of that month\'s Guest DJ budget. Greg approves nights over that, and every night over $30K.')+'</div>';
   if(!live) html+='<div class="fa-note">Finance approval applies to 2027 performances. 2026 is shown against budget only.</div>';
-  if(when.total){
-    if(live){
-      var c=faCounts(faRoster(venue, when.year, null));
-      html+='<div class="fa-stats"><div class="fa-stat is-yes"><b>'+c.approved+'</b><span>Approved</span></div>'
-        +'<div class="fa-stat is-wait"><b>'+c.pending+'</b><span>Pending approval</span></div></div>';
-    }
-    var horizon=faHorizon(when.year, names);
-    html+=faCardHtml(horizon.label, faRange(venue, when.year, 0, horizon.through));
-    html+='<div class="fa-break-hd">Guest DJ vs budget · '+when.year+'</div><div class="fa-months">';
-    for(var mi=0;mi<12;mi++) html+=faMonthTileHtml(venue, when.year, mi, names);
+  var yearRow=faRange(venue, when.year, 0, 11);
+  html+=faCardHtml('Budget · full year', yearRow, 'year', 'year');
+  if(greg && when.total){
+    html+='<div class="fa-break-hd">Guest DJ vs budget · '+when.year+'</div><div class="fa-quarters">';
+    for(var q=0;q<4;q++) html+=faQuarterHtml(venue, when.year, q, names);
     html+='</div>';
+    var yCall=faCall(yearRow.spend, yearRow.budget, 'under');
+    var yTone=yearRow.budget==null?'':(yearRow.spend>yearRow.budget?' is-bad':' is-good');
+    html+='<button type="button" class="fa-yearbar'+yTone+'" data-fa="pending" data-scope="year"><b>Year total</b>'
+      +'<span class="fa-m-bud">Budget '+faMoney(yearRow.budget)+'</span><em>'+$k(yearRow.spend)+'</em>'
+      +'<span class="fa-m-gap'+yCall.tone+'">'+_escHtml(yCall.text)+'</span>'
+      +'<span>Prior year '+faMoney(yearRow.priorGuest)+' '+faSigned(faDelta(yearRow.budget, yearRow.priorGuest))+'</span>'
+      +faStatusLine(venue, when.year, 'year')+'</button>';
+  }else if(!greg){
+    var mi=when.total?((typeof TODAY!=='undefined'&&typeof fiscalInfoForDate==='function'&&fiscalInfoForDate(TODAY).year===when.year)?fiscalInfoForDate(TODAY).monthIndex:0):when.month;
+    html+='<div class="fa-stack">'
+      +faCardHtml('MTD · '+names[mi], faMonthRow(venue, when.year, mi), String(mi), 'mtd')
+      +faCardHtml('YTD through '+names[mi], faRange(venue, when.year, 0, mi), 'y'+mi, 'ytd')
+      +'</div>';
+    if(live) html+='<button type="button" class="fa-pending-launch" data-fa="pending" data-scope="'+mi+'">'+faStatusLine(venue, when.year, String(mi))+'</button>';
   }else{
-    var g=faGuestPosition(venue, when.year, when.mm);
-    var bottle=faBottlePosition(venue, when.year, when.mm);
-    html+='<div class="fa-stack">'+faCardHtml('MTD · '+names[when.month], {spend:g.spend, budget:g.budget, sales:bottle.sales, target:bottle.target})
-      +faCardHtml('YTD through '+names[when.month], faRange(venue, when.year, 0, when.month))+'</div>';
-    if(live){
-      var pending=faRoster(venue, when.year, when.mm).filter(function(item){ return faNeedsApproval(item.r); });
-      html+='<div class="fa-break-hd">Pending approval · '+names[when.month]+' '+when.year+'</div>';
-      if(!pending.length){
-        html+='<div class="fa-empty fa-all-ok">All approved.</div>';
-      }else{
-        html+='<table class="fa-tbl"><thead><tr><th>Date</th><th>DJ</th><th>Fee</th><th>BS target</th><th>Prior DJ</th><th>Prior fee</th><th>BS sales</th><th>Finance status</th><th></th></tr></thead><tbody>';
-        pending.forEach(function(item){
-          var r=item.r;
-          var tgt=(typeof showTargets==='function')?showTargets(r):null;
-          var py=faPrior(venue, r);
-          var uid=String(item.uid).replace(/"/g,'&quot;');
-          html+='<tr><td>'+_escHtml(typeof _bpDay==='function'?_bpDay(r.d):r.d)+'</td>'
-            +'<td>'+_escHtml(String(r.dj||'').trim()||'TBD')+'</td><td>'+(item.fee>0?$k(item.fee):'—')+'</td>'
-            +'<td>'+(tgt&&tgt.bs_m!=null?$k(tgt.bs_m):'—')+'</td>'
-            +'<td>'+_escHtml(py.dj||'—')+'</td><td>'+(py.fee!=null?$k(py.fee):'—')+'</td>'
-            +'<td>'+faMoney(py.sales)+'</td>'
-            +'<td><span class="fa-chip '+faFinanceTone(item.status)+'">'+_escHtml(item.status||'Not set')+'</span></td>'
-            +'<td class="fa-acts"><button type="button" class="fa-yes" data-uid="'+uid+'" data-status="Finance Approved" title="Finance Approved">&#10003;</button>'
-            +'<button type="button" class="fa-no" data-uid="'+uid+'" data-status="Finance declined" title="Finance declined">&#10007;</button></td></tr>';
-        });
-        html+='</tbody></table>';
-      }
-    }
+    html+=faCardHtml(names[when.month], faMonthRow(venue, when.year, when.month), String(when.month), 'month');
+    if(!faPendingOn){ faPendingOn=true; faPendingScope=String(when.month); }
+  }
+  if(live && (faPendingOn || (greg && !when.total))){
+    html+=faPendingHtml(venue, when.year, faPendingScope||'year', faScopeTitle(faPendingScope, names));
   }
   host.innerHTML=html;
+  if(faPendingOn){
+    var box=document.getElementById('faPending');
+    if(box&&box.scrollIntoView) box.scrollIntoView({block:'nearest'});
+  }
   host.onclick=function(ev){
     var t=ev.target.closest?ev.target.closest('[data-fa],[data-month],[data-status]'):null;
     if(!t||!host.contains(t)) return;
     if(t.getAttribute('data-fa')==='total'){ faSetMonth('total'); return; }
+    if(t.getAttribute('data-fa')==='pending'){
+      var scope=t.getAttribute('data-scope')||'year';
+      if(faPendingOn && String(faPendingScope)===String(scope)){ faPendingOn=false; faPendingScope=null; }
+      else { faPendingOn=true; faPendingScope=scope; }
+      renderFinanceApproval();
+      return;
+    }
     if(t.hasAttribute('data-month')){ faSetMonth(t.getAttribute('data-month')); return; }
     if(t.getAttribute('data-status')) faDecide(t.getAttribute('data-uid'), t.getAttribute('data-status'));
   };
