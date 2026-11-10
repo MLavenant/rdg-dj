@@ -423,31 +423,28 @@ function faStatusLine(venue, year, scope){
   if(!n) return '<i class="fa-m-ok">All approved</i>';
   return '<i class="fa-m-wait"><i class="fa-warn-dot"></i>'+n+' pending approval</i>';
 }
+function faStackBox(name, forecast, budget, prior, scope){
+  var call=faCall(forecast, budget, 'under');
+  var tone=budget==null?'':(forecast>budget?' is-bad':' is-good');
+  return '<div class="fa-m'+tone+'"><b class="fa-m-name">'+_escHtml(name)+'</b>'
+    +'<div class="fa-m-bit"><span>Forecast</span><em>'+$k(forecast)+'</em></div>'
+    +'<div class="fa-m-bit"><span>Budget</span><b class="fa-m-bud">'+faMoney(budget)+'</b></div>'
+    +'<div class="fa-m-bit"><span>Variance</span><b class="fa-m-var'+call.tone+'">'+_escHtml(call.text)+'</b></div>'
+    +'<div class="fa-m-py">Prior year '+faMoney(prior)+'</div>'
+    +'<button type="button" class="fa-m-pend" data-fa="pending" data-scope="'+scope+'">'+faStatusLine(faHere(), faWhen().year, scope)+'</button></div>';
+}
 function faMonthTileHtml(venue, year, mi, names){
   var mm=faMm(mi);
   var cell=faGuestPosition(venue, year, mm);
-  var prior=faPriorGuest(venue, year, mm);
-  var tone=cell.budget==null?'':(cell.spend>cell.budget?' is-bad':' is-good');
-  var call=faCall(cell.spend, cell.budget, 'under');
-  return '<div class="fa-m'+tone+'"><button type="button" class="fa-m-go" data-month="'+mi+'"><b>'+names[mi]+'</b></button>'
-    +'<div class="fa-m-row"><span class="fa-m-bud">Budget '+faMoney(cell.budget)+'</span><em>'+$k(cell.spend)+'</em></div>'
-    +'<button type="button" class="fa-m-gap'+call.tone+'" data-fa="pending" data-scope="'+mi+'" title="Open pending approval">'+_escHtml(call.text)+'</button>'
-    +'<div class="fa-m-py">Prior year '+faMoney(prior)+' <b>'+faSigned(faDelta(cell.budget, prior))+'</b></div>'
-    +faStatusLine(venue, year, String(mi))+'</div>';
+  return faStackBox(names[mi], cell.spend, cell.budget, faPriorGuest(venue, year, mm), String(mi));
 }
 function faQuarterHtml(venue, year, q, names){
   var from=q*3, to=from+2;
   var row=faRange(venue, year, from, to);
-  var call=faCall(row.spend, row.budget, 'under');
-  var tone=row.budget==null?'':(row.spend>row.budget?' is-bad':' is-good');
   var h='<div class="fa-q"><div class="fa-q-hd">Q'+(q+1)+'</div>';
   for(var mi=from; mi<=to; mi++) h+=faMonthTileHtml(venue, year, mi, names);
-  h+='<button type="button" class="fa-m fa-q-total'+tone+'" data-fa="pending" data-scope="q'+(q+1)+'">'
-    +'<b>Total</b><div class="fa-m-row"><span class="fa-m-bud">Budget '+faMoney(row.budget)+'</span><em>'+$k(row.spend)+'</em></div>'
-    +'<span class="fa-m-gap'+call.tone+'">'+_escHtml(call.text)+'</span>'
-    +'<div class="fa-m-py">Prior year '+faMoney(row.priorGuest)+' <b>'+faSigned(faDelta(row.budget, row.priorGuest))+'</b></div>'
-    +faStatusLine(venue, year, 'q'+(q+1))+'</button></div>';
-  return h;
+  h+=faStackBox('Total', row.spend, row.budget, row.priorGuest, 'q'+(q+1));
+  return h+'</div>';
 }
 function faPendingHtml(venue, year, scope, title){
   var all=faScopeRows(venue, year, scope).filter(function(item){ return faNeedsApproval(item.r); });
@@ -461,11 +458,9 @@ function faPendingHtml(venue, year, scope, title){
     return head+'<div class="fa-empty fa-all-ok">All approved'+(aside?' · '+aside+' with '+asideWho:'')+'.</div></div>';
   }
   head+='<div class="fa-pending-note">'+(faGregView()?rows.length+' for you':rows.length+' pending approval')+(aside?' · '+aside+' with '+asideWho:'')+'</div>';
-  var h=head+'<table class="fa-tbl"><thead><tr><th class="fa-warn-side"></th><th>Date</th><th>DJ</th><th>Fee</th><th>Route</th><th>BS target</th><th>Prior DJ</th><th>Prior fee</th><th></th></tr></thead><tbody>';
+  var h=head+'<table class="fa-tbl"><colgroup><col class="fa-c-warn"><col class="fa-c-date"><col class="fa-c-dj"><col class="fa-c-fee"><col class="fa-c-route"><col class="fa-c-act"></colgroup><thead><tr><th class="fa-warn-side"></th><th>Date</th><th>DJ</th><th>Fee</th><th>Route</th><th></th></tr></thead><tbody>';
   rows.forEach(function(item){
     var r=item.r;
-    var tgt=(typeof showTargets==='function')?showTargets(r):null;
-    var py=faPrior(venue, r);
     var uid=String(item.uid).replace(/"/g,'&quot;');
     var greg=faForGreg(r);
     var can=faCanDecide(r);
@@ -475,9 +470,7 @@ function faPendingHtml(venue, year, scope, title){
       +'<td>'+_escHtml(typeof _bpDay==='function'?_bpDay(r.d):r.d)+'</td>'
       +'<td>'+_escHtml(String(r.dj||'').trim()||'TBD')+'</td>'
       +'<td>'+(item.fee>0?$k(item.fee):'—')+(pct?'<i class="fa-pct">'+pct+'</i>':'')+'</td>'
-      +'<td><span class="fa-chip '+(greg?'fa-fs-wait':'fa-fs-none')+'">'+(greg?_escHtml(faWhyGreg(r)):'Takuma')+'</span></td>'
-      +'<td>'+(tgt&&tgt.bs_m!=null?$k(tgt.bs_m):'—')+'</td>'
-      +'<td>'+_escHtml(py.dj||'—')+'</td><td>'+(py.fee!=null?$k(py.fee):'—')+'</td>';
+      +'<td><span class="fa-chip '+(greg?'fa-fs-wait':'fa-fs-none')+'">'+(greg?_escHtml(faWhyGreg(r)):'Takuma')+'</span></td>';
     if(can){
       h+='<td class="fa-acts"><button type="button" class="fa-yes" data-uid="'+uid+'" data-status="Finance Approved" title="Finance Approved">&#10003;</button>'
         +'<button type="button" class="fa-no" data-uid="'+uid+'" data-status="Finance declined" title="Finance declined">&#10007;</button></td>';
@@ -536,14 +529,7 @@ function renderFinanceApproval(){
   if(greg && when.total){
     html+='<div class="fa-break-hd">Guest DJ vs budget · '+when.year+'</div><div class="fa-quarters">';
     for(var q=0;q<4;q++) html+=faQuarterHtml(venue, when.year, q, names);
-    html+='</div>';
-    var yCall=faCall(yearRow.spend, yearRow.budget, 'under');
-    var yTone=yearRow.budget==null?'':(yearRow.spend>yearRow.budget?' is-bad':' is-good');
-    html+='<button type="button" class="fa-yearbar'+yTone+'" data-fa="pending" data-scope="year"><b>Year total</b>'
-      +'<span class="fa-m-bud">Budget '+faMoney(yearRow.budget)+'</span><em>'+$k(yearRow.spend)+'</em>'
-      +'<span class="fa-m-gap'+yCall.tone+'">'+_escHtml(yCall.text)+'</span>'
-      +'<span>Prior year '+faMoney(yearRow.priorGuest)+' '+faSigned(faDelta(yearRow.budget, yearRow.priorGuest))+'</span>'
-      +faStatusLine(venue, when.year, 'year')+'</button>';
+    html+='</div><div class="fa-yearbox">'+faStackBox('Year total', yearRow.spend, yearRow.budget, yearRow.priorGuest, 'year')+'</div>';
   }else if(!greg){
     var mi=when.total?((typeof TODAY!=='undefined'&&typeof fiscalInfoForDate==='function'&&fiscalInfoForDate(TODAY).year===when.year)?fiscalInfoForDate(TODAY).monthIndex:0):when.month;
     html+='<div class="fa-stack">'
@@ -559,10 +545,6 @@ function renderFinanceApproval(){
     html+=faPendingHtml(venue, when.year, faPendingScope||'year', faScopeTitle(faPendingScope, names));
   }
   host.innerHTML=html;
-  if(faPendingOn){
-    var box=document.getElementById('faPending');
-    if(box&&box.scrollIntoView) box.scrollIntoView({block:'nearest'});
-  }
   host.onclick=function(ev){
     var t=ev.target.closest?ev.target.closest('[data-fa],[data-month],[data-status]'):null;
     if(!t||!host.contains(t)) return;

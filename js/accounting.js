@@ -164,20 +164,19 @@ function renderAccountingGuest(yr, mo, mm, days){
 
   var h='<table class="sched-tbl acct-tbl"><thead><tr>';
   h+='<th class="sc-date">Date</th>';
-  h+='<th class="sc-ev">Event</th>';
   h+='<th class="sc-dj">Guest DJ</th>';
   h+='<th class="acct-agency-hd" title="Booking agency">Agency</th>';
   h+='<th class="sc-num acct-col-fee">DJ Fee</th>';
-  h+='<th class="sc-num acct-col-target">BS Target</th>';
-  h+='<th class="sc-num acct-col-bsa">BS Actual</th>';
+  h+='<th class="acct-fin-hd">Finance Status</th>';
   h+='<th class="acct-status-hd">DJ Status</th>';
   h+='<th class="acct-status-hd acct-ap-hd">AP Status</th>';
   h+='<th class="acct-note-hd">Notes</th>';
-  h+='<th class="sc-act-r" title="R365">R365</th>';
+  h+='<th class="acct-doc-hd acct-inv-hd">Invoice</th>';
+  h+='<th class="acct-doc-hd acct-con-hd">Contract</th>';
   h+='<th class="sc-act"></th>';
   h+='</tr></thead><tbody>';
 
-  var totDJ=0, totBSM=0, totBSA=0;
+  var totDJ=0;
   var anyFilterMatch=false;
 
   for(var adi=0;adi<fiscalDates.length;adi++){
@@ -186,7 +185,6 @@ function renderAccountingGuest(yr, mo, mm, days){
     var dow=dObj.getDay();
     var isToday=ds===TODAY;
     var shows=showMap[ds]||[];
-    var evLabel=daySpecialLabel(ds)||'';
     var acct=getAcct(ds);
 
     /* DJ filters are per-show; AP filters remain date-level (docs/workflow). */
@@ -217,9 +215,7 @@ function renderAccountingGuest(yr, mo, mm, days){
       if(_acctStatusFilter) continue;
       h+='<tr class="'+dc+'">';
       h+='<td class="sc-date-cell">'+dateStr+'</td>';
-      h+='<td class="sc-ev-cell">'+_evLabelHtml(evLabel, ds)+'</td>';
-      h+='<td colspan="5" class="sc-empty-day"></td>';
-      h+='<td></td><td></td><td></td><td></td>';
+      h+='<td colspan="9" class="sc-empty-day"></td>';
       h+='<td class="sc-act">'+(isAccountingOnlyVenue(curAcctV)?'':'<button class="sc-add-btn" data-ds="'+ds+'" data-action="add">+</button>')+'</td>';
       h+='</tr>';
       continue;
@@ -228,35 +224,32 @@ function renderAccountingGuest(yr, mo, mm, days){
 
     var djFeeTotal=shows.reduce(function(s,r){return s+(r.fee||r.cost||0);},0);
     totDJ+=djFeeTotal;
-    totBSM+=shows.reduce(function(s,r){return s+(showTargets(r).bs_m||0);},0);
-    totBSA+=shows.reduce(function(s,r){return s+(r.bs_a||0);},0);
 
     var nrows=Math.max(1,shows.length);
     shows.forEach(function(r,ri){
       var nm=djLabel(r.dj);
       var idx=SCHED.indexOf(r);
-      var tgt=showTargets(r);
-      var bsM=tgt.bs_m;
-      var bsCls=perfTone(r.bs_a, bsM, (r.fee||r.cost), r.roi_a, tgt.roi_t);
       var feeCls=feeTierClass(r.fee||r.cost);
       var feeRowCls=feeRowClass(r.fee||r.cost);
+      var showUid=ensureShowUid(r);
 
       h+='<tr class="'+dc+(feeRowCls?' '+feeRowCls:'')+'">';
       if(ri===0){
         h+='<td class="sc-date-cell" rowspan="'+nrows+'">'+dateStr
           +(isToday?'<span class="sc-today-badge"> Today</span>':'')
           +'</td>';
-        h+='<td class="sc-ev-cell" rowspan="'+nrows+'">'+_evLabelHtml(evLabel, ds)+'</td>';
       }
-      h+='<td class="sc-dj-cell"><b class="'+bsCls+'">'+nm+'</b>'+(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')+'</td>';
-      var showUid=ensureShowUid(r);
+      h+='<td class="sc-dj-cell"><b>'+nm+'</b>'+(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')+'</td>';
       var agencyEsc=String(r.agency||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
       h+='<td class="acct-agency-cell">'
         +'<input type="text" class="acct-agency-inp" data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="acctAgency" value="'+agencyEsc+'" placeholder="Agency" title="Agency name">'
         +'</td>';
       h+='<td class="sc-num acct-col-fee fee-cell '+(feeCls||'')+'">'+$k(r.fee||r.cost||null)+'</td>';
-      h+='<td class="sc-num acct-col-target">'+$k(bsM)+'</td>';
-      h+='<td class="sc-num acct-col-bsa '+bsCls+'"><b>'+$k(r.bs_a)+'</b></td>';
+      if(typeof faFinanceSelectHtml==='function' && typeof faInScope==='function' && faInScope(r)){
+        h+='<td class="acct-fin-cell">'+faFinanceSelectHtml(r, ds, idx)+'</td>';
+      }else{
+        h+='<td class="acct-fin-cell acct-fin-na">—</td>';
+      }
       var djSt=getShowDjStatus(r, ds)||'';
       h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
         +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="djStatus"', r)
@@ -275,7 +268,8 @@ function renderAccountingGuest(yr, mo, mm, days){
           +'<textarea class="acct-note-inp" data-ds="'+ds+'" data-action="acctNote" rows="2" placeholder="AP / accounting notes…">'
           +String(acct.note||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
           +'</textarea></td>';
-        h+='<td class="sc-act-r" rowspan="'+nrows+'"><label class="r365-wrap"><input type="checkbox" class="r365-chk" data-ds="'+ds+'" data-action="r365" '+(acct.r365?'checked':'')+'><span class="r365-box">R</span></label></td>';
+        h+='<td class="acct-doc-cell acct-inv-cell" rowspan="'+nrows+'">'+_acctDocDropHtml(ds,'invoice',_acctDocList(acct,'invoice'))+'</td>';
+        h+='<td class="acct-doc-cell acct-con-cell" rowspan="'+nrows+'">'+_acctDocDropHtml(ds,'contract',_acctDocList(acct,'contract'))+'</td>';
       }
       h+='<td class="sc-act"><button class="sc-edit-btn" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="edit">&#9998;</button></td>';
       h+='</tr>';
@@ -283,15 +277,13 @@ function renderAccountingGuest(yr, mo, mm, days){
   }
 
   if(_acctStatusFilter && !anyFilterMatch){
-    h+='<tr><td colspan="12" class="sc-empty-day" style="text-align:center;padding:16px">No shows with status "'+_acctStatusFilter+'" this month.</td></tr>';
+    h+='<tr><td colspan="11" class="sc-empty-day" style="text-align:center;padding:16px">No shows with status "'+_acctStatusFilter+'" this month.</td></tr>';
   }
 
   h+='<tr class="acct-total-row">';
-  h+='<td><b>'+(_acctStatusFilter?'FILTERED':'MONTH')+' TOTAL</b></td><td></td><td></td><td></td>';
+  h+='<td><b>'+(_acctStatusFilter?'FILTERED':'MONTH')+' TOTAL</b></td><td></td><td></td>';
   h+='<td class="sc-num acct-col-fee"><b>'+$k(totDJ)+'</b></td>';
-  h+='<td class="sc-num acct-col-target">'+$k(totBSM)+'</td>';
-  h+='<td class="sc-num acct-col-bsa '+(totBSA&&totBSM?(totBSA>=totBSM?'hit':'low'):'')+'"><b>'+$k(totBSA)+'</b></td>';
-  h+='<td></td><td></td><td></td><td></td><td></td>';
+  h+='<td colspan="7"></td>';
   h+='</tr></tbody></table>';
 
   document.getElementById('acctBody').innerHTML=h;

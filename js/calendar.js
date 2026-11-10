@@ -1152,8 +1152,8 @@ function _acctGuessPdfPages(file){
 }
 function _acctDocDropHtml(ds, kind, docs){
   var label=kind==='invoice'?'Invoice':'Contract';
-  var h='<div class="acct-doc-drop" data-ds="'+ds+'" data-kind="'+kind+'" data-action="docDrop" title="Drop PDF here ('+label+')">'
-    +'<div class="acct-doc-hint">Drop PDF<br><span style="font-weight:600">multi-page OK</span></div>'
+  var h='<div class="acct-doc-drop" data-ds="'+ds+'" data-kind="'+kind+'" data-action="docDrop" title="Drop one or more '+label+' PDFs">'
+    +'<div class="acct-doc-hint">Drop PDFs<br><span style="font-weight:600">several files OK</span></div>'
     +'<div class="acct-doc-list">';
   (docs||[]).forEach(function(doc,idx){
     var pages=doc.pages!=null?('<span class="acct-doc-pages">'+doc.pages+'p</span>'):'';
@@ -1310,6 +1310,10 @@ function wireAccountingEvents(){
   document.querySelectorAll('#acctBody [data-action="r365"]').forEach(function(chk){
     chk.addEventListener('change',function(){ updateR365(chk, chk.dataset.ds); });
   });
+  document.querySelectorAll('#acctBody [data-action="finStatus"]').forEach(function(sel){
+    _wireDjStatusSelect(sel, function(){ if(typeof faSetFinanceFromSelect==='function') faSetFinanceFromSelect(sel); });
+  });
+  if(typeof wireAccountingDocDrops==='function') wireAccountingDocDrops();
 }
 
 var _acctStatusFilter=null; /* when set, only show rows matching this status */
