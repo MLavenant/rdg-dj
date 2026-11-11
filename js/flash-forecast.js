@@ -353,7 +353,7 @@ function flashPlanSlide(data, n, of){
       +'<td class="fp-varc">'+flashPlanVar(feeNow, feePy, true)+'</td>'
       +'<td class="fp-bs">'+(bsNow!=null?flashPlanMoney(bsNow):'\u2014')+'</td>'
       +'<td>'+(bsPy!=null?flashPlanMoney(bsPy):'\u2014')+'</td>'
-      +'<td class="fp-varc">'+flashPlanVar(bsPy, bsNow, false)+'</td></tr>';
+      +'<td class="fp-varc">'+flashPlanVar(bsNow, bsPy, false)+'</td></tr>';
     if(!rows.length){
       h+='<tr><td class="l fp-na" colspan="10">No performances</td></tr>';
       return;
@@ -373,7 +373,7 @@ function flashPlanSlide(data, n, of){
         +'<td class="fp-varc">'+flashPlanVar(fee, pyFee, true)+'</td>'
         +'<td class="fp-bs">'+flashPlanMoney(bsTarget)+'</td>'
         +'<td>'+(pyBs!=null?flashPlanMoney(pyBs):'\u2014')+'</td>'
-        +'<td class="fp-varc">'+flashPlanVar(pyBs, bsTarget, false)+'</td></tr>';
+        +'<td class="fp-varc">'+flashPlanVar(bsTarget, pyBs, false)+'</td></tr>';
     });
   });
   if(!cells.length) h+='<tr><td class="l" colspan="10">No performances in this window.</td></tr>';
