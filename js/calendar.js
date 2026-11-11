@@ -373,17 +373,17 @@ function fitCalListRows(days){
   if(!body) return;
   var rows=body.querySelectorAll('.sched-tbl tbody tr').length||Math.max(28,days|0);
   var available=Math.max(180,body.clientHeight);
-  var headH=18;
-  var rowH=Math.max(8,Math.floor(((available-headH-8)/rows)*10)/10);
-  var font=Math.max(6.5,Math.min(10,rowH*.68));
-  var mini=Math.max(6,Math.min(8,font-.5));
+  var headH=16;
+  var rowH=Math.max(10,Math.floor(((available-headH-4)/rows)*10)/10);
+  var font=Math.max(8,Math.min(13,rowH*.74));
+  var mini=Math.max(7,Math.min(10.5,font-1));
   var control=Math.max(9,Math.min(18,rowH-1));
   body.style.setProperty('--cal-row-h',rowH+'px');
   body.style.setProperty('--cal-font',font+'px');
   body.style.setProperty('--cal-mini-font',mini+'px');
   body.style.setProperty('--cal-control-h',control+'px');
   body.style.setProperty('--cal-head-h',headH+'px');
-  body.style.setProperty('--cal-head-font',Math.max(6.5,Math.min(8,font))+'px');
+  body.style.setProperty('--cal-head-font',Math.max(7,Math.min(10,font-.5))+'px');
   if(!window._calFitResizeBound){
     window._calFitResizeBound=true;
     window.addEventListener('resize',function(){
@@ -4071,15 +4071,7 @@ function renderSystem(){
   );
 
   var h = '';
-  h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid #0b2e40">'
-    + '<div style="font-size:14px;font-weight:900">People</div>'
-    + '<div style="margin-top:4px;font-size:11px;color:var(--ink3)">Who can sign in, and what each group can do.</div>'
-    + '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px">'
-    + '<div style="background:#0b2e40;color:#fff;border-radius:8px;padding:8px 10px"><b style="display:block;font-size:11px;letter-spacing:.04em;text-transform:uppercase">Super owner</b><span style="display:block;margin-top:4px;font-size:12px">Greg</span><span style="display:block;font-size:10px;opacity:.8">greg@rivieradininggroup.com · all access</span></div>'
-    + '<div style="background:#f4f6f8;border-radius:8px;padding:8px 10px"><b style="display:block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#0b2e40">Admin</b><span style="display:block;margin-top:4px;font-size:12px;line-height:1.45">Takuma<br>Matthias<br>Mika<br>Fabien</span><span style="display:block;font-size:10px;color:#64748b">fabien@rivieradininggroup.com</span></div>'
-    + '<div style="background:#f4f6f8;border-radius:8px;padding:8px 10px"><b style="display:block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#0b2e40">Operators</b><span style="display:block;margin-top:4px;font-size:12px;line-height:1.45">Christophe<br>Hugo</span></div>'
-    + '<div style="background:#f4f6f8;border-radius:8px;padding:8px 10px"><b style="display:block;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#0b2e40">AO</b><span style="display:block;margin-top:4px;font-size:12px;color:#64748b">No one yet. Add people here when you have them.</span></div>'
-    + '</div></div>';
+  h += (typeof signInPeopleCardHtml==='function')?signInPeopleCardHtml():'';
   h += '<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid '+(overallBad?'#ef4444':(overallWarn?'#f59e0b':'#22c55e'))+'">'
     + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">'
     + '<div style="font-size:14px;font-weight:900">Overall</div>'

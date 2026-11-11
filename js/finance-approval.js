@@ -21,7 +21,13 @@ function financeSignedInEmail(){
 }
 function financeCanApprove(){
   if(typeof signInIsOwner==='function' && signInIsOwner()) return true;
-  return !!FINANCE_APPROVERS[financeSignedInEmail()];
+  var email=financeSignedInEmail();
+  if(typeof signInRole==='function'){
+    var role=signInRole(email);
+    if(role==='admin') return true;
+    if(role==='operator'||role==='ao') return false;
+  }
+  return !!FINANCE_APPROVERS[email];
 }
 function unlockFinance(){
   return financeCanApprove();
