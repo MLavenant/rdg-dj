@@ -175,6 +175,13 @@ function flashPlanDelta(n, lowerIsBetter){
   return '<b class="'+cls+'">'+sign+flashPlanMoney(Math.abs(v))+'</b>';
 }
 /* Dollar variance with a small arrow. lowerIsBetter marks a drop in DJ fee as green. */
+function flashPlanStatus(st){
+  st=String(st||'').trim();
+  if(!st||st==='Not set') return '<span class="fp-na">\u2014</span>';
+  if(typeof FA_FIN!=='undefined'&&FA_FIN.indexOf(st)>=0) return '<span class="fp-na">\u2014</span>';
+  var cls=st==='Confirmed'?'fp-st-ok':(st==='Hold 1'?'fp-st-hold':(st==='Offer sent'?'fp-st-offer':''));
+  return '<span class="'+cls+'" title="'+_escHtml(st)+'">'+_escHtml(st)+'</span>';
+}
 function flashPlanVar(now, prior, lowerIsBetter){
   if(now==null||prior==null||!isFinite(+now)||!isFinite(+prior)) return '<span class="fp-na">\u2014</span>';
   var diff=+now-+prior;
@@ -282,7 +289,6 @@ function flashPlanChart(title, groups, series){
       rest.forEach(function(s){ h+=bar(g, s); });
       h+='</div>';
     }
-    if(g.ytd) h+='<div class="fp-ytd-pct">'+flashPlanYtdPct(g, series)+'</div>';
     h+='</div></div>';
   });
   h+='</div><div class="flash-chart-key">';
@@ -331,8 +337,8 @@ function flashPlanSlide(data, n, of){
     {key:'pyBs', name:String(pyYear), cls:'is-py'}
   ])+'</div>';
   h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Performances<em>DJ fees beside '+pyYear+', then bottle service target against '+pyYear+'.</em></div>';
-  h+='<table class="flash-plan-shows"><colgroup><col class="c-date"><col class="c-artist"><col class="c-py"><col class="c-yr"><col class="c-yr"><col class="c-var"><col class="c-yr"><col class="c-yr"><col class="c-var"></colgroup>'
-    +'<thead><tr class="flash-plan-group"><th class="l" rowspan="2">Date</th><th class="l" rowspan="2">'+planYear+' artist</th><th class="l fp-py" rowspan="2">PY</th><th class="fp-fees" colspan="3">DJ fees</th><th class="fp-bs" colspan="3">Bottle service</th></tr>'
+  h+='<table class="flash-plan-shows"><colgroup><col class="c-date"><col class="c-artist"><col class="c-st"><col class="c-py"><col class="c-yr"><col class="c-yr"><col class="c-var"><col class="c-yr"><col class="c-yr"><col class="c-var"></colgroup>'
+    +'<thead><tr class="flash-plan-group"><th class="l" rowspan="2">Date</th><th class="l" rowspan="2">'+planYear+' artist</th><th class="l fp-st" rowspan="2">Status</th><th class="l fp-py" rowspan="2">PY</th><th class="fp-fees" colspan="3">DJ fees</th><th class="fp-bs" colspan="3">Bottle service</th></tr>'
     +'<tr><th>'+planYear+'</th><th class="fp-pyh">PY</th><th class="fp-varc">Var.</th>'
     +'<th class="fp-bs">'+planYear+'</th><th class="fp-pyh">PY</th><th class="fp-varc">Var.</th></tr></thead><tbody>';
   cells.forEach(function(c){
@@ -341,7 +347,7 @@ function flashPlanSlide(data, n, of){
     var feePy=c.py&&c.py.fee!=null?+c.py.fee:null;
     var bsNow=c.bsT!=null?+c.bsT:null;
     var bsPy=c.py&&c.py.bs!=null?+c.py.bs:null;
-    h+='<tr class="flash-plan-month"><td class="l" colspan="3"><b>'+_escHtml(c.month.label)+'</b></td>'
+    h+='<tr class="flash-plan-month"><td class="l" colspan="4"><b>'+_escHtml(c.month.label)+'</b></td>'
       +'<td>'+(feeNow!=null?flashPlanMoney(feeNow):'\u2014')+'</td>'
       +'<td>'+(feePy!=null?flashPlanMoney(feePy):'\u2014')+'</td>'
       +'<td class="fp-varc">'+flashPlanVar(feeNow, feePy, true)+'</td>'
@@ -349,7 +355,7 @@ function flashPlanSlide(data, n, of){
       +'<td>'+(bsPy!=null?flashPlanMoney(bsPy):'\u2014')+'</td>'
       +'<td class="fp-varc">'+flashPlanVar(bsPy, bsNow, false)+'</td></tr>';
     if(!rows.length){
-      h+='<tr><td class="l fp-na" colspan="9">No performances</td></tr>';
+      h+='<tr><td class="l fp-na" colspan="10">No performances</td></tr>';
       return;
     }
     rows.forEach(function(r){
@@ -360,6 +366,7 @@ function flashPlanSlide(data, n, of){
       var fee=r.fee!=null&&isFinite(+r.fee)?+r.fee:null;
       h+='<tr><td class="l"><b>'+(typeof _bpDay==='function'?_bpDay(r.d):_escHtml(r.d))+'</b></td>'
         +'<td class="l fp-who"><b class="fp-artist">'+_escHtml(r.dj||'TBD')+'</b></td>'
+        +'<td class="fp-st">'+flashPlanStatus(r.status)+'</td>'
         +'<td class="l fp-py">'+(ly&&ly.dj?_escHtml(ly.dj):'<span class="fp-na">\u2014</span>')+'</td>'
         +'<td>'+(fee!=null?flashPlanMoney(fee):'\u2014')+'</td>'
         +'<td>'+(pyFee!=null?flashPlanMoney(pyFee):'\u2014')+'</td>'
@@ -369,7 +376,7 @@ function flashPlanSlide(data, n, of){
         +'<td class="fp-varc">'+flashPlanVar(pyBs, bsTarget, false)+'</td></tr>';
     });
   });
-  if(!cells.length) h+='<tr><td class="l" colspan="9">No performances in this window.</td></tr>';
+  if(!cells.length) h+='<tr><td class="l" colspan="10">No performances in this window.</td></tr>';
   h+='</tbody></table>';
   h+='</div>';
   h+='<div class="bp-deck-ft"><span>Prepared '+(typeof _bpFmtDate==='function'?_escHtml(_bpFmtDate(_bpNow())):'')+'</span><span>Riviera Dining Group \u00b7 Entertainment</span></div>';
