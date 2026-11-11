@@ -89,6 +89,7 @@ function renderCal(){
   h+='<th class="sc-ev">Event</th>';
   h+='<th class="sc-date">Date</th>';
   h+='<th class="sc-dj">DJ Guest</th>';
+  h+='<th class="sc-vip" title="Click a cell to leave a VIP comment. A comment from the same night last year stays visible here.">VIP Comment</th>';
   if(finCol) h+='<th class="acct-status-hd sc-fin-st" title="Set from Finance Approval">Finance Status</th>';
   h+='<th class="acct-status-hd sc-dj-st">DJ Status</th>';
   h+='<th class="sc-3d" title="Open 3D floor plan with tier pricing">3D</th>';
@@ -131,7 +132,9 @@ function renderCal(){
       h+='<tr class="'+dc+'" data-cal-ds="'+ds+'" ondragover="swDragOver(event)" ondragleave="swDragLeave(event)" ondrop="swDropOnDate(event,\''+ds+'\')">';
       h+='<td class="sc-ev-cell">'+_evCellHtml(evLabel, ds)+'</td>';
       h+='<td class="sc-date-cell">'+dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
-      h+='<td colspan="'+(finCol?9:8)+'" class="sc-empty-day"><button type="button" class="sc-add-inline" data-action="addShow" data-ds="'+ds+'">+ Add show</button></td>';
+      h+='<td class="sc-empty-day"><button type="button" class="sc-add-inline" data-action="addShow" data-ds="'+ds+'">+ Add show</button></td>';
+      h+=_vipCellHtml(null, -1, '', pyMap[ds]||pyBlank);
+      h+='<td colspan="'+(finCol?8:7)+'" class="sc-empty-day"></td>';
       h+='<td class="sc-sep"></td>';
       /* Show prior-year match on empty days so planners still see last year's lineup */
       h+=_pyCellsHtml(pyMap[ds]||pyBlank);
@@ -170,6 +173,7 @@ function renderCal(){
           +'<span class="dj-fee-inline">'+$k(fee)+'</span>'
           +(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')
           +'</td>';
+        h+=_vipCellHtml(r, idx, showUid, ri===0 ? (py||pyBlank) : null);
         var djSt=getShowDjStatus(r, ds)||'';
         if(finCol){
           h+='<td class="acct-status-cell sc-fin-cell"><div class="acct-status-wrap">'+faFinanceSelectHtml(r, ds, idx)+'</div></td>';
@@ -233,6 +237,26 @@ function renderCal(){
   }
 }
 
+function _vipEsc(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
+}
+/* Own note if this year has one; otherwise the same night last year. Click edits this year's note only. */
+function _vipCellHtml(r, idx, uid, py){
+  var own=r&&r.vipNote?String(r.vipNote).trim():'';
+  var ly=py&&py.py_vip?String(py.py_vip).trim():'';
+  var shown=own||ly;
+  if(!r && !shown) return '<td class="sc-vip"></td>';
+  var cls='vip-link';
+  if(own) cls+=' has-note';
+  else if(ly) cls+=' vip-ly';
+  var title=own||'Click to leave a VIP comment';
+  if(ly && ly!==own) title=(own?(own+' · '):'')+'Last year: '+ly;
+  var label=shown?_vipEsc(shown):(r?'+ VIP':'');
+  var lyMark=(!own && ly)?'<span class="vip-ly-tag">LY</span> ':'';
+  var click=r?(' data-action="vipNote" data-show-idx="'+(idx|0)+'" data-uid="'+_vipEsc(uid)+'"'):'';
+  return '<td class="sc-vip"><span class="'+cls+'"'+click+' title="'+_vipEsc(title)+'">'+lyMark+label+'</span></td>';
+}
+
 /* Reliable click-to-edit (delegation). Avoids broken inline handlers and drag-vs-click fights. */
 var _PAST_ROI_EDIT_PASSWORD='lex';
 function editPastRoiTarget(idx, uid){
@@ -263,8 +287,8 @@ function editPastRoiTarget(idx, uid){
 }
 function wireCalEditClicks(){
   var body=document.getElementById('calBody');
-  if(!body || body._calEditWired===3) return;
-  body._calEditWired=3;
+  if(!body || body._calEditWired===4) return;
+  body._calEditWired=4;
   body.addEventListener('click', function(e){
     var roiEl=e.target.closest('[data-action="editPastRoi"]');
     if(roiEl && body.contains(roiEl)){
@@ -280,6 +304,14 @@ function wireCalEditClicks(){
       e.stopPropagation();
       var ds=addEl.getAttribute('data-ds')||'';
       if(ds && typeof openAddModal==='function') openAddModal(ds);
+      return;
+    }
+    var vipEl=e.target.closest('[data-action="vipNote"]');
+    if(vipEl && body.contains(vipEl)){
+      e.preventDefault();
+      e.stopPropagation();
+      var vipIdx=parseInt(vipEl.getAttribute('data-show-idx'),10);
+      if(typeof editVipNote==='function') editVipNote(isFinite(vipIdx)?vipIdx:-1, vipEl.getAttribute('data-uid')||'');
       return;
     }
     var addEv=e.target.closest('[data-action="addEvent"]');
@@ -324,6 +356,7 @@ function initCalColResize(){
     var natural=th.getBoundingClientRect().width||70;
     if(keys[i]==='py-py-dj' && !saved[keys[i]]) natural=Math.max(145,natural);
     if(keys[i]==='current-3d' && !saved[keys[i]]) natural=34;
+    if(keys[i]==='current-vip-comment' && !saved[keys[i]]) natural=Math.max(148, natural);
     return Math.round(saved[keys[i]] || natural);
   });
   table.style.tableLayout='fixed';
@@ -373,7 +406,7 @@ function fitCalListRows(days){
   if(!body) return;
   var rows=body.querySelectorAll('.sched-tbl tbody tr').length||Math.max(28,days|0);
   var available=Math.max(180,body.clientHeight);
-  var headH=16;
+  var headH=20;
   var rowH=Math.max(10,Math.floor(((available-headH-4)/rows)*10)/10);
   var font=Math.max(8,Math.min(13,rowH*.74));
   var mini=Math.max(7,Math.min(10.5,font-1));
@@ -383,7 +416,7 @@ function fitCalListRows(days){
   body.style.setProperty('--cal-mini-font',mini+'px');
   body.style.setProperty('--cal-control-h',control+'px');
   body.style.setProperty('--cal-head-h',headH+'px');
-  body.style.setProperty('--cal-head-font',Math.max(7,Math.min(10,font-.5))+'px');
+  body.style.setProperty('--cal-head-font',Math.max(10,Math.min(12,font+1))+'px');
   if(!window._calFitResizeBound){
     window._calFitResizeBound=true;
     window.addEventListener('resize',function(){

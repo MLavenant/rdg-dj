@@ -188,7 +188,7 @@ function _schedShowOn(venue, dateStr){
   return best;
 }
 function _pyFieldsFromShow(m){
-  if(!m) return {py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
+  if(!m) return {py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null,py_vip:null};
   var fee=m.fee||m.cost||null;
   var tgt=(typeof showTargets==='function')?showTargets(m):{bs_m:m.bs_m,roi_t:m.roi_t};
   var bsM=tgt.bs_m!=null?tgt.bs_m:m.bs_m;
@@ -197,7 +197,8 @@ function _pyFieldsFromShow(m){
   if(beat==null && m.bs_a!=null && bsM!=null) beat=m.bs_a>=bsM?1:0;
   return {
     py_dj:m.dj, py_fee:fee, py_bs_m:bsM, py_bs_a:m.bs_a||null,
-    py_roi_t:roiT, py_roi_a:m.roi_a||null, py_beat:beat, py_date:m.d||null
+    py_roi_t:roiT, py_roi_a:m.roi_a||null, py_beat:beat, py_date:m.d||null,
+    py_vip:m.vipNote||null
   };
 }
 function _pyShowKey(r){ return (r.d||'')+'|'+(r.dj||''); }
@@ -211,14 +212,14 @@ function _sameWeekday(a, b){
 var _pyMapCache={key:'', map:null};
 function clearPyMapCache(){ _pyMapCache={key:'', map:null}; }
 function buildPyMapForMonth(venue, yr, mm){
-  var cacheKey=venue+'|'+yr+'|'+mm+'|445';
+  var cacheKey=venue+'|'+yr+'|'+mm+'|446';
   if(_pyMapCache.key===cacheKey && _pyMapCache.map) return _pyMapCache.map;
   var map={};
   var used={};
   var mi=fiscalMonthIndexFromMm(mm);
   var dates=datesInFiscalPeriod(yr, mi);
   var pyDates=datesInFiscalPeriod(yr-1, mi);
-  var empty={py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
+  var empty={py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null,py_vip:null};
 
   function claim(ds, show){
     if(!show) return false;
@@ -328,7 +329,7 @@ function resolvePyFields(venue, dateStr, baked){
     if(map[dateStr] && map[dateStr].py_dj) return map[dateStr];
   }
   /* Do not fall back to baked py_* ? it caused duplicate PY names across days. */
-  return {py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
+  return {py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null,py_vip:null};
 }
 function _pyCellsHtml(py, rowspan){
   var pyNm=djLabel(py.py_dj, '');

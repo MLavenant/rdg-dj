@@ -392,10 +392,20 @@ function openDjShowHistory(name){
     +'</div>';
   document.body.appendChild(modal);
 }
-function editVipNote(idx){
-  var r=SCHED[idx]; if(!r) return;
+function editVipNote(idx, uid){
+  var r=null;
+  if(typeof _findSchedByUidOrIdx==='function') r=_findSchedByUidOrIdx(uid, idx);
+  if(!r && idx!=null && idx>=0 && idx<SCHED.length) r=SCHED[idx];
+  if(!r) return;
   var cur=(r.vipNote||'');
-  var next=prompt('VIP note:', cur);
+  var ly='';
+  try{
+    var py=(typeof resolvePyFields==='function')?resolvePyFields(r.v||r.venue, r.d):null;
+    ly=py&&py.py_vip?String(py.py_vip):'';
+  }catch(eLy){}
+  var msg='VIP comment';
+  if(ly && ly!==cur) msg+=' — last year: '+ly;
+  var next=prompt(msg, cur);
   if(next===null) return;
   r.vipNote=next.trim()||null;
   /* VIP only — never full persistSchedShow (that could rewrite fee/DJ from stale local). */

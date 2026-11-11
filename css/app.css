@@ -1282,7 +1282,7 @@ body.res-view #venTabs,body.res-view #yrPills{display:none!important}
 .sc-3d-btn:hover{background:#5b368c;color:#fff;border-color:#5b368c}
 #view-calendar.cal-list-fit #calBody{overflow-x:auto!important;overflow-y:hidden!important}
 #view-calendar.cal-list-fit .sched-tbl{height:100%}
-#view-calendar.cal-list-fit .sched-tbl thead th{height:var(--cal-head-h,20px);padding:2px 6px!important;font-size:var(--cal-head-font,8px)!important;line-height:1!important}
+#view-calendar.cal-list-fit .sched-tbl thead th{height:var(--cal-head-h,20px);padding:2px 6px!important;font-size:var(--cal-head-font,11px)!important;line-height:1!important;color:#111!important;font-weight:800!important}
 #view-calendar.cal-list-fit .sched-tbl .sc-sep{width:3px!important;min-width:3px!important;max-width:3px!important;padding:0!important}
 #view-calendar.cal-list-fit .sched-tbl tbody tr{height:var(--cal-row-h,18px)!important;max-height:var(--cal-row-h,18px)!important}
 #view-calendar.cal-list-fit .sched-tbl tfoot td{height:auto!important;max-height:none!important;overflow:visible!important;background:#0b2e40!important;color:#fff!important;padding:3px 5px!important;vertical-align:top!important;font-size:8px!important;line-height:1.15!important;white-space:normal!important}
@@ -1301,7 +1301,7 @@ body.res-view #venTabs,body.res-view #yrPills{display:none!important}
 #view-calendar.cal-list-fit .sc-today-badge{font-size:var(--cal-mini-font,7px);padding:0 2px}
 #view-calendar.cal-list-fit .sc-add-inline{height:var(--cal-control-h,16px);padding:0 6px;font-size:var(--cal-mini-font,7px);line-height:1}
 #view-calendar.cal-list-fit .sc-appr-btn{height:13px;padding:0 3px;font-size:7px}
-#view-calendar.cal-list-fit .vip-link{font-size:var(--cal-mini-font,7px);line-height:1}
+#view-calendar.cal-list-fit .vip-link{font-size:var(--cal-font,11px);line-height:1;max-width:none;color:#111;font-weight:700}
 #view-calendar.cal-list-fit .sc-3d-btn{height:var(--cal-control-h,16px);padding:0 4px;font-size:var(--cal-mini-font,7px);line-height:1}
 #view-calendar.cal-list-fit .sc-ev-label{box-sizing:border-box;height:var(--cal-control-h,16px);padding:0 3px;font-size:var(--cal-mini-font,7px);line-height:var(--cal-control-h,16px)}
 #view-calendar.cal-list-fit .sc-add-event{box-sizing:border-box;height:var(--cal-control-h,16px);padding:0 3px;font-size:var(--cal-mini-font,7px);line-height:1}
@@ -1666,11 +1666,13 @@ model-viewer{--min-hotspot-opacity:0}
 
 .acct-status-hd{min-width:88px;max-width:110px;width:100px}
 .sc-dj-st{width:110px;min-width:100px;max-width:120px}
-.sc-vip{width:78px;min-width:72px;max-width:78px;text-align:left;vertical-align:middle;padding:4px 4px!important}
+.sc-vip{width:148px;min-width:120px;text-align:left;vertical-align:middle;padding:4px 4px!important}
+.vip-ly-tag{display:inline-block;margin-right:3px;font-size:8px;font-weight:800;letter-spacing:.04em;color:#64748b;font-style:normal}
+.vip-link.vip-ly{font-style:italic}
 .sc-appr-btn{display:inline-block;max-width:64px;font-size:8px;font-weight:800;line-height:1;padding:2px 4px;border-radius:5px;border:1px solid #0f2a4a;background:#fff;color:#0f2a4a;cursor:pointer;font-family:inherit}
 .sc-appr-btn.has-note{background:#0f2a4a;color:#fff}
-.vip-link{display:block;max-width:70px;font-size:9px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;color:var(--ink3)}
-.vip-link.has-note{color:var(--ink2);font-weight:700}
+.vip-link{display:block;max-width:none;font-size:11px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;color:#111}
+.vip-link.has-note{color:#111;font-weight:800}
 .sched-tbl .acct-status-sel{min-width:96px;background:#fff;border:1px solid #93c5fd}
 .acct-status-sel{width:100%;max-width:108px;font-size:9px;font-weight:600;padding:4px 4px;border-radius:6px;border:0.5px solid var(--rule);outline:none;font-family:inherit;cursor:pointer}
 .acct-status-wrap{display:flex;flex-direction:column;align-items:stretch;gap:3px;min-width:88px;max-width:112px}
