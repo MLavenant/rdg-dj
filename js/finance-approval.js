@@ -82,21 +82,16 @@ function faFinanceTone(st){
   if(st==='Finance declined') return 'fa-fs-no';
   return 'fa-fs-none';
 }
-function faDjLocked(show){
-  if(!faInScope(show)) return false;
-  if(financeCanApprove()) return false;
-  return faFinanceStatus(show)!=='Finance Approved';
+/* Paused until notice: DJ status is editable on every year and venue, with or without Finance Approval. */
+function faDjLocked(){
+  return false;
 }
 function faStatusOptions(show, current){
   return (typeof ACCT_DJ_STATUS!=='undefined')?ACCT_DJ_STATUS.slice():FA_LIVE.slice();
 }
-/* Offer sent, Hold 1, and Confirmed wait for Finance Approved, except for the approvers. */
-function faBlockLiveStatus(show, next, prev){
-  if(!faInScope(show)) return false;
-  if(FA_LIVE.indexOf(next)<0) return false;
-  if(!faDjLocked(show)) return false;
-  try{ alert('DJ status unlocks once Finance Approval marks this night Finance Approved.'); }catch(e){}
-  return true;
+/* Paused until notice. The status save still goes through the existing DJ-status-only sync. */
+function faBlockLiveStatus(){
+  return false;
 }
 function faStatusSelectOptionsHtml(show, djSt){
   var cur=FA_FIN.indexOf(djSt)>=0?'':String(djSt||'');
