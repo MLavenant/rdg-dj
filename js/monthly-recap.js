@@ -502,13 +502,12 @@ function mrDetailPage(p, meta){
   h+='</tbody></table></div></div>';
   return h;
 }
-/* November MTD on the meeting pack: the current month, through today, rolling after the 25th. */
+/* November MTD on the meeting pack: the current month, through yesterday. Today is still open. */
 function wmActualMonth(){
   var info=(typeof wmReportingAnchor==='function')?wmReportingAnchor():{year:(typeof curYr!=='undefined'?curYr:2026), monthIndex:(typeof curM!=='undefined'?curM:10)};
   var meta=mrPeriodMeta(info.year, info.monthIndex+1);
   var today=(typeof TODAY!=='undefined'&&TODAY)?String(TODAY).slice(0,10):(typeof miamiToday==='function'?miamiToday():meta.to);
-  var through=today;
-  if(meta.from&&through<meta.from) through=meta.from;
+  var through=today?wmAddDays(today, -1):meta.to;
   if(meta.to&&through>meta.to) through=meta.to;
   meta.to=through;
   meta.mtd=true;
