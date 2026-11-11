@@ -3673,7 +3673,12 @@ var _FCAST_EMAIL_CC = [
   'gabrielle@rivieradininggroup.com',
   'w.fily@casa-neos.com',
   'anzou@casaneoslounge.com',
-  'goran@milarestaurant.com'
+  'goran@milarestaurant.com',
+  's.aubert@milarestaurant.com',
+  'm.compper@milarestaurant.com',
+  'a.rey@casa-neos.com',
+  'l.harzic@casaneoslounge.com',
+  'raymond@casa-neos.com'
 ];
 
 function _fcastVenueShortFile(v){
