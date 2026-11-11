@@ -41,6 +41,10 @@ function faInScope(show){
   if(FA_VENUES.indexOf(show.v||show.venue)<0) return false;
   return faFiscalYear(show.d)===FA_YEAR;
 }
+/* Calendar column for every year at the finance venues. Approval queue and the DJ-status lock stay on 2027. */
+function faFinanceTrack(show){
+  return !!(show && FA_VENUES.indexOf(show.v||show.venue)>=0);
+}
 function faYearOn(venue, year){
   return FA_VENUES.indexOf(venue)>=0 && +year===FA_YEAR;
 }
@@ -63,7 +67,7 @@ function faDjStatus(show){
   return FA_FIN.indexOf(raw)>=0?'':raw;
 }
 function faFinanceStatus(show){
-  if(!faInScope(show)) return '';
+  if(!faFinanceTrack(show)) return '';
   var rec=FINANCE_STATUS[faKey(show)];
   if(rec&&typeof rec==='object'&&rec.s!=null) return FA_FIN.indexOf(rec.s)>=0?rec.s:'';
   var raw=faRawDjStatus(show);
@@ -135,7 +139,7 @@ function faRefreshViews(){
   else if((curView==='calendar'||curView==='accounting') && typeof _calRequestRefresh==='function') _calRequestRefresh(false);
 }
 function faSetFinance(show, status, why){
-  if(!faInScope(show)) return false;
+  if(!faFinanceTrack(show)) return false;
   var key=faKey(show);
   if(!key) return false;
   var rec={
@@ -155,7 +159,7 @@ function faSetFinanceFromSelect(sel){
   if(!sel) return;
   var r=faFindShow(sel.getAttribute('data-uid'));
   var next=sel.value||'';
-  if(!r||!faInScope(r)){ faRefreshViews(); return; }
+  if(!r||!faFinanceTrack(r)){ faRefreshViews(); return; }
   var prev=faFinanceStatus(r);
   if(prev===next) return;
   var terminal=next==='Finance Approved'||next==='Finance declined'||prev==='Finance Approved'||prev==='Finance declined';
@@ -228,7 +232,7 @@ function faForGreg(show){
   return fee>budget*0.05;
 }
 function faCanDecide(show){
-  if(!financeCanApprove()||!show||!faInScope(show)) return false;
+  if(!financeCanApprove()||!show||!faFinanceTrack(show)) return false;
   return faGregView()?faForGreg(show):!faForGreg(show);
 }
 function faWhyGreg(show){

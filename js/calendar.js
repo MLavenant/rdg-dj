@@ -84,7 +84,7 @@ function renderCal(){
   var pyMap=buildPyMapForMonth(curV, yr, mm);
   var pyBlank={py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
 
-  var finCol=typeof faYearOn==='function' && faYearOn(curV, yr);
+  var finCol=typeof FA_VENUES!=='undefined' && FA_VENUES.indexOf(curV)>=0;
   var h='<table class="sched-tbl"><thead><tr>';
   h+='<th class="sc-ev">Event</th>';
   h+='<th class="sc-date">Date</th>';
@@ -406,7 +406,7 @@ function fitCalListRows(days){
   if(!body) return;
   var rows=body.querySelectorAll('.sched-tbl tbody tr').length||Math.max(28,days|0);
   var available=Math.max(180,body.clientHeight);
-  var headH=20;
+  var headH=16;
   var rowH=Math.max(10,Math.floor(((available-headH-4)/rows)*10)/10);
   var font=Math.max(8,Math.min(13,rowH*.74));
   var mini=Math.max(7,Math.min(10.5,font-1));
@@ -416,7 +416,8 @@ function fitCalListRows(days){
   body.style.setProperty('--cal-mini-font',mini+'px');
   body.style.setProperty('--cal-control-h',control+'px');
   body.style.setProperty('--cal-head-h',headH+'px');
-  body.style.setProperty('--cal-head-font',Math.max(10,Math.min(12,font+1))+'px');
+  body.style.setProperty('--cal-name-font',Math.max(9,Math.min(11,font))+'px');
+  body.style.setProperty('--cal-head-font',Math.max(7,Math.min(10,font-.5))+'px');
   if(!window._calFitResizeBound){
     window._calFitResizeBound=true;
     window.addEventListener('resize',function(){
