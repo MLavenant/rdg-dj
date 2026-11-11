@@ -751,26 +751,33 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .flash-plan .flash-py{display:inline;margin:0 0 0 6px;background:none;color:#64748b}
 .flash-plan-sum,.flash-plan-shows{width:100%;border-collapse:collapse;margin:0 0 8px}
 .flash-plan .flash-chart,.flash-plan .flash-chart-row,.flash-plan .flash-plan-shows,.flash-plan .bp-deck-sec{width:100%;max-width:none;box-sizing:border-box}
-.flash-plan .flash-chart-row{gap:12px}
+.flash-plan .flash-chart{margin:0}
+.flash-plan .fp-chart-box{border:1px solid #cbd5e1;border-radius:8px;padding:3px 8px 2px;margin:3px 0 4px}
+.flash-plan .flash-chart-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;align-items:end}
 .flash-plan .flash-chart-m{align-items:stretch}
-.flash-plan .flash-chart-m em{display:block;margin:0 0 4px;font-size:14px;font-weight:800;text-align:center;color:#0b2e40}
-.flash-plan .flash-chart-key{margin-top:6px}
-.flash-plan .flash-chart-bars{width:auto;justify-content:center;gap:6px;height:78px}
-.flash-plan .flash-chart-pair{flex:0 1 auto;width:auto;height:100%;gap:6px}
-.flash-plan .flash-chart-bar{flex:0 0 36px;width:36px;max-width:36px;min-width:0}
+.flash-plan .flash-chart-m em{display:block;margin:0 0 2px;font-size:12px;font-weight:800;text-align:center;color:#0b2e40}
+.flash-plan .flash-chart-key{margin-top:2px}
+.flash-plan .flash-chart-bars{width:auto;justify-content:center;gap:4px;height:62px}
+.flash-plan .flash-chart-pair{flex:0 1 auto;width:auto;height:100%;gap:4px}
+.flash-plan .flash-chart-bar{flex:0 0 30px;width:30px;max-width:30px;min-width:0}
+.flash-plan .fp-ytd-pct{display:flex;flex-direction:column;justify-content:center;align-self:center;gap:1px;margin-left:2px;font-size:9px;font-weight:750;line-height:1.15;color:#64748b;white-space:nowrap}
+.flash-plan .fp-pct{font-style:normal;font-size:11px;font-weight:800}
 .flash-plan .flash-plan-shows{table-layout:fixed;width:100%}
-.flash-plan-shows col.c-date{width:12%}
-.flash-plan-shows col.c-artist{width:18%}
-.flash-plan-shows col.c-py{width:16%}
+.flash-plan-shows col.c-date{width:10%}
+.flash-plan-shows col.c-artist{width:14%}
+.flash-plan-shows col.c-py{width:13%}
 .flash-plan-shows col.c-yr{width:7%}
-.flash-plan-shows col.c-var{width:13%}
+.flash-plan-shows col.c-var{width:17.5%}
 .flash-plan .fp-book{display:flex;flex-direction:column;gap:1px;min-width:0;white-space:normal}
 .flash-plan .fp-book b{display:flex;align-items:center;gap:5px;min-width:0;font-size:12px;font-weight:750;line-height:1.2}
 .flash-plan .fp-book .fp-nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .flash-plan .fp-book > span{display:block;font-size:11px;font-weight:700;color:#64748b;line-height:1.15}
 .flash-plan .fp-artist{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:750}
 .flash-plan th.fp-py,.flash-plan th.fp-pyh,.flash-plan td.fp-py{font-style:italic}
-.flash-plan td.fp-py{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#334155}
+.flash-plan .flash-plan-shows th.fp-py,.flash-plan .flash-plan-shows td.fp-py{background:#e9eef3}
+.flash-plan td.fp-who{padding-right:2px}
+.flash-plan td.fp-py{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#334155;padding-left:4px}
+.flash-plan .flash-plan-shows td.fp-varc,.flash-plan .flash-plan-shows th.fp-varc,.flash-plan-month td.fp-varc{text-align:left;padding-left:2px}
 .flash-plan .fp-var{display:inline-flex;align-items:center;justify-content:flex-end;gap:3px;font-style:normal;font-size:11px;font-weight:800;line-height:1;white-space:nowrap}
 .flash-plan .fp-var i{font-style:normal;font-size:9px;line-height:1}
 .flash-plan .fp-under{margin-top:1px}
@@ -787,7 +794,7 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .flash-plan-shows th.fp-fees{text-align:center;background:#f8fafc}
 .flash-plan-shows th.fp-bs,.flash-plan-shows td.fp-bs{border-left:2px solid #0b2e40}
 .flash-plan-shows .fp-month-vs{text-align:left;font-weight:800;color:#0b2e40}
-.flash-plan .flash-plan-shows th,.flash-plan .flash-plan-shows td{padding:2px 4px;font-size:11px}
+.flash-plan .flash-plan-shows th,.flash-plan .flash-plan-shows td{padding:1px 3px;font-size:11px}
 .flash-plan .flash-plan-shows td,.flash-plan .flash-plan-shows th{overflow:hidden;vertical-align:middle}
 .flash-plan .flash-plan-shows td.l,.flash-plan .flash-plan-shows th.l{text-align:left}
 .flash-plan-sum th,.flash-plan-shows th{font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#64748b;text-align:right;padding:7px 8px;border-bottom:1px solid #e2e8f0;font-weight:700}
@@ -826,7 +833,7 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .flash-chart-key .is-target:before{background:#f5c542}
 .flash-chart-key .is-py:before{background:#93c5fd}
 .flash-plan-total td{border-top:2px solid #0b2e40;border-bottom:none;font-weight:800}
-.flash-plan-month td{background:#f8fafc;text-align:right;font-weight:800;padding-top:4px}
+.flash-plan-month td{background:#f8fafc;text-align:right;font-weight:800;padding-top:2px}
 .flash-plan-month td.l{text-align:left}
 #vipBody > .vip-print-page{width:100%;align-self:stretch}
 #vipBody > .vip-print-page .vip-perf-block,
@@ -977,6 +984,7 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 #view-accounting.acct-others-mode .sc-date-cell{white-space:nowrap;text-overflow:ellipsis}
 /* Accounting: one header color, a line between every column, a heavier line between groups */
 #view-accounting:not(.acct-others-mode) .acct-tbl thead th{
+  position:sticky;top:0;z-index:3;
   background:#f3f0ea!important;color:#0b2e40!important;font-weight:800!important;
   letter-spacing:.03em;border-bottom:2px solid #0b2e40!important;box-shadow:none!important
 }
@@ -996,7 +1004,7 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 #view-accounting:not(.acct-others-mode) .acct-tbl td.acct-inv-cell{
   box-shadow:inset 2px 0 0 #0b2e40, inset 0 -1px 0 #d9d3c8;
 }
-#view-accounting:not(.acct-others-mode) #acctBody{overflow:hidden!important}
+#view-accounting:not(.acct-others-mode) #acctBody{overflow-x:auto!important;overflow-y:auto!important;-webkit-overflow-scrolling:touch}
 #view-accounting:not(.acct-others-mode) .acct-tbl tbody tr{height:var(--acct-guest-row-h,auto)}
 #view-accounting:not(.acct-others-mode) .acct-doc-drop{min-height:0;height:100%;padding:3px}
 #view-accounting:not(.acct-others-mode) .acct-note-inp{min-height:0;height:100%;max-height:calc(var(--acct-guest-row-h, 48px) - 8px)}

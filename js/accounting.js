@@ -12,11 +12,19 @@ function renderAccounting(){
   var addWrap=document.getElementById('acctAddShowWrap');
   if(addWrap) addWrap.style.display=(acctSubTab==='guest' && !isAccountingOnlyVenue(curAcctV))?'':'none';
 
+  var liveToday=(typeof miamiToday==='function')?miamiToday():'';
+  if(liveToday && typeof TODAY!=='undefined' && liveToday!==TODAY && typeof recalcSchedStatuses==='function') recalcSchedStatuses();
+  else if(liveToday && typeof TODAY!=='undefined') TODAY=liveToday;
   var yr=curYr, mo=acctM;
   var mm=(mo+1<10?'0':'')+(mo+1);
   var fiscalDates=datesInFiscalPeriod(yr, mo);
   var days=fiscalDates.length;
-  document.getElementById('acctHd').textContent=MN_FULL[mo]+' '+yr+' ('+fiscalPeriodShortRange(yr, mo)+') - '+curAcctV;
+  var asOf='';
+  if(typeof TODAY!=='undefined' && TODAY){
+    var asOfDate=_parseYmd(TODAY);
+    asOf=' \u00b7 as of '+MN_FULL[asOfDate.getMonth()]+' '+asOfDate.getDate()+', '+asOfDate.getFullYear();
+  }
+  document.getElementById('acctHd').textContent=MN_FULL[mo]+' '+yr+' ('+fiscalPeriodShortRange(yr, mo)+') - '+curAcctV+asOf;
   updateTopbarLogo(curAcctV||curV);
 
   var sl='<div class="month-slider" id="acctSliderInner">';
@@ -295,10 +303,9 @@ function fitAccountingGuestRows(){
   var available=body.clientHeight;
   if(available<80) return;
   var rowH=Math.floor((available-headH-2)/rows);
-  rowH=Math.max(30, Math.min(64, rowH));
+  rowH=Math.max(48, Math.min(64, rowH));
   body.style.setProperty('--acct-guest-row-h', rowH+'px');
-  if(table.scrollHeight>available+2 && rowH<=30) body.style.overflowY='auto';
-  else body.style.overflowY='hidden';
+  body.style.overflowY='auto';
   if(!window._acctGuestResizeBound){
     window._acctGuestResizeBound=true;
     window.addEventListener('resize',function(){

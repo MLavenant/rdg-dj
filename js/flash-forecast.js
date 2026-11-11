@@ -192,24 +192,75 @@ function flashPlanBook(name, fee, status, varianceHtml, where){
     +below
     +(st?'<i>'+_escHtml(st)+'</i>':'')+'</div>';
 }
+function flashPlanPct(now, base, lowerIsBetter){
+  if(now==null||base==null||!isFinite(+now)||!isFinite(+base)||!(+base)) return '<span class="fp-na">\u2014</span>';
+  var pct=((+now)-(+base))/Math.abs(+base)*100;
+  if(Math.abs(pct)<0.05) return '<b class="fp-pct">0%</b>';
+  var good=lowerIsBetter?pct<0:pct>0;
+  var sign=pct>0?'+':'\u2212';
+  var abs=Math.abs(pct);
+  var num=abs>=10?String(Math.round(abs)):(Math.round(abs*10)/10).toFixed(1);
+  return '<b class="fp-pct '+(good?'fp-good':'fp-bad')+'">'+sign+num+'%</b>';
+}
+function flashPlanYtdPct(g, series){
+  var keys=(series||[]).map(function(s){ return s.key; });
+  if(keys.indexOf('spend')>=0){
+    return '<span>vs target '+flashPlanPct(g.spend, g.target, true)+'</span><span>vs PY '+flashPlanPct(g.spend, g.py, true)+'</span>';
+  }
+  return '<span>vs target '+flashPlanPct(g.bsT, g.bsBudget, false)+'</span><span>vs PY '+flashPlanPct(g.bsT, g.pyBs, false)+'</span>';
+}
+function flashPlanYtdGroup(venue, cells, groups){
+  var ytd={label:'YTD', ytd:true, spend:null, target:null, py:null, bsT:null, pyBs:null, bsBudget:null};
+  function add(key, val){
+    if(val==null||!isFinite(+val)) return;
+    ytd[key]=(ytd[key]==null?0:+ytd[key])+(+val);
+  }
+  var built=false;
+  try{
+    var last=cells.length?cells[cells.length-1].month:null;
+    if(last&&last.mi!=null&&typeof _bpShiftMonth==='function'&&typeof _bpVenueMonth==='function'){
+      for(var step=last.mi; step>=0; step--){
+        var m=_bpShiftMonth(last, step-last.mi);
+        var vm=_bpVenueMonth(venue, m);
+        var guest=(typeof calGuestDjBudget==='function')?calGuestDjBudget(venue, m.year, m.mm):null;
+        var target=guest&&guest.amount!=null&&isFinite(+guest.amount)?+guest.amount:(vm&&vm.budget!=null?+vm.budget:null);
+        add('spend', vm?vm.planned:null);
+        add('target', target);
+        add('py', vm&&vm.py?vm.py.fee:null);
+        add('bsT', vm?vm.bsT:null);
+        add('pyBs', vm&&vm.py?vm.py.bs:null);
+        if(typeof getBgtPlan==='function') add('bsBudget', getBgtPlan(venue, String(m.year), m.mm, 'bs'));
+      }
+      built=true;
+    }
+  }catch(eYtd){}
+  if(!built) groups.forEach(function(g){
+    add('spend', g.spend); add('target', g.target); add('py', g.py); add('bsT', g.bsT); add('pyBs', g.pyBs); add('bsBudget', g.bsBudget);
+  });
+  return ytd;
+}
 function flashPlanMeter(actual, target){
   if(actual==null||!isFinite(+actual)) return '<span class="fp-na">No 2026 data</span>';
   if(target==null||!(+target>0)) return '<span class="fp-na">\u2014</span>';
   return flashPlanVar(actual, target, false);
 }
 function flashPlanChart(title, groups, series){
-  var max=0;
+  var max=0, ytdMax=0;
   (groups||[]).forEach(function(g){
     (series||[]).forEach(function(s){
       var n=g[s.key];
-      if(n!=null && isFinite(+n) && +n>max) max=+n;
+      if(n==null || !isFinite(+n) || !(+n>0)) return;
+      if(g.ytd){ if(+n>ytdMax) ytdMax=+n; }
+      else if(+n>max) max=+n;
     });
   });
   if(!(max>0)) max=1;
+  if(!(ytdMax>0)) ytdMax=1;
   var h='<div class="flash-chart">'+(title?'<div class="flash-chart-hd">'+_escHtml(title)+'</div>':'')+'<div class="flash-chart-row">';
   function bar(g, s){
     var n=g[s.key];
-    var pct=(n!=null && isFinite(+n) && +n>0)?Math.max(8, Math.round(+n/max*100)):0;
+    var scale=g.ytd?ytdMax:max;
+    var pct=(n!=null && isFinite(+n) && +n>0)?Math.max(8, Math.round(+n/scale*100)):0;
     var cls=s.cls;
     if(s.key==='spend' || s.key==='bsNow'){
       var mark=s.key==='bsNow'?'bsT':'target';
@@ -224,13 +275,14 @@ function flashPlanChart(title, groups, series){
   (groups||[]).forEach(function(g){
     var lead=(series||[]).filter(function(s){ return s.key==='spend'; });
     var rest=(series||[]).filter(function(s){ return s.key!=='spend'; });
-    h+='<div class="flash-chart-m"><em>'+_escHtml(g.label||'')+'</em><div class="flash-chart-bars">';
+    h+='<div class="flash-chart-m'+(g.ytd?' fp-ytd':'')+'"><em>'+_escHtml(g.label||'')+'</em><div class="flash-chart-bars">';
     lead.forEach(function(s){ h+=bar(g, s); });
     if(rest.length){
       h+='<div class="flash-chart-pair">';
       rest.forEach(function(s){ h+=bar(g, s); });
       h+='</div>';
     }
+    if(g.ytd) h+='<div class="fp-ytd-pct">'+flashPlanYtdPct(g, series)+'</div>';
     h+='</div></div>';
   });
   h+='</div><div class="flash-chart-key">';
@@ -257,29 +309,32 @@ function flashPlanSlide(data, n, of){
   cells.forEach(function(c){
     var guest=(typeof calGuestDjBudget==='function')?calGuestDjBudget(venue, c.month.year, c.month.mm):null;
     var target=guest&&guest.amount!=null&&isFinite(+guest.amount)?+guest.amount:c.budget;
+    var bsBudget=(typeof getBgtPlan==='function')?getBgtPlan(venue, String(c.month.year), c.month.mm, 'bs'):null;
     groups.push({
       label:c.month.label||c.month.short,
       spend:c.planned||0,
       target:target,
       py:c.py&&c.py.fee!=null?c.py.fee:null,
       bsT:c.bsT!=null?c.bsT:null,
-      pyBs:c.py&&c.py.bs!=null?c.py.bs:null
+      pyBs:c.py&&c.py.bs!=null?c.py.bs:null,
+      bsBudget:bsBudget!=null&&isFinite(+bsBudget)?+bsBudget:null
     });
   });
-  h+=flashPlanChart('Guest DJ spend', groups, [
+  groups.push(flashPlanYtdGroup(venue, cells, groups));
+  h+='<div class="fp-chart-box">'+flashPlanChart('Guest DJ spend', groups, [
     {key:'spend', name:String(planYear), cls:'is-year'},
     {key:'target', name:'Target', cls:'is-target'},
     {key:'py', name:'PY', cls:'is-py'}
-  ]);
-  h+=flashPlanChart('Bottle service', groups, [
+  ])+'</div>';
+  h+='<div class="fp-chart-box">'+flashPlanChart('Bottle service', groups, [
     {key:'bsT', name:'Target', cls:'is-target'},
     {key:'pyBs', name:String(pyYear), cls:'is-py'}
-  ]);
+  ])+'</div>';
   h+='<div class="bp-deck-sec bp-sec-2"><span>02</span>Performances<em>DJ fees beside '+pyYear+', then bottle service target against '+pyYear+'.</em></div>';
   h+='<table class="flash-plan-shows"><colgroup><col class="c-date"><col class="c-artist"><col class="c-py"><col class="c-yr"><col class="c-yr"><col class="c-var"><col class="c-yr"><col class="c-yr"><col class="c-var"></colgroup>'
     +'<thead><tr class="flash-plan-group"><th class="l" rowspan="2">Date</th><th class="l" rowspan="2">'+planYear+' artist</th><th class="l fp-py" rowspan="2">PY</th><th class="fp-fees" colspan="3">DJ fees</th><th class="fp-bs" colspan="3">Bottle service</th></tr>'
-    +'<tr><th>'+planYear+'</th><th class="fp-pyh">PY</th><th>Var.</th>'
-    +'<th class="fp-bs">'+planYear+'</th><th class="fp-pyh">PY</th><th>Var.</th></tr></thead><tbody>';
+    +'<tr><th>'+planYear+'</th><th class="fp-pyh">PY</th><th class="fp-varc">Var.</th>'
+    +'<th class="fp-bs">'+planYear+'</th><th class="fp-pyh">PY</th><th class="fp-varc">Var.</th></tr></thead><tbody>';
   cells.forEach(function(c){
     var rows=(c.rows||[]).slice().sort(function(a,b){ return a.d<b.d?-1:(a.d>b.d?1:0); });
     var feeNow=c.planned!=null?+c.planned:null;
@@ -289,10 +344,10 @@ function flashPlanSlide(data, n, of){
     h+='<tr class="flash-plan-month"><td class="l" colspan="3"><b>'+_escHtml(c.month.label)+'</b></td>'
       +'<td>'+(feeNow!=null?flashPlanMoney(feeNow):'\u2014')+'</td>'
       +'<td>'+(feePy!=null?flashPlanMoney(feePy):'\u2014')+'</td>'
-      +'<td>'+flashPlanVar(feeNow, feePy, true)+'</td>'
+      +'<td class="fp-varc">'+flashPlanVar(feeNow, feePy, true)+'</td>'
       +'<td class="fp-bs">'+(bsNow!=null?flashPlanMoney(bsNow):'\u2014')+'</td>'
       +'<td>'+(bsPy!=null?flashPlanMoney(bsPy):'\u2014')+'</td>'
-      +'<td>'+flashPlanVar(bsPy, bsNow, false)+'</td></tr>';
+      +'<td class="fp-varc">'+flashPlanVar(bsPy, bsNow, false)+'</td></tr>';
     if(!rows.length){
       h+='<tr><td class="l fp-na" colspan="9">No performances</td></tr>';
       return;
@@ -304,14 +359,14 @@ function flashPlanSlide(data, n, of){
       var pyBs=ly&&ly.bs!=null&&isFinite(+ly.bs)?+ly.bs:null;
       var fee=r.fee!=null&&isFinite(+r.fee)?+r.fee:null;
       h+='<tr><td class="l"><b>'+(typeof _bpDay==='function'?_bpDay(r.d):_escHtml(r.d))+'</b></td>'
-        +'<td class="l"><b class="fp-artist">'+_escHtml(r.dj||'TBD')+'</b></td>'
+        +'<td class="l fp-who"><b class="fp-artist">'+_escHtml(r.dj||'TBD')+'</b></td>'
         +'<td class="l fp-py">'+(ly&&ly.dj?_escHtml(ly.dj):'<span class="fp-na">\u2014</span>')+'</td>'
         +'<td>'+(fee!=null?flashPlanMoney(fee):'\u2014')+'</td>'
         +'<td>'+(pyFee!=null?flashPlanMoney(pyFee):'\u2014')+'</td>'
-        +'<td>'+flashPlanVar(fee, pyFee, true)+'</td>'
+        +'<td class="fp-varc">'+flashPlanVar(fee, pyFee, true)+'</td>'
         +'<td class="fp-bs">'+flashPlanMoney(bsTarget)+'</td>'
         +'<td>'+(pyBs!=null?flashPlanMoney(pyBs):'\u2014')+'</td>'
-        +'<td>'+flashPlanVar(pyBs, bsTarget, false)+'</td></tr>';
+        +'<td class="fp-varc">'+flashPlanVar(pyBs, bsTarget, false)+'</td></tr>';
     });
   });
   if(!cells.length) h+='<tr><td class="l" colspan="9">No performances in this window.</td></tr>';
