@@ -783,7 +783,16 @@ function initPresence(){
     setInterval(_writePresence,45000);
   }catch(err){ console.warn('Presence unavailable',err); }
 }
+function settingsSkipsPassword(){
+  var email=(typeof signInCurrentEmail==='function')?signInCurrentEmail():'';
+  return email==='greg@rivieradininggroup.com'
+    || email==='takuma@rivieradininggroup.com'
+    || email==='fabien@rivieradininggroup.com'
+    || email==='michael@rivieradininggroup.com'
+    || email==='mika@rivieradininggroup.com';
+}
 function unlockSanity(){
+  if(settingsSkipsPassword()) return true;
   try{ if(sessionStorage.getItem('rdg_sanity_unlocked')==='1') return true; }catch(e){}
   var pw=prompt('Settings password:');
   if(pw!=='matthias'){ if(pw!==null) alert('Incorrect password.'); return false; }

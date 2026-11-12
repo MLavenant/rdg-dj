@@ -82,16 +82,21 @@ function faFinanceTone(st){
   if(st==='Finance declined') return 'fa-fs-no';
   return 'fa-fs-none';
 }
-/* Paused until notice: DJ status is editable on every year and venue, with or without Finance Approval. */
-function faDjLocked(){
-  return false;
+function faDjLocked(show){
+  if(!faInScope(show)) return false;
+  if(financeCanApprove()) return false;
+  return faFinanceStatus(show)!=='Finance Approved';
 }
 function faStatusOptions(show, current){
   return (typeof ACCT_DJ_STATUS!=='undefined')?ACCT_DJ_STATUS.slice():FA_LIVE.slice();
 }
-/* Paused until notice. The status save still goes through the existing DJ-status-only sync. */
-function faBlockLiveStatus(){
-  return false;
+/* Offer sent, Hold 1, and Confirmed wait for Finance Approved, except for the approvers. */
+function faBlockLiveStatus(show, next){
+  if(!faInScope(show)) return false;
+  if(FA_LIVE.indexOf(next)<0) return false;
+  if(!faDjLocked(show)) return false;
+  try{ alert('DJ status unlocks once Finance Approval marks this night Finance Approved.'); }catch(e){}
+  return true;
 }
 function faStatusSelectOptionsHtml(show, djSt){
   var cur=FA_FIN.indexOf(djSt)>=0?'':String(djSt||'');
@@ -203,10 +208,20 @@ function faDecide(uid, status){
 /* Super owner (Greg) and Matthias see the quarter view and approve the larger nights.
    Takuma, Michael, and Fabien keep the month cards and approve every other night. */
 function faViewer(){
+  try{
+    var pick=sessionStorage.getItem('rdg_fa_view');
+    if((pick==='greg'||pick==='desk') && typeof signInIsOwner==='function' && signInIsOwner()) return pick;
+  }catch(e){}
   var email=String(financeSignedInEmail()||'').toLowerCase();
   if(email==='greg@rivieradininggroup.com'||email==='matthias@rivieradininggroup.com') return 'greg';
   if(!email && typeof signInIsOwner==='function' && signInIsOwner()) return 'greg';
   return 'desk';
+}
+function faSetViewer(view){
+  if(typeof signInIsOwner!=='function' || !signInIsOwner()) return;
+  try{ sessionStorage.setItem('rdg_fa_view', view==='desk'?'desk':'greg'); }catch(e){}
+  if(typeof curView!=='undefined' && curView==='finance') renderFinanceApproval();
+  if(typeof curView!=='undefined' && curView==='system' && typeof renderSystem==='function') renderSystem();
 }
 function faGregView(){ return faViewer()==='greg'; }
 function faMonthBudget(show){
@@ -216,15 +231,20 @@ function faMonthBudget(show){
   var n=g&&g.amount!=null?+g.amount:null;
   return n!=null&&isFinite(n)?n:null;
 }
-/* Over $30K always. Over 5% of that month's Guest DJ budget when the fee is at least $5K.
-   Under $5K stays with Takuma even when it is over the budget. */
+/* Over $30K always. From $5K up, only when that month's scheduled Guest DJ fees are already over the month budget.
+   A night that is a large share of the budget does not come here while the month is still under budget.
+   Under $5K stays with the admins. */
+function faMonthOverBudget(show){
+  if(!show||!show.d||typeof fiscalInfoForDate!=='function') return false;
+  var info=fiscalInfoForDate(show.d);
+  var pos=faGuestPosition(show.v||show.venue, info.year, info.mm);
+  return pos.budget!=null && pos.spend>pos.budget;
+}
 function faForGreg(show){
   var fee=faFee(show);
-  if(!(fee>=5000)) return false;
   if(fee>30000) return true;
-  var budget=faMonthBudget(show);
-  if(!(budget>0)) return false;
-  return fee>budget*0.05;
+  if(!(fee>=5000)) return false;
+  return faMonthOverBudget(show);
 }
 function faCanDecide(show){
   if(!financeCanApprove()||!show||!faFinanceTrack(show)) return false;
@@ -233,7 +253,7 @@ function faCanDecide(show){
 function faWhyGreg(show){
   if(!faForGreg(show)) return '';
   if(faFee(show)>30000) return 'Over $30K';
-  return 'Over 5% of the month budget';
+  return 'Month over budget';
 }
 
 var faVenue=null, faYear=null, faMonth=null, faPendingOn=false, faPendingScope=null;
@@ -541,8 +561,8 @@ function renderFinanceApproval(){
   names.forEach(function(name, i){ html+='<option value="'+i+'"'+(!when.total&&i===when.month?' selected':'')+'>'+name+'</option>'; });
   html+='</select></label></div>';
   html+='<div class="fa-rule">'+(greg
-    ?'Super owner. You approve nights over $30K, and nights of at least $5K that are over 5% of that month\'s Guest DJ budget. Admins approve the rest.'
-    :'Admin. You approve nights under $5K and nights within 5% of that month\'s Guest DJ budget. The Super owner approves nights over that, and every night over $30K.')+'</div>';
+    ?'Super owner. You approve a night over $30K, and a night of at least $5K only when that month is already over its Guest DJ budget. Admins approve the rest.'
+    :'Admin. You approve nights under $5K, and nights of at least $5K while the month is still under its Guest DJ budget. The Super owner approves nights over $30K, and the $5K nights once the month is over budget.')+'</div>';
   if(!live) html+='<div class="fa-note">Finance approval applies to 2027 performances. 2026 is shown against budget only.</div>';
   var yearRow=faRange(venue, when.year, 0, 11);
   html+=faCardHtml('Budget · full year', yearRow, 'year', 'year');

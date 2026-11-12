@@ -155,8 +155,21 @@ function signInAttr(s){
 function signInPeopleCardHtml(){
   var owner=signInIsOwner();
   var people=signInPeople();
+  var viewAs='';
+  if(owner){
+    var picked='greg';
+    try{ if(sessionStorage.getItem('rdg_fa_view')==='desk') picked='desk'; }catch(e){}
+    viewAs='<div style="margin-top:12px;padding-top:12px;border-top:1px solid #e4dfd8">'
+      +'<div style="font-size:12px;font-weight:800">Finance Approval view</div>'
+      +'<div style="margin-top:3px;font-size:11px;color:var(--ink3)">Switch what you see on Finance Approval. Super owner is the large nights. Admin is everyone else.</div>'
+      +'<div style="display:flex;gap:8px;margin-top:8px">'
+      +'<button type="button" onclick="faSetViewer(\'greg\')" style="font:inherit;font-size:12px;font-weight:800;padding:6px 10px;border-radius:8px;cursor:pointer;border:1px solid #0b2e40;background:'+(picked==='greg'?'#0b2e40':'#fff')+';color:'+(picked==='greg'?'#fff':'#0b2e40')+'">Super owner</button>'
+      +'<button type="button" onclick="faSetViewer(\'desk\')" style="font:inherit;font-size:12px;font-weight:800;padding:6px 10px;border-radius:8px;cursor:pointer;border:1px solid #0b2e40;background:'+(picked==='desk'?'#0b2e40':'#fff')+';color:'+(picked==='desk'?'#fff':'#0b2e40')+'">Admin</button>'
+      +'</div></div>';
+  }
   var h='<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid #0b2e40">'
     +'<div style="font-size:14px;font-weight:900">People</div>'
+    +viewAs
     +'<div style="margin-top:4px;font-size:11px;color:var(--ink3)">Add a work email and choose what they can do. Admin can approve finance. Operator and AO use the calendar and reports.</div>';
   if(owner){
     h+='<div id="accAddForm" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:12px">'
