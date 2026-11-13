@@ -94,14 +94,13 @@ body.mobile-mode .sb-collapse,body.mobile-mode .sb-restore{display:none!importan
 .topbar-left{display:flex;align-items:center;gap:10px;min-width:0;flex:0 1 240px}
 .topbar-controls{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;min-width:0;flex:1 1 auto;max-width:100%}
 .topbar-controls #venTabs,.topbar-controls #yrPills{display:flex;gap:4px;flex-wrap:wrap;max-width:100%;width:auto}
-.ctx-pick{display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0}
-.ctx-pick .ctx-panel{display:none;flex-wrap:wrap;gap:4px;align-items:center}
-.ctx-pick.open .ctx-panel{display:flex;flex:1 1 180px;min-width:0;max-width:100%}
-.topbar-controls .ctx-pick.open{flex:1 1 280px;max-width:100%}
+.ctx-pick{position:relative;display:inline-flex;align-items:center;gap:4px;flex-wrap:nowrap;min-width:0}
+.ctx-pick .ctx-panel{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:40;flex-direction:column;align-items:stretch;gap:2px;min-width:148px;max-height:280px;overflow:auto;padding:6px;background:#fff;border:0.5px solid var(--hair);border-radius:12px;box-shadow:var(--shadow-md)}
+.ctx-pick.open{z-index:40}
+.ctx-pick.open .ctx-panel{display:flex}
+.ctx-pick .ctx-panel .ven-tab,.ctx-pick .ctx-panel .yr-pill,.ctx-pick .ctx-panel .ms-btn{width:100%;text-align:left;justify-content:flex-start}
 .ctx-caret{font-size:8px;margin-left:3px;opacity:.8}
-.month-slider.ctx-pick{overflow:visible;flex-wrap:wrap}
-.month-slider.ctx-pick .ctx-panel{display:none}
-.month-slider.ctx-pick.open .ctx-panel{display:flex;flex:1 1 180px;min-width:0;max-width:100%}
+.month-slider.ctx-pick{overflow:visible;flex-wrap:nowrap}
 .pg-title{font-size:16px;font-weight:900;letter-spacing:-.4px}
 .app-ver{margin-left:6px;font-size:10px;font-weight:650;letter-spacing:.04em;color:var(--ink4);vertical-align:middle}
 .pg-sub{font-size:10px;color:var(--ink3)}
@@ -229,6 +228,7 @@ body.mobile-mode .sb-collapse,body.mobile-mode .sb-restore{display:none!importan
 /* Pills */
 .lb-score{text-align:center;background:var(--beat-bg);padding:6px 14px;border-radius:10px;min-width:72px}
 .lb-score b{display:block;font-size:18px;font-weight:900;color:var(--beat);line-height:1}
+.lb-score b small{font-size:11px;font-weight:800;margin-left:1px}
 .lb-score span{display:block;font-size:9px;color:var(--beat);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-top:3px}
 .lb-score em{display:block;font-style:normal;font-size:8px;color:var(--ink3);margin-top:1px}
 .lb-fee-flag{text-align:center;background:var(--amb-bg);padding:6px 14px;border-radius:10px}
@@ -651,6 +651,9 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .bgr-span6{grid-column:span 6}
 
 /* Month slider ? single clean definition */
+.cal-when{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--card2);border-bottom:0.5px solid var(--hair);padding:6px 12px;flex-shrink:0;position:relative;z-index:20}
+.cal-when .month-slider{background:transparent;border-bottom:0;padding:0;flex:0 1 auto}
+.cal-when #yrPills{flex:0 1 auto}
 .month-slider{display:flex;background:var(--card2);border-bottom:0.5px solid var(--hair);padding:6px 12px;gap:4px;overflow-x:auto;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}
 .month-slider::-webkit-scrollbar{display:none}
 .ms-btn{font-size:10.5px;font-weight:600;padding:6px 14px;border-radius:20px;border:none;background:var(--card);cursor:pointer;white-space:nowrap;color:var(--ink3);font-family:inherit;flex-shrink:0;transition:all .15s;box-shadow:var(--shadow-sm)}
@@ -1282,6 +1285,7 @@ body.res-view #venTabs,body.res-view #yrPills{display:none!important}
 .res-menu button:hover{background:#f4f1ec}
 .res-menu button.danger{color:#b42318}
 #view-calendar .cal-nav,#view-accounting .cal-nav,#view-calendar #monthSlider,#view-accounting #acctSlider{flex-shrink:0;z-index:5;background:var(--card)}
+#view-calendar .cal-when,#view-calendar .cal-when #monthSlider{background:var(--card2)}
 .main > [id^="view-"]:not(#view-calendar):not(#view-accounting):not(#view-resident){flex:1;min-height:0;overflow:auto}
 #calBody,#acctBody{flex:1 1 auto;min-height:0;margin:0 16px 16px;border-radius:var(--r-lg);overflow:auto!important;max-height:none!important;box-shadow:var(--shadow-sm);background:var(--card)}
 .cal-month-recap{display:none;flex-shrink:0;margin:0 16px 4px;padding:4px 8px;background:var(--card);border:0.5px solid var(--hair);border-left:3px solid var(--ink);border-radius:8px;box-shadow:var(--shadow-sm);gap:6px;flex-wrap:wrap;align-items:center;z-index:6}

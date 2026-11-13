@@ -1152,6 +1152,12 @@ function renderDJDetail(djEnc){
   var suggFee=leaderboardSuggestedFee(avgBS, avgFeePaid, meas?Math.round(beats/meas*100):0);
   var roiPassed=shows.filter(_lbRoiPassed).length;
   var roiMeasured=shows.filter(function(r){ return r.roi_a!=null && r.roi_t!=null && +r.roi_t>0; }).length;
+  var roiScore=roiMeasured?Math.round(roiPassed/roiMeasured*100)/10:null;
+  function roiScoreText(n){
+    if(n==null||!isFinite(n)) return '—';
+    var t=Math.round(n*10)/10;
+    return (t%1)?t.toFixed(1):String(t);
+  }
   var feeMarks=_lbYoyFeeMarks(shows);
   var feeUp=feeMarks.filter(function(m){ return !!m; }).length;
 
@@ -1161,7 +1167,7 @@ function renderDJDetail(djEnc){
   var bCls=meas&&beats/meas>=0.6?'hit':'low';
   [
     {l:'Shows',v:shows.length,c:''},
-    {l:'ROI passed',v:roiMeasured?String(roiPassed):'-',c:roiMeasured&&roiPassed?'hit':''},
+    {l:'ROI score',v:roiScore==null?'-':roiScoreText(roiScore)+'/10',c:roiScore!=null&&roiScore>=6?'hit':(roiScore!=null?'low':'')},
     {l:'Avg ROI',v:avgROI?avgROI.toFixed(2)+'x':'-',c:bCls},
     {l:'Beat rate',v:meas?Math.round(beats/meas*100)+'%':'-',c:bCls},
     {l:'Avg BS/show',v:$k(avgBS),c:''},
@@ -1170,8 +1176,8 @@ function renderDJDetail(djEnc){
     h+='<div style="text-align:center"><div style="font-size:18px;font-weight:800" class="'+k.c+'">'+k.v+'</div><div style="font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">'+k.l+'</div></div>';
   });
   /* Suggested fee   highlighted separately */
-  h+='<div class="lb-score" title="Nights where actual ROI met or beat the ROI target">';
-  h+='<b>'+(roiMeasured?roiPassed:'—')+'</b>';
+  h+='<div class="lb-score" title="ROI completion out of 10. 10 means every measured night met the ROI target.">';
+  h+='<b>'+(roiScore==null?'—':roiScoreText(roiScore))+'<small>/10</small></b>';
   h+='<span>ROI score</span>';
   h+='<em>'+(roiMeasured?('passed '+roiPassed+' of '+roiMeasured):'no ROI target')+'</em>';
   h+='</div>';
