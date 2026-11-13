@@ -27,9 +27,11 @@ function renderAccounting(){
   document.getElementById('acctHd').textContent=MN_FULL[mo]+' '+yr+' ('+fiscalPeriodShortRange(yr, mo)+') - '+curAcctV+asOf;
   updateTopbarLogo(curAcctV||curV);
 
-  var sl='<div class="month-slider" id="acctSliderInner">';
-  for(var mi=0;mi<12;mi++) sl+='<button class="ms-btn'+(mi===mo?' ms-on':'')+'" id="asbtn'+mi+'" onclick="jumpAcctMonth('+mi+')">'+ MN_SH[mi]+'</button>';
-  sl+='</div>';
+  var sl='<div class="month-slider ctx-pick" id="acctSliderInner">';
+  sl+='<button type="button" class="ms-btn ms-on ctx-toggle" onclick="toggleCtxPick(\'acctSliderInner\')">'+MN_SH[mo]+' <span class="ctx-caret">&#9662;</span></button>';
+  sl+='<div class="ctx-panel">';
+  for(var mi=0;mi<12;mi++){ if(mi===mo) continue; sl+='<button class="ms-btn" id="asbtn'+mi+'" onclick="jumpAcctMonth('+mi+')">'+ MN_SH[mi]+'</button>'; }
+  sl+='</div></div>';
   document.getElementById('acctSlider').innerHTML=sl;
   setTimeout(function(){var b=document.getElementById('asbtn'+mo);if(b&&b.scrollIntoView)b.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});},60);
 

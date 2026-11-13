@@ -102,27 +102,50 @@ function selVenue(v) {
 }
 
 /*    Venue tabs                                                  */
+function toggleCtxPick(id){
+  var el=document.getElementById(id);
+  if(!el) return;
+  var willOpen=!el.classList.contains('open');
+  document.querySelectorAll('.ctx-pick.open').forEach(function(n){ if(n!==el) n.classList.remove('open'); });
+  el.classList.toggle('open', willOpen);
+}
+function closeCtxPicks(){
+  document.querySelectorAll('.ctx-pick.open').forEach(function(n){ n.classList.remove('open'); });
+}
 function buildVenTabs() {
   var venues = listActiveVenues();
-  document.getElementById('venTabs').innerHTML = venues.map(function(v){
+  var cur=venueColor(curV);
+  var html='<button type="button" class="ven-tab on ctx-toggle" style="background:'+cur.a+';border-color:'+cur.a+';color:#fff" onclick="toggleCtxPick(\'venTabs\')">'+curV+' <span class="ctx-caret">&#9662;</span></button>';
+  html+='<div class="ctx-panel">';
+  venues.forEach(function(v){
+    if(v===curV) return;
     var c=venueColor(v);
-    var style=v===curV?('background:'+c.a+';border-color:'+c.a+';color:#fff'):('border-left:3px solid '+c.a);
-    return '<button class="ven-tab'+(v===curV?' on':'')+'" data-v="'+v+'" style="'+style+'" onclick="selVenue(\''+v+'\')">' + v + '</button>';
-  }).join('');
+    html+='<button type="button" class="ven-tab" data-v="'+v+'" style="border-left:3px solid '+c.a+'" onclick="selVenue(\''+v+'\')">'+v+'</button>';
+  });
+  html+='</div>';
+  document.getElementById('venTabs').innerHTML = html;
+  document.getElementById('venTabs').classList.add('ctx-pick');
 }
 
 /*    Year pills                                                 */
 function buildYrPills() {
-  var years={2024:1,2025:1,2026:1,2027:1};
+  var years={2024:1,2025:1,2026:1,2027:1,2028:1};
   SCHED.forEach(function(r){
     if(r&&r.d) years[fiscalYearForDate(r.d)]=1;
     if(r&&r.yr) years[+r.yr]=1;
   });
   var yrs=Object.keys(years).map(Number).filter(function(y){return y>=2020&&y<=2035;}).sort(function(a,b){return a-b;});
   if(yrs.indexOf(curYr)<0) yrs.push(curYr), yrs.sort(function(a,b){return a-b;});
-  document.getElementById('yrPills').innerHTML = yrs.map(function(y){
-    return '<button class="yr-pill'+(y===curYr?' on':'')+'" onclick="selYr('+y+')">'+y+'</button>';
-  }).join('');
+  var html='<button type="button" class="yr-pill on ctx-toggle" onclick="toggleCtxPick(\'yrPills\')">'+curYr+' <span class="ctx-caret">&#9662;</span></button>';
+  html+='<div class="ctx-panel">';
+  yrs.forEach(function(y){
+    if(y===curYr) return;
+    html+='<button type="button" class="yr-pill" onclick="selYr('+y+')">'+y+'</button>';
+  });
+  html+='</div>';
+  var host=document.getElementById('yrPills');
+  host.innerHTML = html;
+  host.classList.add('ctx-pick');
 }
 
 function selYr(yr) {

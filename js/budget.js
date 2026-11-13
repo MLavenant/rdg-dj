@@ -1443,12 +1443,14 @@ function renderMonthDrill(mm){
   html+='<div style="font-size:20px;font-weight:900;letter-spacing:-.5px;min-width:140px">'+MNF[mi-1]+' '+bgtYear+'</div>';
   html+='<button id="bgtNextM" class="cal-nav-btn" style="width:26px;height:26px">&#8594;</button>';
   html+='</div>';
-  html+='<div class="month-slider" id="bgtDrillSlider" style="margin:0 0 12px;border-radius:6px;border:0.5px solid var(--rule)">';
+  html+='<div class="month-slider ctx-pick" id="bgtDrillSlider" style="margin:0 0 12px;border-radius:6px;border:0.5px solid var(--rule)">';
+  html+='<button type="button" class="ms-btn ms-on ctx-toggle" onclick="toggleCtxPick(\'bgtDrillSlider\')">'+MNS[mi-1]+' <span class="ctx-caret">&#9662;</span></button>';
+  html+='<div class="ctx-panel">';
   for(var smi=0;smi<12;smi++){
-    var smm=smi<10?'0'+(smi+1):''+(smi+1);
-    html+='<button class="ms-btn'+(smi+1===mi?' ms-on':'')+'" id="bgtmsbtn'+smi+'" onclick="jumpDrillMonth('+smi+')">'+MNS[smi]+'</button>';
+    if(smi+1===mi) continue;
+    html+='<button class="ms-btn" id="bgtmsbtn'+smi+'" onclick="jumpDrillMonth('+smi+')">'+MNS[smi]+'</button>';
   }
-  html+='</div>';
+  html+='</div></div>';
 
   /*    TOP: previous year recap (single clean banner)    */
   var monthBudget=getMonthlyBudget(bgtVenue,bgtYear,mm);
@@ -1845,8 +1847,8 @@ function bgtRemoveCustomCategory(id){
   renderBudgetGuestDjTable();
 }
 function djVenuesList(){
-  var venues=[];
-  SCHED.forEach(function(r){ if(venues.indexOf(r.v)<0 && HIDE_V.indexOf(r.v)<0) venues.push(r.v); });
+  var venues=(typeof CORE_VENUES!=='undefined')?CORE_VENUES.slice():[];
+  SCHED.forEach(function(r){ if(r&&r.v&&venues.indexOf(r.v)<0 && HIDE_V.indexOf(r.v)<0) venues.push(r.v); });
   venues.sort();
   return venues;
 }

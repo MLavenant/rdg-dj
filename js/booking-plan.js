@@ -4,7 +4,7 @@
    rdg/bookingApprovals, rdg/budgetConfirmations, rdg/bookingPlans, rdg/bookingMeetings
    and is loaded by dedicated listeners that do not go through _fbApply. */
 
-var BP_VENUES=['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'];
+var BP_VENUES=['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge','HONO Lounge'];
 var BP_VENUE_SHORT={'Casa Neos Beach Club':'Beach Club','Casa Neos Lounge':'CN Lounge','MILA Lounge':'MILA'};
 var BP_CONFIRMED=['Confirmed','Invoice + Contract Signed','Contract + invoice received'];
 var BP_EXECS=['Mika','Greg'];

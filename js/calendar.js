@@ -47,13 +47,15 @@ function renderCal(){
   var lb=document.getElementById('calViewListBtn'), gb=document.getElementById('calViewGridBtn'), yb=document.getElementById('calViewYearBtn');
   if(lb&&gb&&yb){ lb.classList.toggle('on',calViewMode==='list'); gb.classList.toggle('on',calViewMode==='grid'); yb.classList.toggle('on',calViewMode==='year'); }
 
-  /* render month slider with auto-scroll */
-  var sliderHtml='<div class="month-slider" id="calSliderInner">';
+  /* Current month stays visible. The rest open to the right, then wrap down. */
+  var sliderHtml='<div class="month-slider ctx-pick" id="calSliderInner">';
+  sliderHtml+='<button type="button" class="ms-btn ms-on ctx-toggle" onclick="toggleCtxPick(\'calSliderInner\')">'+MN_SH[mo]+' <span class="ctx-caret">&#9662;</span></button>';
+  sliderHtml+='<div class="ctx-panel">';
   for(var mi=0;mi<12;mi++){
-    sliderHtml+='<button class="ms-btn'+(mi===mo?' ms-on':'')+'" id="msbtn'+mi+'" onclick="jumpToMonth('+mi+')">'
-      +MN_SH[mi]+'</button>';
+    if(mi===mo) continue;
+    sliderHtml+='<button class="ms-btn" id="msbtn'+mi+'" onclick="jumpToMonth('+mi+')">'+MN_SH[mi]+'</button>';
   }
-  sliderHtml+='</div>';
+  sliderHtml+='</div></div>';
   document.getElementById('monthSlider').innerHTML=sliderHtml;
   /* scroll active into view */
   setTimeout(function(){
@@ -2979,7 +2981,7 @@ var FV_PERF_DB = [{"venue":"MILA Lounge","date":"2025-01-01","dj":"Sub Zero","dj
 
 var _fcastActiveVenue = 0;
 var _fcastActiveView = 'venue'; // 'venue' or 'all'
-var FCAST_VENUES = ['Casa Neos Beach Club','MILA Lounge','Casa Neos Lounge'];
+var FCAST_VENUES = ['Casa Neos Beach Club','MILA Lounge','Casa Neos Lounge','HONO Lounge'];
 
 function _fmtK(n){ return n>=1000?'$'+(n/1000).toFixed(1)+'k':'$'+n; }
 function _fmtMoney(n){ return n?'$'+n.toLocaleString():'?'; }
@@ -4628,7 +4630,7 @@ function _fmtMoneyShort(n){
 }
 
 /* ---- Forecast page-1: last-night recap (3 venues) ---- */
-var FCAST_NIGHT_VENUES = ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'];
+var FCAST_NIGHT_VENUES = ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge','HONO Lounge'];
 function _fcastSameVenue(a, b){
   if(!a || !b) return false;
   if(a === b) return true;
@@ -4656,6 +4658,7 @@ function _fcastDayBefore(dateStr){
   return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
 }
 function _fcastNightVenueShort(venue){
+  if(/HONO/i.test(venue)) return 'HONO Lounge';
   if(/Beach/i.test(venue)) return 'Casa Neos BC';
   if(/Lounge/i.test(venue) && !/MILA|MM/i.test(venue)) return 'Casa Neos Lounge';
   if(/MILA|MM/i.test(venue)) return 'MILA Lounge';

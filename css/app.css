@@ -17,7 +17,14 @@ html,body{height:100%;overflow:hidden}
 body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text','Segoe UI',sans-serif;background:var(--card2);color:var(--ink);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
 .shell{display:flex;height:100vh;overflow:hidden;background:var(--card2)}
 /* Sidebar */
-.sidebar{width:var(--sb-w);flex-shrink:0;background:var(--card);border-right:0.5px solid var(--hair);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;box-shadow:var(--shadow-sm)}
+.sidebar{width:var(--sb-w);flex-shrink:0;background:var(--card);border-right:0.5px solid var(--hair);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;box-shadow:var(--shadow-sm);transition:width .22s ease}
+.sb-collapse{align-self:flex-end;margin:8px 8px 0;z-index:30;width:26px;height:26px;border-radius:50%;border:0.5px solid var(--rule);background:var(--card2);color:var(--ink);font-size:16px;font-weight:800;cursor:pointer;box-shadow:var(--shadow-sm);display:flex;align-items:center;justify-content:center;font-family:inherit;line-height:1;padding:0;flex-shrink:0}
+.sb-collapse:hover{background:var(--ink);color:#fff}
+.sb-restore{display:none;align-items:center;justify-content:center;width:36px;height:36px;border-radius:10px;border:0.5px solid var(--rule);background:var(--card2);color:var(--ink);font-size:18px;font-weight:800;cursor:pointer;font-family:inherit;flex-shrink:0;padding:0}
+body.sb-hidden .sidebar{width:0;max-width:0;min-width:0;flex:0 0 0;overflow:hidden;border-right:0;box-shadow:none;pointer-events:none;padding:0}
+body.sb-hidden .sb-collapse{display:none}
+body.sb-hidden .sb-restore{display:inline-flex}
+body.mobile-mode .sb-collapse,body.mobile-mode .sb-restore{display:none!important}
 .sb-logo{padding:14px 12px 10px;border-bottom:0.5px solid var(--rule)}
 .sb-btn{width:calc(100% - 16px);margin:1px 8px;text-align:left;padding:9px 12px;border:none;background:transparent;cursor:pointer;font-size:11.5px;font-weight:600;color:var(--ink2);display:flex;align-items:center;gap:8px;border-radius:8px;font-family:inherit;transition:background .15s}
 .sb-btn.sb-sub{margin-left:22px;width:calc(100% - 30px);padding:6px 10px 6px 16px;font-size:11px;font-weight:700;color:var(--ink3)}
@@ -87,6 +94,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','SF Pro Text'
 .topbar-left{display:flex;align-items:center;gap:10px;min-width:0;flex:0 1 240px}
 .topbar-controls{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;min-width:0;flex:1 1 auto;max-width:100%}
 .topbar-controls #venTabs,.topbar-controls #yrPills{display:flex;gap:4px;flex-wrap:wrap;max-width:100%;width:auto}
+.ctx-pick{display:flex;align-items:center;gap:4px;flex-wrap:wrap;min-width:0}
+.ctx-pick .ctx-panel{display:none;flex-wrap:wrap;gap:4px;align-items:center}
+.ctx-pick.open .ctx-panel{display:flex;flex:1 1 180px;min-width:0;max-width:100%}
+.topbar-controls .ctx-pick.open{flex:1 1 280px;max-width:100%}
+.ctx-caret{font-size:8px;margin-left:3px;opacity:.8}
+.month-slider.ctx-pick{overflow:visible;flex-wrap:wrap}
+.month-slider.ctx-pick .ctx-panel{display:none}
+.month-slider.ctx-pick.open .ctx-panel{display:flex;flex:1 1 180px;min-width:0;max-width:100%}
 .pg-title{font-size:16px;font-weight:900;letter-spacing:-.4px}
 .app-ver{margin-left:6px;font-size:10px;font-weight:650;letter-spacing:.04em;color:var(--ink4);vertical-align:middle}
 .pg-sub{font-size:10px;color:var(--ink3)}

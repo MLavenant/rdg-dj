@@ -8,7 +8,7 @@ var FINANCE_APPROVERS={
   'michael@rivieradininggroup.com':1,
   'fabien@rivieradininggroup.com':1
 };
-var FA_VENUES=['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'];
+var FA_VENUES=['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge','HONO Lounge'];
 var FA_FIN=['Finance to Approve','Finance Approved','Finance declined'];
 var FA_LIVE=['Offer sent','Hold 1','Confirmed'];
 var FA_YEAR=2027;

@@ -5,7 +5,7 @@
 
 var RESIDENT_DJ = {};
 var RESIDENT_COLS = {};
-var RESIDENT_VENUES = ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge','AVA MM','MILA 3F','CLAUDIE','AVA CG','CASA HONO'];
+var RESIDENT_VENUES = ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge','HONO Lounge','AVA MM','MILA 3F','CLAUDIE','AVA CG','CASA HONO'];
 var RESIDENT_DEFAULT_COLS = [
   {id:'hotel', label:'Hotel', kind:'money'},
   {id:'ground', label:'Ground', kind:'money'},
