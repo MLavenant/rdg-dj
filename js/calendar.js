@@ -1093,6 +1093,40 @@ function showDJDetail(djEnc){
   renderDJDetail(djEnc);
 }
 
+function _lbRoiPassed(show){
+  return !!(show && show.roi_a!=null && show.roi_t!=null && +show.roi_t>0 && +show.roi_a>=+show.roi_t);
+}
+/* Fee is up when this night costs more than the same DJ's fees in the prior fiscal year. */
+function _lbYoyFeeMarks(shows){
+  var byYear={};
+  shows.forEach(function(r){
+    var y=(typeof fiscalYearForDate==='function' && r.d)?fiscalYearForDate(r.d):parseInt(String(r.d||'').slice(0,4),10);
+    r._fy=y;
+    if(!byYear[y]) byYear[y]={};
+    var venue=r.venue||'';
+    if(!byYear[y][venue]) byYear[y][venue]=[];
+    if(r.cost>0) byYear[y][venue].push(+r.cost);
+  });
+  function avg(arr){
+    if(!arr||!arr.length) return null;
+    var sum=0;
+    arr.forEach(function(n){ sum+=n; });
+    return sum/arr.length;
+  }
+  var marks=[];
+  shows.forEach(function(r){
+    var prev=byYear[(r._fy||0)-1];
+    var pool=prev&&prev[r.venue]&&prev[r.venue].length?prev[r.venue]:null;
+    if(!pool&&prev){
+      pool=[];
+      Object.keys(prev).forEach(function(v){ pool=pool.concat(prev[v]||[]); });
+    }
+    var base=avg(pool);
+    if(base==null||!(+r.cost>base)){ marks.push(null); return; }
+    marks.push({prior:Math.round(base), year:(r._fy||0)-1});
+  });
+  return marks;
+}
 function renderDJDetail(djEnc){
   var djName=decodeURIComponent(djEnc);
   var djKey=djName.trim().toUpperCase();
@@ -1116,6 +1150,10 @@ function renderDJDetail(djEnc){
   var avgBS=shows.length?Math.round(tBS/shows.length):0;
   var avgFeePaid=shows.length?Math.round(tFee/shows.length):0;
   var suggFee=leaderboardSuggestedFee(avgBS, avgFeePaid, meas?Math.round(beats/meas*100):0);
+  var roiPassed=shows.filter(_lbRoiPassed).length;
+  var roiMeasured=shows.filter(function(r){ return r.roi_a!=null && r.roi_t!=null && +r.roi_t>0; }).length;
+  var feeMarks=_lbYoyFeeMarks(shows);
+  var feeUp=feeMarks.filter(function(m){ return !!m; }).length;
 
   var h='<div style="padding:12px 16px;background:var(--card);border-bottom:0.5px solid var(--hair);display:flex;align-items:center;gap:16px;flex-wrap:wrap">';
   h+='<button onclick="_lbDJ=null;renderLeaderboard()" style="font-size:11px;font-weight:600;padding:5px 12px;border-radius:var(--r);border:0.5px solid var(--rule);background:var(--card);cursor:pointer;font-family:inherit">&#8592; Rankings</button>';
@@ -1123,6 +1161,7 @@ function renderDJDetail(djEnc){
   var bCls=meas&&beats/meas>=0.6?'hit':'low';
   [
     {l:'Shows',v:shows.length,c:''},
+    {l:'ROI passed',v:roiMeasured?String(roiPassed):'-',c:roiMeasured&&roiPassed?'hit':''},
     {l:'Avg ROI',v:avgROI?avgROI.toFixed(2)+'x':'-',c:bCls},
     {l:'Beat rate',v:meas?Math.round(beats/meas*100)+'%':'-',c:bCls},
     {l:'Avg BS/show',v:$k(avgBS),c:''},
@@ -1131,6 +1170,16 @@ function renderDJDetail(djEnc){
     h+='<div style="text-align:center"><div style="font-size:18px;font-weight:800" class="'+k.c+'">'+k.v+'</div><div style="font-size:9px;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">'+k.l+'</div></div>';
   });
   /* Suggested fee   highlighted separately */
+  h+='<div class="lb-score" title="Nights where actual ROI met or beat the ROI target">';
+  h+='<b>'+(roiMeasured?roiPassed:'—')+'</b>';
+  h+='<span>ROI score</span>';
+  h+='<em>'+(roiMeasured?('passed '+roiPassed+' of '+roiMeasured):'no ROI target')+'</em>';
+  h+='</div>';
+  if(feeUp){
+    h+='<div class="lb-fee-flag" title="Fee on these nights is higher than this DJ\'s fees last year">';
+    h+='<b>Fee up</b><span>'+feeUp+' night'+(feeUp===1?'':'s')+' vs last year</span>';
+    h+='</div>';
+  }
   h+='<div style="text-align:center;margin-left:auto;background:var(--blue-bg);padding:6px 14px;border-radius:10px">';
   h+='<div style="font-size:18px;font-weight:900;color:var(--blue)">'+$k(suggFee)+'</div>';
   h+='<div style="font-size:9px;color:var(--blue);text-transform:uppercase;letter-spacing:.05em;font-weight:700">Suggested fee</div>';
@@ -1144,14 +1193,16 @@ function renderDJDetail(djEnc){
   if(!shows.length){
     h+='<tr><td colspan="8" style="text-align:center;padding:24px;color:var(--ink3)">No shows for this DJ in '+_lbFilterLabel()+'.</td></tr>';
   }
-  shows.forEach(function(r){
+  shows.forEach(function(r, i){
     var bsCls=perfTone(r.bs_a, r.bs_m, (r.fee||r.cost), r.roi_a, r.roi_t);
     var rCls=bsCls;
     var dt=new Date(r.d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+    var feeMark=feeMarks[i];
+    var feeFlag=feeMark?' <span class="lb-fee-up" title="Up from '+$k(feeMark.prior)+' in '+feeMark.year+'">Fee up</span>':'';
     h+='<tr>';
     h+='<td class="td-dt">'+dt+'</td>';
     h+='<td style="font-size:10px;color:var(--ink3)">'+r.venue+'</td>';
-    h+='<td>'+$k(r.cost)+'</td>';
+    h+='<td>'+$k(r.cost)+feeFlag+'</td>';
     h+='<td>'+$k(r.bs_m)+'</td>';
     h+='<td class="'+bsCls+'"><b>'+$k(r.bs_a)+'</b></td>';
     h+='<td>'+rx(r.roi_t)+'</td>';

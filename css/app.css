@@ -227,6 +227,14 @@ body.mobile-mode .sb-collapse,body.mobile-mode .sb-restore{display:none!importan
 .lb-row{cursor:pointer}.lb-row:hover td{background:var(--blue-bg)!important}
 .lb-dj-link{color:var(--blue);text-decoration:underline}
 /* Pills */
+.lb-score{text-align:center;background:var(--beat-bg);padding:6px 14px;border-radius:10px;min-width:72px}
+.lb-score b{display:block;font-size:18px;font-weight:900;color:var(--beat);line-height:1}
+.lb-score span{display:block;font-size:9px;color:var(--beat);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-top:3px}
+.lb-score em{display:block;font-style:normal;font-size:8px;color:var(--ink3);margin-top:1px}
+.lb-fee-flag{text-align:center;background:var(--amb-bg);padding:6px 14px;border-radius:10px}
+.lb-fee-flag b{display:block;font-size:13px;font-weight:900;color:var(--amb);line-height:1.1}
+.lb-fee-flag span{display:block;font-size:8px;font-weight:700;color:var(--amb);margin-top:2px}
+.lb-fee-up{font-size:8px;font-weight:800;padding:1px 5px;border-radius:4px;background:var(--amb-bg);color:var(--amb);margin-left:4px;letter-spacing:.02em;white-space:nowrap}
 .pill{font-size:8px;font-weight:700;padding:2px 6px;border-radius:4px;display:inline-block}
 .p-beat{background:var(--beat-bg);color:var(--beat)}.p-miss{background:var(--miss-bg);color:var(--miss)}.p-nd{background:var(--card3);color:var(--ink3)}
 /* Modal */
