@@ -882,10 +882,8 @@ function setLayoutMode(mode){
   applyLayoutMode();
 }
 function initLayoutMode(){
-  try{
-    var saved=localStorage.getItem(LAYOUT_PREF_KEY);
-    if(saved==='mobile'||saved==='desktop') layoutModePref=saved;
-  }catch(e){}
+  layoutModePref=null;
+  try{ localStorage.removeItem(LAYOUT_PREF_KEY); }catch(e){}
   applyLayoutMode();
   initSidebarCollapse();
   document.addEventListener('click', function(ev){

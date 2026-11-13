@@ -146,13 +146,20 @@ function buildYrPills() {
 
 function placeYearControl(){
   var pills=document.getElementById('yrPills');
-  if(!pills) return;
+  var venues=document.getElementById('venTabs');
   var when=document.getElementById('calWhen');
+  var month=document.getElementById('monthSlider');
   var top=document.querySelector('.topbar-controls');
-  if(typeof curView!=='undefined' && curView==='calendar' && when){
-    if(pills.parentNode!==when) when.appendChild(pills);
-  } else if(top && pills.parentNode!==top){
-    top.appendChild(pills);
+  var onCal=typeof curView!=='undefined' && curView==='calendar' && when;
+  if(onCal){
+    if(venues && venues.parentNode!==when) when.insertBefore(venues, when.firstChild);
+    if(pills && pills.parentNode!==when){
+      if(month && month.parentNode===when && month.nextSibling) when.insertBefore(pills, month.nextSibling);
+      else when.appendChild(pills);
+    }
+  } else if(top){
+    if(venues && venues.parentNode!==top) top.appendChild(venues);
+    if(pills && pills.parentNode!==top) top.appendChild(pills);
   }
 }
 function selYr(yr) {

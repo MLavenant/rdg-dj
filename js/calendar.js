@@ -47,13 +47,13 @@ function renderCal(){
   var lb=document.getElementById('calViewListBtn'), gb=document.getElementById('calViewGridBtn'), yb=document.getElementById('calViewYearBtn');
   if(lb&&gb&&yb){ lb.classList.toggle('on',calViewMode==='list'); gb.classList.toggle('on',calViewMode==='grid'); yb.classList.toggle('on',calViewMode==='year'); }
 
-  /* Current month stays visible. The rest open to the right, then wrap down. */
+  /* Current month stays visible. The rest open downward as full names. */
   var sliderHtml='<div class="month-slider ctx-pick" id="calSliderInner">';
-  sliderHtml+='<button type="button" class="ms-btn ms-on ctx-toggle" onclick="toggleCtxPick(\'calSliderInner\')">'+MN_SH[mo]+' <span class="ctx-caret">&#9662;</span></button>';
+  sliderHtml+='<button type="button" class="ms-btn ms-on ctx-toggle" onclick="toggleCtxPick(\'calSliderInner\')">'+MN_FULL[mo]+' <span class="ctx-caret">&#9662;</span></button>';
   sliderHtml+='<div class="ctx-panel">';
   for(var mi=0;mi<12;mi++){
     if(mi===mo) continue;
-    sliderHtml+='<button class="ms-btn" id="msbtn'+mi+'" onclick="jumpToMonth('+mi+')">'+MN_SH[mi]+'</button>';
+    sliderHtml+='<button class="ms-btn" id="msbtn'+mi+'" onclick="jumpToMonth('+mi+')">'+MN_FULL[mi]+'</button>';
   }
   sliderHtml+='</div></div>';
   document.getElementById('monthSlider').innerHTML=sliderHtml;
