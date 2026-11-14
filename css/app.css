@@ -91,7 +91,7 @@ body.mobile-mode .sb-collapse,body.mobile-mode .sb-restore{display:none!importan
 /* Main */
 .main{flex:1;min-width:0;min-height:0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
 .topbar{background:var(--card);border-bottom:0.5px solid var(--hair);padding:10px 18px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:nowrap;position:sticky;top:0;z-index:10}
-.topbar-left{display:flex;align-items:center;gap:10px;min-width:0;flex:0 1 240px}
+.topbar-left{display:flex;align-items:center;gap:10px;min-width:0;flex:0 1 auto}
 .topbar-controls{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;min-width:0;flex:1 1 auto;max-width:100%}
 .topbar-controls #venTabs,.topbar-controls #yrPills{display:flex;gap:4px;flex-wrap:wrap;max-width:100%;width:auto}
 .ctx-pick{position:relative;display:inline-flex;align-items:center;gap:4px;flex-wrap:nowrap;min-width:0}
@@ -101,9 +101,14 @@ body.mobile-mode .sb-collapse,body.mobile-mode .sb-restore{display:none!importan
 .ctx-pick .ctx-panel .ven-tab,.ctx-pick .ctx-panel .yr-pill,.ctx-pick .ctx-panel .ms-btn{width:100%;text-align:left;justify-content:flex-start}
 .ctx-caret{font-size:8px;margin-left:3px;opacity:.8}
 .month-slider.ctx-pick{overflow:visible;flex-wrap:nowrap}
-.pg-title{font-size:16px;font-weight:900;letter-spacing:-.4px}
-.app-ver{margin-left:6px;font-size:10px;font-weight:650;letter-spacing:.04em;color:var(--ink4);vertical-align:middle}
+.pg-head{display:flex;flex-direction:column;gap:2px;min-width:0}
+.pg-title{font-size:16px;font-weight:900;letter-spacing:-.4px;line-height:1.1}
+.pg-meta{display:flex;align-items:center;gap:8px;min-width:0}
+.app-ver{margin-left:0;font-size:11px;font-weight:650;letter-spacing:.04em;color:var(--ink4);vertical-align:middle}
 .pg-sub{font-size:10px;color:var(--ink3)}
+.pg-sub:empty,body.on-cal .pg-sub{display:none}
+.cal-date-nav{display:flex;align-items:center;gap:6px;margin-left:auto;flex:0 0 auto}
+.cal-date-nav .cal-hd-title{min-width:0;text-align:left;white-space:nowrap}
 .ven-tab:hover{background:var(--card3);transform:translateY(-1px)}
 .ven-tab.on{box-shadow:var(--shadow-sm)}
 .yr-pill{font-size:11px;font-weight:600;padding:5px 11px;border-radius:8px;border:none;background:var(--card2);cursor:pointer;color:var(--ink2);font-family:inherit;transition:all .15s}
@@ -654,7 +659,7 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .cal-when{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--card2);border-bottom:0.5px solid var(--hair);padding:6px 12px;flex-shrink:0;position:relative;z-index:20}
 .cal-when .month-slider{background:transparent;border-bottom:0;padding:0;flex:0 1 auto}
 .cal-when #yrPills,.cal-when #venTabs{flex:0 1 auto}
-.cal-when-actions{margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0}
+.cal-when-actions{margin-left:8px;display:flex;align-items:center;gap:6px;flex-shrink:0}
 .month-slider{display:flex;background:var(--card2);border-bottom:0.5px solid var(--hair);padding:6px 12px;gap:4px;overflow-x:auto;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}
 .month-slider::-webkit-scrollbar{display:none}
 .ms-btn{font-size:10.5px;font-weight:600;padding:6px 14px;border-radius:20px;border:none;background:var(--card);cursor:pointer;white-space:nowrap;color:var(--ink3);font-family:inherit;flex-shrink:0;transition:all .15s;box-shadow:var(--shadow-sm)}
@@ -1207,6 +1212,7 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 
 .pgsub-logo{height:26px;width:auto;vertical-align:middle;margin-right:8px;opacity:1;filter:drop-shadow(0 1px 1px rgba(0,0,0,.06))}
 #pgSub{display:flex;align-items:center;min-height:28px}
+body.on-cal #pgSub{display:none;min-height:0}
 #pgSub span{font-size:11px;color:var(--ink3)}
 
 /* Calendar/Accounting freeze: nav + months stay; table scrolls underneath */

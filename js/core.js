@@ -183,6 +183,7 @@ function setView(v) {
   curView = v;
   placeYearControl();
   document.body.classList.toggle('res-view', v==='resident');
+  document.body.classList.toggle('on-cal', v==='calendar');
   try{
     if(_presenceRef) _presenceRef.update({view:v,lastSeen:firebase.database.ServerValue.TIMESTAMP});
   }catch(ePresence){}
@@ -1606,7 +1607,8 @@ function renderKPIs() {
   if(mm){
     mName = (typeof MN_FULL!=='undefined'?MN_FULL[curM]:mName)+' '+curYr+' <span style="font-weight:600;color:var(--ink3)">('+fiscalPeriodShortRange(curYr,curM)+')</span>';
   }
-  document.getElementById('pgSub').innerHTML = '<span>'+curV+' &middot; '+mName+'</span>';
+  var pgSub=document.getElementById('pgSub');
+  if(pgSub) pgSub.innerHTML = curView==='calendar' ? '' : ('<span>'+curV+' &middot; '+mName+'</span>');
   updateTopbarLogo(curV);
   renderCalBudgetBanner(mm);
 }
