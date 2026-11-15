@@ -110,17 +110,15 @@ function closeCtxPicks(){
 }
 function buildVenTabs() {
   var venues = listActiveVenues();
-  var cur=venueColor(curV);
-  var html='<button type="button" class="ven-tab on ctx-toggle" style="background:'+cur.a+';border-color:'+cur.a+';color:#fff" onclick="toggleCtxPick(\'venTabs\')">'+curV+' <span class="ctx-caret">&#9662;</span></button>';
-  html+='<div class="ctx-panel">';
-  venues.forEach(function(v){
-    if(v===curV) return;
+  var html=venues.map(function(v){
     var c=venueColor(v);
-    html+='<button type="button" class="ven-tab" data-v="'+v+'" style="border-left:3px solid '+c.a+'" onclick="selVenue(\''+v+'\')">'+v+'</button>';
-  });
-  html+='</div>';
-  document.getElementById('venTabs').innerHTML = html;
-  document.getElementById('venTabs').classList.add('ctx-pick');
+    var on=v===curV;
+    var style=on?('background:'+c.a+';border-color:'+c.a+';color:#fff'):('border-left:3px solid '+c.a);
+    return '<button type="button" class="ven-tab'+(on?' on':'')+'" data-v="'+v+'" style="'+style+'" onclick="selVenue(\''+v+'\')">'+v+'</button>';
+  }).join('');
+  var el=document.getElementById('venTabs');
+  el.innerHTML = html;
+  el.classList.remove('ctx-pick','open');
 }
 
 /*    Year pills                                                 */
@@ -132,16 +130,12 @@ function buildYrPills() {
   });
   var yrs=Object.keys(years).map(Number).filter(function(y){return y>=2020&&y<=2035;}).sort(function(a,b){return a-b;});
   if(yrs.indexOf(curYr)<0) yrs.push(curYr), yrs.sort(function(a,b){return a-b;});
-  var html='<button type="button" class="yr-pill on ctx-toggle" onclick="toggleCtxPick(\'yrPills\')">'+curYr+' <span class="ctx-caret">&#9662;</span></button>';
-  html+='<div class="ctx-panel">';
-  yrs.forEach(function(y){
-    if(y===curYr) return;
-    html+='<button type="button" class="yr-pill" onclick="selYr('+y+')">'+y+'</button>';
-  });
-  html+='</div>';
+  var html=yrs.map(function(y){
+    return '<button type="button" class="yr-pill'+(y===curYr?' on':'')+'" onclick="selYr('+y+')">'+y+'</button>';
+  }).join('');
   var host=document.getElementById('yrPills');
   host.innerHTML = html;
-  host.classList.add('ctx-pick');
+  host.classList.remove('ctx-pick','open');
 }
 
 function placeYearControl(){

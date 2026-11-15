@@ -85,6 +85,11 @@ function faFinanceTone(st){
 function faDjLocked(show){
   if(!faInScope(show)) return false;
   if(financeCanApprove()) return false;
+  /* Operators set Offer sent, Hold 1, and Confirmed on 2027 nights without waiting for Finance Approved. */
+  if(typeof signInRole==='function'){
+    var role=signInRole(financeSignedInEmail());
+    if(role==='operator'||role==='ao') return false;
+  }
   return faFinanceStatus(show)!=='Finance Approved';
 }
 function faStatusOptions(show, current){

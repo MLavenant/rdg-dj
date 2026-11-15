@@ -658,7 +658,7 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 /* Month slider ? single clean definition */
 .cal-when{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--card2);border-bottom:0.5px solid var(--hair);padding:6px 12px;flex-shrink:0;position:relative;z-index:20}
 .cal-when .month-slider{background:transparent;border-bottom:0;padding:0;flex:0 1 auto}
-.cal-when #yrPills,.cal-when #venTabs{flex:0 1 auto}
+.cal-when #yrPills,.cal-when #venTabs,#venTabs,#yrPills{display:flex;align-items:center;gap:4px;flex-wrap:wrap;flex:0 1 auto}
 .cal-when-actions{margin-left:8px;display:flex;align-items:center;gap:6px;flex-shrink:0}
 .month-slider{display:flex;background:var(--card2);border-bottom:0.5px solid var(--hair);padding:6px 12px;gap:4px;overflow-x:auto;scroll-behavior:smooth;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}
 .month-slider::-webkit-scrollbar{display:none}
