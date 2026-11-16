@@ -140,10 +140,18 @@ function faRefreshViews(){
   if(curView==='finance') renderFinanceApproval();
   else if((curView==='calendar'||curView==='accounting') && typeof _calRequestRefresh==='function') _calRequestRefresh(false);
 }
+function faFinanceShort(st){
+  if(!st) return 'Not set';
+  if(st==='Finance to Approve') return 'To approve';
+  if(st==='Finance Approved') return 'Approved';
+  if(st==='Finance declined') return 'Declined';
+  return st;
+}
 function faSetFinance(show, status, why){
   if(!faFinanceTrack(show)) return false;
   var key=faKey(show);
   if(!key) return false;
+  var prev=faFinanceStatus(show);
   var rec={
     s:status||'',
     fee:status==='Finance Approved'?faFee(show):null,
@@ -155,6 +163,10 @@ function faSetFinance(show, status, why){
   if(window._fbDb){
     try{ window._fbDb.ref('rdg/financeStatus/'+key).set(rec); }catch(e){}
   }
+  var uid=(typeof ensureShowUid==='function')?ensureShowUid(show):(show&&show._uid)||'';
+  var fromLbl=faFinanceShort(prev);
+  var toLbl=faFinanceShort(status);
+  if(uid && fromLbl!==toLbl && typeof showHistPush==='function') showHistPush(uid, 'Finance Status', fromLbl, toLbl);
   return true;
 }
 function faSetFinanceFromSelect(sel){
@@ -563,26 +575,13 @@ function renderFinanceApproval(){
   if(!live) html+='<div class="fa-note">Finance approval applies to 2027 performances. 2026 is shown against budget only.</div>';
   var yearRow=faRange(venue, when.year, 0, 11);
   html+=faCardHtml('Budget · full year', yearRow, 'year', 'year');
-  if(greg && when.total){
+  if(when.total){
     html+='<div class="fa-fit"><div class="fa-break-hd">Guest DJ · scheduled vs budget · '+when.year+'</div><div class="fa-quarters">';
     for(var q=0;q<4;q++) html+=faQuarterHtml(venue, when.year, q, names);
     html+='</div>'+faTotalBar(when.year+' total', yearRow.spend, yearRow.budget, true)+'</div>';
-  }else if(!greg){
-    var mi=when.total?((typeof TODAY!=='undefined'&&typeof fiscalInfoForDate==='function'&&fiscalInfoForDate(TODAY).year===when.year)?fiscalInfoForDate(TODAY).monthIndex:0):when.month;
-    html+='<div class="fa-stack">'
-      +faCardHtml('MTD · '+names[mi], faMonthRow(venue, when.year, mi), String(mi), 'mtd')
-      +faCardHtml('YTD through '+names[mi], faRange(venue, when.year, 0, mi), 'y'+mi, 'ytd')
-      +'</div>';
-    if(live) html+='<button type="button" class="fa-pending-launch" data-fa="pending" data-scope="'+mi+'">'+faStatusLine(venue, when.year, String(mi))+'</button>';
-    html+=faTotalBar(when.year+' total', yearRow.spend, yearRow.budget, true);
   }else{
     html+=faCardHtml(names[when.month], faMonthRow(venue, when.year, when.month), String(when.month), 'month');
-    html+=faTotalBar(when.year+' total', yearRow.spend, yearRow.budget, true);
-    if(!faPendingOn){ faPendingOn=true; faPendingScope=String(when.month); }
-  }
-  if(live){
-    var pendScope=when.total?'year':String(when.month);
-    html+=faPendingHtml(venue, when.year, pendScope, faScopeTitle(pendScope, names));
+    if(live) html+=faPendingHtml(venue, when.year, String(when.month), names[when.month]);
   }
   host.innerHTML=html;
   host.onclick=function(ev){
@@ -590,10 +589,10 @@ function renderFinanceApproval(){
     if(!t||!host.contains(t)) return;
     if(t.getAttribute('data-fa')==='total'){ faSetMonth('total'); return; }
     if(t.getAttribute('data-fa')==='pending'){
-      var scope=t.getAttribute('data-scope')||'year';
-      if(faPendingOn && String(faPendingScope)===String(scope)){ faPendingOn=false; faPendingScope=null; }
-      else { faPendingOn=true; faPendingScope=scope; }
-      renderFinanceApproval();
+      var scope=t.getAttribute('data-scope')||'';
+      if(/^\d+$/.test(scope)){ faSetMonth(scope); return; }
+      var monthEl=t.closest('[data-month]');
+      if(monthEl){ faSetMonth(monthEl.getAttribute('data-month')); return; }
       return;
     }
     if(t.hasAttribute('data-month')){ faSetMonth(t.getAttribute('data-month')); return; }

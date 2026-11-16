@@ -1172,6 +1172,9 @@ function saveEvent(){
   var nextFee=rec.fee;
   var feeChanged=(prevFee==null||prevFee==='')!==(nextFee==null||nextFee==='') || (prevFee!=null && nextFee!=null && Math.round(+prevFee)!==Math.round(+nextFee));
   window._showHistFeePending=feeChanged?{uid:rec._uid, from:(typeof showHistMoney==='function'?showHistMoney(prevFee):String(prevFee==null?'Not set':prevFee)), to:(typeof showHistMoney==='function'?showHistMoney(nextFee):String(nextFee==null?'Not set':nextFee))}:null;
+  var prevDj=before?String(before.dj||'').trim():'';
+  var nextDj=String(rec.dj||'').trim();
+  window._showHistDjPending=(before && prevDj!==nextDj)?{uid:rec._uid, from:prevDj||'Not set', to:nextDj||'Not set'}:null;
   /* Normalize undefined → null so Firebase writes and in-memory state stay clean. */
   Object.keys(rec).forEach(function(k){ if(rec[k]===undefined) rec[k]=null; });
   if(_editIdx>=0){
@@ -1210,6 +1213,10 @@ function saveEvent(){
           if(window._showHistFeePending && window._showHistFeePending.uid===saveUid && typeof showHistPush==='function'){
             showHistPush(saveUid, 'Fee', window._showHistFeePending.from, window._showHistFeePending.to);
             window._showHistFeePending=null;
+          }
+          if(window._showHistDjPending && window._showHistDjPending.uid===saveUid && typeof showHistPush==='function'){
+            showHistPush(saveUid, 'DJ', window._showHistDjPending.from, window._showHistDjPending.to);
+            window._showHistDjPending=null;
           }
           setTimeout(function(){
             var p = window._schedPending && window._schedPending[saveUid];

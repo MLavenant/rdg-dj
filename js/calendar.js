@@ -1920,12 +1920,16 @@ function showHistMoney(n){
   if(!isFinite(v)) return String(n);
   return (typeof $k==='function')?$k(v):String(v);
 }
+function showHistIsGuest(field){
+  var f=String(field||'').toLowerCase().replace(/\s+/g,' ');
+  return f==='dj'||f==='dj name'||f==='guest dj'||f==='fee'||f==='finance status'||f==='finance'||f==='dj status';
+}
 function showCalHistory(uid, ds, djName){
   if(typeof signInIsOwner!=='function' || !signInIsOwner()) return;
   var seen={};
   var list=[];
   function add(e){
-    if(!e||!e.at) return;
+    if(!e||!e.at||!showHistIsGuest(e.field)) return;
     var key=e.at+'|'+(e.field||'')+'|'+(e.from||'')+'|'+(e.to||'')+'|'+(e.by||'');
     if(seen[key]) return;
     seen[key]=1;
@@ -1935,7 +1939,7 @@ function showCalHistory(uid, ds, djName){
   try{
     var acct=_acctNormalize(getAcct(ds));
     (acct.log||[]).forEach(function(e){
-      if(!e||!e.at) return;
+      if(!e||!e.at||!showHistIsGuest(e.field)) return;
       var t=new Date(e.at).getTime();
       var dup=list.some(function(x){
         if((x.field||'')!==(e.field||'')) return false;
@@ -1959,7 +1963,7 @@ function showCalHistory(uid, ds, djName){
   var modal=document.createElement('div');
   modal.id='acctHistModal';
   modal.className='acct-hist-modal';
-  modal.innerHTML='<div class="acct-hist-card"><h3>Edit history</h3>'
+  modal.innerHTML='<div class="acct-hist-card"><h3>Guest DJ history</h3>'
     +'<div style="font-size:11px;color:var(--ink3);margin-bottom:8px">'+_escHtml(ds||'')+' &middot; '+_escHtml(curV||'')+(djName?' &middot; '+_escHtml(djName):'')+'</div>'
     +(last?'<div style="font-size:11px;margin-bottom:10px">Last edit: <b>'+_escHtml(last.by||'?')+'</b> &middot; '+_fmtAcctWhen(last.at)+'</div>':'')
     +rows
