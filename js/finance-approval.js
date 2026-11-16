@@ -68,12 +68,12 @@ function faDjStatus(show){
 }
 function faFinanceStatus(show){
   if(!faFinanceTrack(show)) return '';
+  var raw=faRawDjStatus(show);
+  /* Offer sent, Hold 1, or Confirmed already on the night counts as Finance Approved. */
+  if(FA_LIVE.indexOf(raw)>=0) return 'Finance Approved';
+  if(FA_FIN.indexOf(raw)>=0) return raw;
   var rec=FINANCE_STATUS[faKey(show)];
   if(rec&&typeof rec==='object'&&rec.s!=null) return FA_FIN.indexOf(rec.s)>=0?rec.s:'';
-  var raw=faRawDjStatus(show);
-  if(FA_FIN.indexOf(raw)>=0) return raw;
-  /* A DJ status set before the finance process counts as approved. */
-  if(FA_LIVE.indexOf(raw)>=0) return 'Finance Approved';
   return '';
 }
 function faFinanceTone(st){
@@ -85,11 +85,6 @@ function faFinanceTone(st){
 function faDjLocked(show){
   if(!faInScope(show)) return false;
   if(financeCanApprove()) return false;
-  /* Operators set Offer sent, Hold 1, and Confirmed on 2027 nights without waiting for Finance Approved. */
-  if(typeof signInRole==='function'){
-    var role=signInRole(financeSignedInEmail());
-    if(role==='operator'||role==='ao') return false;
-  }
   return faFinanceStatus(show)!=='Finance Approved';
 }
 function faStatusOptions(show, current){
@@ -100,7 +95,7 @@ function faBlockLiveStatus(show, next){
   if(!faInScope(show)) return false;
   if(FA_LIVE.indexOf(next)<0) return false;
   if(!faDjLocked(show)) return false;
-  try{ alert('DJ status unlocks once Finance Approval marks this night Finance Approved.'); }catch(e){}
+  try{ alert('DJ status unlocks once '+(faForGreg(show)?'Greg':'Takuma')+' marks this night Finance Approved.'); }catch(e){}
   return true;
 }
 function faStatusSelectOptionsHtml(show, djSt){

@@ -90,9 +90,11 @@ body.mobile-mode .sb-collapse,body.mobile-mode .sb-restore{display:none!importan
 .sb-ven-btn.on{color:var(--ink);font-weight:700;background:var(--card3)}
 /* Main */
 .main{flex:1;min-width:0;min-height:0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
-.topbar{background:var(--card);border-bottom:0.5px solid var(--hair);padding:10px 18px;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:nowrap;position:sticky;top:0;z-index:10}
-.topbar-left{display:flex;align-items:center;gap:10px;min-width:0;flex:0 1 auto}
-.topbar-controls{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;min-width:0;flex:1 1 auto;max-width:100%}
+.topbar{background:var(--card);border-bottom:0.5px solid var(--hair);padding:10px 18px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;position:sticky;top:0;z-index:10}
+.topbar-left{display:flex;align-items:center;gap:10px;min-width:0}
+.topbar-venues{display:flex;justify-content:center;align-items:center;min-width:0}
+.topbar-venues #venTabs{justify-content:center}
+.topbar-controls{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap;min-width:0}
 .topbar-controls #venTabs,.topbar-controls #yrPills{display:flex;gap:4px;flex-wrap:wrap;max-width:100%;width:auto}
 .ctx-pick{position:relative;display:inline-flex;align-items:center;gap:4px;flex-wrap:nowrap;min-width:0}
 .ctx-pick .ctx-panel{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:40;flex-direction:column;align-items:stretch;gap:2px;min-width:148px;max-height:280px;overflow:auto;padding:6px;background:#fff;border:0.5px solid var(--hair);border-radius:12px;box-shadow:var(--shadow-md)}
@@ -1832,9 +1834,10 @@ body.mobile-mode .mobile-nav-close{display:flex}
 body.mobile-mode.nav-open .mobile-nav-backdrop{display:block}
 body.mobile-mode.nav-open .topbar{z-index:130}
 body.mobile-mode .main{height:100dvh;width:100%;overflow:hidden}
-body.mobile-mode .topbar{padding:10px 12px;gap:8px;z-index:130;flex-wrap:wrap}
+body.mobile-mode .topbar{display:flex;flex-wrap:wrap;padding:10px 12px;gap:8px;z-index:130}
 body.mobile-mode .topbar-left{flex:1 1 auto}
-body.mobile-mode .topbar-controls{flex:1 1 100%;justify-content:flex-end}
+body.mobile-mode .topbar-venues{flex:1 1 100%;order:3}
+body.mobile-mode .topbar-controls{flex:0 0 auto;justify-content:flex-end}
 body.mobile-mode .pg-title{font-size:14px}
 body.mobile-mode .kpi-strip,.acct-summary,.acct-tabs{padding:8px 10px}
 body.mobile-mode .kpi{min-width:42%;flex:1 1 42%}

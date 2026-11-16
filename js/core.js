@@ -46,6 +46,9 @@ recalcAllSchedTargets(); /* boot */
 }
 
 /*    Sidebar                                                      */
+function signInIsApUser(){
+  return typeof signInRole==='function' && signInRole(typeof signInCurrentEmail==='function'?signInCurrentEmail():'')==='ao';
+}
 function buildSidebar() {
   var html = '';
   function section(label, items){
@@ -54,6 +57,16 @@ function buildSidebar() {
       html += '<button class="sb-btn" data-view="'+b.id+'" onclick="setView(\''+b.id+'\')">'
             + '<span class="sb-ic">'+b.ic+'</span>'+b.lb+'</button>';
     });
+  }
+  if(signInIsApUser()){
+    section('Calendar', [
+      {id:'resident', ic:'&#9783;', lb:'Resident DJ Calendar'}
+    ]);
+    section('Finance', [
+      {id:'accounting', ic:'&#9998;', lb:'Accounting'}
+    ]);
+    document.getElementById('sidebar').innerHTML = html;
+    return;
   }
   section('Calendar', [
     {id:'calendar',   ic:'&#9783;',  lb:'Guest DJ Calendar'},
@@ -123,13 +136,7 @@ function buildVenTabs() {
 
 /*    Year pills                                                 */
 function buildYrPills() {
-  var years={2024:1,2025:1,2026:1,2027:1,2028:1};
-  SCHED.forEach(function(r){
-    if(r&&r.d) years[fiscalYearForDate(r.d)]=1;
-    if(r&&r.yr) years[+r.yr]=1;
-  });
-  var yrs=Object.keys(years).map(Number).filter(function(y){return y>=2020&&y<=2035;}).sort(function(a,b){return a-b;});
-  if(yrs.indexOf(curYr)<0) yrs.push(curYr), yrs.sort(function(a,b){return a-b;});
+  var yrs=[2026,2027];
   var html=yrs.map(function(y){
     return '<button type="button" class="yr-pill'+(y===curYr?' on':'')+'" onclick="selYr('+y+')">'+y+'</button>';
   }).join('');
@@ -140,20 +147,17 @@ function buildYrPills() {
 
 function placeYearControl(){
   var pills=document.getElementById('yrPills');
-  var venues=document.getElementById('venTabs');
   var when=document.getElementById('calWhen');
   var month=document.getElementById('monthSlider');
   var top=document.querySelector('.topbar-controls');
   var onCal=typeof curView!=='undefined' && curView==='calendar' && when;
   if(onCal){
-    if(venues && venues.parentNode!==when) when.insertBefore(venues, when.firstChild);
     if(pills && pills.parentNode!==when){
       if(month && month.parentNode===when && month.nextSibling) when.insertBefore(pills, month.nextSibling);
       else when.appendChild(pills);
     }
-  } else if(top){
-    if(venues && venues.parentNode!==top) top.appendChild(venues);
-    if(pills && pills.parentNode!==top) top.appendChild(pills);
+  } else if(top && pills && pills.parentNode!==top){
+    top.appendChild(pills);
   }
 }
 function selYr(yr) {
@@ -174,6 +178,7 @@ function setView(v) {
   if(v==='ebitda' && !unlockEbitdaAccess()) return;
   if(v==='access' && (typeof signInIsOwner!=='function' || !signInIsOwner())) return;
   closeMobileNav();
+  if(signInIsApUser() && v!=='resident' && v!=='accounting') v='resident';
   curView = v;
   placeYearControl();
   document.body.classList.toggle('res-view', v==='resident');

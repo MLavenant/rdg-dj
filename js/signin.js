@@ -11,7 +11,10 @@ var RDG_SIGNIN_ALLOW = {
   'matthias@rivieradininggroup.com': 'Matthias',
   'takuma@rivieradininggroup.com': 'Takuma',
   'jessica@rivieradininggroup.com': 'Jessica',
-  'fabien@rivieradininggroup.com': 'Fabien'
+  'fabien@rivieradininggroup.com': 'Fabien',
+  'madison.cortes@rivieradininggroup.com': 'Madison Cortes',
+  'maxime@rivieradininggroup.com': 'Maxime',
+  'm.pineda@rivieradininggroup.com': 'M. Pineda'
 };
 var RDG_SIGNIN_OWNER = 'matthias@rivieradininggroup.com';
 var RDG_ACCESS_DEFAULT = {
@@ -23,12 +26,15 @@ var RDG_ACCESS_DEFAULT = {
   'hugo@rivieradininggroup.com': 'operator',
   'christophe@rivieradininggroup.com': 'operator',
   'alexandra@rivieradininggroup.com': 'operator',
-  'jessica@rivieradininggroup.com': 'operator'
+  'jessica@rivieradininggroup.com': 'ao',
+  'madison.cortes@rivieradininggroup.com': 'ao',
+  'maxime@rivieradininggroup.com': 'ao',
+  'm.pineda@rivieradininggroup.com': 'ao'
 };
 var RDG_ACCESS_ROLES = [
   {id:'admin', label:'Admin', note:'Finance approval'},
   {id:'operator', label:'Operator', note:'Calendar and reports'},
-  {id:'ao', label:'AO', note:'Calendar and reports'}
+  {id:'ao', label:'AP', note:'Resident DJ Calendar and Accounting'}
 ];
 var ACCESS_DIR = {};
 var _accessDirReady = false;
@@ -57,6 +63,7 @@ function signInIsOwner(){
 }
 function signInCleanRole(role){
   role=String(role||'').toLowerCase();
+  if(role==='ap') role='ao';
   if(role==='admin'||role==='operator'||role==='ao') return role;
   return 'operator';
 }
@@ -110,6 +117,8 @@ function signInWatchAccess(tries){
     var typing=document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#accAddForm');
     if(typing) return;
     try{
+      if(typeof buildSidebar==='function') buildSidebar();
+      if(typeof signInRole==='function' && signInRole(signInCurrentEmail())==='ao' && typeof curView!=='undefined' && curView!=='resident' && curView!=='accounting' && typeof setView==='function') setView('resident');
       if(typeof curView!=='undefined'&&curView==='system'&&typeof renderSystem==='function') renderSystem();
       if(typeof curView!=='undefined'&&curView==='access'&&typeof renderAccess==='function') renderAccess();
     }catch(e){}
@@ -170,7 +179,7 @@ function signInPeopleCardHtml(){
   var h='<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid #0b2e40">'
     +'<div style="font-size:14px;font-weight:900">People</div>'
     +viewAs
-    +'<div style="margin-top:4px;font-size:11px;color:var(--ink3)">Add a work email and choose what they can do. Admin can approve finance. Operator and AO use the calendar and reports.</div>';
+    +'<div style="margin-top:4px;font-size:11px;color:var(--ink3)">Add a work email and choose what they can do. Admin can approve finance. Operator uses the calendar and reports. AP uses Resident DJ Calendar and Accounting.</div>';
   if(owner){
     h+='<div id="accAddForm" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:12px">'
       +'<label style="display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#64748b">Name<input id="accName" type="text" autocomplete="off" style="font:inherit;font-size:13px;font-weight:650;text-transform:none;letter-spacing:0;padding:7px 8px;border:1px solid #e4dfd8;border-radius:8px;min-width:140px"></label>'
@@ -440,6 +449,7 @@ function signInFinish(email){
     _writePresence();
     refreshPresenceChip();
     if(typeof buildSidebar==='function') buildSidebar();
+    if(signInRole(email)==='ao' && typeof setView==='function') setView('resident');
     if(btn){
       btn.disabled=false;
       btn.textContent=btn.id==='signinCreateBtn'?'Save PIN and enter':'Enter';
