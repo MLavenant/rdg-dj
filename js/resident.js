@@ -481,7 +481,7 @@ function renderResidentCalendar(){
     fh+='</select></label><label>Month<select onchange="residentSetFilter(\'month\',this.value)">';
     for(var mi=0;mi<12;mi++) fh+='<option value="'+mi+'"'+(mi===mo?' selected':'')+'>'+MN_FULL[mi]+'</option>';
     fh+='</select></label><button type="button" class="res-add-col" onclick="residentAddColumn()">+ Column</button>';
-    fh+='<span>'+fiscalPeriodShortRange(yr, mo)+' · right-click a header to rename or delete, a cell to comment</span>';
+    fh+='<span>'+fiscalPeriodShortRange(yr, mo)+' · drag a column header to reorder (name and $ stay together) · right-click a header to rename or delete</span>';
     filters.innerHTML=fh;
   }
   var sub=document.getElementById('pgSub');
@@ -503,14 +503,14 @@ function renderResidentCalendar(){
   h+='<th class="sc-date" rowspan="2">Date'+grip('date')+'</th>';
   h+='<th class="res-group res-guest" rowspan="2">Guest DJ'+grip('guest')+'</th>';
   cols.forEach(function(col){
-    if(col.kind==='role') h+='<th class="res-group res-tone res-split res-col-hd" colspan="2" data-col="'+col.id+'">'+residentEsc(col.label)+'</th>';
-    else h+='<th class="res-group res-tone res-split res-col-hd" rowspan="2" data-col="'+col.id+'">'+residentEsc(col.label)+grip(col.id)+'</th>';
+    if(col.kind==='role') h+='<th class="res-group res-tone res-split res-col-hd" colspan="2" data-col="'+col.id+'" title="Drag to reorder. Right-click to rename or delete.">'+residentEsc(col.label)+'</th>';
+    else h+='<th class="res-group res-tone res-split res-col-hd" rowspan="2" data-col="'+col.id+'" title="Drag to reorder. Right-click to rename or delete.">'+residentEsc(col.label)+grip(col.id)+'</th>';
   });
   h+='<th class="res-group res-tone-total res-split" rowspan="2">Total'+grip('total')+'</th></tr><tr>';
   cols.forEach(function(col){
     if(col.kind!=='role') return;
-    h+='<th class="res-sub res-tone res-split res-col-hd" data-col="'+col.id+'">Name'+grip(col.id+'__name')+'</th>'
-      +'<th class="res-sub res-tone res-col-hd" data-col="'+col.id+'">$'+grip(col.id+'__amt')+'</th>';
+    h+='<th class="res-sub res-tone res-split res-col-hd" data-col="'+col.id+'" title="Drag to reorder this column. Name and $ move together.">Name'+grip(col.id+'__name')+'</th>'
+      +'<th class="res-sub res-tone res-col-hd" data-col="'+col.id+'" title="Drag to reorder this column. Name and $ move together.">$'+grip(col.id+'__amt')+'</th>';
   });
   h+='</tr></thead><tbody>';
 
@@ -694,6 +694,74 @@ function residentStartResize(handle, ev){
   document.addEventListener('mousemove', onMove);
   document.addEventListener('mouseup', onUp);
 }
+function residentHeaderOrder(){
+  var body=document.getElementById('residentBody');
+  if(!body) return [];
+  return Array.prototype.slice.call(body.querySelectorAll('thead tr:first-child th[data-col]'));
+}
+function residentMoveColumn(id, targetId, place){
+  if(!id||!targetId||id===targetId) return;
+  var cols=residentCols().slice();
+  var from=-1, to=-1, i;
+  for(i=0;i<cols.length;i++){
+    if(cols[i].id===id) from=i;
+    if(cols[i].id===targetId) to=i;
+  }
+  if(from<0||to<0) return;
+  var item=cols.splice(from,1)[0];
+  to=-1;
+  for(i=0;i<cols.length;i++){ if(cols[i].id===targetId) to=i; }
+  if(to<0) return;
+  if(place==='after') to+=1;
+  cols.splice(to, 0, item);
+  residentSaveCols(cols);
+}
+function residentStartReorder(th, ev){
+  if(!th||ev.button!==0) return;
+  var id=th.getAttribute('data-col');
+  if(!id) return;
+  ev.preventDefault();
+  var startX=ev.clientX, moved=false;
+  function clearMarks(){
+    residentHeaderOrder().forEach(function(h){ h.classList.remove('res-drag-src','res-drop-before','res-drop-after'); });
+    var subs=document.querySelectorAll('#residentBody thead th.res-sub[data-col="'+id+'"]');
+    Array.prototype.forEach.call(subs, function(h){ h.classList.remove('res-drag-src'); });
+  }
+  function onMove(e){
+    if(!moved && Math.abs(e.clientX-startX)<5) return;
+    moved=true;
+    document.body.classList.add('res-reordering');
+    clearMarks();
+    residentHeaderOrder().forEach(function(h){
+      if(h.getAttribute('data-col')===id) h.classList.add('res-drag-src');
+    });
+    var subs=document.querySelectorAll('#residentBody thead th.res-sub[data-col="'+id+'"]');
+    Array.prototype.forEach.call(subs, function(h){ h.classList.add('res-drag-src'); });
+    residentHeaderOrder().forEach(function(h){
+      var r=h.getBoundingClientRect();
+      if(e.clientX<r.left||e.clientX>r.right||h.getAttribute('data-col')===id) return;
+      h.classList.add(e.clientX<r.left+r.width/2?'res-drop-before':'res-drop-after');
+    });
+  }
+  function onUp(e){
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.body.classList.remove('res-reordering');
+    var over=null, place='before';
+    if(moved){
+      residentHeaderOrder().forEach(function(h){
+        var r=h.getBoundingClientRect();
+        if(e.clientX<r.left||e.clientX>r.right) return;
+        over=h;
+        place=e.clientX<r.left+r.width/2?'before':'after';
+      });
+    }
+    clearMarks();
+    if(over) residentMoveColumn(id, over.getAttribute('data-col'), place);
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+}
 function residentPickInit(){
   if(_resPickOn) return;
   _resPickOn=true;
@@ -742,6 +810,8 @@ function residentPickInit(){
     if(!body || !residentOn()) return;
     var grip=e.target.closest && e.target.closest('.res-grip');
     if(grip && body.contains(grip)){ residentStartResize(grip, e); return; }
+    var hd=e.target.closest && e.target.closest('th.res-col-hd');
+    if(hd && body.contains(hd)){ residentStartReorder(hd, e); return; }
     if(e.button===2) return;
     var el=residentCellFromEvent(e);
     if(!el){

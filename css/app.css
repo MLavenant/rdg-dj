@@ -1274,7 +1274,11 @@ body.res-view #venTabs,body.res-view #yrPills{display:none!important}
 #residentBody td.res-paid .res-money,#residentBody td.res-due .res-money{background:transparent}
 #residentBody .res-tone{background:#eceae6!important}
 #residentBody .res-tbl th{position:sticky;overflow:visible}
-#residentBody .res-col-hd{cursor:context-menu}
+#residentBody .res-col-hd{cursor:grab}
+body.res-reordering,#residentBody .res-col-hd.res-drag-src{cursor:grabbing}
+#residentBody .res-col-hd.res-drag-src{opacity:.4}
+#residentBody thead tr:first-child th.res-drop-before{box-shadow:inset 3px 0 0 #0b2e40}
+#residentBody thead tr:first-child th.res-drop-after{box-shadow:inset -3px 0 0 #0b2e40}
 #residentBody .res-grip{position:absolute;top:0;right:-3px;width:7px;height:100%;cursor:col-resize;z-index:3}
 #residentBody .res-grip:hover,#residentBody .res-grip.dragging{background:rgba(11,46,64,.35)}
 #residentBody td.res-has-note{background-image:linear-gradient(225deg,#d9822b 5px,transparent 5px)!important}
