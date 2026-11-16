@@ -709,13 +709,28 @@ function editPresenceName(){
   _showSessionGate('Enter your work email to continue.');
 }
 function _presencePayload(){
+  var email='';
+  try{ if(typeof signInCurrentEmail==='function') email=signInCurrentEmail()||''; }catch(e){}
   return {
     name:_presenceName()||('Unnamed '+String(_presenceSessionId||'').slice(-4)),
+    email:email,
     device:_presenceDeviceLabel(),
     connectedAt:firebase.database.ServerValue.TIMESTAMP,
     lastSeen:firebase.database.ServerValue.TIMESTAMP,
     view:curView||'calendar'
   };
+}
+function _writeAccessLastSeen(){
+  if(!window._fbDb || typeof signInCurrentEmail!=='function' || typeof signInKey!=='function') return;
+  var email=signInCurrentEmail();
+  if(!email) return;
+  try{
+    window._fbDb.ref('rdg/accessLastSeen/'+signInKey(email)).set({
+      email:email,
+      name:_presenceName()||'',
+      at:firebase.database.ServerValue.TIMESTAMP
+    });
+  }catch(e){}
 }
 function _ensurePresenceRef(){
   if(!window._fbDb) return null;
@@ -735,6 +750,7 @@ function _writePresence(){
   if(!ref) return;
   try{ ref.onDisconnect().remove(); }catch(e){}
   try{ ref.set(_presencePayload()); }catch(e2){}
+  _writeAccessLastSeen();
 }
 function _activePresenceRows(){
   var now=Date.now();
@@ -778,7 +794,11 @@ function initPresence(){
     window._fbDb.ref('rdgPresence').on('value',function(snap){
       _presenceRows=snap.val()||{};
       refreshPresenceChip();
-      if(curView==='system') renderSystem();
+      if(curView==='system' && typeof renderSystem==='function') renderSystem();
+    });
+    window._fbDb.ref('rdg/accessLastSeen').on('value',function(snap){
+      window.ACCESS_LAST_SEEN=snap.val()||{};
+      if(curView==='system' && typeof renderSystem==='function') renderSystem();
     });
     setInterval(_writePresence,45000);
   }catch(err){ console.warn('Presence unavailable',err); }

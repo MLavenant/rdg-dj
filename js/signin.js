@@ -186,6 +186,15 @@ function signInPeople(){
 function signInAttr(s){
   return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
 }
+function signInLastSeenHtml(email){
+  var rec=window.ACCESS_LAST_SEEN && window.ACCESS_LAST_SEEN[signInKey(email)];
+  var at=rec&&rec.at?+rec.at:0;
+  if(!(at>0)) return '<span style="color:#94a3b8">No connection yet</span>';
+  if(Date.now()-at<150000) return '<b style="color:#166534">Online</b>';
+  try{
+    return _escHtml(new Date(at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}));
+  }catch(e){ return ''; }
+}
 function signInPeopleCardHtml(){
   var canEdit=signInCanEditAccess();
   var people=signInPeople();
@@ -202,7 +211,7 @@ function signInPeopleCardHtml(){
       +'<button type="button" onclick="signInAccessAdd()" style="font:inherit;font-size:13px;font-weight:800;padding:8px 14px;border:0;border-radius:8px;background:#0b2e40;color:#fff;cursor:pointer">Add</button>'
       +'</div>';
   }
-  h+='<table class="fa-tbl" style="margin-top:12px"><thead><tr><th>Name</th><th>Email</th><th>Access</th>'+(canEdit?'<th></th>':'')+'</tr></thead><tbody>';
+  h+='<table class="fa-tbl" style="margin-top:12px"><thead><tr><th>Name</th><th>Email</th><th>Access</th><th>Last connection</th>'+(canEdit?'<th></th>':'')+'</tr></thead><tbody>';
   people.forEach(function(p){
     h+='<tr><td>'+_escHtml(p.name)+'</td><td>'+_escHtml(p.email)+'</td><td>';
     if(canEdit){
@@ -215,7 +224,7 @@ function signInPeopleCardHtml(){
     }else{
       h+=_escHtml(signInRoleLabel(p.role));
     }
-    h+='</td>';
+    h+='</td><td>'+signInLastSeenHtml(p.email)+'</td>';
     if(canEdit){
       h+='<td class="fa-acts">';
       if(!p.builtin) h+='<button type="button" class="fa-no" title="Remove" data-email="'+signInAttr(p.email)+'" onclick="signInAccessRemove(this)">×</button>';

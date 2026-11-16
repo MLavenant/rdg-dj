@@ -67,8 +67,7 @@ function faDjStatus(show){
 function faFinanceStatus(show){
   if(!faFinanceTrack(show)) return '';
   var raw=faRawDjStatus(show);
-  /* Offer sent, Hold 1, or Confirmed already on the night counts as Finance Approved. */
-  if(FA_LIVE.indexOf(raw)>=0) return 'Finance Approved';
+  /* A DJ status never counts as finance approval. Approval is only the finance record. */
   if(FA_FIN.indexOf(raw)>=0) return raw;
   var rec=FINANCE_STATUS[faKey(show)];
   if(rec&&typeof rec==='object'&&rec.s!=null) return FA_FIN.indexOf(rec.s)>=0?rec.s:'';
@@ -82,8 +81,19 @@ function faFinanceTone(st){
 }
 function faDjLocked(show){
   if(!faInScope(show)) return false;
-  if(financeCanApprove()) return false;
   return faFinanceStatus(show)!=='Finance Approved';
+}
+function faIsOwnerRole(){
+  var role=(typeof signInRole==='function')?signInRole(financeSignedInEmail()):'';
+  return role==='owner';
+}
+/* Calendar can send a night To approve, and an Owner can pull an approval back.
+   Approved and Declined are only set in Finance Approval. */
+function faCalendarFinanceAllowed(prev, value){
+  if(value===prev) return true;
+  if(value==='Finance Approved'||value==='Finance declined') return false;
+  if(!prev && value==='Finance to Approve') return true;
+  return prev==='Finance Approved' && (value===''||value==='Finance to Approve') && faIsOwnerRole();
 }
 function faStatusOptions(show, current){
   return (typeof ACCT_DJ_STATUS!=='undefined')?ACCT_DJ_STATUS.slice():FA_LIVE.slice();
@@ -106,20 +116,16 @@ function faStatusSelectOptionsHtml(show, djSt){
   });
   return h;
 }
-function faOperatorCanSetFinance(prev, next){
-  return !prev && next==='Finance to Approve';
-}
 function faFinanceSelectHtml(show, ds, idx){
   var st=faFinanceStatus(show);
-  var can=financeCanApprove();
   var uid=String((typeof ensureShowUid==='function')?ensureShowUid(show):'').replace(/"/g,'&quot;');
   function opt(value, label){
     var on=st===value;
-    var allowed=can || on || (!st && value==='Finance to Approve');
+    var allowed=faCalendarFinanceAllowed(st, value);
     return '<option value="'+value+'"'+(on?' selected':'')+(allowed?'':' disabled')+'>'+label+'</option>';
   }
   return '<select class="fa-fs-sel '+faFinanceTone(st)+'" data-action="finStatus" data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+uid+'"'
-    +' onclick="event.stopPropagation()" title="Finance Status. Artistic can only send a night To approve. Super Owner approves the large nights. Owner approves the rest.">'
+    +' onclick="event.stopPropagation()" title="Finance Status. Approve or decline only in Finance Approval. An Owner can move Approved back to Not set or To approve, which clears DJ status.">'
     +opt('', 'Not set')
     +opt('Finance to Approve', 'To approve')
     +opt('Finance Approved', 'Approved')
@@ -139,6 +145,27 @@ function faRefreshViews(){
   if(typeof curView==='undefined') return;
   if(curView==='finance') renderFinanceApproval();
   else if((curView==='calendar'||curView==='accounting') && typeof _calRequestRefresh==='function') _calRequestRefresh(false);
+}
+function faClearDjStatus(show){
+  if(!show) return;
+  var prev=(typeof faDjStatus==='function')?faDjStatus(show):'';
+  show.djStatus=null;
+  if(typeof ensureShowUid==='function') ensureShowUid(show);
+  if(typeof persistShowDjStatusOnly==='function') persistShowDjStatusOnly(show);
+  try{
+    var same=0;
+    (typeof SCHED!=='undefined'?SCHED:[]).forEach(function(x){
+      if(x && x._s!=='empty' && (x.v||x.venue)===(show.v||show.venue) && x.d===show.d) same++;
+    });
+    if(same<=1 && typeof getAcct==='function' && typeof _acctPersistDay==='function'){
+      var acct=getAcct(show.d);
+      if(acct && acct.djStatus){
+        acct.djStatus=null;
+        _acctPersistDay(show.d);
+      }
+    }
+  }catch(e){}
+  if(show._uid && prev && typeof showHistPush==='function') showHistPush(show._uid, 'DJ Status', prev, 'Not set');
 }
 function faFinanceShort(st){
   if(!st) return 'Not set';
@@ -176,17 +203,17 @@ function faSetFinanceFromSelect(sel){
   if(!r||!faFinanceTrack(r)){ faRefreshViews(); return; }
   var prev=faFinanceStatus(r);
   if(prev===next) return;
-  if(!financeCanApprove() && !faOperatorCanSetFinance(prev, next)){
+  if(!faCalendarFinanceAllowed(prev, next)){
+    if(next==='Finance Approved'||next==='Finance declined'){
+      try{ alert('Approve or decline this night in Finance Approval. The calendar cannot set Approved.'); }catch(e){}
+    }else if(prev==='Finance Approved'){
+      try{ alert('Only an Owner can move an approved night back to Not set or To approve.'); }catch(e2){}
+    }
     sel.value=prev;
     return;
   }
-  var terminal=next==='Finance Approved'||next==='Finance declined'||prev==='Finance Approved'||prev==='Finance declined';
-  if(terminal && !faCanDecide(r)){
-    try{ alert(faForGreg(r)?'A Super Owner approves this night.':'An Owner approves this night.'); }catch(e){}
-    sel.value=prev;
-    return;
-  }
-  faSetFinance(r, next, 'calendar');
+  if(prev==='Finance Approved') faClearDjStatus(r);
+  faSetFinance(r, next, prev==='Finance Approved'?'owner reset':'calendar');
   sel.className='fa-fs-sel '+faFinanceTone(next);
   if(next==='Finance Approved'){
     var row=sel.closest?sel.closest('tr'):null;
@@ -574,12 +601,12 @@ function renderFinanceApproval(){
     :'Owner. You approve every night except one above $30K, and one above $5K that is more than 5% of the month\'s Guest DJ budget. A Super Owner approves those.')+'</div>';
   if(!live) html+='<div class="fa-note">Finance approval applies to 2027 performances. 2026 is shown against budget only.</div>';
   var yearRow=faRange(venue, when.year, 0, 11);
-  html+=faCardHtml('Budget · full year', yearRow, 'year', 'year');
   if(when.total){
     html+='<div class="fa-fit"><div class="fa-break-hd">Guest DJ · scheduled vs budget · '+when.year+'</div><div class="fa-quarters">';
     for(var q=0;q<4;q++) html+=faQuarterHtml(venue, when.year, q, names);
     html+='</div>'+faTotalBar(when.year+' total', yearRow.spend, yearRow.budget, true)+'</div>';
   }else{
+    html+=faCardHtml('Budget · full year', yearRow, 'year', 'year');
     html+=faCardHtml(names[when.month], faMonthRow(venue, when.year, when.month), String(when.month), 'month');
     if(live) html+=faPendingHtml(venue, when.year, String(when.month), names[when.month]);
   }
