@@ -65,6 +65,11 @@ function buildSidebar() {
     section('Finance', [
       {id:'accounting', ic:'&#9998;', lb:'Accounting'}
     ]);
+    if(typeof signInSettingsAlways==='function' && signInSettingsAlways()){
+      section('Admin', [
+        {id:'system', ic:'&#9881;', lb:'Settings'}
+      ]);
+    }
     document.getElementById('sidebar').innerHTML = html;
     return;
   }
@@ -181,7 +186,7 @@ function setView(v) {
   if(v==='ebitda' && !unlockEbitdaAccess()) return;
   if(v==='access' && (typeof signInIsOwner!=='function' || !signInIsOwner())) return;
   closeMobileNav();
-  if(signInIsApUser() && v!=='resident' && v!=='accounting') v='resident';
+  if(signInIsApUser() && v!=='resident' && v!=='accounting' && !(v==='system' && typeof signInSettingsAlways==='function' && signInSettingsAlways())) v='resident';
   curView = v;
   placeYearControl();
   document.body.classList.toggle('res-view', v==='resident');

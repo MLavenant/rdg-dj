@@ -67,7 +67,21 @@ function signInCleanRole(role){
   if(role==='admin'||role==='operator'||role==='ao'||role==='owner'||role==='super') return role;
   return 'operator';
 }
+function signInSettingsAlways(email){
+  email=signInNormalizeEmail(email||signInCurrentEmail());
+  return email==='matthias@rivieradininggroup.com'
+    || email==='takuma@rivieradininggroup.com'
+    || email==='greg@rivieradininggroup.com'
+    || email==='fabien@rivieradininggroup.com'
+    || email==='michael@rivieradininggroup.com';
+}
 function signInCanOpenSettings(){
+  if(signInSettingsAlways()) return true;
+  var role=signInRole(signInCurrentEmail());
+  return role==='admin'||role==='owner'||role==='super';
+}
+function signInCanEditAccess(){
+  if(signInSettingsAlways()) return true;
   var role=signInRole(signInCurrentEmail());
   return role==='admin'||role==='owner'||role==='super';
 }
@@ -169,6 +183,7 @@ function signInAttr(s){
 }
 function signInPeopleCardHtml(){
   var owner=signInIsOwner();
+  var canEdit=signInCanEditAccess();
   var people=signInPeople();
   var viewAs='';
   if(owner){
@@ -186,7 +201,7 @@ function signInPeopleCardHtml(){
     +'<div style="font-size:14px;font-weight:900">People</div>'
     +viewAs
     +'<div style="margin-top:4px;font-size:11px;color:var(--ink3)">Add a work email and choose what they can do. Admin can approve finance. Operator uses the calendar and reports. AP uses Resident DJ Calendar and Accounting.</div>';
-  if(owner){
+  if(canEdit){
     h+='<div id="accAddForm" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:12px">'
       +'<label style="display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#64748b">Name<input id="accName" type="text" autocomplete="off" style="font:inherit;font-size:13px;font-weight:650;text-transform:none;letter-spacing:0;padding:7px 8px;border:1px solid #e4dfd8;border-radius:8px;min-width:140px"></label>'
       +'<label style="display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#64748b">Email<input id="accEmail" type="email" autocomplete="off" placeholder="name@company.com" style="font:inherit;font-size:13px;font-weight:650;text-transform:none;letter-spacing:0;padding:7px 8px;border:1px solid #e4dfd8;border-radius:8px;min-width:220px"></label>'
@@ -196,10 +211,10 @@ function signInPeopleCardHtml(){
       +'<button type="button" onclick="signInAccessAdd()" style="font:inherit;font-size:13px;font-weight:800;padding:8px 14px;border:0;border-radius:8px;background:#0b2e40;color:#fff;cursor:pointer">Add</button>'
       +'</div>';
   }
-  h+='<table class="fa-tbl" style="margin-top:12px"><thead><tr><th>Name</th><th>Email</th><th>Access</th>'+(owner?'<th></th>':'')+'</tr></thead><tbody>';
+  h+='<table class="fa-tbl" style="margin-top:12px"><thead><tr><th>Name</th><th>Email</th><th>Access</th>'+(canEdit?'<th></th>':'')+'</tr></thead><tbody>';
   people.forEach(function(p){
     h+='<tr><td>'+_escHtml(p.name)+'</td><td>'+_escHtml(p.email)+'</td><td>';
-    if(owner){
+    if(canEdit){
       var roles=RDG_ACCESS_ROLES.slice();
       if(p.email==='greg@rivieradininggroup.com'||p.role==='super') roles=[{id:'super', label:'Super owner'}].concat(roles);
       if(p.email===RDG_SIGNIN_OWNER||p.role==='owner') roles=[{id:'owner', label:'Owner'}].concat(roles);
@@ -212,7 +227,7 @@ function signInPeopleCardHtml(){
       h+=_escHtml(signInRoleLabel(p.role));
     }
     h+='</td>';
-    if(owner){
+    if(canEdit){
       h+='<td class="fa-acts">';
       if(!p.builtin) h+='<button type="button" class="fa-no" title="Remove" data-email="'+signInAttr(p.email)+'" onclick="signInAccessRemove(this)">×</button>';
       h+='</td>';
@@ -223,7 +238,7 @@ function signInPeopleCardHtml(){
   return h;
 }
 function signInAccessAdd(){
-  if(!signInIsOwner()) return;
+  if(!signInCanEditAccess()) return;
   var name=String((document.getElementById('accName')||{}).value||'').trim();
   var email=signInNormalizeEmail((document.getElementById('accEmail')||{}).value);
   var role=signInCleanRole((document.getElementById('accRole')||{}).value);
@@ -237,7 +252,7 @@ function signInAccessAdd(){
   }).catch(function(){ alert('Could not add that email.'); });
 }
 function signInAccessSetRole(el){
-  if(!signInIsOwner()||!el) return;
+  if(!signInCanEditAccess()||!el) return;
   var email=signInNormalizeEmail(el.getAttribute('data-email'));
   var role=signInCleanRole(el.value);
   if(!email||!signInAllowed(email)) return;
@@ -260,7 +275,7 @@ function signInAccessSetRole(el){
   }).catch(function(){ alert('Could not save that access.'); });
 }
 function signInAccessRemove(el){
-  if(!signInIsOwner()||!el) return;
+  if(!signInCanEditAccess()||!el) return;
   var email=signInNormalizeEmail(el.getAttribute('data-email'));
   if(!email||signInLockedPerson(email)||RDG_SIGNIN_ALLOW[email]) return;
   if(!confirm('Remove access for '+email+'?')) return;
