@@ -86,10 +86,13 @@ function buildSidebar() {
     financeItems.push({id:'finance', ic:'&#10003;', lb:'Finance Approval'});
   }
   section('Finance', financeItems);
-  section('Admin', [
-    {id:'roi-rules', ic:'&#127919;', lb:'Venue ROI Rules'},
-    {id:'system',    ic:'&#9881;',   lb:'Settings'}
-  ]);
+  var adminItems=[
+    {id:'roi-rules', ic:'&#127919;', lb:'Venue ROI Rules'}
+  ];
+  if(typeof signInCanOpenSettings==='function' && signInCanOpenSettings()){
+    adminItems.push({id:'system', ic:'&#9881;', lb:'Settings'});
+  }
+  section('Admin', adminItems);
   document.getElementById('sidebar').innerHTML = html;
 }
 

@@ -64,8 +64,12 @@ function signInIsOwner(){
 function signInCleanRole(role){
   role=String(role||'').toLowerCase();
   if(role==='ap') role='ao';
-  if(role==='admin'||role==='operator'||role==='ao') return role;
+  if(role==='admin'||role==='operator'||role==='ao'||role==='owner'||role==='super') return role;
   return 'operator';
+}
+function signInCanOpenSettings(){
+  var role=signInRole(signInCurrentEmail());
+  return role==='admin'||role==='owner'||role==='super';
 }
 function signInRoleLabel(role){
   if(role==='super') return 'Super owner';
@@ -118,7 +122,9 @@ function signInWatchAccess(tries){
     if(typing) return;
     try{
       if(typeof buildSidebar==='function') buildSidebar();
-      if(typeof signInRole==='function' && signInRole(signInCurrentEmail())==='ao' && typeof curView!=='undefined' && curView!=='resident' && curView!=='accounting' && typeof setView==='function') setView('resident');
+      var mine=signInRole(signInCurrentEmail());
+      if(mine==='ao' && typeof curView!=='undefined' && curView!=='resident' && curView!=='accounting' && curView!=='system' && typeof setView==='function') setView('resident');
+      if(typeof curView!=='undefined' && curView==='finance' && typeof financeCanApprove==='function' && !financeCanApprove() && typeof setView==='function') setView('calendar');
       if(typeof curView!=='undefined'&&curView==='system'&&typeof renderSystem==='function') renderSystem();
       if(typeof curView!=='undefined'&&curView==='access'&&typeof renderAccess==='function') renderAccess();
     }catch(e){}
@@ -130,9 +136,9 @@ function signInAllowed(email){
 }
 function signInRole(email){
   email=signInNormalizeEmail(email);
+  if(ACCESS_DIR[email]&&ACCESS_DIR[email].role) return signInCleanRole(ACCESS_DIR[email].role);
   if(email==='greg@rivieradininggroup.com') return 'super';
   if(email===RDG_SIGNIN_OWNER) return 'owner';
-  if(ACCESS_DIR[email]&&ACCESS_DIR[email].role) return ACCESS_DIR[email].role;
   return RDG_ACCESS_DEFAULT[email]||(signInAllowed(email)?'operator':'');
 }
 function signInName(email){
@@ -193,9 +199,12 @@ function signInPeopleCardHtml(){
   h+='<table class="fa-tbl" style="margin-top:12px"><thead><tr><th>Name</th><th>Email</th><th>Access</th>'+(owner?'<th></th>':'')+'</tr></thead><tbody>';
   people.forEach(function(p){
     h+='<tr><td>'+_escHtml(p.name)+'</td><td>'+_escHtml(p.email)+'</td><td>';
-    if(owner&&!p.locked){
+    if(owner){
+      var roles=RDG_ACCESS_ROLES.slice();
+      if(p.email==='greg@rivieradininggroup.com'||p.role==='super') roles=[{id:'super', label:'Super owner'}].concat(roles);
+      if(p.email===RDG_SIGNIN_OWNER||p.role==='owner') roles=[{id:'owner', label:'Owner'}].concat(roles);
       h+='<select data-email="'+signInAttr(p.email)+'" onchange="signInAccessSetRole(this)" style="font:inherit;font-size:12px;font-weight:700;padding:4px 6px;border:1px solid #e4dfd8;border-radius:6px">';
-      RDG_ACCESS_ROLES.forEach(function(r){
+      roles.forEach(function(r){
         h+='<option value="'+r.id+'"'+(p.role===r.id?' selected':'')+'>'+r.label+'</option>';
       });
       h+='</select>';
@@ -231,10 +240,19 @@ function signInAccessSetRole(el){
   if(!signInIsOwner()||!el) return;
   var email=signInNormalizeEmail(el.getAttribute('data-email'));
   var role=signInCleanRole(el.value);
-  if(!email||signInLockedPerson(email)||!signInAllowed(email)) return;
+  if(!email||!signInAllowed(email)) return;
   var person=null;
   signInPeople().forEach(function(p){ if(p.email===email) person=p; });
   if(!person) return;
+  ACCESS_DIR[email]=ACCESS_DIR[email]||{email:email, name:person.name, builtin:!!person.builtin};
+  ACCESS_DIR[email].role=role;
+  ACCESS_DIR[email].name=person.name;
+  if(typeof buildSidebar==='function') buildSidebar();
+  if(email===signInCurrentEmail()){
+    if(typeof curView!=='undefined' && curView==='system' && typeof renderSystem==='function') renderSystem();
+    else if(role==='ao' && typeof curView!=='undefined' && curView!=='resident' && curView!=='accounting' && typeof setView==='function') setView('resident');
+    else if(typeof curView!=='undefined' && curView==='finance' && typeof financeCanApprove==='function' && !financeCanApprove() && typeof setView==='function') setView('calendar');
+  }
   var ref=signInDirRef();
   if(!ref){ alert('Still connecting. Try again in a moment.'); return; }
   ref.child(signInKey(email)).set({

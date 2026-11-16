@@ -956,7 +956,7 @@ function _vipStandingRecap(venueStats, monthLbl, yr){
 }
 
 function _vipRenderPerfSummary(d){
-  var h='<div class="vip-perf-block vip-venue-block">';
+  var h='<div class="vip-perf-block vip-venue-block" data-venue="'+String(d.venue||'').replace(/"/g,'')+'">';
   h += _vipVenueBlockHd('Performance Summary', d.venue, (d.shows&&d.shows.length)?(d.shows.length+' show'+(d.shows.length===1?'':'s')):'No shows');
   if(!(d.shows&&d.shows.length)){
     h += '<div style="padding:14px;font-size:11px;color:var(--ink3)">No shows this week.</div></div>';

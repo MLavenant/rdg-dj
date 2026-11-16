@@ -20,13 +20,11 @@ function financeSignedInEmail(){
   return email;
 }
 function financeCanApprove(){
-  if(typeof signInIsOwner==='function' && signInIsOwner()) return true;
   var email=financeSignedInEmail();
-  if(typeof signInRole==='function'){
-    var role=signInRole(email);
-    if(role==='admin') return true;
-    if(role==='operator'||role==='ao') return false;
-  }
+  var role=(typeof signInRole==='function')?signInRole(email):'';
+  if(role==='operator'||role==='ao') return false;
+  if(role==='admin'||role==='owner'||role==='super') return true;
+  if(typeof signInIsOwner==='function' && signInIsOwner()) return true;
   return !!FINANCE_APPROVERS[email];
 }
 function unlockFinance(){

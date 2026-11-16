@@ -792,12 +792,7 @@ function settingsSkipsPassword(){
     || email==='mika@rivieradininggroup.com';
 }
 function unlockSanity(){
-  if(settingsSkipsPassword()) return true;
-  try{ if(sessionStorage.getItem('rdg_sanity_unlocked')==='1') return true; }catch(e){}
-  var pw=prompt('Settings password:');
-  if(pw!=='matthias'){ if(pw!==null) alert('Incorrect password.'); return false; }
-  try{ sessionStorage.setItem('rdg_sanity_unlocked','1'); }catch(e){}
-  return true;
+  return typeof signInCanOpenSettings==='function' && signInCanOpenSettings();
 }
 function _sanityEbitdaUnlocked(){
   try{ return sessionStorage.getItem('rdg_ebitda_unlocked')==='1'; }catch(e){ return false; }
