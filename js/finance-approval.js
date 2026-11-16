@@ -21,7 +21,6 @@ function financeSignedInEmail(){
 }
 function financeCanApprove(){
   var email=financeSignedInEmail();
-  if(typeof signInSettingsAlways==='function' && signInSettingsAlways(email)) return true;
   var role=(typeof signInRole==='function')?signInRole(email):'';
   if(role==='operator'||role==='ao') return false;
   if(role==='admin'||role==='owner'||role==='super') return true;
@@ -107,20 +106,24 @@ function faStatusSelectOptionsHtml(show, djSt){
   });
   return h;
 }
+function faOperatorCanSetFinance(prev, next){
+  return !prev && next==='Finance to Approve';
+}
 function faFinanceSelectHtml(show, ds, idx){
   var st=faFinanceStatus(show);
   var can=financeCanApprove();
   var uid=String((typeof ensureShowUid==='function')?ensureShowUid(show):'').replace(/"/g,'&quot;');
-  function opt(value, label, gated){
+  function opt(value, label){
     var on=st===value;
-    return '<option value="'+value+'"'+(on?' selected':'')+(gated&&!can&&!on?' disabled':'')+'>'+label+'</option>';
+    var allowed=can || on || (!st && value==='Finance to Approve');
+    return '<option value="'+value+'"'+(on?' selected':'')+(allowed?'':' disabled')+'>'+label+'</option>';
   }
   return '<select class="fa-fs-sel '+faFinanceTone(st)+'" data-action="finStatus" data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+uid+'"'
-    +' onclick="event.stopPropagation()" title="Finance Status. Approved and declined are set from Finance Approval.">'
-    +opt('', 'Not set', false)
-    +opt('Finance to Approve', 'To approve', false)
-    +opt('Finance Approved', 'Approved', true)
-    +opt('Finance declined', 'Declined', true)
+    +' onclick="event.stopPropagation()" title="Finance Status. Operators can only send a night To approve. Approved and Declined are set by Takuma or Greg.">'
+    +opt('', 'Not set')
+    +opt('Finance to Approve', 'To approve')
+    +opt('Finance Approved', 'Approved')
+    +opt('Finance declined', 'Declined')
     +'</select>';
 }
 function faFindShow(uid){
@@ -161,6 +164,10 @@ function faSetFinanceFromSelect(sel){
   if(!r||!faFinanceTrack(r)){ faRefreshViews(); return; }
   var prev=faFinanceStatus(r);
   if(prev===next) return;
+  if(!financeCanApprove() && !faOperatorCanSetFinance(prev, next)){
+    sel.value=prev;
+    return;
+  }
   var terminal=next==='Finance Approved'||next==='Finance declined'||prev==='Finance Approved'||prev==='Finance declined';
   if(terminal && !faCanDecide(r)){
     try{ alert(faForGreg(r)?'Greg or Matthias approve this night.':'Takuma approves this night.'); }catch(e){}
