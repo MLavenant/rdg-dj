@@ -93,7 +93,7 @@ function faBlockLiveStatus(show, next){
   if(!faInScope(show)) return false;
   if(FA_LIVE.indexOf(next)<0) return false;
   if(!faDjLocked(show)) return false;
-  try{ alert('DJ status unlocks once '+(faForGreg(show)?'Greg':'Takuma')+' marks this night Finance Approved.'); }catch(e){}
+  try{ alert('DJ status unlocks once '+(faForGreg(show)?'a Super Owner':'an Owner')+' marks this night Approved.'); }catch(e){}
   return true;
 }
 function faStatusSelectOptionsHtml(show, djSt){
@@ -119,7 +119,7 @@ function faFinanceSelectHtml(show, ds, idx){
     return '<option value="'+value+'"'+(on?' selected':'')+(allowed?'':' disabled')+'>'+label+'</option>';
   }
   return '<select class="fa-fs-sel '+faFinanceTone(st)+'" data-action="finStatus" data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+uid+'"'
-    +' onclick="event.stopPropagation()" title="Finance Status. Operators can only send a night To approve. Approved and Declined are set by Takuma or Greg.">'
+    +' onclick="event.stopPropagation()" title="Finance Status. Artistic can only send a night To approve. Super Owner approves the large nights. Owner approves the rest.">'
     +opt('', 'Not set')
     +opt('Finance to Approve', 'To approve')
     +opt('Finance Approved', 'Approved')
@@ -170,7 +170,7 @@ function faSetFinanceFromSelect(sel){
   }
   var terminal=next==='Finance Approved'||next==='Finance declined'||prev==='Finance Approved'||prev==='Finance declined';
   if(terminal && !faCanDecide(r)){
-    try{ alert(faForGreg(r)?'Greg or Matthias approve this night.':'Takuma approves this night.'); }catch(e){}
+    try{ alert(faForGreg(r)?'A Super Owner approves this night.':'An Owner approves this night.'); }catch(e){}
     sel.value=prev;
     return;
   }
@@ -215,31 +215,17 @@ function faDecide(uid, status){
   var r=faFindShow(uid);
   if(!r||!faInScope(r)) return;
   if(!faCanDecide(r)){
-    try{ alert(faForGreg(r)?'Greg or Matthias approve this night.':'Takuma approves this night.'); }catch(e){}
+    try{ alert(faForGreg(r)?'A Super Owner approves this night.':'An Owner approves this night.'); }catch(e){}
     return;
   }
   faSetFinance(r, status, 'finance approval');
   renderFinanceApproval();
 }
-/* Super owner (Greg) and Matthias see the quarter view and approve the larger nights.
-   Takuma, Michael, and Fabien keep the month cards and approve every other night. */
+/* Super Owner approves the large nights. Every Owner approves the rest. The role decides, not a person's name. */
 function faViewer(){
-  try{
-    var pick=sessionStorage.getItem('rdg_fa_view');
-    if((pick==='greg'||pick==='desk') && typeof signInIsOwner==='function' && signInIsOwner()) return pick;
-  }catch(e){}
-  var email=String(financeSignedInEmail()||'').toLowerCase();
-  if(email==='greg@rivieradininggroup.com'||email==='matthias@rivieradininggroup.com') return 'greg';
-  if(typeof signInRole==='function' && signInRole(email)==='super') return 'greg';
-  if(!email && typeof signInIsOwner==='function' && signInIsOwner()) return 'greg';
-  return 'desk';
+  return faIsSuperApprover()?'greg':'desk';
 }
-function faSetViewer(view){
-  if(typeof signInIsOwner!=='function' || !signInIsOwner()) return;
-  try{ sessionStorage.setItem('rdg_fa_view', view==='desk'?'desk':'greg'); }catch(e){}
-  if(typeof curView!=='undefined' && curView==='finance') renderFinanceApproval();
-  if(typeof curView!=='undefined' && curView==='system' && typeof renderSystem==='function') renderSystem();
-}
+function faSetViewer(){}
 function faGregView(){ return faViewer()==='greg'; }
 function faMonthBudget(show){
   if(!show||!show.d||typeof fiscalInfoForDate!=='function'||typeof calGuestDjBudget!=='function') return null;
@@ -248,29 +234,28 @@ function faMonthBudget(show){
   var n=g&&g.amount!=null?+g.amount:null;
   return n!=null&&isFinite(n)?n:null;
 }
-/* Over $30K always. From $5K up, only when that month's scheduled Guest DJ fees are already over the month budget.
-   A night that is a large share of the budget does not come here while the month is still under budget.
-   Under $5K stays with the admins. */
-function faMonthOverBudget(show){
-  if(!show||!show.d||typeof fiscalInfoForDate!=='function') return false;
-  var info=fiscalInfoForDate(show.d);
-  var pos=faGuestPosition(show.v||show.venue, info.year, info.mm);
-  return pos.budget!=null && pos.spend>pos.budget;
-}
+/* Super Owner: fee above $30K, or fee above $5K and above 5% of that month's budget.
+   Every other night goes to Owner. */
 function faForGreg(show){
   var fee=faFee(show);
   if(fee>30000) return true;
-  if(!(fee>=5000)) return false;
-  return faMonthOverBudget(show);
+  if(!(fee>5000)) return false;
+  var budget=faMonthBudget(show);
+  return budget>0 && fee/budget>0.05;
+}
+function faIsSuperApprover(){
+  var email=String(financeSignedInEmail()||'').toLowerCase();
+  var role=(typeof signInRole==='function')?signInRole(email):'';
+  return role==='super'||email==='greg@rivieradininggroup.com';
 }
 function faCanDecide(show){
   if(!financeCanApprove()||!show||!faFinanceTrack(show)) return false;
-  return faGregView()?faForGreg(show):!faForGreg(show);
+  return faIsSuperApprover()?faForGreg(show):!faForGreg(show);
 }
 function faWhyGreg(show){
-  if(!faForGreg(show)) return '';
-  if(faFee(show)>30000) return 'Over $30K';
-  return 'Month over budget';
+  if(!faForGreg(show)) return 'Owner';
+  if(faFee(show)>30000) return 'Above $30K';
+  return 'Above 5% of budget';
 }
 
 var faVenue=null, faYear=null, faMonth=null, faPendingOn=false, faPendingScope=null;
@@ -459,11 +444,8 @@ function faStatusLine(venue, year, scope){
   var roster=faScopeRows(venue, year, scope);
   if(!roster.length) return '<i class="fa-m-none">No performances</i>';
   var all=roster.filter(function(item){ return faNeedsApproval(item.r); });
-  var mine=faQueue(roster, true);
   if(!all.length) return '<i class="fa-m-ok">All approved</i>';
-  var n=faGregView()?mine.length:all.length;
-  if(!n) return '<i class="fa-m-ok">All approved</i>';
-  return '<i class="fa-m-wait"><i class="fa-warn-dot"></i>'+n+' pending approval</i>';
+  return '<i class="fa-m-wait"><i class="fa-warn-dot"></i>'+all.length+' pending approval</i>';
 }
 function faStackBox(name, forecast, budget, prior, scope, monthIndex){
   var call=faCall(forecast, budget, 'under');
@@ -504,17 +486,15 @@ function faQuarterHtml(venue, year, q, names){
   return h+'</div>';
 }
 function faPendingHtml(venue, year, scope, title){
-  var all=faScopeRows(venue, year, scope).filter(function(item){ return faNeedsApproval(item.r); });
-  var gregRows=all.filter(function(item){ return faForGreg(item.r); });
-  var rows=faGregView()?gregRows:all;
-  var aside=faGregView()?(all.length-gregRows.length):gregRows.length;
-  var asideWho=faGregView()?'Takuma':'Greg';
+  var rows=faScopeRows(venue, year, scope).filter(function(item){ return faNeedsApproval(item.r); });
+  var superN=0, ownerN=0;
+  rows.forEach(function(item){ if(faForGreg(item.r)) superN++; else ownerN++; });
   var head='<div class="fa-pending" id="faPending"><div class="fa-break-hd"><i class="fa-warn-dot"></i>Pending approval'
     +(title?' · '+_escHtml(title):'')+'</div>';
   if(!rows.length){
-    return head+'<div class="fa-empty fa-all-ok">All approved'+(aside?' · '+aside+' with '+asideWho:'')+'.</div></div>';
+    return head+'<div class="fa-empty fa-all-ok">All approved.</div></div>';
   }
-  head+='<div class="fa-pending-note">'+(faGregView()?rows.length+' for you':rows.length+' pending approval')+(aside?' · '+aside+' with '+asideWho:'')+'</div>';
+  head+='<div class="fa-pending-note">'+superN+' for Super Owner · '+ownerN+' for Owner</div>';
   var h=head+'<table class="fa-tbl"><colgroup><col class="fa-c-warn"><col class="fa-c-date"><col class="fa-c-dj"><col class="fa-c-fee"><col class="fa-c-route"><col class="fa-c-act"></colgroup><thead><tr><th class="fa-warn-side"></th><th>Date</th><th>DJ</th><th>Fee</th><th>Route</th><th></th></tr></thead><tbody>';
   rows.forEach(function(item){
     var r=item.r;
@@ -527,12 +507,12 @@ function faPendingHtml(venue, year, scope, title){
       +'<td>'+_escHtml(typeof _bpDay==='function'?_bpDay(r.d):r.d)+'</td>'
       +'<td>'+_escHtml(String(r.dj||'').trim()||'TBD')+'</td>'
       +'<td>'+(item.fee>0?$k(item.fee):'—')+(pct?'<i class="fa-pct">'+pct+'</i>':'')+'</td>'
-      +'<td><span class="fa-chip '+(greg?'fa-fs-wait':'fa-fs-none')+'">'+(greg?_escHtml(faWhyGreg(r)):'Takuma')+'</span></td>';
+      +'<td><span class="fa-chip '+(greg?'fa-fs-wait':'fa-fs-none')+'">'+_escHtml(faWhyGreg(r))+'</span></td>';
     if(can){
       h+='<td class="fa-acts"><button type="button" class="fa-yes" data-uid="'+uid+'" data-status="Finance Approved" title="Finance Approved">&#10003;</button>'
         +'<button type="button" class="fa-no" data-uid="'+uid+'" data-status="Finance declined" title="Finance declined">&#10007;</button></td>';
     }else{
-      h+='<td class="fa-hold">'+(greg?'Greg approves':'Takuma approves')+'</td>';
+      h+='<td class="fa-hold">'+(greg?'Super Owner':'Owner')+'</td>';
     }
     h+='</tr>';
   });
@@ -578,8 +558,8 @@ function renderFinanceApproval(){
   names.forEach(function(name, i){ html+='<option value="'+i+'"'+(!when.total&&i===when.month?' selected':'')+'>'+name+'</option>'; });
   html+='</select></label></div>';
   html+='<div class="fa-rule">'+(greg
-    ?'Super owner. You approve a night over $30K, and a night of at least $5K only when that month is already over its Guest DJ budget. Admins approve the rest.'
-    :'Admin. You approve nights under $5K, and nights of at least $5K while the month is still under its Guest DJ budget. The Super owner approves nights over $30K, and the $5K nights once the month is over budget.')+'</div>';
+    ?'Super Owner. You approve a night above $30K, and a night above $5K when that fee is more than 5% of the month\'s Guest DJ budget. Owners approve every other night.'
+    :'Owner. You approve every night except one above $30K, and one above $5K that is more than 5% of the month\'s Guest DJ budget. A Super Owner approves those.')+'</div>';
   if(!live) html+='<div class="fa-note">Finance approval applies to 2027 performances. 2026 is shown against budget only.</div>';
   var yearRow=faRange(venue, when.year, 0, 11);
   html+=faCardHtml('Budget · full year', yearRow, 'year', 'year');
@@ -600,8 +580,9 @@ function renderFinanceApproval(){
     html+=faTotalBar(when.year+' total', yearRow.spend, yearRow.budget, true);
     if(!faPendingOn){ faPendingOn=true; faPendingScope=String(when.month); }
   }
-  if(live && (faPendingOn || (greg && !when.total))){
-    html+=faPendingHtml(venue, when.year, faPendingScope||'year', faScopeTitle(faPendingScope, names));
+  if(live){
+    var pendScope=when.total?'year':String(when.month);
+    html+=faPendingHtml(venue, when.year, pendScope, faScopeTitle(pendScope, names));
   }
   host.innerHTML=html;
   host.onclick=function(ev){
