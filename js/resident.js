@@ -177,12 +177,13 @@ function residentPaintCell(tr, col){
   var b=residentBits(residentDay(residentHere().venue, ds), col);
   var paid=!!b.paid;
   var due=!paid && residentHasAmt(b.amt);
-  var note=String(b.note||'').trim();
+  var thread=residentCommentList(b.note);
+  var note=thread.length?thread[thread.length-1].text:'';
   tr.querySelectorAll('td[data-col="'+col.id+'"]').forEach(function(td){
     td.classList.toggle('res-paid', paid);
     td.classList.toggle('res-due', due);
-    td.classList.toggle('res-has-note', !!note);
-    td.title=note;
+    td.classList.toggle('res-has-note', thread.length>0);
+    td.title=thread.length>1?(thread.length+' comments · '+note):note;
     var inp=td.querySelector('input');
     if(inp && inp!==document.activeElement){
       var part=inp.getAttribute('data-part');
@@ -244,7 +245,77 @@ function residentTogglePaid(btn){
   residentPaintCell(tr, col);
 }
 
-/* Comment popover, opened from the right-click menu. */
+function residentCommentList(note){
+  var raw=[];
+  if(note==null || note==='') return [];
+  if(typeof note==='string') raw=[{id:'legacy', by:'', name:'', text:note, at:'', replyTo:''}];
+  else if(Array.isArray(note)) raw=note;
+  else if(typeof note==='object'){
+    Object.keys(note).forEach(function(k){ if(note[k] && typeof note[k]==='object') raw.push(note[k]); });
+  }
+  return raw.filter(function(c){ return c && String(c.text||'').trim(); }).map(function(c){
+    return {id:String(c.id||'legacy'), by:String(c.by||''), name:String(c.name||''), text:String(c.text||'').trim(), at:String(c.at||''), replyTo:String(c.replyTo||'')};
+  }).sort(function(a,b){ return a.at<b.at?-1:(a.at>b.at?1:0); });
+}
+function residentCommentWho(){
+  var email=(typeof signInCurrentEmail==='function')?signInCurrentEmail():'';
+  var name=(typeof signInName==='function')?signInName(email):'';
+  if(!name){ try{ name=localStorage.getItem('rdg_presence_name')||''; }catch(e){} }
+  return {by:email, name:String(name||'Someone').trim()||'Someone'};
+}
+function residentCommentWhen(iso){
+  if(!iso) return '';
+  var d=new Date(iso);
+  if(isNaN(d.getTime())) return '';
+  return d.toLocaleString('en-US', {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
+}
+function residentCommentSave(ds, col, list){
+  var clean=(list||[]).filter(function(c){ return c && String(c.text||'').trim(); }).map(function(c){
+    return {id:c.id, by:c.by||'', name:c.name||'', text:String(c.text).trim(), at:c.at||'', replyTo:c.replyTo||''};
+  });
+  residentPut(ds, residentSub(col,'note'), clean.length?clean:null);
+  var row=document.querySelector('#residentBody tr[data-ds="'+ds+'"]');
+  residentPaintCell(row, col);
+}
+function residentThreadHtml(list){
+  if(!list.length) return '<div class="res-cmt-empty">No comments yet.</div>';
+  var who=residentCommentWho();
+  var h='';
+  function block(c, nested){
+    var initial=residentEsc((c.name||'N').charAt(0).toUpperCase());
+    h+='<div class="res-cmt'+(nested?' res-cmt-reply':'')+'">'
+      +'<div class="res-cmt-av">'+initial+'</div>'
+      +'<div class="res-cmt-body"><div class="res-cmt-meta"><b>'+residentEsc(c.name||'Note')+'</b>'
+      +(c.at?'<span>'+residentEsc(residentCommentWhen(c.at))+'</span>':'')+'</div>'
+      +'<div class="res-cmt-text">'+residentEsc(c.text)+'</div>'
+      +'<div class="res-cmt-acts"><button type="button" data-act="reply" data-id="'+residentEsc(c.id)+'">Reply</button>'
+      +((!c.by || c.by===who.by)?'<button type="button" data-act="delone" data-id="'+residentEsc(c.id)+'">Delete</button>':'')
+      +'</div></div></div>';
+    list.filter(function(r){ return r.replyTo===c.id; }).forEach(function(r){ block(r, true); });
+  }
+  list.filter(function(c){ return !c.replyTo || !list.some(function(p){ return p.id===c.replyTo; }); }).forEach(function(c){ block(c, !!c.replyTo); });
+  return h;
+}
+/* Comment thread, opened from the right-click menu. */
+function residentPaintThread(pop){
+  var col=residentColById(pop.getAttribute('data-col'));
+  var ds=pop.getAttribute('data-ds');
+  if(!col||!ds) return;
+  var b=residentBits(residentDay(residentHere().venue, ds), col);
+  var list=residentCommentList(b.note);
+  var replyId=pop.getAttribute('data-reply')||'';
+  var reply=null;
+  list.forEach(function(c){ if(c.id===replyId) reply=c; });
+  if(!reply) replyId='';
+  pop.querySelector('.res-pop-hd').textContent=col.label+' · '+ds;
+  pop.querySelector('.res-thread').innerHTML=residentThreadHtml(list);
+  var banner=pop.querySelector('.res-replying');
+  banner.hidden=!reply;
+  banner.textContent=reply?('Reply to '+(reply.name||'Note')):'';
+  var cancel=pop.querySelector('[data-act="clear-reply"]');
+  if(cancel) cancel.hidden=!reply;
+  pop.setAttribute('data-reply', replyId);
+}
 function residentOpenComment(td, x, y){
   var tr=td&&td.closest('tr');
   var col=td&&residentColById(td.getAttribute('data-col'));
@@ -254,31 +325,68 @@ function residentOpenComment(td, x, y){
     pop=document.createElement('div');
     pop.id='resPop';
     pop.className='res-pop';
-    pop.innerHTML='<b class="res-pop-hd"></b><textarea rows="3" placeholder="Comment"></textarea>'
-      +'<div class="res-pop-acts"><button type="button" data-act="save">Save</button><button type="button" data-act="del">Delete</button></div>';
+    pop.innerHTML='<b class="res-pop-hd"></b><div class="res-thread"></div>'
+      +'<div class="res-replying" hidden></div>'
+      +'<textarea rows="2" placeholder="Write a comment"></textarea>'
+      +'<div class="res-pop-acts"><button type="button" data-act="post">Post</button><button type="button" data-act="clear-reply">Cancel reply</button></div>';
     document.body.appendChild(pop);
     pop.addEventListener('mousedown', function(e){ e.stopPropagation(); });
     pop.addEventListener('click', function(e){
-      var act=e.target&&e.target.getAttribute&&e.target.getAttribute('data-act');
-      if(!act) return;
+      var btn=e.target&&e.target.closest?e.target.closest('[data-act]'):null;
+      if(!btn || !pop.contains(btn)) return;
+      var act=btn.getAttribute('data-act');
       var c=residentColById(pop.getAttribute('data-col'));
       var d=pop.getAttribute('data-ds');
       if(!c||!d) return;
-      var text=act==='del'?'':String(pop.querySelector('textarea').value||'').trim();
-      residentPut(d, residentSub(c,'note'), text||null);
-      var row=document.querySelector('#residentBody tr[data-ds="'+d+'"]');
-      residentPaintCell(row, c);
-      pop.classList.remove('on');
+      var cur=residentCommentList(residentBits(residentDay(residentHere().venue, d), c).note);
+      if(act==='reply'){
+        pop.setAttribute('data-reply', btn.getAttribute('data-id')||'');
+        residentPaintThread(pop);
+        try{ pop.querySelector('textarea').focus(); }catch(eF){}
+        return;
+      }
+      if(act==='clear-reply'){
+        pop.setAttribute('data-reply','');
+        residentPaintThread(pop);
+        return;
+      }
+      if(act==='delone'){
+        var id=btn.getAttribute('data-id')||'';
+        var drop={};
+        drop[id]=1;
+        var changed=true;
+        while(changed){
+          changed=false;
+          cur.forEach(function(item){
+            if(item.replyTo && drop[item.replyTo] && !drop[item.id]){ drop[item.id]=1; changed=true; }
+          });
+        }
+        residentCommentSave(d, c, cur.filter(function(item){ return !drop[item.id]; }));
+        pop.setAttribute('data-reply','');
+        residentPaintThread(pop);
+        return;
+      }
+      if(act!=='post') return;
+      var text=String(pop.querySelector('textarea').value||'').trim();
+      if(!text) return;
+      var who=residentCommentWho();
+      var replyTo=pop.getAttribute('data-reply')||'';
+      if(replyTo && !cur.some(function(item){ return item.id===replyTo; })) replyTo='';
+      cur.push({id:'c_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), by:who.by, name:who.name, text:text, at:new Date().toISOString(), replyTo:replyTo});
+      residentCommentSave(d, c, cur);
+      pop.querySelector('textarea').value='';
+      pop.setAttribute('data-reply','');
+      residentPaintThread(pop);
     });
   }
-  var ds=tr.getAttribute('data-ds');
-  var b=residentBits(residentDay(residentHere().venue, ds), col);
-  pop.setAttribute('data-ds', ds);
+  pop.setAttribute('data-ds', tr.getAttribute('data-ds'));
   pop.setAttribute('data-col', col.id);
-  pop.querySelector('.res-pop-hd').textContent=col.label+' · '+ds;
-  pop.querySelector('textarea').value=b.note||'';
-  pop.style.left=Math.max(8, Math.min(window.innerWidth-236, x))+'px';
-  pop.style.top=Math.max(8, Math.min(window.innerHeight-160, y))+'px';
+  pop.setAttribute('data-reply','');
+  pop.querySelector('textarea').value='';
+  residentPaintThread(pop);
+  var w=340;
+  pop.style.left=Math.max(8, Math.min(window.innerWidth-w-8, x))+'px';
+  pop.style.top=Math.max(8, Math.min(window.innerHeight-420, y))+'px';
   pop.classList.add('on');
   setTimeout(function(){ try{ pop.querySelector('textarea').focus(); }catch(e){} }, 0);
 }
@@ -618,14 +726,10 @@ function residentPickInit(){
     var tr=td.closest('tr');
     var c=residentColById(td.getAttribute('data-col'));
     var b=c?residentBits(residentDay(residentHere().venue, tr.getAttribute('data-ds')), c):{};
-    var items=[{label:b.note?'Edit comment':'Leave a comment', run:function(){ residentOpenComment(td, e.clientX, e.clientY); }}];
-    if(b.note){
-      items.push({label:'Delete comment', danger:true, run:function(){
-        residentPut(tr.getAttribute('data-ds'), residentSub(c,'note'), null);
-        residentPaintCell(tr, c);
-      }});
-    }
-    residentMenu(e.clientX, e.clientY, items);
+    var n=residentCommentList(b.note).length;
+    residentMenu(e.clientX, e.clientY, [
+      {label:n?'Comments ('+n+')':'Leave a comment', run:function(){ residentOpenComment(td, e.clientX, e.clientY); }}
+    ]);
   });
   document.addEventListener('mousedown', function(e){
     var inMenu=e.target.closest && (e.target.closest('#resMenu') || e.target.closest('#resPop'));

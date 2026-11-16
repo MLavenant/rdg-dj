@@ -20,9 +20,9 @@ var RDG_SIGNIN_OWNER = 'matthias@rivieradininggroup.com';
 var RDG_ACCESS_DEFAULT = {
   'greg@rivieradininggroup.com': 'super',
   'matthias@rivieradininggroup.com': 'owner',
-  'takuma@rivieradininggroup.com': 'admin',
-  'michael@rivieradininggroup.com': 'admin',
-  'fabien@rivieradininggroup.com': 'admin',
+  'takuma@rivieradininggroup.com': 'owner',
+  'michael@rivieradininggroup.com': 'owner',
+  'fabien@rivieradininggroup.com': 'owner',
   'hugo@rivieradininggroup.com': 'operator',
   'christophe@rivieradininggroup.com': 'operator',
   'alexandra@rivieradininggroup.com': 'operator',
@@ -32,8 +32,9 @@ var RDG_ACCESS_DEFAULT = {
   'm.pineda@rivieradininggroup.com': 'ao'
 };
 var RDG_ACCESS_ROLES = [
-  {id:'admin', label:'Admin', note:'Finance approval'},
-  {id:'operator', label:'Operator', note:'Calendar and reports'},
+  {id:'super', label:'Super Owner', note:'Large nights and full access'},
+  {id:'owner', label:'Owner', note:'Finance approval and settings'},
+  {id:'operator', label:'Artistic', note:'Calendar and reports'},
   {id:'ao', label:'AP', note:'Resident DJ Calendar and Accounting'}
 ];
 var ACCESS_DIR = {};
@@ -62,9 +63,12 @@ function signInIsOwner(){
   return email===RDG_SIGNIN_OWNER || signInIsSuperOwner();
 }
 function signInCleanRole(role){
-  role=String(role||'').toLowerCase();
+  role=String(role||'').toLowerCase().replace(/\s+/g,'');
   if(role==='ap') role='ao';
-  if(role==='admin'||role==='operator'||role==='ao'||role==='owner'||role==='super') return role;
+  if(role==='admin') role='owner';
+  if(role==='artistic') role='operator';
+  if(role==='superowner') role='super';
+  if(role==='operator'||role==='ao'||role==='owner'||role==='super') return role;
   return 'operator';
 }
 function signInSettingsAlways(email){
@@ -86,12 +90,13 @@ function signInCanEditAccess(){
   return role==='admin'||role==='owner'||role==='super';
 }
 function signInRoleLabel(role){
-  if(role==='super') return 'Super owner';
+  if(role==='super') return 'Super Owner';
   if(role==='owner') return 'Owner';
+  if(role==='admin') return 'Owner';
   for(var i=0;i<RDG_ACCESS_ROLES.length;i++){
     if(RDG_ACCESS_ROLES[i].id===role) return RDG_ACCESS_ROLES[i].label;
   }
-  return 'Operator';
+  return 'Artistic';
 }
 function signInApplyDirectory(val){
   ACCESS_DIR={};
@@ -191,16 +196,16 @@ function signInPeopleCardHtml(){
     try{ if(sessionStorage.getItem('rdg_fa_view')==='desk') picked='desk'; }catch(e){}
     viewAs='<div style="margin-top:12px;padding-top:12px;border-top:1px solid #e4dfd8">'
       +'<div style="font-size:12px;font-weight:800">Finance Approval view</div>'
-      +'<div style="margin-top:3px;font-size:11px;color:var(--ink3)">Switch what you see on Finance Approval. Super owner is the large nights. Admin is everyone else.</div>'
+      +'<div style="margin-top:3px;font-size:11px;color:var(--ink3)">Switch what you see on Finance Approval. Super Owner is the large nights. Owner is everyone else.</div>'
       +'<div style="display:flex;gap:8px;margin-top:8px">'
-      +'<button type="button" onclick="faSetViewer(\'greg\')" style="font:inherit;font-size:12px;font-weight:800;padding:6px 10px;border-radius:8px;cursor:pointer;border:1px solid #0b2e40;background:'+(picked==='greg'?'#0b2e40':'#fff')+';color:'+(picked==='greg'?'#fff':'#0b2e40')+'">Super owner</button>'
-      +'<button type="button" onclick="faSetViewer(\'desk\')" style="font:inherit;font-size:12px;font-weight:800;padding:6px 10px;border-radius:8px;cursor:pointer;border:1px solid #0b2e40;background:'+(picked==='desk'?'#0b2e40':'#fff')+';color:'+(picked==='desk'?'#fff':'#0b2e40')+'">Admin</button>'
+      +'<button type="button" onclick="faSetViewer(\'greg\')" style="font:inherit;font-size:12px;font-weight:800;padding:6px 10px;border-radius:8px;cursor:pointer;border:1px solid #0b2e40;background:'+(picked==='greg'?'#0b2e40':'#fff')+';color:'+(picked==='greg'?'#fff':'#0b2e40')+'">Super Owner</button>'
+      +'<button type="button" onclick="faSetViewer(\'desk\')" style="font:inherit;font-size:12px;font-weight:800;padding:6px 10px;border-radius:8px;cursor:pointer;border:1px solid #0b2e40;background:'+(picked==='desk'?'#0b2e40':'#fff')+';color:'+(picked==='desk'?'#fff':'#0b2e40')+'">Owner</button>'
       +'</div></div>';
   }
   var h='<div style="background:var(--card);border-radius:12px;padding:14px 16px;border-left:4px solid #0b2e40">'
     +'<div style="font-size:14px;font-weight:900">People</div>'
     +viewAs
-    +'<div style="margin-top:4px;font-size:11px;color:var(--ink3)">Add a work email and choose what they can do. Admin can approve finance. Operator uses the calendar and reports. AP uses Resident DJ Calendar and Accounting.</div>';
+    +'<div style="margin-top:4px;font-size:11px;color:var(--ink3)">Add a work email and choose what they can do. Super Owner and Owner can approve finance. Artistic uses the calendar and reports. AP uses Resident DJ Calendar and Accounting.</div>';
   if(canEdit){
     h+='<div id="accAddForm" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-top:12px">'
       +'<label style="display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#64748b">Name<input id="accName" type="text" autocomplete="off" style="font:inherit;font-size:13px;font-weight:650;text-transform:none;letter-spacing:0;padding:7px 8px;border:1px solid #e4dfd8;border-radius:8px;min-width:140px"></label>'
@@ -216,8 +221,6 @@ function signInPeopleCardHtml(){
     h+='<tr><td>'+_escHtml(p.name)+'</td><td>'+_escHtml(p.email)+'</td><td>';
     if(canEdit){
       var roles=RDG_ACCESS_ROLES.slice();
-      if(p.email==='greg@rivieradininggroup.com'||p.role==='super') roles=[{id:'super', label:'Super owner'}].concat(roles);
-      if(p.email===RDG_SIGNIN_OWNER||p.role==='owner') roles=[{id:'owner', label:'Owner'}].concat(roles);
       h+='<select data-email="'+signInAttr(p.email)+'" onchange="signInAccessSetRole(this)" style="font:inherit;font-size:12px;font-weight:700;padding:4px 6px;border:1px solid #e4dfd8;border-radius:6px">';
       roles.forEach(function(r){
         h+='<option value="'+r.id+'"'+(p.role===r.id?' selected':'')+'>'+r.label+'</option>';

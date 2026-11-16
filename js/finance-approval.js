@@ -230,6 +230,7 @@ function faViewer(){
   }catch(e){}
   var email=String(financeSignedInEmail()||'').toLowerCase();
   if(email==='greg@rivieradininggroup.com'||email==='matthias@rivieradininggroup.com') return 'greg';
+  if(typeof signInRole==='function' && signInRole(email)==='super') return 'greg';
   if(!email && typeof signInIsOwner==='function' && signInIsOwner()) return 'greg';
   return 'desk';
 }
