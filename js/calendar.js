@@ -4049,23 +4049,13 @@ function prepareVipFlashEmail(){
     document.body.classList.add('printing-vip');
     var el=document.getElementById('view-vip');
     if(!el) throw new Error('Weekly Flash view missing');
-    var blocks=el.querySelectorAll('.vip-print-page2 .vip-venue-block');
-    if(!blocks.length || typeof flashPdfTargets!=='function' || flashPdfTargets().length<2) throw new Error('Weekly Flash sections missing');
-    var width=Math.max(1200,Math.ceil(el.getBoundingClientRect().width||0));
+    var summary=el.querySelector('.vip-print-page2');
+    if(!summary || typeof flashPdfTargets!=='function' || flashPdfTargets().length<2) throw new Error('Weekly Flash sections missing');
+    var width=Math.max(1200,Math.ceil(summary.scrollWidth||el.getBoundingClientRect().width||0));
     var capOpts={scale:1.35};
-    var snaps={};
-    var snapChain=Promise.resolve();
-    Array.prototype.forEach.call(blocks, function(node){
-      snapChain=snapChain.then(function(){
-        var venue=node.getAttribute('data-venue')||'';
-        var shotW=Math.max(width, Math.ceil(node.scrollWidth||0));
-        return _captureDomToCanvas(node, shotW, capOpts).then(function(shot){
-          snaps[venue]=shot.toDataURL('image/jpeg',0.82);
-        });
-      });
-    });
-    return snapChain.then(function(){
-      return flashCaptureCanvases().then(function(canvases){
+    return flashCaptureCanvases().then(function(canvases){
+      return _captureDomToCanvas(summary, width, capOpts).then(function(shot){
+        var jpeg=shot.toDataURL('image/jpeg',0.82);
         var pdfName='RDG-DJ-ROI-Performance-W'+weekNum+'.pdf';
         return flashPdfFromCanvases(canvases, pdfName, true, 0.82).then(function(pdfBlob){
           return _blobToBase64(pdfBlob).then(function(pdfB64){
@@ -4078,26 +4068,19 @@ function prepareVipFlashEmail(){
             var order=['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge'];
             var by={};
             (venues||[]).forEach(function(v){ if(v&&v.venue) by[v.venue]=v; });
-            var inlines=[];
             var html='<div style="font-family:Segoe UI,Arial,sans-serif;font-size:14px;color:#1c1c1e;line-height:1.55">';
-            html+='<h2 style="margin:0 0 8px;font-size:18px;letter-spacing:.04em">PERFORMANCE SUMMARY</h2>';
+            html+='<img src="cid:vipweek@rdg" alt="Last week performance" style="max-width:100%;border:1px solid #e5e5ea;border-radius:8px;display:block"/>';
+            html+='<h2 style="margin:18px 0 8px;font-size:18px;letter-spacing:.04em">PERFORMANCE SUMMARY</h2>';
             html+='<p>Hello all,</p>';
             html+='<p>Please find the recap of our DJ ROI for last week at Casa Neos BC / Lounge &amp; Mila Lounge. Please note the ROI was adjusted last week.</p>';
             html+='<p><b>ROI :</b> '+thisRoi.beats+'/'+thisRoi.total
               +' vs. '+priorRoi.beats+'/'+priorRoi.total+' last week.</p>';
-            order.forEach(function(name, i){
+            order.forEach(function(name){
               var v=by[name];
               if(!v) return;
               var sentence=blurb(v);
-              var cid='vip'+i+'@rdg';
-              var jpeg=snaps[name]||'';
-              html+='<div style="margin:22px 0 6px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#48484a">'+name+'</div>';
-              if(jpeg){
-                html+='<img src="cid:'+cid+'" alt="'+name+'" style="max-width:100%;border:1px solid #e5e5ea;border-radius:8px;display:block"/>';
-                inlines.push({cid:cid, filename:'week-'+i+'.jpg', contentType:'image/jpeg', base64:jpeg.split(',')[1]||''});
-              }
-              if(sentence) html+='<p style="margin:8px 0">'+_escHtml(sentence)+'</p>';
-              html+='<p style="margin:0 0 16px"><br></p>';
+              html+='<div style="margin:16px 0 4px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#48484a">'+name+'</div>';
+              if(sentence) html+='<p style="margin:0 0 8px">'+_escHtml(sentence)+'</p>';
             });
             html+='<p style="margin-top:18px;font-size:12px;color:#8e8e93">Full Weekly Flash PDF attached.</p>';
             html+='</div>';
@@ -4106,7 +4089,7 @@ function prepareVipFlashEmail(){
               cc:_VIP_EMAIL_CC,
               subject:subject,
               htmlBody:html,
-              inlines:inlines,
+              inlines:[{cid:'vipweek@rdg', filename:'last-week-performance.jpg', contentType:'image/jpeg', base64:jpeg.split(',')[1]||''}],
               attachments:[{filename:pdfName, contentType:'application/pdf', base64:pdfB64}]
             });
             _openBlobInApp(eml, 'DJ-ROI-Performance-Analysis-W'+weekNum+'.eml');

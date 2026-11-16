@@ -21,6 +21,7 @@ function financeSignedInEmail(){
 }
 function financeCanApprove(){
   var email=financeSignedInEmail();
+  if(typeof signInSettingsAlways==='function' && signInSettingsAlways(email)) return true;
   var role=(typeof signInRole==='function')?signInRole(email):'';
   if(role==='operator'||role==='ao') return false;
   if(role==='admin'||role==='owner'||role==='super') return true;
@@ -117,9 +118,9 @@ function faFinanceSelectHtml(show, ds, idx){
   return '<select class="fa-fs-sel '+faFinanceTone(st)+'" data-action="finStatus" data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+uid+'"'
     +' onclick="event.stopPropagation()" title="Finance Status. Approved and declined are set from Finance Approval.">'
     +opt('', 'Not set', false)
-    +opt('Finance to Approve', 'Finance to Approve', false)
-    +opt('Finance Approved', 'Finance Approved', true)
-    +opt('Finance declined', 'Finance declined', true)
+    +opt('Finance to Approve', 'To approve', false)
+    +opt('Finance Approved', 'Approved', true)
+    +opt('Finance declined', 'Declined', true)
     +'</select>';
 }
 function faFindShow(uid){
@@ -168,6 +169,16 @@ function faSetFinanceFromSelect(sel){
   }
   faSetFinance(r, next, 'calendar');
   sel.className='fa-fs-sel '+faFinanceTone(next);
+  if(next==='Finance Approved'){
+    var row=sel.closest?sel.closest('tr'):null;
+    var dj=row?row.querySelector('select[data-action="djStatus"]'):null;
+    if(dj){
+      dj.disabled=false;
+      dj.classList.remove('fa-dj-locked');
+      for(var oi=0;oi<dj.options.length;oi++) dj.options[oi].disabled=false;
+      dj.title='DJ Status for this performance';
+    }
+  }
   window._calStatusMenuOpen=false;
   faRefreshViews();
 }
