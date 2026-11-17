@@ -5265,7 +5265,7 @@ function renderBaselTracker(targetEl, forceAll){
     h += '<td>'+money(total)+'</td><td>'+(data.totalBookings||0)+'</td><td class="left">100%</td></tr>';
   }
   h += '</tbody></table></div>';
-  h += '<div class="bsl-foot">Sales = FourVenues table price for accepted + not-completed bookings (same as Forecast). Referrer = FourVenues PPRR on the booking; “No referrer” when none is set.</div>';
+  h += '<div class="bsl-foot">Sales = FourVenues reservation price for accepted + not-completed bookings (same as Forecast). Tables = spaces on that reservation, separated by a comma. Referrer = FourVenues PPRR; “No referrer” when none is set.</div>';
   h += '</div>';
   el.innerHTML = h;
   if(targetEl) return;
