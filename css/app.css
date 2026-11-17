@@ -1101,6 +1101,8 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .acct-doc-busy{opacity:.55;pointer-events:none}
 .acct-doc-saved{position:absolute;top:3px;right:4px;z-index:2;background:#16a34a;color:#fff;font-size:8px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;border-radius:99px;padding:1px 6px;pointer-events:none;animation:acctSavedPop .95s ease forwards}
 .acct-doc-drop.acct-doc-kept{border:1.5px solid #16a34a;background:#f0fdf4;box-shadow:0 0 0 2px rgba(22,163,74,.28)}
+.acct-doc-drop.acct-doc-max{border-style:solid;cursor:default}
+.acct-doc-hint.acct-doc-full{color:#64748b}
 .acct-doc-posted{animation:acctDocPosted .85s ease}
 .acct-doc-chip.acct-doc-landed{animation:acctChipIn .48s cubic-bezier(.2,.8,.2,1)}
 @keyframes acctDocPosted{0%{border-color:#16a34a;background:#f0fdf4;box-shadow:0 0 0 0 rgba(22,163,74,.35)}45%{box-shadow:0 0 0 3px rgba(22,163,74,.18)}100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}}
@@ -1229,6 +1231,13 @@ body.res-view #venTabs,body.res-view #yrPills{display:none!important}
 .res-filters label{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:750;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3)}
 .res-filters select{font:inherit;font-size:13px;font-weight:650;text-transform:none;letter-spacing:0;color:var(--ink);background:#fff;border:1px solid #e4dfd8;border-radius:8px;padding:4px 8px}
 .res-filters span{font-size:12px;color:var(--ink3);margin-left:auto}
+.res-paybar{flex-basis:100%;display:flex;gap:8px}
+.res-sum{flex:1;min-width:120px;background:#fff;border-radius:10px;padding:8px 12px;text-align:center;box-shadow:var(--shadow-sm)}
+.res-sum b{display:block;font-size:18px;font-weight:900;letter-spacing:-.3px}
+.res-sum span{display:block;margin:0;font-size:8px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
+.res-sum em{display:block;margin-top:2px;font-style:normal;font-size:12px;font-weight:750;color:var(--ink)}
+.res-sum-pend b{color:#b45309}
+.res-sum-paid b{color:#1a7a45}
 .res-pop{position:fixed;z-index:80;display:none;width:340px;background:#fff;border:1px solid #e4dfd8;border-radius:12px;box-shadow:0 16px 40px rgba(23,32,51,.18);padding:10px 12px}
 .res-pop.on{display:block}
 .res-pop label{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:750;margin-bottom:6px}

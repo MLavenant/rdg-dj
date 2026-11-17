@@ -1216,7 +1216,11 @@ function renderDJDetail(djEnc){
   document.getElementById('lbBody').innerHTML=h;
 }
 
+var ACCT_DOC_MAX=3;
 function _acctDocsKey(kind){ return kind==='invoice'?'invoices':'contracts'; }
+function _acctDocRoom(docs){
+  return Math.max(0, ACCT_DOC_MAX-((docs&&docs.length)||0));
+}
 function _acctDocList(acct, kind){
   _acctNormalize(acct);
   return acct[_acctDocsKey(kind)]||[];
@@ -1244,9 +1248,13 @@ function _acctDocDropHtml(ds, kind, docs){
   var fresh=window._acctFreshDocs||{};
   var posted=window._acctFreshZones&&window._acctFreshZones[ds+'|'+kind];
   var kept=(docs&&docs.length)?' acct-doc-kept':'';
-  var h='<div class="acct-doc-drop'+(posted?' acct-doc-posted':'')+kept+'" data-ds="'+ds+'" data-kind="'+kind+'" data-action="docDrop" title="Drop one or more '+label+' PDFs, or click to choose. Files stay until you remove them.">'
+  var room=_acctDocRoom(docs);
+  var n=(docs&&docs.length)||0;
+  var hint=room
+    ?'<div class="acct-doc-hint"><span class="acct-doc-ico">PDF</span><b>'+(n?'Drop another '+label:'Drop '+label)+'</b><span>'+(n?(n+' of '+ACCT_DOC_MAX):'up to '+ACCT_DOC_MAX)+'</span></div>'
+    :'<div class="acct-doc-hint acct-doc-full"><b>'+ACCT_DOC_MAX+' of '+ACCT_DOC_MAX+'</b><span>Remove one to add another</span></div>';
+  var h='<div class="acct-doc-drop'+(posted?' acct-doc-posted':'')+kept+(room?'':' acct-doc-max')+'" data-ds="'+ds+'" data-kind="'+kind+'" data-action="docDrop" title="Drop up to '+ACCT_DOC_MAX+' '+label+' PDFs. A file can have any number of pages. Files stay until you remove them.">'
     +(posted?'<div class="acct-doc-saved">Saved</div>':'')
-    +((docs&&docs.length)?'':'<div class="acct-doc-hint"><span class="acct-doc-ico">PDF</span><b>Drop '+label+'</b><span>or click</span></div>')
     +'<div class="acct-doc-list">';
   (docs||[]).forEach(function(doc,idx){
     var pages=doc.pages!=null?('<span class="acct-doc-pages">'+doc.pages+'p</span>'):'';
@@ -1258,7 +1266,7 @@ function _acctDocDropHtml(ds, kind, docs){
       +'<button type="button" class="acct-doc-del" data-ds="'+ds+'" data-kind="'+kind+'" data-idx="'+idx+'" data-action="docDel" title="Remove">&#10005;</button>'
       +'</div>';
   });
-  h+='</div></div>';
+  h+='</div>'+hint+'</div>';
   return h;
 }
 function _acctRememberDocs(ds, ids){
@@ -1350,6 +1358,16 @@ function addAcctPdfFiles(ds, kind, files){
   var list=Array.prototype.slice.call(files||[]).filter(_acctIsPdfFile);
   if(!list.length){ alert('Please drop PDF files only.'); return; }
   var key=_acctDocsKey(kind);
+  var have=(_acctDocList(getAcct(ds), kind)||[]).length;
+  var room=ACCT_DOC_MAX-have;
+  if(room<=0){
+    alert('This box already has '+ACCT_DOC_MAX+' PDFs. Remove one to add another.');
+    return;
+  }
+  if(list.length>room){
+    alert('This box holds '+ACCT_DOC_MAX+' PDFs. Adding '+room+' of the '+list.length+' you dropped.');
+    list=list.slice(0, room);
+  }
   var venue=(typeof acctVenue==='function'?acctVenue():curAcctV)||curV||'venue';
   var by=_acctSoftEditorName();
   var drop=document.querySelector('#acctBody .acct-doc-drop[data-ds="'+ds+'"][data-kind="'+kind+'"]');
@@ -1462,6 +1480,7 @@ function wireAccountingDocDrops(){
     zone.appendChild(input);
     zone.addEventListener('click',function(e){
       if(e.target.closest('[data-action="docDel"]')||e.target.closest('a')) return;
+      if(zone.classList.contains('acct-doc-max')) return;
       input.click();
     });
     input.addEventListener('change',function(){

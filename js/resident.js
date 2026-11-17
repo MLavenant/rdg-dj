@@ -67,6 +67,10 @@ function residentMoney(v){
   var n=+v;
   return isNaN(n) ? '' : (String(n)+'$');
 }
+function residentSummaryMoney(v){
+  var n=Math.round(+v||0);
+  try{ return n.toLocaleString('en-US')+'$'; }catch(e){ return String(n)+'$'; }
+}
 function residentBits(row, col){
   row=row||{};
   if(!col) return {};
@@ -451,18 +455,26 @@ function residentDeleteColumn(id){
   if(!confirm('Delete the '+col.label+' column for '+residentHere().venue+' only?\n\nOther locations are not changed. Amounts already entered stay saved and come back if you add this column again.')) return;
   residentSaveCols(residentCols().filter(function(c){ return c.id!==id; }));
 }
-function residentDeleteColumnPrompt(){
-  var cols=residentCols();
-  if(!cols.length) return;
-  var venue=residentHere().venue;
-  var label=prompt('Delete a column for '+venue+' only.\n\n'+cols.map(function(c){ return c.label; }).join('\n')+'\n\nType the column name to delete.');
-  if(label==null) return;
-  label=String(label).trim().toLowerCase();
-  if(!label) return;
-  var hit=null;
-  cols.forEach(function(c){ if(String(c.label).trim().toLowerCase()===label) hit=c; });
-  if(!hit){ alert('No column is named that on '+venue+'.'); return; }
-  residentDeleteColumn(hit.id);
+function residentDeleteFromList(sel){
+  if(!sel) return;
+  var id=sel.value||'';
+  sel.value='';
+  if(!id) return;
+  residentDeleteColumn(id);
+}
+function residentPaySummary(venue, dates){
+  var paidN=0, pendN=0, paidAmt=0, pendAmt=0;
+  (dates||[]).forEach(function(ds){
+    var row=residentDay(venue, ds);
+    residentCols(venue).forEach(function(col){
+      var b=residentBits(row, col);
+      if(!residentHasAmt(b.amt)) return;
+      if(b.paid){ paidN++; paidAmt+=+b.amt; }
+      else { pendN++; pendAmt+=+b.amt; }
+    });
+  });
+  var total=paidN+pendN;
+  return {paidN:paidN, pendN:pendN, paidAmt:paidAmt, pendAmt:pendAmt, total:total, pct:total?Math.round(paidN/total*100):0};
 }
 
 function residentSetFilter(kind, value){
@@ -496,9 +508,17 @@ function renderResidentCalendar(){
     fh+='</select></label><label>Month<select onchange="residentSetFilter(\'month\',this.value)">';
     for(var mi=0;mi<12;mi++) fh+='<option value="'+mi+'"'+(mi===mo?' selected':'')+'>'+MN_FULL[mi]+'</option>';
     fh+='</select></label><button type="button" class="res-add-col" onclick="residentAddColumn()">+ Column</button>';
-    fh+='<button type="button" class="res-add-col" onclick="residentDeleteColumnPrompt()">− Column</button>';
+    fh+='<label>Delete<select onchange="residentDeleteFromList(this)"><option value="">Choose a column</option>';
+    cols.forEach(function(c){ fh+='<option value="'+residentEsc(c.id)+'">'+residentEsc(c.label)+'</option>'; });
+    fh+='</select></label>';
+    var pay=residentPaySummary(here.venue, fiscalDates);
+    fh+='<div class="res-paybar">'
+      +'<div class="res-sum res-sum-pend"><b>'+pay.pendN+'</b><span>Pending</span><em>'+residentSummaryMoney(pay.pendAmt)+'</em></div>'
+      +'<div class="res-sum res-sum-paid"><b>'+pay.paidN+'</b><span>Paid</span><em>'+residentSummaryMoney(pay.paidAmt)+'</em></div>'
+      +'<div class="res-sum"><b>'+pay.pct+'%</b><span>Completion</span><em>'+pay.paidN+' of '+(pay.total||0)+' lines</em></div>'
+      +'</div>';
     var asOf=(typeof TODAY!=='undefined'&&TODAY)?(' · as of '+TODAY):'';
-    fh+='<span>'+fiscalPeriodShortRange(yr, mo)+asOf+' · grab a column header and drag it — the column lifts and pivots · right-click a header to rename or delete</span>';
+    fh+='<span>'+fiscalPeriodShortRange(yr, mo)+asOf+' · grab a column header and drag it · pick a column in Delete to remove it</span>';
     filters.innerHTML=fh;
   }
   var sub=document.getElementById('pgSub');
