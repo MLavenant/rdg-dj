@@ -175,8 +175,7 @@ function renderAccountingGuest(yr, mo, mm, days){
   h+='<th class="sc-dj">Guest DJ</th>';
   h+='<th class="acct-agency-hd" title="Booking agency">Agency</th>';
   h+='<th class="sc-num acct-col-fee">DJ Fee</th>';
-  h+='<th class="acct-fin-hd">Finance Status</th>';
-  h+='<th class="acct-status-hd">DJ Status</th>';
+  h+='<th class="acct-status-box-hd">Status</th>';
   h+='<th class="acct-status-hd">Deposit</th>';
   h+='<th class="acct-doc-hd acct-inv-hd">Invoice</th>';
   h+='<th class="acct-doc-hd acct-con-hd">Contract</th>';
@@ -236,11 +235,9 @@ function renderAccountingGuest(yr, mo, mm, days){
       var tracked=typeof faFinanceTrack==='function' && faFinanceTrack(r);
       var djSt=(typeof faInScope==='function' && faInScope(r) && typeof faDjStatus==='function')?(faDjStatus(r)||''):(getShowDjStatus(r, ds)||'');
       var finSt=(tracked && typeof faFinanceStatus==='function')?(faFinanceStatus(r)||''):'';
-      var djOk=djSt==='Confirmed';
-      var finOk=finSt==='Finance Approved';
-      var rowReady=tracked && djOk && finOk;
+      var bothOk=finSt==='Finance Approved' && djSt==='Confirmed';
 
-      h+='<tr class="'+dc+(feeRowCls?' '+feeRowCls:'')+(rowReady?' acct-row-set':'')+'">';
+      h+='<tr class="'+dc+(feeRowCls?' '+feeRowCls:'')+'">';
       if(ri===0){
         h+='<td class="sc-date-cell" rowspan="'+nrows+'">'+dateStr
           +(isToday?'<span class="sc-today-badge"> Today</span>':'')
@@ -255,11 +252,11 @@ function renderAccountingGuest(yr, mo, mm, days){
       var finHtml='—';
       if(tracked && typeof faFinanceSelectHtml==='function') finHtml=faFinanceSelectHtml(r, ds, idx);
       var depSt=r.depositStatus||'';
-      h+='<td class="acct-fin-cell'+(tracked?(finOk?' acct-pair-ok':' acct-pair-bad'):'')+'"><div class="acct-status-wrap">'+finHtml+'</div></td>';
-      h+='<td class="acct-status-cell">'
-        +'<span class="acct-lock '+(djOk?'acct-pair-ok':'acct-pair-bad')+'" title="Green when Confirmed. Red when it is not Confirmed.">'
-        +(djSt?_escHtml(djSt):'Not set')+'</span></td>';
-      h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
+      h+='<td class="acct-status-box '+(bothOk?'acct-status-ok':'acct-status-bad')+'" title="'+(bothOk?'Finance approved and DJ confirmed':'Waiting on finance approval or DJ confirmation')+'">'
+        +'<div class="acct-status-line"><span>Finance</span>'+finHtml+'</div>'
+        +'<div class="acct-status-line"><span>DJ</span><b>'+(djSt?_escHtml(djSt):'Not set')+'</b></div>'
+        +'</td>';
+      h+='<td class="acct-status-cell acct-dep-cell"><div class="acct-status-wrap">'
         +(typeof _depositSelectHtml==='function'
           ? _depositSelectHtml(depSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="depositStatus"')
           : _escHtml(depSt||'Not set'))
@@ -288,13 +285,13 @@ function renderAccountingGuest(yr, mo, mm, days){
   }
 
   if(_acctStatusFilter && !anyFilterMatch){
-    h+='<tr><td colspan="11" class="sc-empty-day" style="text-align:center;padding:16px">No shows with status "'+_acctStatusFilter+'" this month.</td></tr>';
+    h+='<tr><td colspan="10" class="sc-empty-day" style="text-align:center;padding:16px">No shows with status "'+_acctStatusFilter+'" this month.</td></tr>';
   }
 
   h+='<tr class="acct-total-row">';
   h+='<td><b>'+(_acctStatusFilter?'FILTERED':'MONTH')+' TOTAL</b></td><td></td><td></td>';
   h+='<td class="sc-num acct-col-fee"><b>'+$k(totDJ)+'</b></td>';
-  h+='<td colspan="7"></td>';
+  h+='<td colspan="6"></td>';
   h+='</tr></tbody></table>';
 
   document.getElementById('acctBody').innerHTML=h;

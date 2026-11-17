@@ -133,7 +133,7 @@ function renderCal(){
       h+='<td class="sc-date-cell">'+dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
       h+='<td class="sc-empty-day"><button type="button" class="sc-add-inline" data-action="addShow" data-ds="'+ds+'">+ Add show</button></td>';
       h+=_vipCellHtml(null, -1, '', pyMap[ds]||pyBlank);
-      h+='<td colspan="'+(finCol?8:7)+'" class="sc-empty-day"></td>';
+      h+='<td colspan="'+(finCol?9:8)+'" class="sc-empty-day"></td>';
       h+='<td class="sc-sep"></td>';
       /* Show prior-year match on empty days so planners still see last year's lineup */
       h+=_pyCellsHtml(pyMap[ds]||pyBlank);
