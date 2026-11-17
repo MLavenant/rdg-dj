@@ -181,7 +181,6 @@ function renderAccountingGuest(yr, mo, mm, days){
   h+='<th class="acct-note-hd">Notes</th>';
   h+='<th class="acct-doc-hd acct-inv-hd">Invoice</th>';
   h+='<th class="acct-doc-hd acct-con-hd">Contract</th>';
-  h+='<th class="sc-act"></th>';
   h+='</tr></thead><tbody>';
 
   var totDJ=0;
@@ -271,19 +270,18 @@ function renderAccountingGuest(yr, mo, mm, days){
         h+='<td class="acct-doc-cell acct-inv-cell" rowspan="'+nrows+'">'+_acctDocDropHtml(ds,'invoice',_acctDocList(acct,'invoice'))+'</td>';
         h+='<td class="acct-doc-cell acct-con-cell" rowspan="'+nrows+'">'+_acctDocDropHtml(ds,'contract',_acctDocList(acct,'contract'))+'</td>';
       }
-      h+='<td class="sc-act"><button class="sc-edit-btn" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="edit">&#9998;</button></td>';
       h+='</tr>';
     });
   }
 
   if(_acctStatusFilter && !anyFilterMatch){
-    h+='<tr><td colspan="11" class="sc-empty-day" style="text-align:center;padding:16px">No shows with status "'+_acctStatusFilter+'" this month.</td></tr>';
+    h+='<tr><td colspan="10" class="sc-empty-day" style="text-align:center;padding:16px">No shows with status "'+_acctStatusFilter+'" this month.</td></tr>';
   }
 
   h+='<tr class="acct-total-row">';
   h+='<td><b>'+(_acctStatusFilter?'FILTERED':'MONTH')+' TOTAL</b></td><td></td><td></td>';
   h+='<td class="sc-num acct-col-fee"><b>'+$k(totDJ)+'</b></td>';
-  h+='<td colspan="7"></td>';
+  h+='<td colspan="6"></td>';
   h+='</tr></tbody></table>';
 
   document.getElementById('acctBody').innerHTML=h;
