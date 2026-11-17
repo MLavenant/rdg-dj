@@ -236,7 +236,7 @@ function renderAccountingGuest(yr, mo, mm, days){
       var tracked=typeof faFinanceTrack==='function' && faFinanceTrack(r);
       var djSt=(typeof faInScope==='function' && faInScope(r) && typeof faDjStatus==='function')?(faDjStatus(r)||''):(getShowDjStatus(r, ds)||'');
       var finSt=(tracked && typeof faFinanceStatus==='function')?(faFinanceStatus(r)||''):'';
-      var bothOk=finSt==='Finance Approved' && djSt==='Confirmed';
+      var bothOk=finSt==='Finance Approved';
 
       h+='<tr class="'+dc+(feeRowCls?' '+feeRowCls:'')+'">';
       if(ri===0){

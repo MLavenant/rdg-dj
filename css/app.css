@@ -1065,9 +1065,10 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 #view-accounting.acct-others-mode .acct-others-link{display:none}
 .acct-others-link{border:0;background:transparent;color:var(--ink3);font-size:11px;font-weight:750;cursor:pointer;font-family:inherit;padding:4px 2px}
 .acct-others-link:hover{color:var(--ink)}
-#view-accounting:not(.acct-others-mode) .acct-tbl thead th{vertical-align:top!important;padding-top:6px!important}
+#view-accounting:not(.acct-others-mode) .acct-tbl thead th{text-align:center!important;vertical-align:middle!important;padding:8px 6px!important}
 #view-accounting:not(.acct-others-mode) .acct-doc-cell{padding:0!important;position:relative}
 #view-accounting:not(.acct-others-mode) .acct-doc-drop{position:absolute;inset:0;height:auto;min-height:0;border-radius:0;box-sizing:border-box}
+#view-accounting:not(.acct-others-mode) .acct-doc-hint{align-self:center;width:max-content;max-width:calc(100% - 10px);border:1.5px solid #0b2e40;border-radius:999px;padding:4px 12px;background:#fff;cursor:pointer}
 #view-accounting:not(.acct-others-mode) .acct-fin-cell,
 #view-accounting:not(.acct-others-mode) .acct-dj-cell{vertical-align:top!important}
 #view-accounting .acct-lock.acct-pair-ok,
