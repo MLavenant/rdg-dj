@@ -1246,12 +1246,15 @@ function acctGapStatus(acct){
   if(!con) return 'Missing Contract';
   return '';
 }
+function _acctIsAutoMissing(st){
+  return st==='Missing Invoice'||st==='Missing Contract'||st==='Missing Contract & Invoice';
+}
+/* A status someone already set always shows. With none set, the default follows the PDFs:
+   missing invoice, missing contract, or both. A stored Missing* value is only that default. */
 function acctShownAp(acct){
-  var gap=acctGapStatus(acct);
-  if(gap) return gap;
   var st=(acct&&acct.apStatus)||'';
-  if(st==='Missing Invoice'||st==='Missing Contract'||st==='Missing Contract & Invoice') return '';
-  return st;
+  if(st && !_acctIsAutoMissing(st)) return st;
+  return acctGapStatus(acct);
 }
 function acctNightRecord(show){
   if(!show||!show.d||typeof acctData==='undefined') return null;
@@ -1276,12 +1279,13 @@ function acctNightDocsReady(show){
 function acctSyncApFromDocs(ds){
   if(!ds||typeof getAcct!=='function') return;
   var acct=_acctNormalize(getAcct(ds));
-  var next=acctShownAp(acct)||'';
   var prev=acct.apStatus||'';
+  /* Never touch a status someone set. Only the automatic Missing* default follows the PDFs. */
+  if(!_acctIsAutoMissing(prev)) return;
+  var next=acctGapStatus(acct)||'';
   if(prev===next) return;
   acct.apStatus=next||null;
   if(typeof _acctEffectiveStatus==='function') acct.status=_acctEffectiveStatus(acct);
-  if(typeof _acctPushLog==='function') _acctPushLog(acct,'AP Status',prev||'Not set',next||'Not set','Documents');
   _acctPersistDay(ds);
 }
 function _acctSafeFileName(name){
@@ -1911,11 +1915,6 @@ function updateAcctApStatus(ds,val,sel){
   var by=_acctRequireApPassword();
   if(!by){
     if(sel) sel.value=prev;
-    return;
-  }
-  var gap=(typeof acctGapStatus==='function')?acctGapStatus(acct):'';
-  if(gap){
-    if(sel) sel.value=gap;
     return;
   }
   _pushAcctUndo('Change AP status');

@@ -267,7 +267,7 @@ function renderAccountingGuest(yr, mo, mm, days){
         var apCls=apSt==='Paid'?'acct-ap-paid':'acct-ap-open';
         var lastHint=acct.updatedBy?('Last: '+acct.updatedBy+' \u00b7 '+_fmtAcctWhen(acct.updatedAt)):'History';
         h+='<td class="acct-status-cell acct-ap-cell" rowspan="'+nrows+'"><div class="acct-status-wrap">'
-          +'<select class="acct-status-sel '+apCls+'" data-ds="'+ds+'" data-action="apStatus" title="AP Status"'+(apGap?' disabled':'')+'>'
+          +'<select class="acct-status-sel '+apCls+'" data-ds="'+ds+'" data-action="apStatus" title="AP Status">'
           +'<option value=""'+(!apSt?' selected':'')+'>Not set</option>'
           +ACCT_AP_STATUS.map(function(opt){return '<option value="'+opt+'"'+(apSt===opt?' selected':'')+'>'+opt+'</option>';}).join('')
           +'</select>'
