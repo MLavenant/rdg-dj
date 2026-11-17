@@ -474,13 +474,17 @@ function faCardHtml(title, row, scope, card){
     +faLineHtml({label:'Bottle service', leftName:'Target', leftVal:row.target, midName:'Sales', midVal:row.sales, call:faCall(row.sales, row.target, 'over'), prior:row.priorBottle, priorDelta:faDelta(row.target, row.priorBottle), scope:scope})
     +'</section>';
 }
+function faMinePending(rows){
+  return (rows||[]).filter(function(item){ return faNeedsApproval(item.r) && faCanDecide(item.r); });
+}
 function faStatusLine(venue, year, scope){
   if(!faYearOn(venue, year)) return '';
   var roster=faScopeRows(venue, year, scope);
   if(!roster.length) return '<i class="fa-m-none">No performances</i>';
-  var all=roster.filter(function(item){ return faNeedsApproval(item.r); });
-  if(!all.length) return '<i class="fa-m-ok">All approved</i>';
-  return '<i class="fa-m-wait"><i class="fa-warn-dot"></i>'+all.length+' pending approval</i>';
+  var mine=faMinePending(roster);
+  if(mine.length) return '<i class="fa-m-wait"><i class="fa-warn-dot"></i>'+mine.length+' pending approval</i>';
+  var any=roster.some(function(item){ return faNeedsApproval(item.r); });
+  return any?'<i class="fa-m-ok">Nothing for you</i>':'<i class="fa-m-ok">All approved</i>';
 }
 function faStackBox(name, forecast, budget, prior, scope, monthIndex){
   var call=faCall(forecast, budget, 'under');
@@ -521,18 +525,16 @@ function faQuarterHtml(venue, year, q, names){
   return h+'</div>';
 }
 function faPendingHtml(venue, year, scope, title){
-  var rows=faScopeRows(venue, year, scope).filter(function(item){ return faNeedsApproval(item.r); });
-  var superN=0, ownerN=0;
-  rows.forEach(function(item){
-    if(faForGreg(item.r)) superN++;
-    else ownerN++;
-  });
+  var roster=faScopeRows(venue, year, scope);
+  var rows=faMinePending(roster);
+  var who=faGregView()?'Super Owner':'Owner';
   var head='<div class="fa-pending" id="faPending"><div class="fa-break-hd"><i class="fa-warn-dot"></i>Pending approval'
     +(title?' · '+_escHtml(title):'')+'</div>';
   if(!rows.length){
-    return head+'<div class="fa-empty fa-all-ok">All approved.</div></div>';
+    var any=roster.some(function(item){ return faNeedsApproval(item.r); });
+    return head+'<div class="fa-empty fa-all-ok">'+(any?'Nothing waiting for you.':'All approved.')+'</div></div>';
   }
-  head+='<div class="fa-pending-note">'+(superN?superN+' for Super Owner · ':'')+ownerN+' for Owner</div>';
+  head+='<div class="fa-pending-note">'+rows.length+' for '+who+'</div>';
   var h=head+'<table class="fa-tbl"><colgroup><col class="fa-c-warn"><col class="fa-c-date"><col class="fa-c-dj"><col class="fa-c-fee"><col class="fa-c-route"><col class="fa-c-act"></colgroup><thead><tr><th class="fa-warn-side"></th><th>Date</th><th>DJ</th><th>Fee</th><th>Route</th><th></th></tr></thead><tbody>';
   rows.forEach(function(item){
     var r=item.r;
