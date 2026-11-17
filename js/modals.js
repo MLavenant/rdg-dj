@@ -877,38 +877,6 @@ function persistShowDjStatusOnly(rec){
     }
   });
 }
-/* Deposit status only. Same thin write as DJ status so a deposit pick cannot change the fee. */
-function persistShowDepositStatusOnly(rec){
-  if(!rec||!rec.d) return;
-  if(typeof window._schedCanEdit==='function' && !window._schedCanEdit()) return;
-  if(!rec._uid) ensureShowUid(rec);
-  if(!window._fbRef) return;
-  var venue=rec.v||rec.venue||'';
-  var uid=String(rec._uid||'');
-  if(!uid) return;
-  var nextStatus=rec.depositStatus==null?null:rec.depositStatus;
-  window._fbRef.child('schedOverrides/shows').transaction(function(map){
-    if(!map||typeof map!=='object') map={};
-    var wbUid=uid;
-    if(typeof window._workbookUidForNight==='function') wbUid=window._workbookUidForNight(map, venue, rec.d, uid);
-    var cur=map[wbUid];
-    if(cur&&typeof cur==='object'){
-      var next=Object.assign({}, cur);
-      next.depositStatus=nextStatus;
-      next.updatedAt=new Date().toISOString();
-      map[wbUid]=next;
-      return map;
-    }
-    map[wbUid]={
-      d:rec.d, v:venue, venue:venue, _uid:wbUid,
-      depositStatus:nextStatus, _writeKind:'statusMerge', _added:1,
-      updatedAt:new Date().toISOString()
-    };
-    return map;
-  }, function(err){
-    if(typeof _fbOnSchedWrite==='function') _fbOnSchedWrite(err);
-  });
-}
 /* VIP note only - never bundle DJ name / fee. */
 function persistShowVipNoteOnly(rec){
   if(!rec||!rec.d) return;
@@ -1189,7 +1157,6 @@ function saveEvent(){
       if(prev.bs_a&&prev._s!=='fut'&&prev._s!=='tbd') rec._s=prev._s;
       /* Keep status / agency / VIP on rename/fee edits — Edit Show owns identity only. */
       if(Object.prototype.hasOwnProperty.call(prev,'djStatus')) rec.djStatus=prev.djStatus;
-      if(Object.prototype.hasOwnProperty.call(prev,'depositStatus')) rec.depositStatus=prev.depositStatus;
       if(Object.prototype.hasOwnProperty.call(prev,'agency')) rec.agency=prev.agency;
       if(Object.prototype.hasOwnProperty.call(prev,'vipNote')) rec.vipNote=prev.vipNote;
     }

@@ -90,7 +90,6 @@ function renderCal(){
   h+='<th class="sc-vip" title="Click a cell to leave a VIP comment. A comment from the same night last year stays visible here.">VIP Comment</th>';
   if(finCol) h+='<th class="acct-status-hd sc-fin-st" title="Set from Finance Approval">Finance Status</th>';
   h+='<th class="acct-status-hd sc-dj-st">DJ Status</th>';
-  h+='<th class="acct-status-hd sc-dep-st">Deposit</th>';
   h+='<th class="sc-3d" title="Open 3D floor plan with tier pricing">3D</th>';
   h+='<th class="sc-fee">Fee</th>';
   h+='<th class="sc-num">BS Target</th>';
@@ -133,7 +132,7 @@ function renderCal(){
       h+='<td class="sc-date-cell">'+dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
       h+='<td class="sc-empty-day"><button type="button" class="sc-add-inline" data-action="addShow" data-ds="'+ds+'">+ Add show</button></td>';
       h+=_vipCellHtml(null, -1, '', pyMap[ds]||pyBlank);
-      h+='<td colspan="'+(finCol?9:8)+'" class="sc-empty-day"></td>';
+      h+='<td colspan="'+(finCol?8:7)+'" class="sc-empty-day"></td>';
       h+='<td class="sc-sep"></td>';
       /* Show prior-year match on empty days so planners still see last year's lineup */
       h+=_pyCellsHtml(pyMap[ds]||pyBlank);
@@ -180,9 +179,6 @@ function renderCal(){
         h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
           +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status for this performance"', r)
           +'</div></td>';
-        h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
-          +_depositSelectHtml(r.depositStatus||'', 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="depositStatus" onclick="event.stopPropagation()"')
-          +'</div></td>';
         h+='<td class="sc-3d" onclick="event.stopPropagation()"><button type="button" class="sc-3d-btn" onclick="openShow3dModal('+idx+')" title="Open 3D floor plan and tier prices">3D</button></td>';
         h+='<td class="sc-num fee-cell '+(feeCls||'')+'" data-show-idx="'+idx+'" data-uid="'+showUid+'" data-action="editShow" style="cursor:pointer" title="Click to edit fee">'+$k(fee)+'</td>';
         h+='<td class="sc-num">'+$k(bsM)+'</td>';
@@ -203,11 +199,6 @@ function renderCal(){
   }
   h+='</tbody></table>';
   document.getElementById('calBody').innerHTML=h;
-  document.querySelectorAll('#calBody [data-action="depositStatus"]').forEach(function(sel){
-    _wireDjStatusSelect(sel, function(){
-      updateShowDepositStatus(sel.dataset.uid, sel.value, sel);
-    });
-  });
   document.querySelectorAll('#calBody [data-action="djStatus"]').forEach(function(sel){
     _wireDjStatusSelect(sel, function(){
       if(sel.dataset.idx!=null && sel.dataset.idx!=='') updateShowDjStatus(+sel.dataset.idx, sel.value, sel, sel.dataset.uid);
@@ -378,10 +369,18 @@ function initCalColResize(){
       th.style.setProperty('min-width',w+'px','important');
       th.style.setProperty('max-width',w+'px','important');
     });
-    table.style.setProperty('width',Math.max(total,document.getElementById('calBody').clientWidth)+'px','important');
+    /* One screen, no sideways slide: shrink the whole table to the width on show. */
+    var calBody=document.getElementById('calBody');
+    var avail=calBody.clientWidth||total;
+    var z=total>avail?Math.max(.6,(avail-10)/total):1;
+    if(z<1) table.style.setProperty('zoom',String(z));
+    else table.style.removeProperty('zoom');
+    calBody.dataset.calZoom=String(z);
+    table.style.setProperty('width',(z<1?total:Math.max(total,avail))+'px','important');
     table.style.setProperty('min-width','0','important');
   }
   applyWidths();
+  table._calApplyWidths=applyWidths;
 
   heads.forEach(function(th,i){
     if(th.classList.contains('sc-sep')) return;
@@ -393,7 +392,7 @@ function initCalColResize(){
       ev.preventDefault(); ev.stopPropagation();
       handle.classList.add('dragging');
       var startX=ev.clientX, startW=widths[i];
-      function onMove(e){ widths[i]=startW+(e.clientX-startX); applyWidths(); }
+      function onMove(e){ widths[i]=startW+(e.clientX-startX)/(parseFloat(document.getElementById('calBody').dataset.calZoom)||1); applyWidths(); }
       function onUp(){
         handle.classList.remove('dragging');
         document.removeEventListener('mousemove',onMove);
@@ -412,9 +411,10 @@ function fitCalListRows(days){
   var body=document.getElementById('calBody');
   if(!body) return;
   var rows=body.querySelectorAll('.sched-tbl tbody tr').length||Math.max(28,days|0);
-  var available=Math.max(180,body.clientHeight);
+  var zoom=parseFloat(body.dataset.calZoom)||1;
+  var available=Math.max(180,body.clientHeight)/zoom;
   var headH=16;
-  var rowH=Math.max(10,Math.floor(((available-headH-4)/rows)*10)/10);
+  var rowH=Math.max(10,Math.floor(((available-headH-(zoom<1?14:4))/rows)*10)/10);
   var font=Math.max(8,Math.min(13,rowH*.74));
   var mini=Math.max(7,Math.min(10.5,font-1));
   var control=Math.max(9,Math.min(18,rowH-1));
@@ -428,7 +428,10 @@ function fitCalListRows(days){
   if(!window._calFitResizeBound){
     window._calFitResizeBound=true;
     window.addEventListener('resize',function(){
-      if(curView==='calendar'&&calViewMode==='list') fitCalListRows(days);
+      if(curView!=='calendar'||calViewMode!=='list') return;
+      var tbl=document.querySelector('#calBody .sched-tbl');
+      if(tbl&&tbl._calApplyWidths) tbl._calApplyWidths();
+      fitCalListRows(days);
     });
   }
 }
@@ -1589,9 +1592,6 @@ function wireAccountingEvents(){
       else updateAcctDjStatus(sel.dataset.ds, sel.value, sel);
     });
   });
-  document.querySelectorAll('#acctBody [data-action="depositStatus"]').forEach(function(sel){
-    _wireDjStatusSelect(sel, function(){ updateShowDepositStatus(sel.dataset.uid, sel.value, sel); });
-  });
   document.querySelectorAll('#acctBody [data-action="apStatus"]').forEach(function(sel){
     sel.addEventListener('change',function(){ updateAcctApStatus(sel.dataset.ds, sel.value, sel); });
   });
@@ -1737,11 +1737,6 @@ function updateAcctDjStatus(ds,val,sel){
     if(typeof curV!=='undefined' && (r.v||r.venue)!==curV) return;
     dayShow=r;
   });
-  if(dayShow && typeof acctNightDocsReady==='function' && !acctNightDocsReady(dayShow)){
-    try{ alert('Drop the invoice and the contract in Accounting before changing DJ Status.'); }catch(eDocs){}
-    try{ if(sel) sel.value=prev; }catch(eRevDocs){}
-    return;
-  }
   if(dayShow && typeof faBlockLiveStatus==='function' && faBlockLiveStatus(dayShow, next, prev)){
     try{ if(sel) sel.value=prev; }catch(eBlock){}
     return;
@@ -1779,7 +1774,7 @@ function _calUiBusy(){
   }catch(eModal){}
   var ae=document.activeElement;
   if(!ae) return false;
-  if(ae.tagName==='SELECT' && (ae.getAttribute('data-action')==='djStatus'||ae.getAttribute('data-action')==='finStatus'||ae.getAttribute('data-action')==='depositStatus')) return true;
+  if(ae.tagName==='SELECT' && (ae.getAttribute('data-action')==='djStatus'||ae.getAttribute('data-action')==='finStatus')) return true;
   if(ae.tagName==='SELECT' && ae.classList && ae.classList.contains('acct-status-sel')) return true;
   if(ae.tagName==='TEXTAREA' && ae.getAttribute('data-action')==='acctNote') return true;
   if(ae.tagName==='INPUT' && ae.getAttribute('data-action')==='acctAgency') return true;
@@ -1856,11 +1851,6 @@ function updateShowDjStatus(idx,val,sel,uid){
   var next=val||'';
   var prev=getShowDjStatus(r,r.d)||'';
   if(prev===next) return;
-  if(typeof acctNightDocsReady==='function' && !acctNightDocsReady(r)){
-    try{ alert('Drop the invoice and the contract in Accounting before changing DJ Status.'); }catch(eDocs){}
-    try{ if(sel) sel.value=prev; }catch(eRevDocs){}
-    return;
-  }
   if(typeof faBlockLiveStatus==='function' && faBlockLiveStatus(r, next, prev)){
     try{ if(sel) sel.value=prev; }catch(eBlock){}
     return;
@@ -1898,58 +1888,13 @@ function updateShowDjStatus(idx,val,sel,uid){
   window._calStatusMenuOpen=false;
   _calRequestRefresh(curView==='accounting'?'go':false);
 }
-var ACCT_DEPOSIT_STATUS=['Deposit Paid','Deposit Non Paid'];
-function _depositSelectHtml(st, extraAttrs){
-  var cls=st==='Deposit Paid'?'acct-pair-ok':'acct-pair-bad';
-  var h='<select class="acct-status-sel '+cls+'" '+(extraAttrs||'')+'>';
-  h+='<option value=""'+(!st?' selected':'')+'>Not set</option>';
-  ACCT_DEPOSIT_STATUS.forEach(function(opt){
-    h+='<option value="'+opt+'"'+(st===opt?' selected':'')+'>'+opt+'</option>';
-  });
-  return h+'</select>';
-}
-function updateShowDepositStatus(uid, val, sel){
-  var wantUid=uid||(sel&&sel.dataset&&sel.dataset.uid)||'';
-  var wantDs=(sel&&sel.dataset&&sel.dataset.ds)||'';
-  if(!wantUid) return;
-  var r=(typeof _findSchedByUidOrIdx==='function')?_findSchedByUidOrIdx(wantUid, -1):null;
-  if(!r||!r.d) return;
-  if(wantDs && r.d!==wantDs) return;
-  if(String(ensureShowUid(r))!==String(wantUid)) return;
-  var next=val||'';
-  var prev=r.depositStatus||'';
-  if(prev===next) return;
-  if(typeof window._schedCanEdit==='function' && !window._schedCanEdit()){
-    try{ if(sel) sel.value=prev; }catch(eGate){}
-    return;
-  }
-  r.depositStatus=next||null;
-  ensureShowUid(r);
-  if(typeof showHistPush==='function') showHistPush(r._uid, 'Deposit', prev||'Not set', next||'Not set');
-  if(typeof persistShowDepositStatusOnly==='function') persistShowDepositStatusOnly(r);
-  if(sel) sel.className='acct-status-sel '+(next==='Deposit Paid'?'acct-pair-ok':'acct-pair-bad');
-  window._calStatusMenuOpen=false;
-  _calRequestRefresh(curView==='accounting'?'go':false);
-}
 function _djStatusSelectHtml(djSt, extraAttrs, show){
-  var docsLocked=show && typeof acctNightDocsReady==='function' && !acctNightDocsReady(show);
-  var docsTitle='Drop the invoice and the contract in Accounting before changing DJ Status.';
   if(show && typeof faInScope==='function' && faInScope(show) && typeof faStatusSelectOptionsHtml==='function'){
     var live=(typeof faDjStatus==='function')?faDjStatus(show):(djSt||'');
-    var finLocked=(typeof faDjLocked==='function')&&faDjLocked(show);
-    var locked=finLocked||docsLocked;
-    var lockTitle=docsLocked?docsTitle:((typeof faDjLockTitle==='function')?faDjLockTitle(show):'Locked until Finance Approved');
+    var locked=(typeof faDjLocked==='function')&&faDjLocked(show);
+    var lockTitle=(typeof faDjLockTitle==='function')?faDjLockTitle(show):'Locked until Finance Approved';
     return '<select class="acct-status-sel '+acctStatusClass(live||null)+(locked?' fa-dj-locked':'')+'" '+(extraAttrs||'')
       +(locked?' disabled title="'+lockTitle+'"':'')+'>'+faStatusSelectOptionsHtml(show, live)+'</select>';
-  }
-  if(docsLocked){
-    return '<select class="acct-status-sel '+acctStatusClass(djSt||null)+' fa-dj-locked" '+(extraAttrs||'')
-      +' disabled title="'+docsTitle+'">'
-      +'<option value=""'+(!djSt?' selected':'')+'>Not set</option>'
-      +((typeof ACCT_DJ_STATUS!=='undefined'?ACCT_DJ_STATUS:['Offer sent','Hold 1','Confirmed']).map(function(opt){
-        return '<option value="'+opt+'"'+(djSt===opt?' selected':'')+'>'+opt+'</option>';
-      }).join(''))
-      +'</select>';
   }
   var h='<select class="acct-status-sel '+acctStatusClass(djSt||null)+'" '+(extraAttrs||'')+'>';
   var opts=(typeof faStatusOptions==='function')?faStatusOptions(show, djSt||''):(typeof ACCT_DJ_STATUS!=='undefined'?ACCT_DJ_STATUS:['Offer sent','Hold 1','Confirmed']);

@@ -572,7 +572,6 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       }
     }
     if(!keep.djStatus && lose.djStatus) keep.djStatus=lose.djStatus;
-    if(!keep.depositStatus && lose.depositStatus) keep.depositStatus=lose.depositStatus;
     if(!keep.note && lose.note) keep.note=lose.note;
     if(!keep.vipNote && lose.vipNote) keep.vipNote=lose.vipNote;
     if(!keep.agency && lose.agency) keep.agency=lose.agency;
@@ -786,9 +785,6 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
          Legacy Firebase rows that bundled fee into a status seed are ignored for identity. */
       if(Object.prototype.hasOwnProperty.call(edit,'djStatus')){
         target.djStatus = edit.djStatus==null ? null : edit.djStatus;
-      }
-      if(Object.prototype.hasOwnProperty.call(edit,'depositStatus')){
-        target.depositStatus = edit.depositStatus==null ? null : edit.depositStatus;
       }
       return;
     }
