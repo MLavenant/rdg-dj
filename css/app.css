@@ -1277,8 +1277,15 @@ body.res-view #venTabs,body.res-view #yrPills{display:none!important}
 #residentBody .res-col-hd{cursor:grab;position:relative}
 .res-col-x{position:absolute;top:1px;right:3px;z-index:2;border:0;background:transparent;color:#8a8175;font:inherit;font-size:14px;line-height:1;cursor:pointer;padding:0 3px}
 .res-col-x:hover{color:#a33}
-body.res-reordering,#residentBody .res-col-hd.res-drag-src{cursor:grabbing}
-#residentBody .res-col-hd.res-drag-src{opacity:.4}
+body.res-reordering{cursor:grabbing;user-select:none}
+body.res-reordering #residentBody .res-col-hd{cursor:grabbing}
+#residentBody .res-drag-src{opacity:.38;outline:2px solid #0b2e40;outline-offset:-2px}
+#resDragGhost{position:fixed;z-index:90;display:none;pointer-events:none;min-width:120px;padding:10px 14px 8px;background:#fff;border:1px solid #0b2e40;border-radius:12px;box-shadow:0 16px 34px rgba(11,46,64,.28);transform-origin:50% 0}
+#resDragGhost.on{display:block}
+#resDragGhost b{display:block;font-size:13px;font-weight:850;letter-spacing:.02em;color:#0b2e40}
+#resDragGhost i{display:block;margin-top:2px;font-style:normal;font-size:10px;font-weight:700;color:#8a8175}
+#resDropLine{position:fixed;z-index:89;display:none;width:3px;margin-left:-1px;background:#0b2e40;border-radius:2px;pointer-events:none;box-shadow:0 0 0 3px rgba(11,46,64,.15)}
+#resDropLine.on{display:block}
 #residentBody thead tr:first-child th.res-drop-before{box-shadow:inset 3px 0 0 #0b2e40}
 #residentBody thead tr:first-child th.res-drop-after{box-shadow:inset -3px 0 0 #0b2e40}
 #residentBody .res-grip{position:absolute;top:0;right:-3px;width:7px;height:100%;cursor:col-resize;z-index:3}

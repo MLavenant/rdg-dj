@@ -19,11 +19,13 @@ var RESIDENT_DEFAULT_W = {date:190, guest:130, total:80, money:80, name:96, amt:
 var resYear = null, resMonth = null, resVenue = null;
 
 function residentHere(){
-  if(resYear==null){
-    var y=parseInt(String(typeof TODAY!=='undefined'?TODAY:'').slice(0,4),10);
-    resYear=y||2026;
+  /* Year and month stay the fiscal period that contains today. */
+  if(resYear==null || resMonth==null){
+    var today=(typeof TODAY!=='undefined' && TODAY)?TODAY:((typeof miamiToday==='function')?miamiToday():'');
+    var info=(today && typeof fiscalInfoForDate==='function')?fiscalInfoForDate(today):null;
+    if(resYear==null) resYear=info?info.year:(parseInt(String(today).slice(0,4),10)||2026);
+    if(resMonth==null) resMonth=info?info.monthIndex:((typeof curM!=='undefined')?curM:0);
   }
-  if(resMonth==null) resMonth=(typeof curM!=='undefined')?curM:0;
   if(!resVenue || RESIDENT_VENUES.indexOf(resVenue)<0){
     resVenue=(typeof curV!=='undefined' && RESIDENT_VENUES.indexOf(curV)>=0)?curV:RESIDENT_VENUES[0];
   }
@@ -495,7 +497,8 @@ function renderResidentCalendar(){
     for(var mi=0;mi<12;mi++) fh+='<option value="'+mi+'"'+(mi===mo?' selected':'')+'>'+MN_FULL[mi]+'</option>';
     fh+='</select></label><button type="button" class="res-add-col" onclick="residentAddColumn()">+ Column</button>';
     fh+='<button type="button" class="res-add-col" onclick="residentDeleteColumnPrompt()">− Column</button>';
-    fh+='<span>'+fiscalPeriodShortRange(yr, mo)+' · drag a column header to reorder (name and $ stay together) · right-click a header to rename or delete</span>';
+    var asOf=(typeof TODAY!=='undefined'&&TODAY)?(' · as of '+TODAY):'';
+    fh+='<span>'+fiscalPeriodShortRange(yr, mo)+asOf+' · grab a column header and drag it — the column lifts and pivots · right-click a header to rename or delete</span>';
     filters.innerHTML=fh;
   }
   var sub=document.getElementById('pgSub');
@@ -575,7 +578,14 @@ function renderResidentCalendar(){
   if(table) table.style.width=Math.max(tableW, body.clientWidth||0)+'px';
   residentIndexCells();
   residentMark();
-  requestAnimationFrame(fitResidentRows);
+  requestAnimationFrame(function(){
+    fitResidentRows();
+    if(window._resScrolledToday) return;
+    var todayRow=body.querySelector('tr.sc-today');
+    if(!todayRow) return;
+    window._resScrolledToday=true;
+    todayRow.scrollIntoView({block:'center'});
+  });
 }
 
 /* Selection, copy, paste, and clear. */
@@ -731,37 +741,79 @@ function residentMoveColumn(id, targetId, place){
   cols.splice(to, 0, item);
   residentSaveCols(cols);
 }
+function residentDragNodes(){
+  var g=document.getElementById('resDragGhost');
+  if(!g){
+    g=document.createElement('div');
+    g.id='resDragGhost';
+    document.body.appendChild(g);
+  }
+  var line=document.getElementById('resDropLine');
+  if(!line){
+    line=document.createElement('div');
+    line.id='resDropLine';
+    document.body.appendChild(line);
+  }
+  return {ghost:g, line:line};
+}
+function residentClearDragMarks(){
+  document.body.classList.remove('res-reordering');
+  var nodes=residentDragNodes();
+  nodes.ghost.classList.remove('on');
+  nodes.line.classList.remove('on');
+  var body=document.getElementById('residentBody');
+  if(!body) return;
+  body.querySelectorAll('.res-drag-src,.res-drop-before,.res-drop-after').forEach(function(el){
+    el.classList.remove('res-drag-src','res-drop-before','res-drop-after');
+  });
+}
 function residentStartReorder(th, ev){
   if(!th||ev.button!==0) return;
   var id=th.getAttribute('data-col');
   if(!id) return;
   ev.preventDefault();
-  var startX=ev.clientX, moved=false;
-  function clearMarks(){
-    residentHeaderOrder().forEach(function(h){ h.classList.remove('res-drag-src','res-drop-before','res-drop-after'); });
-    var subs=document.querySelectorAll('#residentBody thead th.res-sub[data-col="'+id+'"]');
-    Array.prototype.forEach.call(subs, function(h){ h.classList.remove('res-drag-src'); });
-  }
+  var startX=ev.clientX, startY=ev.clientY, moved=false;
   function onMove(e){
-    if(!moved && Math.abs(e.clientX-startX)<5) return;
+    if(!moved && Math.abs(e.clientX-startX)<6 && Math.abs(e.clientY-startY)<6) return;
     moved=true;
     document.body.classList.add('res-reordering');
-    clearMarks();
-    residentHeaderOrder().forEach(function(h){
-      if(h.getAttribute('data-col')===id) h.classList.add('res-drag-src');
+    var body=document.getElementById('residentBody');
+    if(!body) return;
+    body.querySelectorAll('.res-drag-src,.res-drop-before,.res-drop-after').forEach(function(el){
+      el.classList.remove('res-drag-src','res-drop-before','res-drop-after');
     });
-    var subs=document.querySelectorAll('#residentBody thead th.res-sub[data-col="'+id+'"]');
-    Array.prototype.forEach.call(subs, function(h){ h.classList.add('res-drag-src'); });
+    body.querySelectorAll('[data-col="'+id+'"]').forEach(function(el){ el.classList.add('res-drag-src'); });
+    var over=null, place='before';
     residentHeaderOrder().forEach(function(h){
       var r=h.getBoundingClientRect();
       if(e.clientX<r.left||e.clientX>r.right||h.getAttribute('data-col')===id) return;
-      h.classList.add(e.clientX<r.left+r.width/2?'res-drop-before':'res-drop-after');
+      over=h;
+      place=e.clientX<r.left+r.width/2?'before':'after';
+      h.classList.add(place==='before'?'res-drop-before':'res-drop-after');
     });
+    var nodes=residentDragNodes();
+    var col=residentColById(id);
+    var tilt=Math.max(-14, Math.min(14, (e.clientX-startX)/16));
+    nodes.ghost.innerHTML='<b>'+residentEsc(col?col.label:'Column')+'</b><i>'+(col&&col.kind==='role'?'Name and $ move together':'Amount')+'</i>';
+    nodes.ghost.style.left=e.clientX+'px';
+    nodes.ghost.style.top=e.clientY+'px';
+    nodes.ghost.style.transform='translate(-50%, -70%) rotate('+tilt+'deg)';
+    nodes.ghost.classList.add('on');
+    var table=body.querySelector('table');
+    if(over && table){
+      var edge=over.getBoundingClientRect();
+      var box=table.getBoundingClientRect();
+      nodes.line.style.left=(place==='after'?edge.right:edge.left)+'px';
+      nodes.line.style.top=box.top+'px';
+      nodes.line.style.height=box.height+'px';
+      nodes.line.classList.add('on');
+    }else{
+      nodes.line.classList.remove('on');
+    }
   }
   function onUp(e){
     document.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseup', onUp);
-    document.body.classList.remove('res-reordering');
     var over=null, place='before';
     if(moved){
       residentHeaderOrder().forEach(function(h){
@@ -771,7 +823,7 @@ function residentStartReorder(th, ev){
         place=e.clientX<r.left+r.width/2?'before':'after';
       });
     }
-    clearMarks();
+    residentClearDragMarks();
     if(over) residentMoveColumn(id, over.getAttribute('data-col'), place);
   }
   document.addEventListener('mousemove', onMove);
