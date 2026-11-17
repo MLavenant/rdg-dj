@@ -90,6 +90,7 @@ function renderCal(){
   h+='<th class="sc-vip" title="Click a cell to leave a VIP comment. A comment from the same night last year stays visible here.">VIP Comment</th>';
   if(finCol) h+='<th class="acct-status-hd sc-fin-st" title="Set from Finance Approval">Finance Status</th>';
   h+='<th class="acct-status-hd sc-dj-st">DJ Status</th>';
+  h+='<th class="acct-status-hd sc-dep-st">Deposit</th>';
   h+='<th class="sc-3d" title="Open 3D floor plan with tier pricing">3D</th>';
   h+='<th class="sc-fee">Fee</th>';
   h+='<th class="sc-num">BS Target</th>';
@@ -179,6 +180,9 @@ function renderCal(){
         h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
           +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status for this performance"', r)
           +'</div></td>';
+        h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
+          +_depositSelectHtml(r.depositStatus||'', 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="depositStatus" onclick="event.stopPropagation()"')
+          +'</div></td>';
         h+='<td class="sc-3d" onclick="event.stopPropagation()"><button type="button" class="sc-3d-btn" onclick="openShow3dModal('+idx+')" title="Open 3D floor plan and tier prices">3D</button></td>';
         h+='<td class="sc-num fee-cell '+(feeCls||'')+'" data-show-idx="'+idx+'" data-uid="'+showUid+'" data-action="editShow" style="cursor:pointer" title="Click to edit fee">'+$k(fee)+'</td>';
         h+='<td class="sc-num">'+$k(bsM)+'</td>';
@@ -199,6 +203,11 @@ function renderCal(){
   }
   h+='</tbody></table>';
   document.getElementById('calBody').innerHTML=h;
+  document.querySelectorAll('#calBody [data-action="depositStatus"]').forEach(function(sel){
+    _wireDjStatusSelect(sel, function(){
+      updateShowDepositStatus(sel.dataset.uid, sel.value, sel);
+    });
+  });
   document.querySelectorAll('#calBody [data-action="djStatus"]').forEach(function(sel){
     _wireDjStatusSelect(sel, function(){
       if(sel.dataset.idx!=null && sel.dataset.idx!=='') updateShowDjStatus(+sel.dataset.idx, sel.value, sel, sel.dataset.uid);
@@ -1225,6 +1234,53 @@ function _acctDocList(acct, kind){
   _acctNormalize(acct);
   return acct[_acctDocsKey(kind)]||[];
 }
+/* Missing invoice, missing contract, or both, from the PDFs actually in the boxes. */
+function acctGapStatus(acct){
+  var inv=(acct&&acct.invoices&&acct.invoices.length)||0;
+  var con=(acct&&acct.contracts&&acct.contracts.length)||0;
+  if(!inv&&!con) return 'Missing Contract & Invoice';
+  if(!inv) return 'Missing Invoice';
+  if(!con) return 'Missing Contract';
+  return '';
+}
+function acctShownAp(acct){
+  var gap=acctGapStatus(acct);
+  if(gap) return gap;
+  var st=(acct&&acct.apStatus)||'';
+  if(st==='Missing Invoice'||st==='Missing Contract'||st==='Missing Contract & Invoice') return '';
+  return st;
+}
+function acctNightRecord(show){
+  if(!show||!show.d||typeof acctData==='undefined') return null;
+  var date=show.d;
+  var venue=show.v||show.venue||'';
+  var year=(typeof fiscalYearForDate==='function')?fiscalYearForDate(date):'';
+  var keys=[String(venue)+'|'+year+'|'+String(date).slice(5,7)+'|'+date];
+  try{
+    var live=(typeof acctKey==='function')?acctKey(date):'';
+    if(live&&keys.indexOf(live)<0) keys.push(live);
+  }catch(e){}
+  for(var i=0;i<keys.length;i++){
+    if(acctData[keys[i]]) return (typeof _acctNormalize==='function')?_acctNormalize(acctData[keys[i]]):acctData[keys[i]];
+  }
+  return null;
+}
+function acctNightDocsReady(show){
+  var acct=acctNightRecord(show);
+  if(!acct) return false;
+  return (acct.invoices&&acct.invoices.length>0)&&(acct.contracts&&acct.contracts.length>0);
+}
+function acctSyncApFromDocs(ds){
+  if(!ds||typeof getAcct!=='function') return;
+  var acct=_acctNormalize(getAcct(ds));
+  var next=acctShownAp(acct)||'';
+  var prev=acct.apStatus||'';
+  if(prev===next) return;
+  acct.apStatus=next||null;
+  if(typeof _acctEffectiveStatus==='function') acct.status=_acctEffectiveStatus(acct);
+  if(typeof _acctPushLog==='function') _acctPushLog(acct,'AP Status',prev||'Not set',next||'Not set','Documents');
+  _acctPersistDay(ds);
+}
 function _acctSafeFileName(name){
   return String(name||'document.pdf').replace(/[\\\/:#?*"<>|]+/g,'_').replace(/\s+/g,'_').slice(0,120);
 }
@@ -1253,7 +1309,7 @@ function _acctDocDropHtml(ds, kind, docs){
   var hint=room
     ?'<div class="acct-doc-hint"><span class="acct-doc-ico">PDF</span><b>'+(n?'Drop another '+label:'Drop '+label)+'</b><span>'+(n?(n+' of '+ACCT_DOC_MAX):'up to '+ACCT_DOC_MAX)+'</span></div>'
     :'<div class="acct-doc-hint acct-doc-full"><b>'+ACCT_DOC_MAX+' of '+ACCT_DOC_MAX+'</b><span>Remove one to add another</span></div>';
-  var h='<div class="acct-doc-drop'+(posted?' acct-doc-posted':'')+kept+(room?'':' acct-doc-max')+'" data-ds="'+ds+'" data-kind="'+kind+'" data-action="docDrop" title="Drop up to '+ACCT_DOC_MAX+' '+label+' PDFs. A file can have any number of pages. Files stay until you remove them.">'
+  var h='<div class="acct-doc-drop'+(posted?' acct-doc-posted':'')+kept+(n?' acct-doc-ready':'')+(room?'':' acct-doc-max')+'" data-ds="'+ds+'" data-kind="'+kind+'" data-action="docDrop" title="Drop up to '+ACCT_DOC_MAX+' '+label+' PDFs. A file can have any number of pages. Files stay until you remove them.">'
     +(posted?'<div class="acct-doc-saved">Saved</div>':'')
     +'<div class="acct-doc-list">';
   (docs||[]).forEach(function(doc,idx){
@@ -1402,6 +1458,7 @@ function addAcctPdfFiles(ds, kind, files){
     items.forEach(function(it){ if(it.doc&&it.doc.id) window._acctFreshDocs[it.doc.id]=1; });
     window._acctFreshZones[ds+'|'+kind]=1;
     _acctPersistDay(ds);
+    acctSyncApFromDocs(ds);
     if(curView==='accounting') renderAccounting();
     items.forEach(function(it){ _acctStorePdfFile(ds, kind, venue, it); });
   }).catch(function(err){
@@ -1443,7 +1500,8 @@ function removeAcctPdf(ds, kind, idx){
   docs.splice(idx,1);
   acct[key]=docs;
   _acctPushLog(acct, kind==='invoice'?'Invoice PDF':'Contract PDF', doc.name||'', 'removed', _acctSoftEditorName());
-  _acctPersist();
+  _acctPersistDay(ds);
+  acctSyncApFromDocs(ds);
   var storage=_acctStorageRef();
   if(storage && doc.path){
     try{ storage.ref(doc.path).delete().catch(function(){}); }catch(e){}
@@ -1530,6 +1588,9 @@ function wireAccountingEvents(){
       if(sel.dataset.idx!=null && sel.dataset.idx!=='') updateShowDjStatus(+sel.dataset.idx, sel.value, sel, sel.dataset.uid);
       else updateAcctDjStatus(sel.dataset.ds, sel.value, sel);
     });
+  });
+  document.querySelectorAll('#acctBody [data-action="depositStatus"]').forEach(function(sel){
+    _wireDjStatusSelect(sel, function(){ updateShowDepositStatus(sel.dataset.uid, sel.value, sel); });
   });
   document.querySelectorAll('#acctBody [data-action="apStatus"]').forEach(function(sel){
     sel.addEventListener('change',function(){ updateAcctApStatus(sel.dataset.ds, sel.value, sel); });
@@ -1676,6 +1737,11 @@ function updateAcctDjStatus(ds,val,sel){
     if(typeof curV!=='undefined' && (r.v||r.venue)!==curV) return;
     dayShow=r;
   });
+  if(dayShow && typeof acctNightDocsReady==='function' && !acctNightDocsReady(dayShow)){
+    try{ alert('Drop the invoice and the contract in Accounting before changing DJ Status.'); }catch(eDocs){}
+    try{ if(sel) sel.value=prev; }catch(eRevDocs){}
+    return;
+  }
   if(dayShow && typeof faBlockLiveStatus==='function' && faBlockLiveStatus(dayShow, next, prev)){
     try{ if(sel) sel.value=prev; }catch(eBlock){}
     return;
@@ -1713,7 +1779,7 @@ function _calUiBusy(){
   }catch(eModal){}
   var ae=document.activeElement;
   if(!ae) return false;
-  if(ae.tagName==='SELECT' && (ae.getAttribute('data-action')==='djStatus'||ae.getAttribute('data-action')==='finStatus')) return true;
+  if(ae.tagName==='SELECT' && (ae.getAttribute('data-action')==='djStatus'||ae.getAttribute('data-action')==='finStatus'||ae.getAttribute('data-action')==='depositStatus')) return true;
   if(ae.tagName==='SELECT' && ae.classList && ae.classList.contains('acct-status-sel')) return true;
   if(ae.tagName==='TEXTAREA' && ae.getAttribute('data-action')==='acctNote') return true;
   if(ae.tagName==='INPUT' && ae.getAttribute('data-action')==='acctAgency') return true;
@@ -1790,6 +1856,11 @@ function updateShowDjStatus(idx,val,sel,uid){
   var next=val||'';
   var prev=getShowDjStatus(r,r.d)||'';
   if(prev===next) return;
+  if(typeof acctNightDocsReady==='function' && !acctNightDocsReady(r)){
+    try{ alert('Drop the invoice and the contract in Accounting before changing DJ Status.'); }catch(eDocs){}
+    try{ if(sel) sel.value=prev; }catch(eRevDocs){}
+    return;
+  }
   if(typeof faBlockLiveStatus==='function' && faBlockLiveStatus(r, next, prev)){
     try{ if(sel) sel.value=prev; }catch(eBlock){}
     return;
@@ -1827,13 +1898,58 @@ function updateShowDjStatus(idx,val,sel,uid){
   window._calStatusMenuOpen=false;
   _calRequestRefresh(curView==='accounting'?'go':false);
 }
+var ACCT_DEPOSIT_STATUS=['Deposit Paid','Deposit Non Paid'];
+function _depositSelectHtml(st, extraAttrs){
+  var cls=st==='Deposit Paid'?'acct-pair-ok':'acct-pair-bad';
+  var h='<select class="acct-status-sel '+cls+'" '+(extraAttrs||'')+'>';
+  h+='<option value=""'+(!st?' selected':'')+'>Not set</option>';
+  ACCT_DEPOSIT_STATUS.forEach(function(opt){
+    h+='<option value="'+opt+'"'+(st===opt?' selected':'')+'>'+opt+'</option>';
+  });
+  return h+'</select>';
+}
+function updateShowDepositStatus(uid, val, sel){
+  var wantUid=uid||(sel&&sel.dataset&&sel.dataset.uid)||'';
+  var wantDs=(sel&&sel.dataset&&sel.dataset.ds)||'';
+  if(!wantUid) return;
+  var r=(typeof _findSchedByUidOrIdx==='function')?_findSchedByUidOrIdx(wantUid, -1):null;
+  if(!r||!r.d) return;
+  if(wantDs && r.d!==wantDs) return;
+  if(String(ensureShowUid(r))!==String(wantUid)) return;
+  var next=val||'';
+  var prev=r.depositStatus||'';
+  if(prev===next) return;
+  if(typeof window._schedCanEdit==='function' && !window._schedCanEdit()){
+    try{ if(sel) sel.value=prev; }catch(eGate){}
+    return;
+  }
+  r.depositStatus=next||null;
+  ensureShowUid(r);
+  if(typeof showHistPush==='function') showHistPush(r._uid, 'Deposit', prev||'Not set', next||'Not set');
+  if(typeof persistShowDepositStatusOnly==='function') persistShowDepositStatusOnly(r);
+  if(sel) sel.className='acct-status-sel '+(next==='Deposit Paid'?'acct-pair-ok':'acct-pair-bad');
+  window._calStatusMenuOpen=false;
+  _calRequestRefresh(curView==='accounting'?'go':false);
+}
 function _djStatusSelectHtml(djSt, extraAttrs, show){
+  var docsLocked=show && typeof acctNightDocsReady==='function' && !acctNightDocsReady(show);
+  var docsTitle='Drop the invoice and the contract in Accounting before changing DJ Status.';
   if(show && typeof faInScope==='function' && faInScope(show) && typeof faStatusSelectOptionsHtml==='function'){
     var live=(typeof faDjStatus==='function')?faDjStatus(show):(djSt||'');
-    var locked=(typeof faDjLocked==='function')&&faDjLocked(show);
-    var lockTitle=(typeof faDjLockTitle==='function')?faDjLockTitle(show):'Locked until Finance Approved';
+    var finLocked=(typeof faDjLocked==='function')&&faDjLocked(show);
+    var locked=finLocked||docsLocked;
+    var lockTitle=docsLocked?docsTitle:((typeof faDjLockTitle==='function')?faDjLockTitle(show):'Locked until Finance Approved');
     return '<select class="acct-status-sel '+acctStatusClass(live||null)+(locked?' fa-dj-locked':'')+'" '+(extraAttrs||'')
       +(locked?' disabled title="'+lockTitle+'"':'')+'>'+faStatusSelectOptionsHtml(show, live)+'</select>';
+  }
+  if(docsLocked){
+    return '<select class="acct-status-sel '+acctStatusClass(djSt||null)+' fa-dj-locked" '+(extraAttrs||'')
+      +' disabled title="'+docsTitle+'">'
+      +'<option value=""'+(!djSt?' selected':'')+'>Not set</option>'
+      +((typeof ACCT_DJ_STATUS!=='undefined'?ACCT_DJ_STATUS:['Offer sent','Hold 1','Confirmed']).map(function(opt){
+        return '<option value="'+opt+'"'+(djSt===opt?' selected':'')+'>'+opt+'</option>';
+      }).join(''))
+      +'</select>';
   }
   var h='<select class="acct-status-sel '+acctStatusClass(djSt||null)+'" '+(extraAttrs||'')+'>';
   var opts=(typeof faStatusOptions==='function')?faStatusOptions(show, djSt||''):(typeof ACCT_DJ_STATUS!=='undefined'?ACCT_DJ_STATUS:['Offer sent','Hold 1','Confirmed']);
@@ -1852,11 +1968,16 @@ function updateAcctApStatus(ds,val,sel){
     if(sel) sel.value=prev;
     return;
   }
+  var gap=(typeof acctGapStatus==='function')?acctGapStatus(acct):'';
+  if(gap){
+    if(sel) sel.value=gap;
+    return;
+  }
   _pushAcctUndo('Change AP status');
   acct.apStatus=next||null;
   acct.status=_acctEffectiveStatus(acct);
-  _acctPushLog(acct,'AP Status',prev,next,by);
-  _acctPersist();
+  _acctPushLog(acct,'AP Status',prev,acct.apStatus||'',by);
+  _acctPersistDay(ds);
   renderAccounting();
 }
 function updateAcctNote(ds,val){
@@ -4307,8 +4428,28 @@ function renderSystem(){
   el.innerHTML = h;
 }
 
+function nightTableExport(r){
+  var venue=r&&(r.v||r.venue)||'';
+  var sold=null;
+  if(typeof _vipResolveTables==='function'){
+    var n=_vipResolveTables(venue, r.d, null);
+    if(n!=null && n!=='' && isFinite(+n)) sold=+n;
+  }
+  var target=null;
+  if(typeof getVipFloorPlan==='function'){
+    var fp=getVipFloorPlan(venue, r.d)||{};
+    var excl=(typeof _vipExcludedTiers==='function')?_vipExcludedTiers(venue):[];
+    var tot=0;
+    Object.keys(fp.tiers||{}).forEach(function(name){
+      if(excl.indexOf(name)>=0) return;
+      tot+=+((fp.tiers[name]||{}).total)||0;
+    });
+    if(tot>0) target=tot;
+  }
+  return {sold:sold, target:target};
+}
 function _sanityCalendarSheetRows(year){
-  var rows=[['Venue','Date','DJ','DJ Fee','BS Target','BS Actual','ROI Target','ROI Actual']];
+  var rows=[['Venue','Date','DJ','DJ Fee','BS Target','BS Actual','ROI Target','ROI Actual','Tables Sold','Floor Plan Tables']];
   (SCHED||[]).filter(function(r){
     return r && r._s!=='empty' && r.d && String(r.d).slice(0,4)===String(year);
   }).sort(function(a,b){
@@ -4324,6 +4465,7 @@ function _sanityCalendarSheetRows(year){
     var bsActual=r.bs_a!=null&&r.bs_a!==''&&!isNaN(+r.bs_a)?+r.bs_a:null;
     var roiActual=r.roi_a!=null&&r.roi_a!==''&&!isNaN(+r.roi_a)?+r.roi_a:null;
     if(roiActual==null&&fee>0&&bsActual!=null) roiActual=Math.round((bsActual/fee)*10000)/10000;
+    var tables=nightTableExport(r);
     rows.push([
       r.v||r.venue||'',
       r.d,
@@ -4332,15 +4474,17 @@ function _sanityCalendarSheetRows(year){
       bsTarget,
       bsActual,
       roiTarget,
-      roiActual
+      roiActual,
+      tables.sold,
+      tables.target
     ]);
   });
   return rows;
 }
 function _sanityCalendarSheet(rows){
   var ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:24},{wch:12},{wch:28},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14}];
-  ws['!autofilter']={ref:'A1:H'+rows.length};
+  ws['!cols']=[{wch:24},{wch:12},{wch:28},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:18}];
+  ws['!autofilter']={ref:'A1:J'+rows.length};
   for(var i=2;i<=rows.length;i++){
     ['D','E','F'].forEach(function(col){
       var cell=ws[col+i];

@@ -534,7 +534,7 @@ function faPendingHtml(venue, year, scope, title){
     return head+'<div class="fa-empty fa-all-ok">'+(any?'Nothing waiting for you.':'All approved.')+'</div></div>';
   }
   head+='<div class="fa-pending-note">'+rows.length+' for '+who+'</div>';
-  var h=head+'<table class="fa-tbl"><colgroup><col class="fa-c-warn"><col class="fa-c-date"><col class="fa-c-dj"><col class="fa-c-fee"><col class="fa-c-route"><col class="fa-c-act"></colgroup><thead><tr><th class="fa-warn-side"></th><th>Date</th><th>DJ</th><th>Fee</th><th>Route</th><th></th></tr></thead><tbody>';
+  var h=head+'<table class="fa-tbl"><colgroup><col class="fa-c-warn"><col class="fa-c-date"><col class="fa-c-dj"><col class="fa-c-note"><col class="fa-c-fee"><col class="fa-c-route"><col class="fa-c-act"></colgroup><thead><tr><th class="fa-warn-side"></th><th>Date</th><th>DJ</th><th>Notes</th><th>Fee</th><th>Route</th><th></th></tr></thead><tbody>';
   rows.forEach(function(item){
     var r=item.r;
     var uid=String(item.uid).replace(/"/g,'&quot;');
@@ -545,6 +545,7 @@ function faPendingHtml(venue, year, scope, title){
     h+='<tr class="fa-row-warn"><td class="fa-warn-side" title="Pending approval">!</td>'
       +'<td>'+_escHtml(typeof _bpDay==='function'?_bpDay(r.d):r.d)+'</td>'
       +'<td>'+_escHtml(String(r.dj||'').trim()||'TBD')+'</td>'
+      +'<td class="fa-note-cell">'+_escHtml(String(r.note||'').trim()||'—')+'</td>'
       +'<td>'+(item.fee>0?$k(item.fee):'—')+(pct?'<i class="fa-pct">'+pct+'</i>':'')+'</td>'
       +'<td><span class="fa-chip '+(greg?'fa-fs-wait':'fa-fs-none')+'">'+_escHtml(faWhyGreg(r))+'</span></td>';
     if(can){
