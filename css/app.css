@@ -1061,7 +1061,15 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
   background:#f7f6f3;color:#334155;font-size:9px;font-weight:700;text-align:center;cursor:default
 }
 #view-accounting .acct-fin-cell .fa-fs-lock{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:100%;height:22px;margin:0;padding:0 6px;border-radius:6px;font-size:9px;font-weight:700;text-align:center}
-#view-accounting:not(.acct-others-mode) .acct-location{display:none}
+#view-accounting:not(.acct-others-mode) .acct-tabs{display:none!important}
+#view-accounting.acct-others-mode .acct-others-link{display:none}
+.acct-others-link{border:0;background:transparent;color:var(--ink3);font-size:11px;font-weight:750;cursor:pointer;font-family:inherit;padding:4px 2px}
+.acct-others-link:hover{color:var(--ink)}
+#view-accounting:not(.acct-others-mode) .acct-tbl thead th{vertical-align:top!important;padding-top:6px!important}
+#view-accounting:not(.acct-others-mode) .acct-doc-cell{padding:0!important;position:relative}
+#view-accounting:not(.acct-others-mode) .acct-doc-drop{position:absolute;inset:0;height:auto;min-height:0;border-radius:0;box-sizing:border-box}
+#view-accounting:not(.acct-others-mode) .acct-fin-cell,
+#view-accounting:not(.acct-others-mode) .acct-dj-cell{vertical-align:top!important}
 #view-accounting .acct-lock.acct-pair-ok,
 #view-accounting .acct-fin-cell.acct-pair-ok .fa-fs-lock,
 .acct-status-sel.acct-pair-ok{background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:800}
@@ -1069,7 +1077,7 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 #view-accounting .acct-fin-cell.acct-pair-bad .fa-fs-lock,
 .acct-status-sel.acct-pair-bad{background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;font-weight:800}
 #view-accounting .acct-fin-cell,
-#view-accounting .acct-dj-cell{text-align:center;vertical-align:middle!important}
+#view-accounting .acct-dj-cell{text-align:center;vertical-align:top!important}
 #view-accounting .acct-fin-cell .fa-fs-lock,
 #view-accounting .acct-dj-cell b{display:inline-flex;align-items:center;justify-content:center;background:transparent!important;border:none!important;color:inherit!important;height:auto;width:auto;margin:0;padding:0;font-size:11px;font-weight:800;box-shadow:none}
 #view-accounting .acct-doc-drop.acct-doc-wait{background:#fee2e2!important;border:1px solid #fca5a5!important}
