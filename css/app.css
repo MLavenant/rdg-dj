@@ -1252,10 +1252,10 @@ body.res-view #venTabs,body.res-view #yrPills{display:none!important}
 .res-pop label{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:750;margin-bottom:6px}
 .res-pop textarea{width:100%;box-sizing:border-box;font:inherit;font-size:12px;border:1px solid #e4dfd8;border-radius:6px;padding:4px 6px;resize:vertical}
 #residentBody .res-tbl tbody td{height:var(--res-row-h,16px);padding:0 3px!important;font-size:var(--res-font,10px);line-height:1;vertical-align:middle}
-#residentBody .res-tbl tfoot td{height:auto!important;max-height:none!important;padding:8px 8px!important;vertical-align:middle;background:#0b2e40!important;color:#fff;font-size:15px;line-height:1.25;position:sticky;bottom:0;z-index:2}
-#residentBody .res-foot{display:grid;grid-template-columns:auto minmax(0,1fr);column-gap:8px;row-gap:3px}
-#residentBody .res-foot span{color:#cbd5e1;font-size:11px;font-weight:750;letter-spacing:.04em;text-transform:uppercase}
-#residentBody .res-foot b{text-align:right;font-size:16px;font-weight:850;font-variant-numeric:tabular-nums}
+#residentBody .res-tbl tfoot td{height:auto!important;max-height:none!important;padding:4px 2px!important;vertical-align:middle;text-align:center;background:#0b2e40!important;color:#fff;font-size:12px;line-height:1.2;position:sticky;bottom:0;z-index:2;overflow:visible}
+#residentBody .res-foot{display:grid;grid-template-columns:auto auto;justify-content:center;align-items:baseline;column-gap:6px;row-gap:1px;width:max-content;max-width:100%;margin:0 auto}
+#residentBody .res-foot span{color:#cbd5e1;font-size:9px;font-weight:750;letter-spacing:.04em;text-transform:uppercase;text-align:right}
+#residentBody .res-foot b{text-align:left;font-size:13px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}
 #residentBody .res-var-good{color:#86efac}
 #residentBody .res-var-bad{color:#fca5a5}
 #residentBody .res-date-col{width:18%}

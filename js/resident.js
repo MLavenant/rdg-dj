@@ -627,8 +627,8 @@ function renderResidentCalendar(){
     var sum=residentMonthTotal(here.venue, yr, mm, col.id);
     if(sum){ grand+=sum; anyGrand=true; }
     var cell=residentFootHtml(sum, null);
-    if(col.kind==='role') h+='<td class="res-split"></td><td>'+cell+'</td>';
-    else h+='<td class="res-split">'+cell+'</td>';
+    if(col.kind==='role') h+='<td class="res-split res-foot-cell" colspan="2">'+cell+'</td>';
+    else h+='<td class="res-split res-foot-cell">'+cell+'</td>';
   });
   h+='<td class="res-split">'+residentFootHtml(anyGrand?grand:0, null)+'</td></tr></tfoot></table>';
   body.innerHTML=h;
@@ -1027,7 +1027,7 @@ function fitResidentRows(){
   var head=body.querySelector('thead');
   var headH=head?head.offsetHeight:36;
   var foot=body.querySelector('tfoot');
-  var footH=foot?Math.max(foot.offsetHeight, 72):0;
+  var footH=foot?Math.max(foot.offsetHeight, 58):0;
   var rowH=Math.max(13, Math.floor(((available-headH-footH-2)/rows)*10)/10);
   var font=Math.max(8, Math.min(12, rowH*0.62));
   body.style.setProperty('--res-row-h', rowH+'px');
