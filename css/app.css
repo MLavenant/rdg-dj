@@ -1236,6 +1236,8 @@ body.res-view #venTabs,body.res-view #yrPills{display:none!important}
 .res-sum b{display:block;font-size:18px;font-weight:900;letter-spacing:-.3px}
 .res-sum span{display:block;margin:0;font-size:8px;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;font-weight:700}
 .res-sum em{display:block;margin-top:2px;font-style:normal;font-size:12px;font-weight:750;color:var(--ink)}
+.res-paybar.res-pay-moved b,.res-paybar.res-pay-moved em{animation:resPayMove .45s ease}
+@keyframes resPayMove{0%{transform:translateY(-3px);opacity:.35}100%{transform:none;opacity:1}}
 .res-sum-pend{cursor:pointer}
 .res-sum-pend:hover{box-shadow:0 0 0 2px #b45309}
 .res-sum-pend b{color:#b45309}

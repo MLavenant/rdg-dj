@@ -221,6 +221,7 @@ function residentEdit(el){
   }
   residentPaintCell(tr, col);
   residentPaintTotal(tr);
+  residentPaintPaybar();
 }
 function residentFormatMoneyInput(el, n){
   if(!el) return;
@@ -249,6 +250,7 @@ function residentTogglePaid(btn){
   var b=residentBits(residentDay(residentHere().venue, ds), col);
   residentPut(ds, residentSub(col,'paid'), b.paid?null:true);
   residentPaintCell(tr, col);
+  residentPaintPaybar();
 }
 
 function residentCommentList(note){
@@ -490,6 +492,28 @@ function residentPaySummary(venue, dates){
   var total=paidN+pendN;
   return {paidN:paidN, pendN:pendN, paidAmt:paidAmt, pendAmt:pendAmt, total:total, pct:total?Math.round(paidN/total*100):0};
 }
+function residentPaintPaybar(){
+  var bar=document.querySelector('#residentFilters .res-paybar');
+  if(!bar || typeof datesInFiscalPeriod!=='function') return;
+  var here=residentHere();
+  var pay=residentPaySummary(here.venue, datesInFiscalPeriod(here.year, here.month));
+  var moved=false;
+  function set(sel, big, money){
+    var el=bar.querySelector(sel);
+    if(!el) return;
+    var b=el.querySelector('b');
+    var em=el.querySelector('em');
+    if(b && b.textContent!==String(big)){ b.textContent=String(big); moved=true; }
+    if(em && em.textContent!==money){ em.textContent=money; moved=true; }
+  }
+  set('.res-sum-pend', pay.pendN, residentSummaryMoney(pay.pendAmt));
+  set('.res-sum-paid', pay.paidN, residentSummaryMoney(pay.paidAmt));
+  set('.res-sum-done', pay.pct+'%', pay.paidN+' of '+(pay.total||0)+' lines');
+  if(!moved) return;
+  bar.classList.remove('res-pay-moved');
+  void bar.offsetWidth;
+  bar.classList.add('res-pay-moved');
+}
 
 function residentSetFilter(kind, value){
   if(kind==='year') resYear=+value;
@@ -529,7 +553,7 @@ function renderResidentCalendar(){
     fh+='<div class="res-paybar">'
       +'<div class="res-sum res-sum-pend" role="button" tabindex="0" title="Show the pending lines" onclick="residentFlashPending()"><b>'+pay.pendN+'</b><span>Pending</span><em>'+residentSummaryMoney(pay.pendAmt)+'</em></div>'
       +'<div class="res-sum res-sum-paid"><b>'+pay.paidN+'</b><span>Paid</span><em>'+residentSummaryMoney(pay.paidAmt)+'</em></div>'
-      +'<div class="res-sum"><b>'+pay.pct+'%</b><span>Completion</span><em>'+pay.paidN+' of '+(pay.total||0)+' lines</em></div>'
+      +'<div class="res-sum res-sum-done"><b>'+pay.pct+'%</b><span>Completion</span><em>'+pay.paidN+' of '+(pay.total||0)+' lines</em></div>'
       +'</div>';
     var asOf=(typeof TODAY!=='undefined'&&TODAY)?(' · as of '+TODAY):'';
     fh+='<span>'+fiscalPeriodShortRange(yr, mo)+asOf+' · grab a column header and drag it · pick a column in Delete to remove it</span>';
@@ -1024,6 +1048,7 @@ function residentPaintFromStore(){
     cols.forEach(function(col){ residentPaintCell(tr, col); });
     residentPaintTotal(tr);
   });
+  residentPaintPaybar();
 }
 function residentColsSignature(){
   return JSON.stringify(residentCols())+JSON.stringify(residentWidths());
