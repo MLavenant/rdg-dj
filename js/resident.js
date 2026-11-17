@@ -90,7 +90,7 @@ function residentHasAmt(v){ return v!=null && v!=='' && isFinite(+v); }
 function residentFootHtml(sum, budget){
   var variance=budget!=null?Math.round(+budget-(+sum||0)):null;
   var cls=variance==null?'':(variance>=0?'res-var-good':'res-var-bad');
-  function show(n){ return n==null?'\u2014':residentMoney(n); }
+  function show(n){ return n==null?'\u2014':residentSummaryMoney(n); }
   return '<div class="res-foot"><span>Total</span><b>'+show(sum)+'</b><span>Budget</span><b>'+show(budget)+'</b><span>Var</span><b class="'+cls+'">'+show(variance)+'</b></div>';
 }
 function residentRowTotal(row, venue){
@@ -455,6 +455,20 @@ function residentDeleteColumn(id){
   if(!confirm('Delete the '+col.label+' column for '+residentHere().venue+' only?\n\nOther locations are not changed. Amounts already entered stay saved and come back if you add this column again.')) return;
   residentSaveCols(residentCols().filter(function(c){ return c.id!==id; }));
 }
+function residentFlashPending(){
+  var body=document.getElementById('residentBody');
+  if(!body) return;
+  if(window._resFlashTimer) clearTimeout(window._resFlashTimer);
+  Array.prototype.forEach.call(body.querySelectorAll('.res-flash'), function(el){ el.classList.remove('res-flash'); });
+  var cells=body.querySelectorAll('td.res-cell.res-due');
+  if(!cells.length) return;
+  Array.prototype.forEach.call(cells, function(el){ el.classList.add('res-flash'); });
+  var row=cells[0].closest ? cells[0].closest('tr') : cells[0].parentNode;
+  if(row && row.scrollIntoView) row.scrollIntoView({block:'center', behavior:'smooth'});
+  window._resFlashTimer=setTimeout(function(){
+    Array.prototype.forEach.call(body.querySelectorAll('.res-flash'), function(el){ el.classList.remove('res-flash'); });
+  }, 4800);
+}
 function residentDeleteFromList(sel){
   if(!sel) return;
   var id=sel.value||'';
@@ -513,7 +527,7 @@ function renderResidentCalendar(){
     fh+='</select></label>';
     var pay=residentPaySummary(here.venue, fiscalDates);
     fh+='<div class="res-paybar">'
-      +'<div class="res-sum res-sum-pend"><b>'+pay.pendN+'</b><span>Pending</span><em>'+residentSummaryMoney(pay.pendAmt)+'</em></div>'
+      +'<div class="res-sum res-sum-pend" role="button" tabindex="0" title="Show the pending lines" onclick="residentFlashPending()"><b>'+pay.pendN+'</b><span>Pending</span><em>'+residentSummaryMoney(pay.pendAmt)+'</em></div>'
       +'<div class="res-sum res-sum-paid"><b>'+pay.paidN+'</b><span>Paid</span><em>'+residentSummaryMoney(pay.paidAmt)+'</em></div>'
       +'<div class="res-sum"><b>'+pay.pct+'%</b><span>Completion</span><em>'+pay.paidN+' of '+(pay.total||0)+' lines</em></div>'
       +'</div>';
@@ -989,7 +1003,7 @@ function fitResidentRows(){
   var head=body.querySelector('thead');
   var headH=head?head.offsetHeight:36;
   var foot=body.querySelector('tfoot');
-  var footH=foot?Math.max(foot.offsetHeight, 36):0;
+  var footH=foot?Math.max(foot.offsetHeight, 72):0;
   var rowH=Math.max(13, Math.floor(((available-headH-footH-2)/rows)*10)/10);
   var font=Math.max(8, Math.min(12, rowH*0.62));
   body.style.setProperty('--res-row-h', rowH+'px');
