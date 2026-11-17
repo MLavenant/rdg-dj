@@ -1812,9 +1812,9 @@ function _djStatusSelectHtml(djSt, extraAttrs, show){
   if(show && typeof faInScope==='function' && faInScope(show) && typeof faStatusSelectOptionsHtml==='function'){
     var live=(typeof faDjStatus==='function')?faDjStatus(show):(djSt||'');
     var locked=(typeof faDjLocked==='function')&&faDjLocked(show);
-    var who=(typeof faForGreg==='function'&&faForGreg(show))?'a Super Owner':'an Owner';
+    var lockTitle=(typeof faDjLockTitle==='function')?faDjLockTitle(show):'Locked until Finance Approved';
     return '<select class="acct-status-sel '+acctStatusClass(live||null)+(locked?' fa-dj-locked':'')+'" '+(extraAttrs||'')
-      +(locked?' disabled title="Locked until '+who+' marks this night Finance Approved"':'')+'>'+faStatusSelectOptionsHtml(show, live)+'</select>';
+      +(locked?' disabled title="'+lockTitle+'"':'')+'>'+faStatusSelectOptionsHtml(show, live)+'</select>';
   }
   var h='<select class="acct-status-sel '+acctStatusClass(djSt||null)+'" '+(extraAttrs||'')+'>';
   var opts=(typeof faStatusOptions==='function')?faStatusOptions(show, djSt||''):(typeof ACCT_DJ_STATUS!=='undefined'?ACCT_DJ_STATUS:['Offer sent','Hold 1','Confirmed']);

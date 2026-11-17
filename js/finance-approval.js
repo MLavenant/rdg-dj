@@ -1,6 +1,18 @@
 /* Finance Approval and the 2027 Finance Status rule.
    Finance Status lives on its own path (rdg/financeStatus/{uid}). DJ name, fee, and DJ status keep their
-   existing schedule sync. Only fiscal 2027 at the three locations below follows the finance rule. */
+   existing schedule sync. Only fiscal 2027 at the three locations below follows the finance rule.
+
+   RULES ACTION is off. DJ status can be changed without Finance Approved.
+   Set RULES_ACTION to true to turn these held rules on together:
+   1. Offer sent, Hold 1, and Confirmed stay locked until Finance Approved.
+   2. A night under $5,000 whose month is still within the Guest DJ budget can be
+      finance-approved by anyone signed in. That bypasses Owner and Super Owner.
+   These stay on either way:
+   - Super Owner approves a night above $30K, or above $5K when the fee is more than
+     5% of that month's Guest DJ budget. Owners approve every other night.
+   - Approve and decline only in Finance Approval.
+   - An Owner can move Approved back to Not set or To approve, which clears DJ status. */
+var RULES_ACTION=false;
 var FINANCE_APPROVERS={
   'matthias@rivieradininggroup.com':1,
   'greg@rivieradininggroup.com':1,
@@ -80,6 +92,7 @@ function faFinanceTone(st){
   return 'fa-fs-none';
 }
 function faDjLocked(show){
+  if(!RULES_ACTION) return false;
   if(!faInScope(show)) return false;
   return faFinanceStatus(show)!=='Finance Approved';
 }
@@ -98,13 +111,21 @@ function faCalendarFinanceAllowed(prev, value){
 function faStatusOptions(show, current){
   return (typeof ACCT_DJ_STATUS!=='undefined')?ACCT_DJ_STATUS.slice():FA_LIVE.slice();
 }
-/* Offer sent, Hold 1, and Confirmed wait for Finance Approved, except for the approvers. */
+/* Offer sent, Hold 1, and Confirmed wait for Finance Approved only while RULES ACTION is on. */
 function faBlockLiveStatus(show, next){
+  if(!RULES_ACTION) return false;
   if(!faInScope(show)) return false;
   if(FA_LIVE.indexOf(next)<0) return false;
   if(!faDjLocked(show)) return false;
-  try{ alert('DJ status unlocks once '+(faForGreg(show)?'a Super Owner':'an Owner')+' marks this night Approved.'); }catch(e){}
+  var msg=faOpenLane(show)
+    ?'DJ status unlocks once this night is Finance Approved.'
+    :('DJ status unlocks once '+(faForGreg(show)?'a Super Owner':'an Owner')+' marks this night Approved.');
+  try{ alert(msg); }catch(e){}
   return true;
+}
+function faDjLockTitle(show){
+  if(faOpenLane(show)) return 'Locked until this night is Finance Approved';
+  return 'Locked until '+(faForGreg(show)?'a Super Owner':'an Owner')+' marks this night Finance Approved';
 }
 function faStatusSelectOptionsHtml(show, djSt){
   var cur=FA_FIN.indexOf(djSt)>=0?'':String(djSt||'');
@@ -287,11 +308,33 @@ function faIsSuperApprover(){
   var role=(typeof signInRole==='function')?signInRole(email):'';
   return role==='super'||email==='greg@rivieradininggroup.com';
 }
+/* RULES ACTION. Under $5K, and the month's Guest DJ fees are still within budget. */
+function faMonthOnBudget(show){
+  if(!show||!show.d||typeof fiscalInfoForDate!=='function') return false;
+  var info=fiscalInfoForDate(show.d);
+  if(!info) return false;
+  var pos=faGuestPosition(show.v||show.venue, info.year, info.mm);
+  if(!pos||pos.budget==null||!(pos.budget>0)) return false;
+  return pos.spend<=pos.budget;
+}
+function faOpenLane(show){
+  if(!RULES_ACTION||!show) return false;
+  var fee=faFee(show);
+  if(!(fee>0)||!(fee<5000)) return false;
+  return faMonthOnBudget(show);
+}
+function faCanSeeFinance(){
+  if(financeCanApprove()) return true;
+  return !!(RULES_ACTION&&financeSignedInEmail());
+}
 function faCanDecide(show){
-  if(!financeCanApprove()||!show||!faFinanceTrack(show)) return false;
+  if(!show||!faFinanceTrack(show)) return false;
+  if(faOpenLane(show)) return !!financeSignedInEmail();
+  if(!financeCanApprove()) return false;
   return faIsSuperApprover()?faForGreg(show):!faForGreg(show);
 }
 function faWhyGreg(show){
+  if(faOpenLane(show)) return 'Anyone';
   if(!faForGreg(show)) return 'Owner';
   if(faFee(show)>30000) return 'Above $30K';
   return 'Above 5% of budget';
@@ -460,8 +503,8 @@ function faScopeRows(venue, year, scope){
 }
 function faQueue(rows, mineOnly){
   var list=(rows||[]).filter(function(item){ return faNeedsApproval(item.r); });
-  if(mineOnly&&faGregView()) list=list.filter(function(item){ return faForGreg(item.r); });
-  if(mineOnly&&!faGregView()) list=list.filter(function(item){ return !faForGreg(item.r); });
+  if(mineOnly&&faGregView()) list=list.filter(function(item){ return faForGreg(item.r)||faOpenLane(item.r); });
+  if(mineOnly&&!faGregView()) list=list.filter(function(item){ return !faForGreg(item.r)||faOpenLane(item.r); });
   return list;
 }
 function faLineHtml(opts){
@@ -526,18 +569,23 @@ function faQuarterHtml(venue, year, q, names){
 }
 function faPendingHtml(venue, year, scope, title){
   var rows=faScopeRows(venue, year, scope).filter(function(item){ return faNeedsApproval(item.r); });
-  var superN=0, ownerN=0;
-  rows.forEach(function(item){ if(faForGreg(item.r)) superN++; else ownerN++; });
+  var superN=0, ownerN=0, anyN=0;
+  rows.forEach(function(item){
+    if(faOpenLane(item.r)) anyN++;
+    else if(faForGreg(item.r)) superN++;
+    else ownerN++;
+  });
   var head='<div class="fa-pending" id="faPending"><div class="fa-break-hd"><i class="fa-warn-dot"></i>Pending approval'
     +(title?' · '+_escHtml(title):'')+'</div>';
   if(!rows.length){
     return head+'<div class="fa-empty fa-all-ok">All approved.</div></div>';
   }
-  head+='<div class="fa-pending-note">'+superN+' for Super Owner · '+ownerN+' for Owner</div>';
+  head+='<div class="fa-pending-note">'+superN+' for Super Owner · '+ownerN+' for Owner'+(anyN?' · '+anyN+' for anyone':'')+'</div>';
   var h=head+'<table class="fa-tbl"><colgroup><col class="fa-c-warn"><col class="fa-c-date"><col class="fa-c-dj"><col class="fa-c-fee"><col class="fa-c-route"><col class="fa-c-act"></colgroup><thead><tr><th class="fa-warn-side"></th><th>Date</th><th>DJ</th><th>Fee</th><th>Route</th><th></th></tr></thead><tbody>';
   rows.forEach(function(item){
     var r=item.r;
     var uid=String(item.uid).replace(/"/g,'&quot;');
+    var lane=faOpenLane(r);
     var greg=faForGreg(r);
     var can=faCanDecide(r);
     var budget=faMonthBudget(r);
@@ -546,7 +594,7 @@ function faPendingHtml(venue, year, scope, title){
       +'<td>'+_escHtml(typeof _bpDay==='function'?_bpDay(r.d):r.d)+'</td>'
       +'<td>'+_escHtml(String(r.dj||'').trim()||'TBD')+'</td>'
       +'<td>'+(item.fee>0?$k(item.fee):'—')+(pct?'<i class="fa-pct">'+pct+'</i>':'')+'</td>'
-      +'<td><span class="fa-chip '+(greg?'fa-fs-wait':'fa-fs-none')+'">'+_escHtml(faWhyGreg(r))+'</span></td>';
+      +'<td><span class="fa-chip '+(lane?'fa-fs-ok':(greg?'fa-fs-wait':'fa-fs-none'))+'">'+_escHtml(faWhyGreg(r))+'</span></td>';
     if(can){
       h+='<td class="fa-acts"><button type="button" class="fa-yes" data-uid="'+uid+'" data-status="Finance Approved" title="Finance Approved">&#10003;</button>'
         +'<button type="button" class="fa-no" data-uid="'+uid+'" data-status="Finance declined" title="Finance declined">&#10007;</button></td>';
@@ -573,7 +621,7 @@ function renderFinanceApproval(){
   var host=document.getElementById('financeBody');
   if(!host) return;
   initFinanceStatus();
-  if(!financeCanApprove()){
+  if(!faCanSeeFinance()){
     host.innerHTML='<div class="fa-empty">Finance Approval is not available for this sign-in.</div>';
     return;
   }
@@ -596,9 +644,10 @@ function renderFinanceApproval(){
   html+='<option value="total"'+(when.total?' selected':'')+'>Total</option>';
   names.forEach(function(name, i){ html+='<option value="'+i+'"'+(!when.total&&i===when.month?' selected':'')+'>'+name+'</option>'; });
   html+='</select></label></div>';
+  var laneNote=RULES_ACTION?' A night under $5K that is still within the month Guest DJ budget can be approved by anyone.':'';
   html+='<div class="fa-rule">'+(greg
     ?'Super Owner. You approve a night above $30K, and a night above $5K when that fee is more than 5% of the month\'s Guest DJ budget. Owners approve every other night.'
-    :'Owner. You approve every night except one above $30K, and one above $5K that is more than 5% of the month\'s Guest DJ budget. A Super Owner approves those.')+'</div>';
+    :'Owner. You approve every night except one above $30K, and one above $5K that is more than 5% of the month\'s Guest DJ budget. A Super Owner approves those.')+laneNote+'</div>';
   if(!live) html+='<div class="fa-note">Finance approval applies to 2027 performances. 2026 is shown against budget only.</div>';
   var yearRow=faRange(venue, when.year, 0, 11);
   if(when.total){

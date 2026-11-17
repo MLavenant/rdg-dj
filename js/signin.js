@@ -143,7 +143,7 @@ function signInWatchAccess(tries){
       if(typeof buildSidebar==='function') buildSidebar();
       var mine=signInRole(signInCurrentEmail());
       if(mine==='ao' && typeof curView!=='undefined' && curView!=='resident' && curView!=='accounting' && curView!=='system' && typeof setView==='function') setView('resident');
-      if(typeof curView!=='undefined' && curView==='finance' && typeof financeCanApprove==='function' && !financeCanApprove() && typeof setView==='function') setView('calendar');
+      if(typeof curView!=='undefined' && curView==='finance' && !((typeof faCanSeeFinance==='function')?faCanSeeFinance():(typeof financeCanApprove==='function'&&financeCanApprove())) && typeof setView==='function') setView('calendar');
       if(typeof curView!=='undefined'&&curView==='system'&&typeof renderSystem==='function') renderSystem();
       if(typeof curView!=='undefined'&&curView==='access'&&typeof renderAccess==='function') renderAccess();
     }catch(e){}
@@ -264,7 +264,7 @@ function signInAccessSetRole(el){
   if(email===signInCurrentEmail()){
     if(typeof curView!=='undefined' && curView==='system' && typeof renderSystem==='function') renderSystem();
     else if(role==='ao' && typeof curView!=='undefined' && curView!=='resident' && curView!=='accounting' && typeof setView==='function') setView('resident');
-    else if(typeof curView!=='undefined' && curView==='finance' && typeof financeCanApprove==='function' && !financeCanApprove() && typeof setView==='function') setView('calendar');
+    else if(typeof curView!=='undefined' && curView==='finance' && !((typeof faCanSeeFinance==='function')?faCanSeeFinance():(typeof financeCanApprove==='function'&&financeCanApprove())) && typeof setView==='function') setView('calendar');
   }
   var ref=signInDirRef();
   if(!ref){ alert('Still connecting. Try again in a moment.'); return; }
