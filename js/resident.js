@@ -449,6 +449,19 @@ function residentDeleteColumn(id){
   if(!confirm('Delete the '+col.label+' column for '+residentHere().venue+' only?\n\nOther locations are not changed. Amounts already entered stay saved and come back if you add this column again.')) return;
   residentSaveCols(residentCols().filter(function(c){ return c.id!==id; }));
 }
+function residentDeleteColumnPrompt(){
+  var cols=residentCols();
+  if(!cols.length) return;
+  var venue=residentHere().venue;
+  var label=prompt('Delete a column for '+venue+' only.\n\n'+cols.map(function(c){ return c.label; }).join('\n')+'\n\nType the column name to delete.');
+  if(label==null) return;
+  label=String(label).trim().toLowerCase();
+  if(!label) return;
+  var hit=null;
+  cols.forEach(function(c){ if(String(c.label).trim().toLowerCase()===label) hit=c; });
+  if(!hit){ alert('No column is named that on '+venue+'.'); return; }
+  residentDeleteColumn(hit.id);
+}
 
 function residentSetFilter(kind, value){
   if(kind==='year') resYear=+value;
@@ -481,6 +494,7 @@ function renderResidentCalendar(){
     fh+='</select></label><label>Month<select onchange="residentSetFilter(\'month\',this.value)">';
     for(var mi=0;mi<12;mi++) fh+='<option value="'+mi+'"'+(mi===mo?' selected':'')+'>'+MN_FULL[mi]+'</option>';
     fh+='</select></label><button type="button" class="res-add-col" onclick="residentAddColumn()">+ Column</button>';
+    fh+='<button type="button" class="res-add-col" onclick="residentDeleteColumnPrompt()">− Column</button>';
     fh+='<span>'+fiscalPeriodShortRange(yr, mo)+' · drag a column header to reorder (name and $ stay together) · right-click a header to rename or delete</span>';
     filters.innerHTML=fh;
   }
@@ -503,8 +517,9 @@ function renderResidentCalendar(){
   h+='<th class="sc-date" rowspan="2">Date'+grip('date')+'</th>';
   h+='<th class="res-group res-guest" rowspan="2">Guest DJ'+grip('guest')+'</th>';
   cols.forEach(function(col){
-    if(col.kind==='role') h+='<th class="res-group res-tone res-split res-col-hd" colspan="2" data-col="'+col.id+'" title="Drag to reorder. Right-click to rename or delete.">'+residentEsc(col.label)+'</th>';
-    else h+='<th class="res-group res-tone res-split res-col-hd" rowspan="2" data-col="'+col.id+'" title="Drag to reorder. Right-click to rename or delete.">'+residentEsc(col.label)+grip(col.id)+'</th>';
+    var x='<button type="button" class="res-col-x" data-col="'+col.id+'" title="Delete '+residentEsc(col.label)+'">×</button>';
+    if(col.kind==='role') h+='<th class="res-group res-tone res-split res-col-hd" colspan="2" data-col="'+col.id+'" title="Drag to reorder. Right-click to rename or delete.">'+residentEsc(col.label)+x+'</th>';
+    else h+='<th class="res-group res-tone res-split res-col-hd" rowspan="2" data-col="'+col.id+'" title="Drag to reorder. Right-click to rename or delete.">'+residentEsc(col.label)+x+grip(col.id)+'</th>';
   });
   h+='<th class="res-group res-tone-total res-split" rowspan="2">Total'+grip('total')+'</th></tr><tr>';
   cols.forEach(function(col){
@@ -767,6 +782,12 @@ function residentPickInit(){
   _resPickOn=true;
   document.addEventListener('click', function(e){
     var body=document.getElementById('residentBody');
+    var xbtn=e.target && e.target.closest ? e.target.closest('.res-col-x') : null;
+    if(xbtn && residentOn()){
+      e.preventDefault();
+      residentDeleteColumn(xbtn.getAttribute('data-col'));
+      return;
+    }
     var btn=e.target && e.target.closest ? e.target.closest('.res-dot') : null;
     if(!btn || !body || !body.contains(btn) || !residentOn()) return;
     e.preventDefault();
@@ -808,6 +829,7 @@ function residentPickInit(){
     }
     var body=document.getElementById('residentBody');
     if(!body || !residentOn()) return;
+    if(e.target.closest && e.target.closest('.res-col-x')) return;
     var grip=e.target.closest && e.target.closest('.res-grip');
     if(grip && body.contains(grip)){ residentStartResize(grip, e); return; }
     var hd=e.target.closest && e.target.closest('th.res-col-hd');
