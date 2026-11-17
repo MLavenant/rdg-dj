@@ -279,8 +279,7 @@ function faMonthOnBudget(show){
 }
 function faOpenLane(){ return false; }
 function faCanSeeFinance(){
-  if(financeCanApprove()) return true;
-  return !!(RULES_ACTION&&financeSignedInEmail());
+  return financeCanApprove();
 }
 function faCanDecide(show){
   if(!show||!faFinanceTrack(show)||faAutoApproved(show)) return false;
