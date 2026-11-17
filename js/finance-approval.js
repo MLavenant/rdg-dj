@@ -50,9 +50,10 @@ function faInScope(show){
   if(FA_VENUES.indexOf(show.v||show.venue)<0) return false;
   return faFiscalYear(show.d)===FA_YEAR;
 }
-/* Calendar column for every year at the finance venues. Approval queue and the DJ-status lock stay on 2027. */
+/* Calendar column from 2027 on. 2026 keeps DJ Status only. The approval queue and the DJ-status lock stay on 2027. */
 function faFinanceTrack(show){
-  return !!(show && FA_VENUES.indexOf(show.v||show.venue)>=0);
+  if(!show||FA_VENUES.indexOf(show.v||show.venue)<0) return false;
+  return faFiscalYear(show.d)>=2027;
 }
 function faYearOn(venue, year){
   return FA_VENUES.indexOf(venue)>=0 && +year===FA_YEAR;
@@ -204,6 +205,22 @@ function faSetFinance(show, status, why){
   var toLbl=faFinanceShort(status);
   if(uid && fromLbl!==toLbl && typeof showHistPush==='function') showHistPush(uid, 'Finance Status', fromLbl, toLbl);
   return true;
+}
+/* A DJ status that was already set stays as it is. That night is Finance Approved
+   so the lock does not undo work that was synced before this rule. */
+function faApproveExistingDj(){
+  if(window._faExistingDjDone) return;
+  if(!window._fbSchedLiveReady||!window._financeSnapReady) return;
+  if(typeof SCHED==='undefined'||!SCHED||!SCHED.length) return;
+  window._faExistingDjDone=true;
+  SCHED.forEach(function(r){
+    if(!faInScope(r)) return;
+    var dj=faDjStatus(r);
+    if(FA_LIVE.indexOf(dj)<0) return;
+    var st=faFinanceStatus(r);
+    if(st==='Finance Approved'||st==='Finance declined') return;
+    faSetFinance(r,'Finance Approved','dj status already set');
+  });
 }
 function faSetFinanceFromSelect(){
   try{ alert('Finance Status is changed in Finance Approval. The calendar only shows it.'); }catch(e){}
@@ -633,6 +650,8 @@ function initFinanceStatus(){
   window._financeStatusOn=true;
   window._fbDb.ref('rdg/financeStatus').on('value', function(snap){
     FINANCE_STATUS=snap.val()||{};
+    window._financeSnapReady=true;
+    if(typeof faApproveExistingDj==='function') faApproveExistingDj();
     faRefreshViews();
   });
 }

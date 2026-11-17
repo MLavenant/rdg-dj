@@ -1307,6 +1307,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     if(typeof recalcAllSchedTargets==='function') recalcAllSchedTargets();
     _maybeRepushGuards(rep);
     window._fbSchedLiveReady = true;
+    try{ if(typeof faApproveExistingDj==='function') faApproveExistingDj(); }catch(eFa){}
     try{ _reconcileSchedPending(SCHED); }catch(eRecL){}
     try{ if(typeof window._paintSchedSyncBanner==='function') window._paintSchedSyncBanner(); }catch(eBanL){}
   };

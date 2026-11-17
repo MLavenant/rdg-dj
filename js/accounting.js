@@ -170,12 +170,14 @@ function renderAccountingGuest(yr, mo, mm, days){
     });
   });
 
+  var showFin=+yr>=2027;
   var h='<table class="sched-tbl acct-tbl"><thead><tr>';
   h+='<th class="sc-date">Date</th>';
   h+='<th class="sc-dj">Guest DJ</th>';
   h+='<th class="acct-agency-hd" title="Booking agency">Agency</th>';
   h+='<th class="sc-num acct-col-fee">DJ Fee</th>';
-  h+='<th class="acct-status-box-hd">Status</th>';
+  if(showFin) h+='<th class="acct-fin-hd">Finance Status</th>';
+  h+='<th class="acct-dj-hd">DJ Status</th>';
   h+='<th class="acct-doc-hd acct-inv-hd">Invoice</th>';
   h+='<th class="acct-doc-hd acct-con-hd">Contract</th>';
   h+='<th class="acct-status-hd acct-ap-hd">AP Status</th>';
@@ -250,13 +252,16 @@ function renderAccountingGuest(yr, mo, mm, days){
       h+='<td class="sc-num acct-col-fee fee-cell '+(feeCls||'')+'">'+$k(r.fee||r.cost||null)+'</td>';
       var finHtml='—';
       if(tracked && typeof faFinanceSelectHtml==='function') finHtml=faFinanceSelectHtml(r, ds, idx);
-      h+='<td class="acct-status-box '+(bothOk?'acct-status-ok':'acct-status-bad')+'" title="'+(bothOk?'Finance approved and DJ confirmed':'Waiting on finance approval or DJ confirmation')+'">'
-        +'<div class="acct-status-line"><span>Finance</span>'+finHtml+'</div>'
-        +'<div class="acct-status-line"><span>DJ</span><b>'+(djSt?_escHtml(djSt):'Not set')+'</b></div>'
-        +'</td>';
+      var pairCls=bothOk?'acct-status-ok':'acct-status-bad';
+      if(showFin){
+        h+='<td class="acct-fin-cell acct-pair '+pairCls+'">'+finHtml+'</td>';
+      }
+      h+='<td class="acct-dj-cell'+(showFin?' acct-pair '+pairCls:'')+'"><b>'+(djSt?_escHtml(djSt):'Not set')+'</b></td>';
       if(ri===0){
-        h+='<td class="acct-doc-cell acct-inv-cell" rowspan="'+nrows+'">'+_acctDocDropHtml(ds,'invoice',_acctDocList(acct,'invoice'))+'</td>';
-        h+='<td class="acct-doc-cell acct-con-cell" rowspan="'+nrows+'">'+_acctDocDropHtml(ds,'contract',_acctDocList(acct,'contract'))+'</td>';
+        var docsOk=typeof acctGapStatus==='function'?!acctGapStatus(acct):false;
+        var docTone=docsOk?'ok':'wait';
+        h+='<td class="acct-doc-cell acct-inv-cell" rowspan="'+nrows+'">'+_acctDocDropHtml(ds,'invoice',_acctDocList(acct,'invoice'),docTone)+'</td>';
+        h+='<td class="acct-doc-cell acct-con-cell" rowspan="'+nrows+'">'+_acctDocDropHtml(ds,'contract',_acctDocList(acct,'contract'),docTone)+'</td>';
         var apSt=(typeof acctShownAp==='function'?acctShownAp(acct):acct.apStatus)||'';
         var apGap=(typeof acctGapStatus==='function')?acctGapStatus(acct):'';
         var apCls=apSt==='Paid'?'acct-ap-paid':'acct-ap-open';
@@ -278,13 +283,13 @@ function renderAccountingGuest(yr, mo, mm, days){
   }
 
   if(_acctStatusFilter && !anyFilterMatch){
-    h+='<tr><td colspan="9" class="sc-empty-day" style="text-align:center;padding:16px">No shows with status "'+_acctStatusFilter+'" this month.</td></tr>';
+    h+='<tr><td colspan="'+(showFin?10:9)+'" class="sc-empty-day" style="text-align:center;padding:16px">No shows with status "'+_acctStatusFilter+'" this month.</td></tr>';
   }
 
   h+='<tr class="acct-total-row">';
   h+='<td><b>'+(_acctStatusFilter?'FILTERED':'MONTH')+' TOTAL</b></td><td></td><td></td>';
   h+='<td class="sc-num acct-col-fee"><b>'+$k(totDJ)+'</b></td>';
-  h+='<td colspan="5"></td>';
+  h+='<td colspan="'+(showFin?6:5)+'"></td>';
   h+='</tr></tbody></table>';
 
   document.getElementById('acctBody').innerHTML=h;

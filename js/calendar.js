@@ -82,7 +82,7 @@ function renderCal(){
   var pyMap=buildPyMapForMonth(curV, yr, mm);
   var pyBlank={py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
 
-  var finCol=typeof FA_VENUES!=='undefined' && FA_VENUES.indexOf(curV)>=0;
+  var finCol=typeof FA_VENUES!=='undefined' && FA_VENUES.indexOf(curV)>=0 && +curYr>=2027;
   var h='<table class="sched-tbl"><thead><tr>';
   h+='<th class="sc-ev">Event</th>';
   h+='<th class="sc-date">Date</th>';
@@ -1302,7 +1302,7 @@ function _acctGuessPdfPages(file){
     reader.readAsText(file.slice(0, Math.min(file.size, 2*1024*1024)));
   });
 }
-function _acctDocDropHtml(ds, kind, docs){
+function _acctDocDropHtml(ds, kind, docs, tone){
   var label=kind==='invoice'?'Invoice':'Contract';
   var fresh=window._acctFreshDocs||{};
   var posted=window._acctFreshZones&&window._acctFreshZones[ds+'|'+kind];
@@ -1312,7 +1312,7 @@ function _acctDocDropHtml(ds, kind, docs){
   var hint=room
     ?'<div class="acct-doc-hint"><span class="acct-doc-ico">PDF</span><b>'+(n?'Drop another '+label:'Drop '+label)+'</b><span>'+(n?(n+' of '+ACCT_DOC_MAX):'up to '+ACCT_DOC_MAX)+'</span></div>'
     :'<div class="acct-doc-hint acct-doc-full"><b>'+ACCT_DOC_MAX+' of '+ACCT_DOC_MAX+'</b><span>Remove one to add another</span></div>';
-  var h='<div class="acct-doc-drop'+(posted?' acct-doc-posted':'')+kept+(n?' acct-doc-ready':'')+(room?'':' acct-doc-max')+'" data-ds="'+ds+'" data-kind="'+kind+'" data-action="docDrop" title="Drop up to '+ACCT_DOC_MAX+' '+label+' PDFs. A file can have any number of pages. Files stay until you remove them.">'
+  var h='<div class="acct-doc-drop'+(posted?' acct-doc-posted':'')+kept+(tone==='ok'?' acct-doc-ready':(tone==='wait'?' acct-doc-wait':''))+(room?'':' acct-doc-max')+'" data-ds="'+ds+'" data-kind="'+kind+'" data-action="docDrop" title="Drop up to '+ACCT_DOC_MAX+' '+label+' PDFs. A file can have any number of pages. Files stay until you remove them.">'
     +(posted?'<div class="acct-doc-saved">Saved</div>':'')
     +'<div class="acct-doc-list">';
   (docs||[]).forEach(function(doc,idx){
