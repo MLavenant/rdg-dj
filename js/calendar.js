@@ -4376,7 +4376,20 @@ function renderSystem(){
 function nightTableExport(r){
   var venue=r&&(r.v||r.venue)||'';
   var sold=null;
-  if(typeof _vipResolveTables==='function'){
+  /* Same source as the VIP page: Toast night tier totals (non-excluded tiers). */
+  var toastRow=(typeof _vipToastVipRow==='function')?_vipToastVipRow(venue, r.d):null;
+  var ts=toastRow&&toastRow.tierSummary;
+  if(ts&&typeof ts==='object'&&Object.keys(ts).length){
+    var exclSold=(typeof _vipExcludedTiers==='function')?_vipExcludedTiers(venue):[];
+    var soldTot=0;
+    Object.keys(ts).forEach(function(name){
+      if(exclSold.indexOf(name)>=0) return;
+      var x=ts[name]||{};
+      var s=x.soldTables!=null?x.soldTables:(x.sold!=null?x.sold:0);
+      soldTot+=+s||0;
+    });
+    sold=soldTot;
+  } else if(typeof _vipResolveTables==='function'){
     var n=_vipResolveTables(venue, r.d, null);
     if(n!=null && n!=='' && isFinite(+n)) sold=+n;
   }
