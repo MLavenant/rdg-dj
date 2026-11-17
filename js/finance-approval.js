@@ -2,8 +2,7 @@
    Finance Status lives on its own path (rdg/financeStatus/{uid}). DJ name, fee, and DJ status keep their
    existing schedule sync. Only fiscal 2027 at the three locations below follows the finance rule.
 
-   RULES ACTION is off. DJ status can be changed without Finance Approved.
-   Set RULES_ACTION to true to turn these held rules on together:
+   RULES ACTION is on. Set RULES_ACTION to false to hold these rules again:
    1. Offer sent, Hold 1, and Confirmed stay locked until Finance Approved.
    2. A night under $5,000 whose month is still within the Guest DJ budget can be
       finance-approved by anyone signed in. That bypasses Owner and Super Owner.
@@ -12,7 +11,7 @@
      5% of that month's Guest DJ budget. Owners approve every other night.
    - Approve and decline only in Finance Approval.
    - An Owner can move Approved back to Not set or To approve, which clears DJ status. */
-var RULES_ACTION=false;
+var RULES_ACTION=true;
 var FINANCE_APPROVERS={
   'matthias@rivieradininggroup.com':1,
   'greg@rivieradininggroup.com':1,
