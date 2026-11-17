@@ -177,10 +177,10 @@ function renderAccountingGuest(yr, mo, mm, days){
   h+='<th class="sc-num acct-col-fee">DJ Fee</th>';
   h+='<th class="acct-fin-hd">Finance Status</th>';
   h+='<th class="acct-status-hd">DJ Status</th>';
-  h+='<th class="acct-status-hd acct-ap-hd">AP Status</th>';
   h+='<th class="acct-note-hd">Notes</th>';
   h+='<th class="acct-doc-hd acct-inv-hd">Invoice</th>';
   h+='<th class="acct-doc-hd acct-con-hd">Contract</th>';
+  h+='<th class="acct-status-hd acct-ap-hd">AP Status</th>';
   h+='</tr></thead><tbody>';
 
   var totDJ=0;
@@ -244,16 +244,24 @@ function renderAccountingGuest(yr, mo, mm, days){
         +'<input type="text" class="acct-agency-inp" data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="acctAgency" value="'+agencyEsc+'" placeholder="Agency" title="Agency name">'
         +'</td>';
       h+='<td class="sc-num acct-col-fee fee-cell '+(feeCls||'')+'">'+$k(r.fee||r.cost||null)+'</td>';
-      var finSt=(typeof faFinanceStatus==='function' && typeof faInScope==='function' && faInScope(r))?faFinanceStatus(r):'';
-      var finTone=(finSt && typeof faFinanceTone==='function')?faFinanceTone(finSt):'';
-      h+='<td class="acct-fin-cell">'
-        +'<span class="acct-lock'+(finTone?' '+finTone:'')+'" title="Finance Status comes from the Guest DJ Calendar. Change it in Finance Approval.">'
-        +(finSt?_escHtml(finSt):'—')+'</span></td>';
+      var tracked=typeof faFinanceTrack==='function' && faFinanceTrack(r);
+      var finHtml='—';
+      if(tracked && typeof faFinanceSelectHtml==='function') finHtml=faFinanceSelectHtml(r, ds, idx);
       var djSt=(typeof faInScope==='function' && faInScope(r) && typeof faDjStatus==='function')?(faDjStatus(r)||''):(getShowDjStatus(r, ds)||'');
+      var finSt=(tracked && typeof faFinanceStatus==='function')?(faFinanceStatus(r)||''):'';
+      var djOk=djSt==='Confirmed';
+      var finOk=finSt==='Finance Approved';
+      h+='<td class="acct-fin-cell'+(tracked?(finOk?' acct-pair-ok':' acct-pair-bad'):'')+'"><div class="acct-status-wrap">'+finHtml+'</div></td>';
       h+='<td class="acct-status-cell">'
-        +'<span class="acct-lock" title="DJ Status comes from the Guest DJ Calendar. Change it there.">'
+        +'<span class="acct-lock '+(djOk?'acct-pair-ok':'acct-pair-bad')+'" title="Green when Confirmed. Red when DJ Status is not Confirmed. Finance is red until Approved.">'
         +(djSt?_escHtml(djSt):'Not set')+'</span></td>';
       if(ri===0){
+        h+='<td class="acct-note-cell" rowspan="'+nrows+'">'
+          +'<textarea class="acct-note-inp" data-ds="'+ds+'" data-action="acctNote" rows="2" placeholder="AP / accounting notes…">'
+          +String(acct.note||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          +'</textarea></td>';
+        h+='<td class="acct-doc-cell acct-inv-cell" rowspan="'+nrows+'">'+_acctDocDropHtml(ds,'invoice',_acctDocList(acct,'invoice'))+'</td>';
+        h+='<td class="acct-doc-cell acct-con-cell" rowspan="'+nrows+'">'+_acctDocDropHtml(ds,'contract',_acctDocList(acct,'contract'))+'</td>';
         var apSt=acct.apStatus||'';
         var lastHint=acct.updatedBy?('Last: '+acct.updatedBy+' \u00b7 '+_fmtAcctWhen(acct.updatedAt)):'History';
         h+='<td class="acct-status-cell acct-ap-cell" rowspan="'+nrows+'"><div class="acct-status-wrap">'
@@ -263,12 +271,6 @@ function renderAccountingGuest(yr, mo, mm, days){
           +'</select>'
           +'<div class="acct-last-edit" data-ds="'+ds+'" data-action="acctHist" title="View edit history">'+lastHint+'</div>'
           +'</div></td>';
-        h+='<td class="acct-note-cell" rowspan="'+nrows+'">'
-          +'<textarea class="acct-note-inp" data-ds="'+ds+'" data-action="acctNote" rows="2" placeholder="AP / accounting notes…">'
-          +String(acct.note||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-          +'</textarea></td>';
-        h+='<td class="acct-doc-cell acct-inv-cell" rowspan="'+nrows+'">'+_acctDocDropHtml(ds,'invoice',_acctDocList(acct,'invoice'))+'</td>';
-        h+='<td class="acct-doc-cell acct-con-cell" rowspan="'+nrows+'">'+_acctDocDropHtml(ds,'contract',_acctDocList(acct,'contract'))+'</td>';
       }
       h+='</tr>';
     });
