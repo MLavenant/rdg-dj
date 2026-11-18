@@ -121,7 +121,7 @@ function flashStatCard(label, year, pyYear, now, py, hasPy){
     rows:[
       {label:'<i class="bp-arr"></i>Bottle Service Sales', now:money(now.bs), py:money(py.bs), gap:gap(now.bs, py.bs)},
       {label:'Guest DJ', now:money(now.guest), py:money(py.guest), gap:gap(now.guest, py.guest, true)},
-      {label:'BS margins', now:pct(now.margin), py:pct(py.margin), gap:pp(now.margin, py.margin, true)},
+      {label:'DJ Cost Ratio', now:pct(now.margin), py:pct(py.margin), gap:pp(now.margin, py.margin, true)},
       {label:'ROI % Beat', now:pct(now.beat), py:pct(py.beat), gap:pp(now.beat, py.beat)}
     ]
   };
