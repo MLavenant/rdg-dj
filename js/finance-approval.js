@@ -88,10 +88,11 @@ function faFinanceStatus(show){
   /* A DJ status never counts as finance approval. Approval is only the finance record. */
   if(FA_FIN.indexOf(raw)>=0) return raw;
   var rec=FINANCE_STATUS[faKey(show)];
-  if(rec&&typeof rec==='object'&&rec.s!=null&&FA_FIN.indexOf(rec.s)>=0) return rec.s;
-  /* Under $5,000 approves itself only when nobody has set a finance status. */
+  var stored=rec&&typeof rec==='object'&&rec.s!=null&&FA_FIN.indexOf(rec.s)>=0?rec.s:'';
+  /* An Owner decision stays. A stored To approve does not override a fee under $5,000. */
+  if(stored==='Finance Approved'||stored==='Finance declined') return stored;
   if(faAutoApproved(show)) return 'Finance Approved';
-  return '';
+  return stored;
 }
 function faFinanceTone(st){
   if(st==='Finance to Approve') return 'fa-fs-wait';
@@ -207,6 +208,29 @@ function faSetFinance(show, status, why){
   if(uid && fromLbl!==toLbl && typeof showHistPush==='function') showHistPush(uid, 'Finance Status', fromLbl, toLbl);
   return true;
 }
+/* The earlier pass stored To approve on every 2027 night. Under $5,000 is approved on its own, at every location. */
+function faReleaseAutoApproved(){
+  if(window._faAutoReleaseDone) return;
+  if(!window._fbSchedLiveReady||!window._financeSnapReady) return;
+  if(typeof SCHED==='undefined'||!SCHED||!window._fbDb) return;
+  window._faAutoReleaseDone=true;
+  var patch={};
+  SCHED.forEach(function(r){
+    if(!faAutoApproved(r)) return;
+    var key=faKey(r);
+    var rec=key&&FINANCE_STATUS[key];
+    if(!rec||rec.s!=='Finance to Approve') return;
+    patch[key]=null;
+    delete FINANCE_STATUS[key];
+  });
+  var keys=Object.keys(patch);
+  window._faAutoReleased=keys.length;
+  if(!keys.length) return;
+  window._fbDb.ref('rdg/financeStatus').update(patch, function(err){
+    if(err) window._faAutoReleaseDone=false;
+  });
+  faRefreshViews();
+}
 /* A DJ status that was already set stays as it is. That night is Finance Approved
    so the lock does not undo work that was synced before this rule. */
 function faApproveExistingDj(){
@@ -233,6 +257,15 @@ function faOnFeeChange(before, rec){
   if(!before||!rec||!faInScope(rec)) return false;
   var oldFee=faFee(before), newFee=faFee(rec);
   if(newFee===oldFee) return false;
+  if(faAutoApproved(rec)){
+    var autoKey=faKey(rec);
+    var autoRec=autoKey&&FINANCE_STATUS[autoKey];
+    if(autoRec&&autoRec.s&&autoRec.s!=='Finance Approved'){
+      delete FINANCE_STATUS[autoKey];
+      if(window._fbDb){ try{ window._fbDb.ref('rdg/financeStatus/'+autoKey).remove(); }catch(eAuto){} }
+    }
+    return false;
+  }
   var st=faFinanceStatus(before);
   if(st==='Finance Approved'){
     var stored=FINANCE_STATUS[faKey(before)];
@@ -652,6 +685,7 @@ function initFinanceStatus(){
   window._fbDb.ref('rdg/financeStatus').on('value', function(snap){
     FINANCE_STATUS=snap.val()||{};
     window._financeSnapReady=true;
+    if(typeof faReleaseAutoApproved==='function') faReleaseAutoApproved();
     if(typeof faApproveExistingDj==='function') faApproveExistingDj();
     faRefreshViews();
   });
