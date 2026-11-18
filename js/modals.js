@@ -677,6 +677,109 @@ function _fbDropOtherShowsOnNight(rec){
     });
   });
 }
+/* Fiscal 2027 Casa Neos Lounge Sundays start as AFTERDARK at $500.
+   A night that already has a DJ name is left alone, so a later rename or fee edit syncs and stays. */
+function _cnlYmd(d){
+  var m=d.getMonth()+1, day=d.getDate();
+  return d.getFullYear()+'-'+(m<10?'0'+m:''+m)+'-'+(day<10?'0'+day:''+day);
+}
+function cnlSundayNightCleared(venue, ds){
+  var nk=venue+'|'+ds;
+  if(window._schedClearedNights && window._schedClearedNights[nk]) return true;
+  var dels=window._lastSchedDeletes||[];
+  for(var i=0;i<dels.length;i++){
+    var p=String(dels[i]||'').split('|');
+    if(p.length>=2 && p[0]===venue && p[1]===ds) return true;
+  }
+  return false;
+}
+function seedCnlSunday2027(){
+  if(window._cnlSun2027Done) return;
+  if(!window._fbSchedLiveReady || !window._fbRef) return;
+  if(typeof SCHED==='undefined' || !SCHED || typeof fiscalYearStart!=='function') return;
+  window._cnlSun2027Done=true;
+  var venue='Casa Neos Lounge';
+  var cursor=new Date(fiscalYearStart(2027)+'T12:00:00');
+  var last=new Date(fiscalYearEnd(2027)+'T12:00:00');
+  while(cursor.getDay()!==0) cursor.setDate(cursor.getDate()+1);
+  var pending=[];
+  while(cursor<=last){
+    var ds=_cnlYmd(cursor);
+    cursor.setDate(cursor.getDate()+7);
+    if(cnlSundayNightCleared(venue, ds)) continue;
+    var hits=SCHED.filter(function(r){
+      return r && r.d===ds && (r.v||r.venue)===venue && r._s!=='empty';
+    });
+    if(!hits.length){
+      var rec={v:venue,venue:venue,yr:(typeof fiscalYearForDate==='function')?fiscalYearForDate(ds):2027,d:ds,
+        dj:'AFTERDARK',fee:500,cost:500,bs_a:null,roi_a:null,beat:null,ev:'',tbd:0,_s:'fut',note:null,djStatus:null};
+      if(typeof applyShowTargets==='function') applyShowTargets(rec);
+      if(typeof resolvePyFields==='function'){
+        var py=resolvePyFields(venue, ds, null);
+        if(py){
+          rec.py_dj=py.py_dj; rec.py_fee=py.py_fee; rec.py_bs_m=py.py_bs_m;
+          rec.py_bs_a=py.py_bs_a; rec.py_roi_t=py.py_roi_t; rec.py_roi_a=py.py_roi_a; rec.py_beat=py.py_beat;
+        }
+      }
+      if(typeof preferStableShowUid==='function') preferStableShowUid(rec);
+      else ensureShowUid(rec);
+      rec._added=1;
+      rec._writeKind='modal';
+      pending.push(rec);
+      continue;
+    }
+    hits.forEach(function(r){
+      if(String(r.dj||'').trim()) return;
+      var fee=r.fee!=null && r.fee!=='' ? r.fee : (r.cost!=null && r.cost!=='' ? r.cost : null);
+      r.dj='AFTERDARK';
+      if(fee==null){ r.fee=500; r.cost=500; }
+      else { r.fee=fee; if(r.cost==null || r.cost==='') r.cost=fee; }
+      if(typeof applyShowTargets==='function') applyShowTargets(r);
+      ensureShowUid(r);
+      r._writeKind='modal';
+      pending.push(r);
+    });
+  }
+  if(!pending.length) return;
+  pending.forEach(function(rec){
+    var uid=ensureShowUid(rec);
+    var found=false;
+    for(var i=0;i<SCHED.length;i++){
+      if(SCHED[i] && ensureShowUid(SCHED[i])===uid){ found=true; break; }
+    }
+    if(!found) SCHED.push(rec);
+  });
+  if(typeof buildIdx==='function') IDX=buildIdx(SCHED);
+  try{ if(typeof curView!=='undefined' && curView==='calendar' && typeof renderCal==='function') renderCal(); }catch(eCal){}
+  var stamp=new Date().toISOString();
+  window._fbRef.child('schedOverrides/shows').transaction(function(map){
+    if(!map || typeof map!=='object') map={};
+    pending.forEach(function(rec){
+      var uid=rec._uid;
+      if(!uid) return;
+      var prev=map[uid] && typeof map[uid]==='object' ? map[uid] : {};
+      if(prev.dj && String(prev.dj).trim()) return;
+      var payload=(typeof _fbSanitize==='function') ? _fbSanitize(rec) : Object.assign({}, rec);
+      if(prev.djStatus!=null && payload.djStatus==null) payload.djStatus=prev.djStatus;
+      if(prev.agency!=null && payload.agency==null) payload.agency=prev.agency;
+      if(prev.vipNote!=null && payload.vipNote==null) payload.vipNote=prev.vipNote;
+      if(prev.note!=null && (payload.note==null || payload.note==='')) payload.note=prev.note;
+      payload.updatedAt=stamp;
+      payload._writeKind='modal';
+      payload._uid=uid;
+      payload.d=rec.d;
+      payload.v=venue;
+      payload.venue=venue;
+      payload.dj='AFTERDARK';
+      map[uid]=Object.assign({}, prev, payload);
+    });
+    return map;
+  }, function(err){
+    if(err) window._cnlSun2027Done=false;
+    try{ _fbOnSchedWrite(err); }catch(eW){}
+  });
+}
+
 function persistSchedShow(rec, opt){
   opt=opt||{};
   applyShowTargets(rec);

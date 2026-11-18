@@ -3672,7 +3672,7 @@ function _captureDomToCanvas(part, exportWidth, opts){
   stage.className='fcast-pdf-stage';
   stage.style.cssText='position:fixed;left:0;top:0;width:'+exportWidth+'px;max-width:none;background:#fff;padding:0;margin:0;overflow:visible;z-index:2147483646;pointer-events:none;box-sizing:border-box';
   var clone=part.cloneNode(true);
-  clone.style.cssText+=';display:flex!important;position:relative!important;left:0!important;top:0!important;transform:none!important;width:'+exportWidth+'px!important;max-width:none!important;margin:0!important;padding:24px!important;overflow:visible!important;box-sizing:border-box!important';
+  clone.style.cssText+=';display:flex!important;position:relative!important;left:0!important;top:0!important;transform:none!important;zoom:1!important;width:'+exportWidth+'px!important;max-width:none!important;margin:0!important;padding:24px!important;overflow:visible!important;box-sizing:border-box!important';
   clone.querySelectorAll('.fcast-chart-wrap,.fcast-tbl-wrap,.tbl-wrap,.vip-perf-block').forEach(function(node){
     node.style.setProperty('overflow','visible','important');
     node.style.setProperty('max-height','none','important');
@@ -5036,6 +5036,60 @@ function setBaselVenueFilter(key){
   renderBaselTracker();
 }
 
+/* Scale the tracker so the hero, days, and referrer table stay inside the view. */
+function fitBaselPage(){
+  var body=document.getElementById('baselBody');
+  if(!body||(typeof curView!=='undefined'&&curView!=='basel')) return;
+  var fit=body.querySelector('.bsl-fit');
+  var page=fit&&fit.querySelector('.bsl-print-page');
+  if(!page) return;
+  page.style.zoom='1';
+  var availW=fit.clientWidth||body.clientWidth;
+  var availH=fit.clientHeight;
+  if(availH<40){
+    if((fit._bslFitTries||0)<8){
+      fit._bslFitTries=(fit._bslFitTries||0)+1;
+      requestAnimationFrame(fitBaselPage);
+    }
+    return;
+  }
+  fit._bslFitTries=0;
+  var needW=page.scrollWidth||1;
+  var needH=page.scrollHeight||1;
+  var z=Math.min(1,(availW-2)/needW,(availH-2)/needH);
+  if(!isFinite(z)||z<=0) return;
+  page.style.zoom=z<0.999?String(Math.floor(z*1000)/1000):'';
+  requestAnimationFrame(function(){
+    if(!page.isConnected) return;
+    void page.offsetHeight;
+    var r=page.getBoundingClientRect();
+    var box=fit.getBoundingClientRect();
+    var cur=parseFloat(page.style.zoom)||1;
+    if(r.height<2||r.width<2) return;
+    var cap=1;
+    if(r.width>box.width+1) cap=(box.width-2)/r.width*cur;
+    var zH=(box.height-2)/r.height*cur;
+    var z2=Math.min(cap, zH);
+    if(!isFinite(z2)||z2<=0||Math.abs(z2-cur)<0.008) return;
+    page.style.zoom=z2<0.999?String(Math.floor(z2*1000)/1000):'';
+  });
+  if(page._bslSettle) return;
+  page._bslSettle=1;
+  var again=function(){
+    if(!page.isConnected||page._bslSettle!==1) return;
+    page._bslSettle=2;
+    fitBaselPage();
+  };
+  if(document.fonts&&document.fonts.ready) document.fonts.ready.then(again);
+  setTimeout(again, 450);
+}
+if(!window._bslFitBound){
+  window._bslFitBound=true;
+  window.addEventListener('resize',function(){
+    if(typeof curView!=='undefined'&&curView==='basel') fitBaselPage();
+  });
+}
+
 function renderBaselTracker(targetEl, forceAll){
   var el = targetEl || document.getElementById('baselBody');
   if(!el) return;
@@ -5136,7 +5190,7 @@ function renderBaselTracker(targetEl, forceAll){
     h += '</div>';
   }
 
-  h += '<div class="bsl-print-page">';
+  h += '<div class="bsl-fit"><div class="bsl-print-page">';
   function venueSpan(v){
     var ns = (v.nights||[]).map(function(n){ return n.date; });
     if(ns.length<2) return venueShort(v);
@@ -5174,7 +5228,7 @@ function renderBaselTracker(targetEl, forceAll){
   }
 
   h += '<div class="bsl-section-hd">By day</div>';
-  h += '<div class="bsl-day-grid">';
+  h += '<div class="bsl-day-grid" style="grid-template-columns:repeat('+Math.max(dates.length,1)+',minmax(0,1fr))">';
   dates.forEach(function(d, i){
     var n = nightsByDate[d] || {date:d, totalRevenue:0, bookings:0};
     var c = baselDayColor(d, i);
@@ -5225,15 +5279,14 @@ function renderBaselTracker(targetEl, forceAll){
     h += '<th style="background:'+c.bg+'">'+dayLabel(d)+'</th>';
   });
   if(isAll) venues.forEach(function(v){ h += '<th style="background:'+venueCol(v)+'">'+esc(venueShort(v))+'</th>'; });
-  h += '<th class="bsl-th-dark">Total sales</th><th class="bsl-th-dark">Tables</th><th class="left bsl-th-dark" style="min-width:160px">Share of weekend</th></tr></thead><tbody>';
+  h += '<th class="bsl-th-dark">Total</th><th class="bsl-th-dark">Tables</th><th class="left bsl-th-dark">Share</th></tr></thead><tbody>';
   var colCount = dates.length + (isAll?venues.length:0) + 4;
   if(!refs.length){
     h += '<tr><td class="left bsl-muted" colspan="'+colCount+'">No referrer bookings yet.</td></tr>';
   }
   function cellHtml(cell, soft, ink){
     if(cell && (cell.revenue || cell.bookings)){
-      return '<td style="background:'+soft+'"><b style="color:'+ink+'">'+money(cell.revenue)+'</b>'
-        + '<div class="bsl-cell-sub">'+cell.bookings+' table'+(cell.bookings===1?'':'s')+'</div></td>';
+      return '<td style="background:'+soft+'"><b style="color:'+ink+'">'+money(cell.revenue)+'</b> <span class="bsl-cell-sub">'+cell.bookings+' tb</span></td>';
     }
     return '<td class="bsl-muted">\u2014</td>';
   }
@@ -5256,18 +5309,19 @@ function renderBaselTracker(targetEl, forceAll){
     h += '<tr class="bsl-total-row"><td class="left">Total</td>';
     dates.forEach(function(d){
       var n = nightsByDate[d];
-      h += '<td>'+money(n?n.totalRevenue:0)+'<div class="bsl-cell-sub">'+(n?n.bookings||0:0)+' tables</div></td>';
+      h += '<td>'+money(n?n.totalRevenue:0)+' <span class="bsl-cell-sub">'+(n?n.bookings||0:0)+' tb</span></td>';
     });
     if(isAll) venues.forEach(function(v){
-      h += '<td>'+money(v.totalRevenue)+'<div class="bsl-cell-sub">'+(v.totalBookings||0)+' tables</div></td>';
+      h += '<td>'+money(v.totalRevenue)+' <span class="bsl-cell-sub">'+(v.totalBookings||0)+' tb</span></td>';
     });
     h += '<td>'+money(total)+'</td><td>'+(data.totalBookings||0)+'</td><td class="left">100%</td></tr>';
   }
   h += '</tbody></table></div>';
   h += '<div class="bsl-foot">Sales = FourVenues reservation price for accepted + not-completed bookings (same as Forecast). Tables = spaces on that reservation, separated by a comma. Referrer = FourVenues PPRR; “No referrer” when none is set.</div>';
-  h += '</div>';
+  h += '</div></div>';
   el.innerHTML = h;
   if(targetEl) return;
+  fitBaselPage();
   var meta = document.getElementById('baselMeta');
   if(meta) meta.textContent = (isAll
     ? 'MILA Lounge Tuesday–Sunday · Beach Club and CN Lounge Friday–Sunday'

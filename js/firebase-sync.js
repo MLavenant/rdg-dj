@@ -1075,6 +1075,8 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
       IDX=buildIdx(SCHED);
       if(typeof recalcAllSchedTargets==='function') recalcAllSchedTargets();
       window._fbSchedLiveReady = true;
+      try{ if(typeof faApproveExistingDj==='function') faApproveExistingDj(); }catch(eFaW){}
+      try{ if(typeof seedCnlSunday2027==='function') seedCnlSunday2027(); }catch(eCnlW){}
       try{ _reconcileSchedPending(SCHED); }catch(eRec){}
       try{ if(typeof window._paintSchedSyncBanner==='function') window._paintSchedSyncBanner(); }catch(eBan){}
       return;
@@ -1308,6 +1310,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     _maybeRepushGuards(rep);
     window._fbSchedLiveReady = true;
     try{ if(typeof faApproveExistingDj==='function') faApproveExistingDj(); }catch(eFa){}
+    try{ if(typeof seedCnlSunday2027==='function') seedCnlSunday2027(); }catch(eCnl){}
     try{ _reconcileSchedPending(SCHED); }catch(eRecL){}
     try{ if(typeof window._paintSchedSyncBanner==='function') window._paintSchedSyncBanner(); }catch(eBanL){}
   };
