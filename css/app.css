@@ -489,6 +489,7 @@ body.session-locked .shell{pointer-events:none;user-select:none}
 #view-basel .bsl-day-body{padding:6px 8px}
 #view-basel .bsl-day-sales{font-size:16px;margin-top:1px}
 #view-basel .bsl-day-meta{font-size:10px}
+#view-basel .bsl-vs-target{font-size:10px;font-weight:800;color:#0f172a;line-height:1.2;margin-top:1px}
 #view-basel .bsl-day .bsl-bar{margin:3px 0 4px;height:5px}
 #view-basel .bsl-day-refs-hd{margin-bottom:2px}
 #view-basel .bsl-day-gap{height:4px}
@@ -517,6 +518,7 @@ body.session-locked .shell{pointer-events:none;user-select:none}
 .bsl-day-dj{font-size:13px;font-weight:800;line-height:1.25;min-height:16px}
 .bsl-day-sales{font-size:28px;font-weight:900;letter-spacing:-.8px;margin-top:6px;color:#0f172a}
 .bsl-day-meta{font-size:11px;font-weight:600;color:#64748b;margin-top:2px}
+.bsl-vs-target{font-size:12px;font-weight:800;color:#0f172a;margin-top:2px}
 .bsl-bar{height:7px;border-radius:99px;background:#f1f5f9;overflow:hidden;flex:1}
 .bsl-bar span{display:block;height:100%;border-radius:99px}
 .bsl-day .bsl-bar{margin:8px 0 10px}

@@ -5138,6 +5138,32 @@ function renderBaselTracker(targetEl, forceAll){
     (v.nights||[]).forEach(function(n){ if(n&&n.date) sum+=nightInventory(name, n.date); });
     return sum;
   }
+  /* Calendar BS target for that night, the same figure the calendar shows. */
+  function nightTarget(venueName, dateStr){
+    var sum=0, any=false;
+    (typeof SCHED!=='undefined'?SCHED:[]).forEach(function(r){
+      if(!r||r._s==='empty'||r.d!==dateStr) return;
+      if(String(r.v||r.venue||'')!==venueName) return;
+      var tgt=(typeof showTargets==='function')?showTargets(r):{bs_m:r.bs_m};
+      var n=tgt&&tgt.bs_m!=null&&isFinite(+tgt.bs_m)?+tgt.bs_m:null;
+      if(n!=null&&n>0){ sum+=n; any=true; }
+    });
+    return any?sum:null;
+  }
+  function spanTarget(v){
+    var name=venueFullName(v);
+    var sum=0, any=false;
+    (v.nights||[]).forEach(function(n){
+      if(!n||!n.date) return;
+      var t=nightTarget(name, n.date);
+      if(t!=null){ sum+=t; any=true; }
+    });
+    return any?sum:null;
+  }
+  function vsTargetLabel(sold, target){
+    if(!(target>0)) return '';
+    return money(sold)+' vs '+money(target)+' \u00b7 '+pct(sold, target)+'%';
+  }
   function dateInventory(dateStr){
     if(!isAll) return nightInventory(venueFullName(data), dateStr);
     var sum=0;
@@ -5203,6 +5229,11 @@ function renderBaselTracker(targetEl, forceAll){
     + '<div class="bsl-hero-sub">'+esc(venueLine)+'</div></div>'
     + '<div class="bsl-hero-right"><div class="bsl-hero-total">'+money(total)+'</div>'
     + '<div class="bsl-hero-sub">'+occLabel(data.totalBookings, isAll?venues.reduce(function(s,v){ return s+spanInventory(v); },0):spanInventory(data))+' · '+refs.length+' referrers</div>'
+    + (function(){
+        var tgt=isAll?venues.reduce(function(s,v){ var t=spanTarget(v); return t!=null?s+t:s; },0):spanTarget(data);
+        var line=vsTargetLabel(total, tgt);
+        return line?'<div class="bsl-hero-sub">'+line+'</div>':'';
+      })()
     + (when ? '<div class="bsl-hero-upd">FourVenues · updated '+esc(when)+'</div>' : '')
     + '</div></div>';
 
@@ -5216,6 +5247,7 @@ function renderBaselTracker(targetEl, forceAll){
         + '<div class="bsl-venue-name" style="color:'+col+'">'+esc(venueShort(v))+'</div>'
         + '<div class="bsl-venue-total">'+money(v.totalRevenue)+'</div>'
         + '<div class="bsl-day-meta">'+occLabel(sold, inv)+'</div>'
+        + (function(){ var line=vsTargetLabel(v.totalRevenue, spanTarget(v)); return line?'<div class="bsl-vs-target">'+line+'</div>':''; })()
         + '<div class="bsl-bar"><span style="width:'+occWidth(sold, inv)+'%;background:'+col+'"></span></div>'
         + '<div class="bsl-venue-days">';
       (v.nights||[]).forEach(function(n, i){
