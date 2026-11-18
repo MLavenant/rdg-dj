@@ -84,12 +84,13 @@ function faAutoApproved(show){
 }
 function faFinanceStatus(show){
   if(!faFinanceTrack(show)) return '';
-  if(faAutoApproved(show)) return 'Finance Approved';
   var raw=faRawDjStatus(show);
   /* A DJ status never counts as finance approval. Approval is only the finance record. */
   if(FA_FIN.indexOf(raw)>=0) return raw;
   var rec=FINANCE_STATUS[faKey(show)];
-  if(rec&&typeof rec==='object'&&rec.s!=null) return FA_FIN.indexOf(rec.s)>=0?rec.s:'';
+  if(rec&&typeof rec==='object'&&rec.s!=null&&FA_FIN.indexOf(rec.s)>=0) return rec.s;
+  /* Under $5,000 approves itself only when nobody has set a finance status. */
+  if(faAutoApproved(show)) return 'Finance Approved';
   return '';
 }
 function faFinanceTone(st){
