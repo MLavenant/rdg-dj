@@ -2253,6 +2253,29 @@ function roiSpecialEventFor(venue, dateStr){
   });
   return best;
 }
+/* Same venue and dates can be saved more than once. The calendar uses the newest.
+   Drop the older copies so the rules list and the calendar stay on that one rule. */
+function collapseDuplicateSpecials(){
+  if(typeof _roiEditSpecialUid!=='undefined' && _roiEditSpecialUid!=null) return false;
+  if(!ROI_SPECIAL_EVENTS) return false;
+  var groups={};
+  var removed=false;
+  Object.keys(ROI_SPECIAL_EVENTS).forEach(function(uid){
+    var ev=ROI_SPECIAL_EVENTS[uid];
+    if(!ev||!ev.venue||!ev.start) return;
+    var k=ev.venue+'|'+ev.start+'|'+(ev.end||ev.start);
+    var prev=groups[k];
+    if(!prev){ groups[k]=uid; return; }
+    var prevAt=String((ROI_SPECIAL_EVENTS[prev]&&ROI_SPECIAL_EVENTS[prev].updatedAt)||'');
+    var curAt=String(ev.updatedAt||'');
+    var drop=curAt>prevAt?prev:uid;
+    var keep=drop===prev?uid:prev;
+    delete ROI_SPECIAL_EVENTS[drop];
+    groups[k]=keep;
+    removed=true;
+  });
+  return removed;
+}
 function _cloneVenueRules(srcKey){
   var src=VENUE_ROI_RULES[srcKey];
   if(!src) return null;
