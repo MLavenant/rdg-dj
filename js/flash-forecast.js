@@ -15,22 +15,53 @@ function flashArrow(actual, prior, favorableWhen){
   if(typeof bgtMove==='function') return bgtMove(actual, prior, favorableWhen);
   return '';
 }
+/* Prior-year guest DJ fees over the same MTD window, even when the P&L prior year is blank. */
+function flashPyGuestFees(venue, meta){
+  if(!venue||!meta||typeof mrPeriodMeta!=='function'||typeof wmGuestDjSpend!=='function') return null;
+  var pyMeta=mrPeriodMeta(meta.year-1, meta.period);
+  if(meta.mtd&&meta.from&&meta.to&&typeof wmAddDays==='function'&&typeof wmSpan==='function'){
+    var pyTo=wmAddDays(pyMeta.from, wmSpan(meta.from, meta.to));
+    if(pyMeta.to&&pyTo>pyMeta.to) pyTo=pyMeta.to;
+    pyMeta=Object.assign({}, pyMeta, {to:pyTo});
+  }
+  return wmGuestDjSpend(venue, pyMeta);
+}
+/* Every guest DJ fee on the calendar for the fiscal month, including nights still ahead. */
+function flashFullGuestFees(venue, meta){
+  if(!venue||!meta||typeof mrPeriodMeta!=='function'||typeof mrShows!=='function') return null;
+  var sum=0, any=false;
+  mrShows(venue, mrPeriodMeta(meta.year, meta.period)).forEach(function(r){
+    var n=(typeof mrFee==='function')?mrFee(r):null;
+    if(n!=null){ sum+=n; any=true; }
+  });
+  return any?Math.round(sum):null;
+}
+function flashFullBudget(venue, meta){
+  if(!venue||!meta||typeof mrLiveBudget!=='function') return null;
+  return mrLiveBudget(venue, meta);
+}
 function flashDetailPage(p, meta){
   var n=p.now||{}, y=p.py||{};
-  var pyY=(meta&&meta.year?meta.year:2026)-1;
-  var bud=(typeof mrLiveBudget==='function')?mrLiveBudget(p.venue, meta):null;
-  var salesVar=(typeof mrVar==='function')?mrVar(n.sales, y.sales):{cls:'',text:''};
-  var bsVar=(typeof mrVar==='function')?mrVar(p.beat&&p.beat.bs, p.pyBeat&&p.pyBeat.bs):{cls:'',text:''};
-  var spendVar=(typeof mrSpendVar==='function')?mrSpendVar(n.live, bud):{cls:'',text:''};
+  var year=(meta&&meta.year)?meta.year:2026;
+  var pyY=year-1;
+  var bsNow=p.beat&&p.beat.bs;
+  var bsPy=p.pyBeat&&p.pyBeat.bs;
+  var feeNow=n.guest!=null?n.guest:null;
+  var feePy=y.guest!=null?y.guest:flashPyGuestFees(p.venue, meta);
+  var bsVar=(typeof mrVar==='function')?mrVar(bsNow, bsPy):{cls:'',text:''};
+  var feeVar=(typeof mrVar==='function')?mrVar(feeNow, feePy, true):{cls:'',text:''};
+  var marginNow=flashBsMargin(feeNow, bsNow);
+  var marginPy=flashBsMargin(feePy, bsPy);
+  var marginVar=(typeof mrPp==='function')?mrPp(marginNow, marginPy, true):{cls:'',text:''};
+  var feesFull=flashFullGuestFees(p.venue, meta);
+  var budgetFull=flashFullBudget(p.venue, meta);
   var h='<div class="bp-page bp-deck mr-venue"><div class="bp-deck-hd"><div><div class="bp-deck-kicker">'+_escHtml(p.label)+'</div><b>'+_escHtml(meta.label||'')+'</b><em>'+_escHtml(meta.range||'')+'</em></div><img src="assets/rdg-logo.png" alt="RDG"></div><div class="bp-deck-body">';
   h+='<div class="mr-pdf-metrics">';
-  h+='<div><span>Sales vs PY</span><b>'+mrMoney(n.sales)+'</b>'+mrLy(pyY+' '+mrMoney(y.sales))+'<i class="'+salesVar.cls+'">'+salesVar.text+'</i></div>';
-  h+='<div><span>BS vs '+pyY+'</span><b>'+mrMoney(p.beat&&p.beat.bs)+'</b>'+mrLy(pyY+' '+mrMoney(p.pyBeat&&p.pyBeat.bs))+'<i class="'+bsVar.cls+'">'+bsVar.text+'</i></div>';
-  h+='<div class="mr-bud"><span>Spend vs budget</span><b>'+mrMoney(n.live)+'</b><em>Budget '+mrMoney(bud)+'</em><i class="'+spendVar.cls+'">'+spendVar.text+'</i></div>';
-  h+='<div><span>ROI beat</span><b>'+mrPct(p.beat&&p.beat.rate)+'</b>'+mrLy(pyY+' '+mrPct(p.pyBeat&&p.pyBeat.rate))+'</div>';
-  var marginNow=flashBsMargin(n.guest, p.beat&&p.beat.bs);
-  var marginPy=flashBsMargin(y.guest, p.pyBeat&&p.pyBeat.bs);
-  h+='<div><span>BS margins</span><b>'+mrPct(marginNow)+'</b>'+mrLy(mrPct(marginPy))+'</div>';
+  h+='<div><span>BS '+year+' vs '+pyY+' MTD</span><b>'+mrMoney(bsNow)+'</b>'+mrLy(pyY+' '+mrMoney(bsPy))+'<i class="'+bsVar.cls+'">'+bsVar.text+'</i></div>';
+  h+='<div><span>DJ fees '+year+' vs '+pyY+' MTD</span><b>'+mrMoney(feeNow)+'</b>'+mrLy(pyY+' '+mrMoney(feePy))+'<i class="'+feeVar.cls+'">'+feeVar.text+'</i></div>';
+  h+='<div><span>Margins</span><b>'+mrPct(marginNow)+'</b>'+mrLy('DJ fees \u00f7 BS')+mrLy(pyY+' '+mrPct(marginPy))+'<i class="'+marginVar.cls+'">'+marginVar.text+'</i></div>';
+  h+='<div><span>Total Guest DJ Fees</span><b>'+mrMoney(feesFull)+'</b><em>Full month</em></div>';
+  h+='<div><span>Total budget</span><b>'+mrMoney(budgetFull)+'</b><em>Full month</em></div>';
   h+='</div>';
   h+='<table class="mr-pdf-tbl flash-show"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI</th><th>ROI target</th><th>BS actual</th><th>BS target</th></tr></thead><tbody>';
   if(!p.rows||!p.rows.length) h+='<tr><td class="l" colspan="7">No performances this month.</td></tr>';
