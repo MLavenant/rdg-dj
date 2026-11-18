@@ -28,7 +28,7 @@ function _roiSpFilterRulesForShow(rules, fee, dateStr, showDays){
   if(!tier) return rules;
   var out=JSON.parse(JSON.stringify(rules));
   out.tiers=[JSON.parse(JSON.stringify(tier))];
-  /* Anchor this special to the show's DJ fee so ROI stays as entered (BS = fee × ROI). */
+  /* Anchor this special to the show's DJ fee. BS Target is the table total; ROI is that total ÷ fee. */
   out.tiers[0].fee=fee;
   if(showDays&&showDays.length){
     out.days=showDays.slice();
@@ -161,6 +161,9 @@ function _roiBsSetCellHtml(rules, counts, tier, ti, season, day){
 }
 function roiRefreshVerifyBlocks(root){
   root=root||document;
+  if(root.querySelector&&root.querySelector('.roi-sp-sales')&&typeof _roiSpSyncDerivedFromTables==='function'){
+    _roiSpSyncDerivedFromTables(root);
+  }
   var counts={};
   try{
     var metaEl=root.querySelector('[data-roi-counts]');
@@ -1121,7 +1124,7 @@ function renderRoiSpecialForm(uid){
 
   h+='<div id="roiSpCustomWrap" class="roi-tier-editor-wrap">';
   h+='<div class="roi-tier-editor-hd"><span class="vr-season-lbl">BS Target and table tiers</span>';
-  h+='<span class="roi-page-hint" id="roiSpTierHint">BS Target = DJ fee × ROI.</span></div>';
+  h+='<span class="roi-page-hint" id="roiSpTierHint">BS Target is the table total. ROI is BS Target ÷ DJ fee.</span></div>';
   h+='<div id="roiSpCustomBody"></div>';
   h+='</div>';
 
@@ -1184,11 +1187,12 @@ function renderRoiSpCustomEditor(ev){
     rules=_roiSpFilterRulesForShow(rules, fee, dateStr, showDays);
     var hint=document.getElementById('roiSpTierHint');
     if(hint){
-      hint.textContent='DJ fee $'+fee.toLocaleString()+' → nearest tier $'+(rules._matchedTierFee||fee).toLocaleString()+'. Set ROI and BS Target fills as fee × ROI.';
+      hint.textContent='DJ fee $'+fee.toLocaleString()+'. BS Target is the table total (BS SET). ROI is BS Target ÷ DJ fee.';
     }
   }else{
+    rules=JSON.parse(JSON.stringify(rules));
     var hint0=document.getElementById('roiSpTierHint');
-    if(hint0) hint0.textContent='No DJ fee found for this date — enter ROI after the show has a fee so BS Target can auto-fill (fee × ROI).';
+    if(hint0) hint0.textContent='No DJ fee found for this date. BS Target still follows the table total. ROI fills in once the night has a DJ fee.';
   }
   var seasons=['High','Low'];
   if(dateStr&&typeof seasonFor==='function') seasons=[seasonFor(rules, dateStr)];
@@ -1253,12 +1257,22 @@ function renderRoiSpCustomEditor(ev){
     showDays=rules.days||showDays;
     seasons.forEach(function(season){
       showDays.forEach(function(day, di){
-        var dayData=(tier[season]||{})[day]||{roi:0,sales:0,tables:{}};
+        if(!tier[season]) tier[season]={};
+        if(!tier[season][day]) tier[season][day]={roi:0,sales:0,tables:{}};
+        var dayData=tier[season][day];
+        var setSum=0;
+        if(typeof roiVerifyCapacity==='function'){
+          setSum=Math.round(+roiVerifyCapacity(0, dayData.tables||{}, rules.tableCats||[], counts).sum||0);
+        }
+        if(setSum>0){
+          dayData.sales=setSum;
+          if(fee>0) dayData.roi=(typeof _roiRound3==='function')?_roiRound3(setSum/fee):Math.round((setSum/fee)*1000)/1000;
+        }
         h+='<tr>';
         if(di===0) h+='<td rowspan="'+showDays.length+'" class="vr-season-cell vr-season-'+season.toLowerCase()+'">'+season+'</td>';
         h+='<td class="vr-day-cell">'+day.slice(0,3)+'</td>';
-        h+='<td><input type="number" step="0.1" class="vr-cell-inp vr-roi-inp roi-sp-roi" value="'+dayData.roi+'" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" title="BS Target = DJ fee × ROI"></td>';
-        h+='<td>'+_vrMoneyInputHtml(dayData.sales, 'vr-cell-inp vr-target-inp roi-sp-sales', 'data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'"')+'</td>';
+        h+='<td><input type="number" step="0.001" readonly tabindex="-1" class="vr-cell-inp vr-roi-inp roi-sp-roi roi-sp-derived" value="'+dayData.roi+'" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'" title="ROI = BS Target ÷ DJ fee"></td>';
+        h+='<td>'+_vrMoneyInputHtml(dayData.sales, 'vr-cell-inp vr-target-inp roi-sp-sales roi-sp-derived', 'readonly tabindex="-1" title="BS Target = table total (BS SET)" data-ti="'+ti+'" data-season="'+season+'" data-day="'+day+'"')+'</td>';
         h+=_roiBsSetCellHtml(rules, counts, tier, ti, season, day);
         (rules.tableCats||[]).forEach(function(c){
           var tv=(dayData.tables||{})[c]||0;
@@ -1278,25 +1292,44 @@ function renderRoiSpCustomEditor(ev){
   wireRoiSpRoiToBs(body);
 }
 
-/* Special performance: editing ROI auto-fills BS Target = DJ fee × ROI. */
+/* Special performance: BS Target and ROI are calculated. Table minimums are what you edit. */
 function wireRoiSpRoiToBs(root){
   root=root||document.getElementById('roiSpCustomBody');
   if(!root) return;
-  root.querySelectorAll('.roi-sp-roi').forEach(function(inp){
-    if(inp._roiSpRoiWired) return;
-    inp._roiSpRoiWired=true;
-    var sync=function(){ _roiSpApplyBsFromRoi(inp, root); };
-    inp.addEventListener('input', sync);
-    inp.addEventListener('change', sync);
-    inp.addEventListener('blur', sync);
-  });
-  /* If BS Target is edited manually, keep ROI in sync (BS ÷ fee). */
-  root.querySelectorAll('.roi-sp-sales').forEach(function(inp){
-    if(inp._roiSpSalesWired) return;
-    inp._roiSpSalesWired=true;
-    var syncRoi=function(){ _roiSpApplyRoiFromBs(inp, root); };
-    inp.addEventListener('change', syncRoi);
-    inp.addEventListener('blur', syncRoi);
+  _roiSpSyncDerivedFromTables(root);
+}
+function _roiSpSyncDerivedFromTables(root){
+  root=root||document.getElementById('roiSpCustomBody');
+  if(!root||!root.querySelector||!root.querySelector('.roi-sp-sales')) return;
+  var fee=_roiSpDjFeeForEditor(root);
+  var counts={}, cats=[];
+  try{
+    var cEl=root.querySelector('[data-roi-counts]');
+    if(cEl) counts=JSON.parse(cEl.getAttribute('data-roi-counts')||'{}');
+    var kEl=root.querySelector('[data-roi-cats]');
+    if(kEl) cats=JSON.parse(kEl.getAttribute('data-roi-cats')||'[]');
+  }catch(eCounts){ counts={}; cats=[]; }
+  root.querySelectorAll('.roi-sp-sales').forEach(function(salesInp){
+    var ti=salesInp.dataset.ti, season=salesInp.dataset.season, day=salesInp.dataset.day;
+    var tables={};
+    cats.forEach(function(c){
+      var inp=root.querySelector('.roi-sp-tbl[data-ti="'+ti+'"][data-season="'+season+'"][data-day="'+day+'"][data-cat="'+c+'"]');
+      tables[c]=inp?_vrParseMoney(inp.value):0;
+    });
+    var sum=Math.round(+(typeof roiVerifyCapacity==='function'?roiVerifyCapacity(0, tables, cats, counts).sum:0)||0);
+    if(!(sum>0)) return;
+    salesInp.value=_vrFmtMoney(sum);
+    var roi=fee>0?((typeof _roiRound3==='function')?_roiRound3(sum/fee):Math.round((sum/fee)*1000)/1000):0;
+    var roiInp=root.querySelector('.roi-sp-roi[data-ti="'+ti+'"][data-season="'+season+'"][data-day="'+day+'"]');
+    if(roiInp) roiInp.value=String(roi);
+    var rules=root._roiSpRules;
+    if(rules&&rules.tiers&&rules.tiers[ti]){
+      if(!rules.tiers[ti][season]) rules.tiers[ti][season]={};
+      if(!rules.tiers[ti][season][day]) rules.tiers[ti][season][day]={roi:0,sales:0,tables:{}};
+      rules.tiers[ti][season][day].sales=sum;
+      if(fee>0) rules.tiers[ti][season][day].roi=roi;
+      rules.tiers[ti][season][day].tables=tables;
+    }
   });
 }
 function _roiSpDjFeeForEditor(root){
@@ -1307,44 +1340,20 @@ function _roiSpDjFeeForEditor(root){
   if(fee>0&&root) root._roiSpDjFee=fee;
   return fee||0;
 }
-function _roiSpApplyBsFromRoi(roiInp, root){
-  root=root||document.getElementById('roiSpCustomBody');
-  if(!roiInp||!root) return;
-  var fee=_roiSpDjFeeForEditor(root);
-  if(!(fee>0)) return;
-  var roi=parseFloat(roiInp.value);
-  if(isNaN(roi)||roi<0) return;
-  var ti=roiInp.dataset.ti, season=roiInp.dataset.season, day=roiInp.dataset.day;
-  var salesInp=root.querySelector('.roi-sp-sales[data-ti="'+ti+'"][data-season="'+season+'"][data-day="'+day+'"]');
-  if(!salesInp) return;
-  var bs=Math.round(fee*roi);
-  salesInp.value=_vrFmtMoney(bs);
-  if(root._roiSpRules&&root._roiSpRules.tiers[ti]){
-    if(!root._roiSpRules.tiers[ti][season]) root._roiSpRules.tiers[ti][season]={};
-    if(!root._roiSpRules.tiers[ti][season][day]) root._roiSpRules.tiers[ti][season][day]={roi:0,sales:0,tables:{}};
-    root._roiSpRules.tiers[ti][season][day].roi=roi;
-    root._roiSpRules.tiers[ti][season][day].sales=bs;
-  }
-  if(typeof roiRefreshVerifyBlocks==='function') roiRefreshVerifyBlocks(root);
-}
-function _roiSpApplyRoiFromBs(salesInp, root){
-  root=root||document.getElementById('roiSpCustomBody');
-  if(!salesInp||!root) return;
-  var fee=_roiSpDjFeeForEditor(root);
-  if(!(fee>0)) return;
-  var bs=_vrParseMoney(salesInp.value);
-  var ti=salesInp.dataset.ti, season=salesInp.dataset.season, day=salesInp.dataset.day;
-  var roiInp=root.querySelector('.roi-sp-roi[data-ti="'+ti+'"][data-season="'+season+'"][data-day="'+day+'"]');
-  if(!roiInp) return;
-  var roi=+(bs/fee).toFixed(2);
-  roiInp.value=String(roi);
-  if(root._roiSpRules&&root._roiSpRules.tiers[ti]){
-    if(!root._roiSpRules.tiers[ti][season]) root._roiSpRules.tiers[ti][season]={};
-    if(!root._roiSpRules.tiers[ti][season][day]) root._roiSpRules.tiers[ti][season][day]={roi:0,sales:0,tables:{}};
-    root._roiSpRules.tiers[ti][season][day].roi=roi;
-    root._roiSpRules.tiers[ti][season][day].sales=bs;
-  }
-  if(typeof roiRefreshVerifyBlocks==='function') roiRefreshVerifyBlocks(root);
+/* Write the special's DJ, fee, and derived targets onto that night's Guest DJ row. */
+function _roiSpFeedGuestShow(rec){
+  if(!rec||typeof SCHED==='undefined'||typeof persistSchedShow!=='function') return;
+  var days=rec.days||[];
+  SCHED.forEach(function(r){
+    if(!r||!r.d||r._s==='empty') return;
+    if((r.v||r.venue)!==rec.venue) return;
+    if(r.d<rec.start||r.d>(rec.end||rec.start)) return;
+    if(days.length&&typeof dayNameFor==='function'&&days.indexOf(dayNameFor(r.d))===-1) return;
+    if(rec.dj&&String(rec.dj).trim()) r.dj=rec.dj;
+    if(+rec.djFee>0){ r.fee=+rec.djFee; r.cost=+rec.djFee; }
+    if(typeof applyShowTargets==='function') applyShowTargets(r);
+    try{ persistSchedShow(r); }catch(eFeed){}
+  });
 }
 
 function _collectRoiSpCustomRules(){
@@ -1375,20 +1384,25 @@ function _collectRoiSpCustomRules(){
     if(!rules.tiers[ti][season][day].tables) rules.tiers[ti][season][day].tables={};
     rules.tiers[ti][season][day].tables[cat]=_vrParseMoney(inp.value);
   });
-  /* Keep BS Target = DJ fee × ROI whenever ROI is set (special-performance contract). */
-  if(djFee>0){
-    (rules.tiers||[]).forEach(function(tier){
-      if(tier) tier.fee=djFee;
-      ['High','Low'].forEach(function(season){
-        Object.keys(tier[season]||{}).forEach(function(day){
-          var d=tier[season][day];
-          if(!d) return;
-          var roi=+d.roi||0;
-          if(roi>0) d.sales=Math.round(djFee*roi);
-        });
+  /* BS Target is the table total. ROI is that total ÷ the DJ fee. */
+  var counts={}, cats=rules.tableCats||[];
+  try{
+    var metaEl=body.querySelector('[data-roi-counts]');
+    if(metaEl) counts=JSON.parse(metaEl.getAttribute('data-roi-counts')||'{}');
+  }catch(eCounts){ counts={}; }
+  (rules.tiers||[]).forEach(function(tier){
+    if(tier&&djFee>0) tier.fee=djFee;
+    ['High','Low'].forEach(function(season){
+      Object.keys((tier&&tier[season])||{}).forEach(function(day){
+        var d=tier[season][day];
+        if(!d) return;
+        var sum=Math.round(+(typeof roiVerifyCapacity==='function'?roiVerifyCapacity(0, d.tables||{}, cats, counts).sum:0)||0);
+        if(!(sum>0)) return;
+        d.sales=sum;
+        if(djFee>0) d.roi=(typeof _roiRound3==='function')?_roiRound3(sum/djFee):Math.round((sum/djFee)*1000)/1000;
       });
     });
-  }
+  });
   rules.tiers.sort(function(a,b){ return a.fee-b.fee; });
   return rules;
 }
@@ -1437,6 +1451,7 @@ function saveRoiSpecialForm(uid){
   });
   ROI_SPECIAL_EVENTS[newUid]=rec;
   saveRoiSpecialEvents();
+  _roiSpFeedGuestShow(rec);
   _roiEditSpecialUid=null;
   _roiSpForceCustom=false;
   _roiSpPrefill=null;

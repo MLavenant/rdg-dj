@@ -1393,6 +1393,12 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         try{ window._fbSave('roiFloorPlans', ROI_FLOOR_PLANS); }catch(eFp){}
       }
     }
+    /* Custom specials: BS Target follows the table total, ROI is that total ÷ DJ fee. */
+    try{
+      if(!window._roiSkipSpecialMigrate && typeof migrateRoiSpecialsToBsSet==='function' && migrateRoiSpecialsToBsSet() && typeof saveRoiSpecialEvents==='function'){
+        saveRoiSpecialEvents();
+      }
+    }catch(eSpBs){}
     var roiSig=JSON.stringify({v:data.venueRoiRules||null,s:data.roiSpecialEvents||null,f:ROI_FLOOR_PLANS||null});
     var roiChanged=(roiSig!==window._lastRoiSig);
     if(roiChanged) window._lastRoiSig=roiSig;

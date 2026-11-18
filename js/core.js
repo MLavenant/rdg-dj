@@ -2286,11 +2286,84 @@ function nearestTier(venueOrRules, fee){
   return best;
 }
 
+function _roiRound3(n){
+  return Math.round((+n || 0) * 1000) / 1000;
+}
+/* Table total for one special-performance night: each category's table count × its minimum. */
+function roiSpecialBsSetSum(venue, dateStr, floorPlan, rules, dayData){
+  if(!dayData) return 0;
+  var assigned=(typeof roiAssignedFloorPlan==='function')?roiAssignedFloorPlan(venue, dateStr):null;
+  var plan=(assigned&&assigned.tableKey)||floorPlan||'auto';
+  if((!plan||plan==='auto')&&rules&&rules.floorPlan) plan=rules.floorPlan;
+  var countsMeta=(typeof roiTableCountsForRulesVenue==='function')
+    ? roiTableCountsForRulesVenue(venue, {dateStr:dateStr||'', floorPlan:plan})
+    : {counts:{}};
+  var counts=(countsMeta&&countsMeta.counts)||{};
+  var v=roiVerifyCapacity(0, dayData.tables||{}, (rules&&rules.tableCats)||[], counts);
+  return Math.round(+v.sum||0);
+}
+/* Existing custom specials: BS Target becomes the table total, ROI becomes that total ÷ DJ fee.
+   Records without their own table rules are left as they are. Nothing is deleted. */
+function migrateRoiSpecialsToBsSet(){
+  if(typeof _roiEditSpecialUid!=='undefined' && _roiEditSpecialUid!=null) return false;
+  if(!ROI_SPECIAL_EVENTS) return false;
+  var changed=false;
+  var report={updated:[], skipped:[]};
+  Object.keys(ROI_SPECIAL_EVENTS).forEach(function(uid){
+    var ev=ROI_SPECIAL_EVENTS[uid];
+    if(!ev||!ev.rules||!ev.rules.tiers||!ev.rules.tiers.length){
+      report.skipped.push({uid:uid, label:ev&&ev.label||'', reason:'no custom table rules'});
+      return;
+    }
+    var fee=+ev.djFee||0;
+    if(!(fee>0)&&typeof _roiSpResolveFee==='function') fee=+_roiSpResolveFee(ev)||0;
+    var touched=false;
+    var hadSum=false;
+    ev.rules.tiers.forEach(function(tier){
+      if(!tier) return;
+      ['High','Low'].forEach(function(season){
+        Object.keys(tier[season]||{}).forEach(function(day){
+          var d=tier[season][day];
+          if(!d) return;
+          var sum=roiSpecialBsSetSum(ev.venue, ev.start, ev.floorPlan, ev.rules, d);
+          if(!(sum>0)) return;
+          hadSum=true;
+          var roi=fee>0?_roiRound3(sum/fee):(+d.roi||0);
+          if(+d.sales!==sum||_roiRound3(d.roi)!==roi){
+            d.sales=sum;
+            d.roi=roi;
+            touched=true;
+          }
+        });
+      });
+    });
+    if(fee>0&&ev.rules.tiers.length===1&&+ev.rules.tiers[0].fee!==fee){
+      ev.rules.tiers[0].fee=fee;
+      touched=true;
+    }
+    if(fee>0&&+ev.djFee!==fee){
+      ev.djFee=fee;
+      touched=true;
+    }
+    if(touched){
+      changed=true;
+      report.updated.push({uid:uid, label:ev.label||'', venue:ev.venue||'', start:ev.start||'', fee:fee});
+    }else if(!hadSum){
+      report.skipped.push({uid:uid, label:ev.label||'', reason:'table total is 0'});
+    }else if(!(fee>0)){
+      report.skipped.push({uid:uid, label:ev.label||'', reason:'DJ fee is 0'});
+    }
+  });
+  window._roiSpecialMigrateReport=report;
+  return changed;
+}
 /* Core lookup: given venue + date + DJ fee, return {bsTarget, roiTarget, tierFee, season, day}
    BS Target = the nearest tier's Sales figure for that day/season (does NOT scale with actual fee).
    ROI Target = if fee matches the tier's own anchor fee exactly, use the table's stored ROI;
                 otherwise recompute as bsTarget / actualFee (so a cheaper DJ shows a higher req'd ROI,
                 a pricier one a lower ROI, while still owing the same $ target).
+   A custom special performance is different: BS Target is the table total (BS SET),
+   and ROI is that total divided by the DJ fee.
    Casa Neos Beach Club Aug 1–Oct 4 uses Sunset Rituals Summer Roof rules (not before/after). */
 function venueRoiLookup(venue, dateStr, fee){
   var sp=roiSpecialEventFor(venue, dateStr);
@@ -2324,6 +2397,24 @@ function venueRoiLookup(venue, dateStr, fee){
     ? sp.forceSeason
     : seasonFor(rules, dateStr);
 
+  /* Custom special: the table total is the BS Target. ROI is that total ÷ the DJ fee. */
+  if(sp&&sp.rules&&sp.rules.tiers){
+    var spTier=nearestTier(rules, fee)||rules.tiers[0];
+    if(!spTier) return null;
+    var spDay=(spTier[season]||{})[lookupDay];
+    if(!spDay) return null;
+    var setSum=roiSpecialBsSetSum(venue, dateStr, sp.floorPlan, rules, spDay);
+    var bsTarget=setSum>0?setSum:(+spDay.sales||0);
+    var roiTarget=bsTarget>0?_roiRound3(bsTarget/fee):(+spDay.roi||0);
+    return {
+      bsTarget: bsTarget, roiTarget: roiTarget,
+      tierFee: spTier.fee, season: season, day: lookupDay,
+      tables: spDay.tables||{},
+      rulesVenue: rulesVenue, summerRoof: rulesVenue===CNBC_SUMMER_ROOF_KEY,
+      specialEvent: sp.label||null
+    };
+  }
+
   /* Above the highest defined tier: flat 2x ROI, any day, any season */
   var highestTier=rules.tiers[rules.tiers.length-1];
   if(highestTier && fee>highestTier.fee){
@@ -2340,11 +2431,6 @@ function venueRoiLookup(venue, dateStr, fee){
   if(!dayData) return null;
   var bsTarget=dayData.sales;
   var roiTarget = (fee===tier.fee) ? dayData.roi : (bsTarget && fee ? +(bsTarget/fee).toFixed(2) : dayData.roi);
-  /* Custom special performance: ROI is the source of truth → BS Target = fee × ROI. */
-  if(sp&&sp.rules&&sp.rules.tiers&&dayData.roi!=null&&+dayData.roi>0&&fee>0){
-    roiTarget=+dayData.roi;
-    bsTarget=Math.round(fee*roiTarget);
-  }
   return {
     bsTarget: bsTarget, roiTarget: roiTarget,
     tierFee: tier.fee, season: season, day: lookupDay,

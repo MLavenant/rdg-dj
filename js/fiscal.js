@@ -365,7 +365,13 @@ function $kv(n) {
   if (a >= 1000) return s + '$' + (a/1000).toFixed(1).replace(/\.0$/,'') + 'K';
   return s + '$' + Math.round(a);
 }
-function rx(n) { return n != null ? (+n).toFixed(1) + 'x' : '-'; }
+function rx(n) {
+  if (n == null || isNaN(+n)) return '-';
+  var v = Math.round(+n * 1000) / 1000;
+  var tenth = Math.round(v * 10) / 10;
+  var s = Math.abs(v - tenth) < 0.0005 ? tenth.toFixed(1) : String(v);
+  return s + 'x';
+}
 /* ROI color vs target (1-decimal): above = green, equal or within 0.1 below = orange, else red */
 function roiTone(actual, target){
   if(actual==null||target==null||isNaN(+actual)||isNaN(+target)) return '';
