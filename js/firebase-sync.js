@@ -1378,14 +1378,8 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
         else window._fbSave('venueRoiRules', VENUE_ROI_RULES);
       }catch(eRem){}
     }
-    if(data.roiSpecialEvents){
-      ROI_SPECIAL_EVENTS = data.roiSpecialEvents;
-      try{
-        if(typeof collapseDuplicateSpecials==='function' && collapseDuplicateSpecials() && typeof saveRoiSpecialEvents==='function'){
-          saveRoiSpecialEvents();
-        }
-      }catch(eSpDup){}
-    }
+    /* Saved specials are never removed in the background. Every record stays until someone deletes it. */
+    if(data.roiSpecialEvents) ROI_SPECIAL_EVENTS = data.roiSpecialEvents;
     if(Object.prototype.hasOwnProperty.call(data, 'showTargetLocks')){
       window._showTargetLocks = (data.showTargetLocks && typeof data.showTargetLocks==='object') ? data.showTargetLocks : {};
       window._showTargetLocksReady = true;
