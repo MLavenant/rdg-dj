@@ -36,9 +36,15 @@ function flashFullGuestFees(venue, meta){
   });
   return any?Math.round(sum):null;
 }
+/* Guest DJ budget for the full fiscal month, the same figure the calendar uses. */
 function flashFullBudget(venue, meta){
-  if(!venue||!meta||typeof mrLiveBudget!=='function') return null;
-  return mrLiveBudget(venue, meta);
+  if(!venue||!meta) return null;
+  var mm=meta.period<10?'0'+meta.period:String(meta.period);
+  if(typeof calGuestDjBudget==='function'){
+    var g=calGuestDjBudget(venue, meta.year, mm);
+    if(g&&g.amount!=null&&isFinite(+g.amount)) return +g.amount;
+  }
+  return typeof mrLiveBudget==='function'?mrLiveBudget(venue, meta):null;
 }
 function flashDetailPage(p, meta){
   var n=p.now||{}, y=p.py||{};
@@ -61,7 +67,7 @@ function flashDetailPage(p, meta){
   h+='<div><span>DJ fees '+year+' vs '+pyY+' MTD</span><b>'+mrMoney(feeNow)+'</b>'+mrLy(pyY+' '+mrMoney(feePy))+'<i class="'+feeVar.cls+'">'+feeVar.text+'</i></div>';
   h+='<div><span>Margins</span><b>'+mrPct(marginNow)+'</b>'+mrLy('DJ fees \u00f7 BS')+mrLy(pyY+' '+mrPct(marginPy))+'<i class="'+marginVar.cls+'">'+marginVar.text+'</i></div>';
   h+='<div><span>Total Guest DJ Fees</span><b>'+mrMoney(feesFull)+'</b><em>Full month</em></div>';
-  h+='<div><span>Total budget</span><b>'+mrMoney(budgetFull)+'</b><em>Full month</em></div>';
+  h+='<div><span>Guest DJ budget</span><b>'+mrMoney(budgetFull)+'</b><em>Full month</em></div>';
   h+='</div>';
   h+='<table class="mr-pdf-tbl flash-show"><thead><tr><th class="l">Date</th><th class="l">DJ</th><th>DJ fee</th><th>ROI</th><th>ROI target</th><th>BS actual</th><th>BS target</th></tr></thead><tbody>';
   if(!p.rows||!p.rows.length) h+='<tr><td class="l" colspan="7">No performances this month.</td></tr>';
