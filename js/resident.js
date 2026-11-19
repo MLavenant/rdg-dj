@@ -5,7 +5,9 @@
 
 var RESIDENT_DJ = {};
 var RESIDENT_COLS = {};
-var RESIDENT_VENUES = ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge','HONO Lounge','AVA MM','MILA 3F','CLAUDIE','AVA CG','CASA HONO'];
+var RESIDENT_VENUES = ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge','HONO Lounge','AVA WP','MILA 3F','CLAUDIE','AVA CG','CASA HONO'];
+/* Renamed locations keep their saved rows and columns under the original storage key. */
+var RESIDENT_VENUE_KEY_ALIAS = {'AVA WP':'AVA_MM'};
 var RESIDENT_DEFAULT_COLS = [
   {id:'hotel', label:'Hotel', kind:'money'},
   {id:'ground', label:'Ground', kind:'money'},
@@ -34,7 +36,11 @@ function residentHere(){
 function residentSetVenue(v){
   if(RESIDENT_VENUES.indexOf(v)>=0) resVenue=v;
 }
-function residentVenueKey(venue){ return String(venue||'').replace(/[^a-zA-Z0-9]+/g,'_'); }
+function residentVenueKey(venue){
+  var v=String(venue||'');
+  if(RESIDENT_VENUE_KEY_ALIAS.hasOwnProperty(v)) return RESIDENT_VENUE_KEY_ALIAS[v];
+  return v.replace(/[^a-zA-Z0-9]+/g,'_');
+}
 function residentKey(venue, ds){ return residentVenueKey(venue)+'__'+String(ds||''); }
 function residentEsc(s){
   return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');

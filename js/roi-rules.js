@@ -1340,6 +1340,50 @@ function _roiSpDjFeeForEditor(root){
   if(fee>0&&root) root._roiSpDjFee=fee;
   return fee||0;
 }
+/* One-time catch-up: write each existing special's BS Target and ROI onto its Guest DJ rows,
+   so the stored schedule matches the calendar, the Weekly Flash, and the Forecast. Idempotent. */
+var ROI_SP_GUEST_SYNC_KEY='rdg_special_guest_sync_v5313';
+function _roiSpNightRows(ev){
+  var out=[];
+  if(!ev||typeof SCHED==='undefined'||!SCHED) return out;
+  var days=ev.days||[];
+  SCHED.forEach(function(r){
+    if(!r||!r.d||r._s==='empty') return;
+    if((r.v||r.venue)!==ev.venue) return;
+    if(r.d<ev.start||r.d>(ev.end||ev.start)) return;
+    if(days.length&&typeof dayNameFor==='function'&&days.indexOf(dayNameFor(r.d))===-1) return;
+    out.push(r);
+  });
+  return out;
+}
+function syncSpecialGuestRows(){
+  var n=0;
+  Object.keys(ROI_SPECIAL_EVENTS||{}).forEach(function(uid){
+    var ev=ROI_SPECIAL_EVENTS[uid];
+    if(!ev||!ev.venue||!ev.start) return;
+    _roiSpNightRows(ev).forEach(function(r){
+      var hasDj=!!(r.dj&&String(r.dj).trim());
+      var hasFee=!!(r.fee||r.cost);
+      if(!hasDj&&!hasFee) return;
+      if(typeof applyShowTargets==='function') applyShowTargets(r);
+      try{ persistSchedShow(r); n++; }catch(eSync){}
+    });
+  });
+  return n;
+}
+function _roiSpMaybeSyncGuestRows(tries){
+  tries=tries||0;
+  try{ if(localStorage.getItem(ROI_SP_GUEST_SYNC_KEY)==='1') return; }catch(e0){}
+  if(typeof persistSchedShow!=='function'||typeof SCHED==='undefined'||!SCHED||!SCHED.length||!window._fbSchedLiveReady||!window._fbRef){
+    if(tries<60) setTimeout(function(){ _roiSpMaybeSyncGuestRows(tries+1); }, 1000);
+    return;
+  }
+  var n=syncSpecialGuestRows();
+  try{ localStorage.setItem(ROI_SP_GUEST_SYNC_KEY,'1'); }catch(e1){}
+  window._roiSpGuestSyncCount=n;
+  if(typeof refreshAllRoiDerivedData==='function') refreshAllRoiDerivedData();
+}
+
 /* Write the special's DJ, fee, and derived targets onto that night's Guest DJ row. */
 function _roiSpFeedGuestShow(rec){
   if(!rec||typeof SCHED==='undefined'||typeof persistSchedShow!=='function') return;

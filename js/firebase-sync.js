@@ -1402,6 +1402,7 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
     var roiSig=JSON.stringify({v:data.venueRoiRules||null,s:data.roiSpecialEvents||null,f:ROI_FLOOR_PLANS||null});
     var roiChanged=(roiSig!==window._lastRoiSig);
     if(roiChanged) window._lastRoiSig=roiSig;
+    if(typeof _roiSpMaybeSyncGuestRows==='function') setTimeout(function(){ _roiSpMaybeSyncGuestRows(0); }, 2500);
     if(roiChanged&&window._fbReady){
       if(typeof recalcAllSchedTargets==='function') recalcAllSchedTargets();
       if(typeof refreshForecastRoiCache==='function') refreshForecastRoiCache();
