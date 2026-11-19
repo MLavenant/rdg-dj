@@ -5,7 +5,7 @@
 
 var RESIDENT_DJ = {};
 var RESIDENT_COLS = {};
-var RESIDENT_VENUES = ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge','HONO Lounge','AVA WP','MILA 3F','CLAUDIE','AVA CG','CASA HONO'];
+var RESIDENT_VENUES = ['Casa Neos Beach Club','Casa Neos Lounge','MILA Lounge','HONO Lounge','AVA WP','MILA 3F','CLAUDIE','AVA CG'];
 /* Renamed locations keep their saved rows and columns under the original storage key. */
 var RESIDENT_VENUE_KEY_ALIAS = {'AVA WP':'AVA_MM'};
 var RESIDENT_DEFAULT_COLS = [
