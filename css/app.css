@@ -1963,13 +1963,28 @@ body.mobile-mode .btn-pdf,.btn-add,.btn-sw,.cvt-btn,.acct-tab{min-height:36px}
 body.mobile-mode #view-forecast .fcast-wrap,body.mobile-mode .vip-wrap{padding:10px}
 body.mobile-mode .presence-chip{max-width:42vw;overflow:hidden;text-overflow:ellipsis}
 body.mobile-mode #view-budget{padding:0 8px 24px}
-body.mobile-mode #view-calendar{overflow:auto!important;-webkit-overflow-scrolling:touch}
+body.mobile-mode #view-calendar{overflow:hidden!important;min-height:0}
+body.mobile-mode #view-calendar .cal-when{flex-wrap:nowrap;align-items:center;gap:8px;padding:6px 8px}
+body.mobile-mode #view-calendar .cal-date-nav,
+body.mobile-mode #view-calendar .btn-sw{display:none!important}
+body.mobile-mode #view-calendar .cal-when-actions{margin-left:auto}
+body.mobile-mode #view-calendar #monthSlider{position:relative;z-index:5;background:transparent;flex:0 1 auto;min-width:0}
+body.mobile-mode #view-calendar .cal-month-pick{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3)}
+body.mobile-mode #view-calendar .cal-month-pick select{font:inherit;font-size:14px;font-weight:750;text-transform:none;letter-spacing:0;color:var(--ink);background:#fff;border:1px solid #e4dfd8;border-radius:8px;padding:6px 8px;min-height:36px;max-width:46vw}
+body.mobile-mode #view-calendar #yrPills{flex:0 0 auto}
+body.mobile-mode #view-calendar #calBody{flex:1 1 auto;min-height:0!important;height:auto;overflow:auto!important;-webkit-overflow-scrolling:touch;margin:0 6px 8px}
+body.mobile-mode #view-calendar.cal-phone .sched-tbl{width:max-content;min-width:100%;border-collapse:separate;border-spacing:0;font-size:12px}
+body.mobile-mode #view-calendar.cal-phone .sched-tbl th,
+body.mobile-mode #view-calendar.cal-phone .sched-tbl td{padding:7px 6px;white-space:nowrap}
+body.mobile-mode #view-calendar.cal-phone .sched-tbl thead th{position:sticky;top:0;z-index:6;background:#f3f0ea!important;font-size:9px}
+body.mobile-mode #view-calendar.cal-phone .sc-date{width:auto;min-width:64px}
+body.mobile-mode #view-calendar.cal-phone .sc-dj{min-width:120px}
+body.mobile-mode #view-calendar.cal-phone .sc-phone-status{min-width:108px}
+body.mobile-mode #view-calendar.cal-phone .sc-phone-status .acct-status-wrap{display:flex}
+body.mobile-mode #view-calendar.cal-phone .sc-phone-status .acct-status-sel,
+body.mobile-mode #view-calendar.cal-phone .sc-phone-status .fa-fs-lock{max-width:120px;font-size:10px}
+body.mobile-mode #view-calendar.cal-phone .sc-py{min-width:96px;background:#f7f4ef}
 body.mobile-mode #view-calendar .cal-nav{position:relative;z-index:5;background:var(--card);flex-wrap:wrap;gap:8px;padding:10px 12px;flex-shrink:0}
-body.mobile-mode #view-calendar #monthSlider{position:relative;z-index:5;background:var(--card2);flex-shrink:0}
-body.mobile-mode #view-calendar .month-slider{padding:8px 10px;gap:6px}
-body.mobile-mode #view-calendar .ms-btn{min-height:38px;padding:8px 16px;font-size:12px;font-weight:800}
-body.mobile-mode #view-calendar .cal-nav-btn{width:38px;height:38px;font-size:16px}
-body.mobile-mode #view-calendar #calBody{overflow:auto!important;min-height:220px;margin:0 8px 12px}
 body.mobile-mode #view-calendar .cal-month-recap,
 body.mobile-mode #view-calendar .cal-py-recap,
 body.mobile-mode #calMonthRecap,

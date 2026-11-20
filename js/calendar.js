@@ -44,14 +44,25 @@ function renderCal(){
   var mName=MN_FULL[mo]+' '+yr;
   document.getElementById('calHd').textContent=mName+' ('+fiscalPeriodShortRange(yr, mo)+')';
   /* toggle button states */
+  var isMobileLayout=document.body.classList.contains('mobile-mode');
+  if(isMobileLayout) calViewMode='list';
   var lb=document.getElementById('calViewListBtn'), gb=document.getElementById('calViewGridBtn'), yb=document.getElementById('calViewYearBtn');
   if(lb&&gb&&yb){ lb.classList.toggle('on',calViewMode==='list'); gb.classList.toggle('on',calViewMode==='grid'); yb.classList.toggle('on',calViewMode==='year'); }
 
-  var sliderHtml='<div class="month-slider" id="calSliderInner">';
-  for(var mi=0;mi<12;mi++){
-    sliderHtml+='<button type="button" class="ms-btn'+(mi===mo?' ms-on':'')+'" id="msbtn'+mi+'" onclick="jumpToMonth('+mi+')">'+MN_FULL[mi]+'</button>';
+  var sliderHtml;
+  if(isMobileLayout){
+    sliderHtml='<label class="cal-month-pick">Month <select onchange="jumpToMonth(+this.value)">';
+    for(var mi=0;mi<12;mi++){
+      sliderHtml+='<option value="'+mi+'"'+(mi===mo?' selected':'')+'>'+MN_FULL[mi]+'</option>';
+    }
+    sliderHtml+='</select></label>';
+  }else{
+    sliderHtml='<div class="month-slider" id="calSliderInner">';
+    for(var mi2=0;mi2<12;mi2++){
+      sliderHtml+='<button type="button" class="ms-btn'+(mi2===mo?' ms-on':'')+'" id="msbtn'+mi2+'" onclick="jumpToMonth('+mi2+')">'+MN_FULL[mi2]+'</button>';
+    }
+    sliderHtml+='</div>';
   }
-  sliderHtml+='</div>';
   document.getElementById('monthSlider').innerHTML=sliderHtml;
   /* scroll active into view */
   setTimeout(function(){
@@ -70,12 +81,12 @@ function renderCal(){
     showMap[r.d].push(r);
   });
 
-  if(calViewMode==='year'){ document.getElementById('view-calendar').classList.remove('cal-list-fit'); renderCalYear(); return; }
-  if(calViewMode==='grid'){ document.getElementById('view-calendar').classList.remove('cal-list-fit'); renderCalGrid(yr,mo,mm,days,showMap); return; }
+  if(calViewMode==='year'){ var calYearEl=document.getElementById('view-calendar'); calYearEl.classList.remove('cal-list-fit'); calYearEl.classList.remove('cal-phone'); renderCalYear(); return; }
+  if(calViewMode==='grid'){ var calGridEl=document.getElementById('view-calendar'); calGridEl.classList.remove('cal-list-fit'); calGridEl.classList.remove('cal-phone'); renderCalGrid(yr,mo,mm,days,showMap); return; }
 
-  var isMobileLayout=document.body.classList.contains('mobile-mode');
   var calEl=document.getElementById('view-calendar');
-  if(isMobileLayout) calEl.classList.remove('cal-list-fit'); else calEl.classList.add('cal-list-fit');
+  if(isMobileLayout){ calEl.classList.remove('cal-list-fit'); calEl.classList.add('cal-phone'); }
+  else { calEl.classList.add('cal-list-fit'); calEl.classList.remove('cal-phone'); }
   renderCalMonthRecap(yr, mo, mm, showMap);
   renderCalPriorYearRecap(yr, mm);
 
@@ -83,21 +94,26 @@ function renderCal(){
   var pyBlank={py_dj:null,py_fee:null,py_bs_m:null,py_bs_a:null,py_roi_t:null,py_roi_a:null,py_beat:null};
 
   var finCol=typeof FA_VENUES!=='undefined' && FA_VENUES.indexOf(curV)>=0 && +curYr>=2027;
+  var phone=isMobileLayout;
   var h='<table class="sched-tbl"><thead><tr>';
-  h+='<th class="sc-ev">Event</th>';
+  h+='<th class="sc-ev">'+(phone?'Events':'Event')+'</th>';
   h+='<th class="sc-date">Date</th>';
   h+='<th class="sc-dj">DJ Guest</th>';
-  h+='<th class="sc-vip" title="Click a cell to leave a VIP comment. A comment from the same night last year stays visible here.">VIP Comment</th>';
-  if(finCol) h+='<th class="acct-status-hd sc-fin-st" title="Set from Finance Approval">Finance Status</th>';
-  h+='<th class="acct-status-hd sc-dj-st">DJ Status</th>';
-  h+='<th class="sc-3d" title="Open 3D floor plan with tier pricing">3D</th>';
-  h+='<th class="sc-fee">Fee</th>';
+  if(!phone) h+='<th class="sc-vip" title="Click a cell to leave a VIP comment. A comment from the same night last year stays visible here.">VIP Comment</th>';
+  if(phone){
+    h+='<th class="acct-status-hd sc-dj-st">Finance & DJ Status</th>';
+  }else{
+    if(finCol) h+='<th class="acct-status-hd sc-fin-st" title="Set from Finance Approval">Finance Status</th>';
+    h+='<th class="acct-status-hd sc-dj-st">DJ Status</th>';
+    h+='<th class="sc-3d" title="Open 3D floor plan with tier pricing">3D</th>';
+  }
+  h+='<th class="sc-fee">'+(phone?'Fees':'Fee')+'</th>';
   h+='<th class="sc-num">BS Target</th>';
-  h+='<th class="sc-num">BS Actual</th>';
-  h+='<th class="sc-num">ROI Tgt</th>';
-  h+='<th class="sc-num">ROI Act</th>';
+  h+='<th class="sc-num">'+(phone?'Actual':'BS Actual')+'</th>';
+  h+='<th class="sc-num">'+(phone?'ROI Target':'ROI Tgt')+'</th>';
+  h+='<th class="sc-num">'+(phone?'ROI Actual':'ROI Act')+'</th>';
   h+='<th class="sc-sep" title="Prior-year comparison"></th>';
-  h+='<th class="sc-py sc-py-hd" title="Same weekday last year — not a second booking">Last year DJ</th>';
+  h+='<th class="sc-py sc-py-hd" title="Same weekday last year — not a second booking">'+(phone?'PY':'Last year DJ')+'</th>';
   h+='<th class="sc-num" title="Prior-year fee">LY Fee</th>';
   h+='<th class="sc-num" title="Prior-year BS target">LY BS Tgt</th>';
   h+='<th class="sc-num" title="Prior-year BS actual">LY BS Act</th>';
@@ -123,16 +139,18 @@ function renderCal(){
     if(shows.length)     dc+=' sc-has-show';
     if(!shows.length)    dc+=' sc-noshow';
 
-    var dateStr=DOW_FULL[dow]+', '+MN_FULL[dObj.getMonth()]+' '+dObj.getDate()+', '+dObj.getFullYear();
+    var dateStr=phone
+      ? ((dObj.getMonth()+1)+'/'+dObj.getDate()+'/'+String(dObj.getFullYear()).slice(-2))
+      : (DOW_FULL[dow]+', '+MN_FULL[dObj.getMonth()]+' '+dObj.getDate()+', '+dObj.getFullYear());
     var nrows=Math.max(1,shows.length);
 
     if(!shows.length){
       h+='<tr class="'+dc+'" data-cal-ds="'+ds+'" ondragover="swDragOver(event)" ondragleave="swDragLeave(event)" ondrop="swDropOnDate(event,\''+ds+'\')">';
-      h+='<td class="sc-ev-cell">'+_evCellHtml(evLabel, ds)+'</td>';
-      h+='<td class="sc-date-cell">'+dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
+      h+='<td class="sc-ev-cell">'+(phone?_calEvCellPhone(evLabel):_evCellHtml(evLabel, ds))+'</td>';
+      h+='<td class="sc-date-cell">'+dateStr+(isToday&&!phone?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
       h+='<td class="sc-empty-day"><button type="button" class="sc-add-inline" data-action="addShow" data-ds="'+ds+'">+ Add show</button></td>';
-      h+=_vipCellHtml(null, -1, '', pyMap[ds]||pyBlank);
-      h+='<td colspan="'+(finCol?8:7)+'" class="sc-empty-day"></td>';
+      if(!phone) h+=_vipCellHtml(null, -1, '', pyMap[ds]||pyBlank);
+      h+='<td colspan="'+(phone?6:(finCol?8:7))+'" class="sc-empty-day"></td>';
       h+='<td class="sc-sep"></td>';
       /* Show prior-year match on empty days so planners still see last year's lineup */
       h+=_pyCellsHtml(pyMap[ds]||pyBlank);
@@ -160,9 +178,9 @@ function renderCal(){
 
         h+='<tr class="'+dc+' sc-'+st+(bCls?' sc-tone-'+bCls:'')+(feeRowCls?' '+feeRowCls:'')+'" data-cal-ds="'+ds+'" ondragover="swDragOver(event)" ondragleave="swDragLeave(event)" ondrop="swDropOnDate(event,\''+ds+'\')">';
         if(ri===0){
-          h+='<td class="sc-ev-cell" rowspan="'+nrows+'">'+_evCellHtml(evLabel, ds)+'</td>';
+          h+='<td class="sc-ev-cell" rowspan="'+nrows+'">'+(phone?_calEvCellPhone(evLabel):_evCellHtml(evLabel, ds))+'</td>';
           h+='<td class="sc-date-cell" rowspan="'+nrows+'">'
-            +dateStr+(isToday?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
+            +dateStr+(isToday&&!phone?'<span class="sc-today-badge"> Today</span>':'')+'</td>';
         }
         var showUid=ensureShowUid(r);
         /* Click opens edit. Drag-to-move uses a small grip so HTML5 drag cannot swallow the click. */
@@ -171,15 +189,23 @@ function renderCal(){
           +'<span class="dj-fee-inline">'+$k(fee)+'</span>'
           +(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')
           +'</td>';
-        h+=_vipCellHtml(r, idx, showUid, ri===0 ? (py||pyBlank) : null);
+        if(!phone) h+=_vipCellHtml(r, idx, showUid, ri===0 ? (py||pyBlank) : null);
         var djSt=getShowDjStatus(r, ds)||'';
-        if(finCol){
-          h+='<td class="acct-status-cell sc-fin-cell"><div class="acct-status-wrap">'+faFinanceSelectHtml(r, ds, idx)+'</div></td>';
+        if(phone){
+          h+='<td class="acct-status-cell sc-phone-status" onclick="event.stopPropagation()">';
+          if(finCol) h+='<div class="acct-status-wrap">'+faFinanceSelectHtml(r, ds, idx)+'</div>';
+          h+='<div class="acct-status-wrap">'
+            +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status for this performance"', r)
+            +'</div></td>';
+        }else{
+          if(finCol){
+            h+='<td class="acct-status-cell sc-fin-cell"><div class="acct-status-wrap">'+faFinanceSelectHtml(r, ds, idx)+'</div></td>';
+          }
+          h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
+            +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status for this performance"', r)
+            +'</div></td>';
+          h+='<td class="sc-3d" onclick="event.stopPropagation()"><button type="button" class="sc-3d-btn" onclick="openShow3dModal('+idx+')" title="Open 3D floor plan and tier prices">3D</button></td>';
         }
-        h+='<td class="acct-status-cell"><div class="acct-status-wrap">'
-          +_djStatusSelectHtml(djSt, 'data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="djStatus" onclick="event.stopPropagation()" title="DJ Status for this performance"', r)
-          +'</div></td>';
-        h+='<td class="sc-3d" onclick="event.stopPropagation()"><button type="button" class="sc-3d-btn" onclick="openShow3dModal('+idx+')" title="Open 3D floor plan and tier prices">3D</button></td>';
         h+='<td class="sc-num fee-cell '+(feeCls||'')+'" data-show-idx="'+idx+'" data-uid="'+showUid+'" data-action="editShow" style="cursor:pointer" title="Click to edit fee">'+$k(fee)+'</td>';
         h+='<td class="sc-num">'+$k(bsM)+'</td>';
         h+='<td class="sc-num '+bCls+'"'+(tSty?' style="'+tSty+'"':'')+'><b>'+$k(r.bs_a)+'</b>'
@@ -235,6 +261,10 @@ function renderCal(){
   }
 }
 
+function _calEvCellPhone(evLabel){
+  if(!evLabel) return '';
+  return '<span class="sc-ev-label">'+String(evLabel).replace(/</g,'&lt;')+'</span>';
+}
 function _vipEsc(s){
   return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 }
