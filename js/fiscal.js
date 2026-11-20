@@ -2,6 +2,8 @@ var FISCAL_WEEKS_445=[4,4,5,4,4,5,4,4,5,4,4,5];
 function _parseYmd(s){ return new Date(String(s).slice(0,10)+'T12:00:00'); }
 function _pad2(n){ return n<10?'0'+n:''+n; }
 function fiscalYearStart(year){
+  /* FY 2027 closes Sunday, December 26. The following Monday starts FY 2028. */
+  if(+year===2028) return '2027-12-27';
   var d=new Date((+year)-1,11,28,12,0,0,0);
   d.setDate(d.getDate()+((8-d.getDay())%7));
   return _ymdLocal(d);

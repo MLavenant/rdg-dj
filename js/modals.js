@@ -1,3 +1,17 @@
+function _wireShowModalEnter(){
+  var modal=document.getElementById('evModal');
+  if(!modal||modal._enterSaveWired) return;
+  modal._enterSaveWired=true;
+  modal.addEventListener('keydown', function(e){
+    if(e.key!=='Enter'||e.shiftKey||e.isComposing) return;
+    var tag=(e.target&&e.target.tagName||'').toLowerCase();
+    if(tag==='textarea'||tag==='select'||tag==='button') return;
+    e.preventDefault();
+    if(typeof saveEvent==='function') saveEvent();
+  });
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', _wireShowModalEnter);
+else _wireShowModalEnter();
 function openAddModal(ds){
   if(typeof window._schedCanEdit==='function' && !window._schedCanEdit()){
     try{ alert('Add Show blocked — live schedule is not synced yet. Wait for sync, then retry.'); }catch(e){}

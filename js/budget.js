@@ -53,6 +53,36 @@ var GUEST_DJ_OFFICIAL = {
   "Casa Neos Beach Club":{
     "2026":{"01":200000,"02":103500,"03":150000,"04":70000,"05":350000,"06":100000,"07":100000,"08":41000,"09":41000,"10":50000},
     "2027":{"01":360000,"02":240000,"03":750000,"04":100000,"05":850000,"06":70000,"07":70000,"08":70000,"09":80000,"10":100000,"11":150000,"12":1000000}
+  },
+  "HONO Lounge":{
+    "2027":{"01":125000,"02":90000,"03":180000,"04":72000,"05":150000,"06":40000,"07":40000,"08":40000,"09":40000,"10":75000,"11":75000,"12":180000}
+  }
+};
+/* 2027 other-expense budgets. Guest DJ stays on the calendar budget, except HONO which is set above. */
+var OTHER_EXPENSE_BUDGET_2027 = {
+  "Casa Neos Beach Club":{
+    "Resident DJ":{"01":13500,"02":11000,"03":12500,"04":11500,"05":12500,"06":9500,"07":9500,"08":9500,"09":9500,"10":9500,"11":11500,"12":13500},
+    "Hotel & Ground":{"01":20000,"02":12000,"03":12000,"04":6000,"05":20000,"06":6000,"07":6000,"08":5000,"09":5000,"10":4000,"11":5000,"12":20000},
+    "Performers":{"01":7800,"02":7800,"03":7800,"04":3900,"05":5500,"06":3900,"07":3900,"08":3900,"09":3900,"10":3900,"11":7800,"12":7800},
+    "Kryo":{"01":7200,"02":7200,"03":11000,"04":11000,"05":11000,"06":7200,"07":7200,"08":7200,"09":7200,"10":7200,"11":11000,"12":7200}
+  },
+  "Casa Neos Lounge":{
+    "Resident DJ Lounge":{"01":11000,"02":10000,"03":11000,"04":10000,"05":11000,"06":10000,"07":10000,"08":10000,"09":10000,"10":10000,"11":10000,"12":12000},
+    "Resident DJ Rooftop":{"01":4500,"02":4500,"03":4500,"04":4500,"05":4500,"06":4500,"07":4500,"08":4500,"09":4500,"10":4500,"11":4500,"12":4500},
+    "Light":{"01":5200,"02":5200,"03":5200,"04":5200,"05":5200,"06":5200,"07":5200,"08":5200,"09":5200,"10":5200,"11":5200,"12":7500},
+    "Hotel & Ground":{"01":20000,"02":9400,"03":9400,"04":8000,"05":11000,"06":6000,"07":6000,"08":6000,"09":6000,"10":6000,"11":6000,"12":15000},
+    "Greeters":{"01":0,"02":0,"03":0,"04":0,"05":0,"06":0,"07":0,"08":0,"09":0,"10":0,"11":0,"12":0}
+  },
+  "MILA Lounge":{
+    "Resident DJ":{"01":12000,"02":10000,"03":11000,"04":10000,"05":11000,"06":10000,"07":10000,"08":10000,"09":10000,"10":10000,"11":10000,"12":13000},
+    "Light":{"01":5200,"02":5200,"03":5200,"04":5200,"05":5200,"06":5200,"07":5200,"08":5200,"09":5200,"10":5200,"11":5200,"12":5200},
+    "Hotel & Ground":{"01":20000,"02":9400,"03":9400,"04":8000,"05":11000,"06":6000,"07":6000,"08":6000,"09":6000,"10":6000,"11":6000,"12":15000},
+    "Greeters":{"01":9100,"02":9100,"03":9100,"04":9100,"05":9100,"06":9100,"07":9100,"08":9100,"09":9100,"10":9100,"11":9100,"12":9100}
+  },
+  "HONO Lounge":{
+    "Resident DJ":{"01":12000,"02":10000,"03":11000,"04":10000,"05":11000,"06":10000,"07":10000,"08":10000,"09":10000,"10":10000,"11":10000,"12":13000},
+    "Light":{"01":5200,"02":5200,"03":5200,"04":5200,"05":5200,"06":5200,"07":5200,"08":5200,"09":5200,"10":5200,"11":5200,"12":5200},
+    "Hotel & Ground":{"01":20000,"02":9400,"03":9400,"04":8000,"05":11000,"06":6000,"07":6000,"08":6000,"09":6000,"10":6000,"11":6000,"12":15000}
   }
 };
 function applyOfficialGuestDjBudgets(){
@@ -574,28 +604,54 @@ function bgtOpenResident(){
   if(typeof residentSetVenue==='function') residentSetVenue(bgtVenue);
   setView('resident');
 }
+function bgtOtherExpenseRows(venue, year){
+  if(String(year)!=='2027') return null;
+  var book=OTHER_EXPENSE_BUDGET_2027[venue];
+  if(!book) return null;
+  return Object.keys(book).map(function(label){
+    return {label:label, sub:'2027 budget', months:book[label]};
+  });
+}
 function renderBudgetGuestDjTable(){
   var host=document.getElementById('budgetGuestDjTable');
   if(!host) return;
-  var rows=bgtSpendCategoryRows(bgtVenue);
+  var expenseRows=bgtOtherExpenseRows(bgtVenue, bgtYear);
+  var rows=expenseRows?[]:bgtSpendCategoryRows(bgtVenue);
   var guest=new Array(13).fill(0), other=new Array(13).fill(0);
   function money(n){ return '<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+$k(n||0)+'</div></div>'; }
   function label(name, sub, cls){ return '<div class="bgt-monthly-cell bgt-monthly-label'+(cls?' '+cls:'')+'"><b>'+_escHtml(name)+'</b><span>'+sub+'</span></div>'; }
-  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd">Entertainment Spend by Category <span>Full year \u00b7 categories come from the Resident DJ Calendar</span>'
+  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd">Entertainment Spend by Category <span>Full year · Guest DJ matches the calendar budget</span>'
     +'<button type="button" class="bgt-cat-add" onclick="bgtOpenResident()">Open Resident DJ Calendar</button></div>';
   h+='<div class="bgt-monthly-grid">'+bgtMonthCellHeader();
-  rows.forEach(function(row){
-    if(!row.ids) return;
-    var yt=0;
-    h+=label(row.label, row.sub);
-    for(var mi=1;mi<=12;mi++){
-      var spend=bgtCategoryMonthSpend(bgtVenue,bgtYear,padMm(mi),row.ids)||0;
-      other[mi]+=spend; yt+=spend;
-      h+=money(spend);
-    }
-    h+=money(yt);
-  });
-  for(var gi=1;gi<=12;gi++) guest[gi]=bgtCategoryMonthSpend(bgtVenue,bgtYear,padMm(gi),null)||0;
+  if(expenseRows){
+    expenseRows.forEach(function(row){
+      var yt=0;
+      h+=label(row.label, row.sub);
+      for(var mi=1;mi<=12;mi++){
+        var amt=+(row.months[padMm(mi)]||0);
+        other[mi]+=amt; yt+=amt;
+        h+=money(amt);
+      }
+      h+=money(yt);
+    });
+  }else{
+    rows.forEach(function(row){
+      if(!row.ids) return;
+      var yt=0;
+      h+=label(row.label, row.sub);
+      for(var mi=1;mi<=12;mi++){
+        var spend=bgtCategoryMonthSpend(bgtVenue,bgtYear,padMm(mi),row.ids)||0;
+        other[mi]+=spend; yt+=spend;
+        h+=money(spend);
+      }
+      h+=money(yt);
+    });
+  }
+  for(var gi=1;gi<=12;gi++){
+    var mm=padMm(gi);
+    var g=(typeof calGuestDjBudget==='function')?calGuestDjBudget(bgtVenue,bgtYear,mm):null;
+    guest[gi]=g&&g.amount!=null?Math.round(+g.amount):0;
+  }
   function sumRow(name, sub, vals){
     var yt=0;
     h+=label(name, sub, 'bgt-total-label');
@@ -605,8 +661,8 @@ function renderBudgetGuestDjTable(){
   }
   var total=new Array(13).fill(0);
   for(var ti=1;ti<=12;ti++) total[ti]=(guest[ti]||0)+(other[ti]||0);
-  sumRow('Guest DJ', 'Guest DJ Calendar', guest);
-  sumRow('Others', 'Resident DJ Calendar', other);
+  sumRow('Guest DJ', 'Guest DJ calendar budget', guest);
+  sumRow('Others', expenseRows?'Other expense budget':'Resident DJ Calendar', other);
   var ytTotal=sumRow('Total', 'Guest DJ + Others', total);
   var ytBudget=0, hasYtBudget=false, budgets=[];
   h+=label('Budget', 'Live Entertainment', 'bgt-total-label bgt-bud-label');
