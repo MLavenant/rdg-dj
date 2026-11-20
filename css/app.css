@@ -1354,7 +1354,15 @@ body.res-view #venTabs,body.res-view #yrPills{display:none!important}
 #residentBody td.res-cell{padding:1px 2px!important}
 #residentBody td.res-paid .res-money,#residentBody td.res-due .res-money{background:transparent}
 #residentBody .res-tone{background:#eceae6!important}
-#residentBody .res-tbl th{position:sticky;overflow:visible}
+/* Both header rows stay put. The Name / $ row sits just under the category names. */
+#residentBody .res-tbl thead tr:first-child th{
+  position:sticky;top:0;z-index:8;background:#eceae6!important;box-shadow:none
+}
+#residentBody .res-tbl thead tr:nth-child(2) th{
+  position:sticky;top:var(--res-head-1,28px);z-index:7;background:#eceae6!important;
+  box-shadow:0 1px 0 #8f877c
+}
+#residentBody .res-tbl thead th.res-tone-total{background:#efeae3!important}
 #residentBody .res-col-hd{cursor:grab;position:relative}
 .res-col-x{position:absolute;top:1px;right:3px;z-index:2;border:0;background:transparent;color:#8a8175;font:inherit;font-size:14px;line-height:1;cursor:pointer;padding:0 3px}
 .res-col-x:hover{color:#a33}

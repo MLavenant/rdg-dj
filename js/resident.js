@@ -644,6 +644,7 @@ function renderResidentCalendar(){
   residentMark();
   requestAnimationFrame(function(){
     fitResidentRows();
+    residentPinHead();
     if(window._resScrolledToday) return;
     var todayRow=body.querySelector('tr.sc-today');
     if(!todayRow) return;
@@ -1019,6 +1020,19 @@ function residentPickInit(){
     if(e.key==='Escape'){ residentCloseMenus(); var pop=document.getElementById('resPop'); if(pop) pop.classList.remove('on'); }
   }, true);
 }
+function residentPinHead(){
+  var body=document.getElementById('residentBody');
+  if(!body) return;
+  var group=body.querySelector('thead tr:first-child th[colspan]');
+  var h=0;
+  if(group) h=group.getBoundingClientRect().height;
+  if(!h){
+    var head=body.querySelector('thead');
+    var sub=body.querySelector('thead tr:nth-child(2) th');
+    if(head && sub) h=head.getBoundingClientRect().height-sub.getBoundingClientRect().height;
+  }
+  if(h>0) body.style.setProperty('--res-head-1', (Math.round(h*10)/10)+'px');
+}
 function fitResidentRows(){
   var body=document.getElementById('residentBody');
   if(!body || !residentOn()) return;
@@ -1038,6 +1052,7 @@ function fitResidentRows(){
   var font=Math.max(8, Math.min(12, rowH*0.62));
   body.style.setProperty('--res-row-h', rowH+'px');
   body.style.setProperty('--res-font', font+'px');
+  residentPinHead();
   if(!window._residentFitBound){
     window._residentFitBound=true;
     window.addEventListener('resize', fitResidentRows);
