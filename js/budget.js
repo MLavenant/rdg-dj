@@ -662,27 +662,13 @@ function renderBudgetGuestDjTable(){
   var total=new Array(13).fill(0);
   for(var ti=1;ti<=12;ti++) total[ti]=(guest[ti]||0)+(other[ti]||0);
   sumRow('Guest DJ', 'Guest DJ calendar budget', guest);
-  sumRow('Others', expenseRows?'Other expense budget':'Resident DJ Calendar', other);
-  var ytTotal=sumRow('Total', 'Guest DJ + Others', total);
-  var ytBudget=0, hasYtBudget=false, budgets=[];
-  h+=label('Budget', 'Live Entertainment', 'bgt-total-label bgt-bud-label');
+  var ytTotal=sumRow('Total', 'Guest DJ + expenses', total);
+  /* Budget is the same sum. Others is not shown, so it is not added again. */
+  h+=label('Budget', 'Guest DJ + expenses', 'bgt-total-label bgt-bud-label');
   for(var bi=1;bi<=12;bi++){
-    var b=getBgtPlan(bgtVenue,bgtYear,padMm(bi),'live');
-    budgets[bi]=b!=null&&isFinite(+b)?+b:null;
-    if(budgets[bi]!=null){ ytBudget+=budgets[bi]; hasYtBudget=true; }
-    h+='<div class="bgt-monthly-cell bgt-bud-cell"><div class="bgt-monthly-value">'+(budgets[bi]!=null?$k(budgets[bi]):'-')+'</div></div>';
+    h+='<div class="bgt-monthly-cell bgt-bud-cell"><div class="bgt-monthly-value">'+$k(total[bi]||0)+'</div></div>';
   }
-  h+='<div class="bgt-monthly-cell bgt-bud-cell"><div class="bgt-monthly-value">'+(hasYtBudget?$k(ytBudget):'-')+'</div></div>';
-  function varCell(vv){
-    var vCls=vv==null?' bgt-status-neutral':(vv>=0?' bgt-status-good':' bgt-status-bad');
-    var vTone=vv==null?'':(vv>=0?'pos':'neg');
-    var vTxt=vv==null?'-':((vv>=0?'Under ':'Over ')+$m(Math.abs(vv)));
-    return '<div class="bgt-monthly-cell'+vCls+'"><div class="bgt-monthly-value '+vTone+'">'+(vv!=null?$kv(vv):'-')+'</div>'
-      +'<div class="bgt-monthly-var '+vTone+'">'+vTxt+'</div></div>';
-  }
-  h+=label('Variance', 'Budget \u2212 Total', 'bgt-total-label');
-  for(var vi=1;vi<=12;vi++) h+=varCell(budgets[vi]!=null?budgets[vi]-total[vi]:null);
-  h+=varCell(hasYtBudget?ytBudget-ytTotal:null);
+  h+='<div class="bgt-monthly-cell bgt-bud-cell"><div class="bgt-monthly-value">'+$k(ytTotal)+'</div></div>';
   h+='</div></div>';
   host.innerHTML=h;
 }
