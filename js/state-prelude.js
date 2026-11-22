@@ -24,3 +24,6 @@ var VENUE_COLORS = {
   'Casa Neos Lounge':     {a:'#a3402d', b:'#7a2f21'}, /* Casa Neos brand red (shared family) */
   'HONO Lounge':          {a:'#1f6b4a', b:'#145038'}
 };
+
+/* DJ_PROFILES is no longer baked; keep lookups safe (empty list) so DJ suggestions never throw. */
+if(typeof DJ_PROFILES==='undefined') var DJ_PROFILES=[];

@@ -221,7 +221,30 @@ function checkDjSuggestion(){
   if(_djSuggestTimer) clearTimeout(_djSuggestTimer);
   _djSuggestTimer=setTimeout(_checkDjSuggestionNow, 120);
 }
+/* Phone Add/Edit Show: only last year's result for the same date, no heavy analysis blocks. */
+function _renderModalPyBlock(){
+  var el=document.getElementById('fldPyPerf');
+  if(!el) return;
+  var f=getFields();
+  var venue=f.venue.value, dateStr=f.date.value;
+  if(!venue||!dateStr){ el.innerHTML=''; return; }
+  var py=resolvePyFields(venue, dateStr);
+  var yr=(parseInt(dateStr.slice(0,4),10)||0)-1;
+  var h='<div class="mpy-hd">Prior year \u00b7 same date'+(yr?' ('+yr+')':'')+'</div>';
+  if(!py||!py.py_dj){
+    el.innerHTML=h+'<div class="mpy-none">No show last year on this date.</div>';
+    return;
+  }
+  function cell(l,v){ return '<div><span>'+l+'</span><b>'+v+'</b></div>'; }
+  el.innerHTML=h+'<div class="mpy-dj">'+djLabel(py.py_dj,'')+'</div>'
+    +'<div class="mpy-grid">'+cell('Fee',$k(py.py_fee))+cell('BS Target',$k(py.py_bs_m))+cell('BS Actual',$k(py.py_bs_a))
+    +cell('ROI Target',rx(py.py_roi_t))+cell('ROI Actual',rx(py.py_roi_a))+'</div>';
+}
 function _checkDjSuggestionNow(){
+  if(document.body.classList.contains('mobile-mode')){
+    try{ _renderModalPyBlock(); }catch(e){}
+    return;
+  }
   var f=getFields();
   var name=(f.dj.value||'').trim();
   var box=document.getElementById('fldDjSuggest');
@@ -468,7 +491,7 @@ function updateFeeTargetsPreview(){
   roiEl.textContent = tgt.roi_t!=null ? (Number(tgt.roi_t).toFixed(1)+'x') : '\u2014';
   if(f.bsm) f.bsm.value = tgt.bs_m!=null ? tgt.bs_m : '';
   if(f.roit) f.roit.value = tgt.roi_t!=null ? tgt.roi_t : '';
-  renderVipMinimumGuidance(venue,tgt.bs_m,vipEl);
+  if(!document.body.classList.contains('mobile-mode')) renderVipMinimumGuidance(venue,tgt.bs_m,vipEl);
 }
 function renderVipMinimumGuidance(venue,bsTarget,box){
   if(!box) return;

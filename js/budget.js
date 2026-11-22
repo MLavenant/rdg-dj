@@ -462,7 +462,8 @@ function renderBudgetFinancialTable(){
       var dayName=function(ds){ var d=_parseYmd(ds); return MNS[d.getMonth()]+' '+d.getDate(); };
       openNote='Through '+dayName(through)+' · prior year through '+dayName(pyThrough);
     }
-    var inTotal=cut.mode!=='future';
+    /* The Total column is the sum of every period, including months still ahead. */
+    var inTotal=true;
     if(inTotal&&bs.actual!=null){ bsA+=bs.actual; hasBsA=true; }
     if(inTotal&&bs.target!=null){ bsT+=bs.target; hasBsT=true; }
     if(inTotal&&bsPy.actual!=null){ bsP+=bsPy.actual; hasBsP=true; }
@@ -559,11 +560,11 @@ function renderBudgetPnlTable(){
     var aSum=0, tSum=0, pSum=0, hasA=false, hasT=false, hasP=false;
     var aN=0, tN=0, sN=0, lN=0, tsN=0, tlN=0, psN=0, plN=0;
     var aS=0, aL=0, tS=0, tL=0, pS=0, pL=0;
-    h+=bgtLabelCell(spec.label, spec.sub, bgtCompareLines(spec.pct?'pct':'year'));
+    h+=bgtLabelCell(spec.label, spec.sub, bgtCompareLines('perf'));
     months.forEach(function(row){
       var actual=row[spec.key], target=row[spec.key+'T'], prior=row[spec.key+'P'];
-      h+=bgtCompareCell(actual, target, prior, spec.fav, null, spec.pct?'pct':'year');
-      if(!row.hasNow) return;
+      h+=bgtCompareCell(actual, target, prior, spec.fav, null, spec.pct?'pct':'year', true);
+      /* Total is the sum of every period: this year's target and last year's full year. */
       if(spec.key==='margin'){
         if(row.sales!=null){ aS+=row.sales; sN++; }
         if(row.live!=null){ aL+=row.live; lN++; }
@@ -572,15 +573,15 @@ function renderBudgetPnlTable(){
         if(row.salesP!=null){ pS+=row.salesP; psN++; }
         if(row.liveP!=null){ pL+=row.liveP; plN++; }
       }else{
-        if(actual!=null){ aSum+=actual; hasA=true; aN++; }
+        if(row.hasNow&&actual!=null){ aSum+=actual; hasA=true; aN++; }
         if(target!=null){ tSum+=target; hasT=true; tN++; }
         if(prior!=null){ pSum+=prior; hasP=true; }
       }
     });
     if(spec.key==='margin'){
-      h+=bgtCompareCell(bgtMarginOf(lN?aL:null, sN?aS:null), bgtMarginOf(tlN?tL:null, tsN?tS:null), bgtMarginOf(plN?pL:null, psN?pS:null), 'under', null, 'pct');
+      h+=bgtCompareCell(bgtMarginOf(lN?aL:null, sN?aS:null), bgtMarginOf(tlN?tL:null, tsN?tS:null), bgtMarginOf(plN?pL:null, psN?pS:null), 'under', null, 'pct', true);
     }else{
-      h+=bgtCompareCell(hasA?Math.round(aSum):null, hasT?Math.round(tSum):null, hasP?Math.round(pSum):null, spec.fav, null, 'year');
+      h+=bgtCompareCell(hasA?Math.round(aSum):null, hasT?Math.round(tSum):null, hasP?Math.round(pSum):null, spec.fav, null, 'year', true);
     }
   });
   h+='</div></div>';
@@ -614,63 +615,84 @@ function bgtOtherExpenseRows(venue, year){
     return {label:label, sub:'2027 budget', months:book[label]};
   });
 }
+/* Actual spend for one Budget category: the Resident DJ Calendar columns that feed it. */
+function bgtResidentCatActual(venue, year, mm, cols, matchFn){
+  var sum=0;
+  if(typeof residentMonthTotal!=='function'||!matchFn) return 0;
+  cols.forEach(function(col){ if(matchFn(col)) sum+=+residentMonthTotal(venue, year, mm, col.id)||0; });
+  return Math.round(sum);
+}
+/* Target (yellow) over Actual. Over target is the bad direction for spend. */
+function bgtSpendCell(target, actual){
+  var t=target?Math.round(target):null, a=actual?Math.round(actual):null;
+  var tone=(t!=null&&a!=null)?(a<=t?' pos':' neg'):'';
+  return '<div class="bgt-monthly-cell bgt-trio-cell"><div class="bgt-trio">'
+    +bgtValueRow(t!=null?$k(t):'-', '', 'bgt-row-tgt', '')
+    +bgtValueRow(a!=null?$k(a):'-', 'bgt-trio-act'+tone, '', '')
+    +'</div></div>';
+}
 function renderBudgetGuestDjTable(){
   var host=document.getElementById('budgetGuestDjTable');
   if(!host) return;
-  var expenseRows=bgtOtherExpenseRows(bgtVenue, bgtYear);
-  var rows=expenseRows?[]:bgtSpendCategoryRows(bgtVenue);
-  var guest=new Array(13).fill(0), other=new Array(13).fill(0);
-  function money(n){ return '<div class="bgt-monthly-cell"><div class="bgt-monthly-value">'+$k(n||0)+'</div></div>'; }
-  function label(name, sub, cls){ return '<div class="bgt-monthly-cell bgt-monthly-label'+(cls?' '+cls:'')+'"><b>'+_escHtml(name)+'</b><span>'+sub+'</span></div>'; }
-  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd">Entertainment Spend by Category <span>Full year · Guest DJ matches the calendar budget</span>'
-    +'<button type="button" class="bgt-cat-add" onclick="bgtOpenResident()">Open Resident DJ Calendar</button></div>';
-  h+='<div class="bgt-monthly-grid">'+bgtMonthCellHeader();
+  var venue=bgtVenue, year=bgtYear;
+  var expenseRows=bgtOtherExpenseRows(venue, year);
+  var cols=(typeof residentCols==='function')?residentCols(venue):[];
+  var mms=[]; for(var i=1;i<=12;i++) mms.push(padMm(i));
+  var cats=[];
   if(expenseRows){
     expenseRows.forEach(function(row){
-      var yt=0;
-      h+=label(row.label, row.sub);
-      for(var mi=1;mi<=12;mi++){
-        var amt=+(row.months[padMm(mi)]||0);
-        other[mi]+=amt; yt+=amt;
-        h+=money(amt);
-      }
-      h+=money(yt);
+      var fn=(typeof RESIDENT_BUDGET_MATCH!=='undefined')?RESIDENT_BUDGET_MATCH[row.label]:null;
+      cats.push({
+        label:row.label,
+        t:mms.map(function(mm){ return +(row.months[mm]||0); }),
+        a:mms.map(function(mm){ return bgtResidentCatActual(venue, year, mm, cols, fn); })
+      });
+    });
+    /* Resident columns without a Budget line still count toward actual spend. */
+    cols.forEach(function(col){
+      if(typeof residentBudgetCat==='function' && residentBudgetCat(expenseRows, col)) return;
+      var a=mms.map(function(mm){ return Math.round(+residentMonthTotal(venue, year, mm, col.id)||0); });
+      if(a.some(function(v){ return v>0; })) cats.push({label:col.label, t:null, a:a});
     });
   }else{
-    rows.forEach(function(row){
-      if(!row.ids) return;
-      var yt=0;
-      h+=label(row.label, row.sub);
-      for(var mi=1;mi<=12;mi++){
-        var spend=bgtCategoryMonthSpend(bgtVenue,bgtYear,padMm(mi),row.ids)||0;
-        other[mi]+=spend; yt+=spend;
-        h+=money(spend);
-      }
-      h+=money(yt);
+    cols.forEach(function(col){
+      cats.push({label:col.label, t:null, a:mms.map(function(mm){ return Math.round(+residentMonthTotal(venue, year, mm, col.id)||0); })});
     });
   }
-  for(var gi=1;gi<=12;gi++){
-    var mm=padMm(gi);
-    var g=(typeof calGuestDjBudget==='function')?calGuestDjBudget(bgtVenue,bgtYear,mm):null;
-    guest[gi]=g&&g.amount!=null?Math.round(+g.amount):0;
+  /* Guest DJ: target from the calendar budget, actual from the Guest DJ Calendar (same as the table above). */
+  var gT=[], gA=[];
+  mms.forEach(function(mm){
+    var b=(typeof calGuestDjBudget==='function')?calGuestDjBudget(venue, year, mm):null;
+    gT.push(b&&b.amount!=null?Math.round(+b.amount):0);
+    var cut=bgtPeriodCutoff(year, mm);
+    var g=bgtMonthGuest(venue, year, mm, cut.mode==='mtd'?cut.through:null);
+    gA.push(g&&g.actual!=null?Math.round(+g.actual):0);
+  });
+  var tT=[], tA=[];
+  mms.forEach(function(mm, mi){
+    var t=gT[mi], a=gA[mi];
+    cats.forEach(function(c){ if(c.t) t+=c.t[mi]||0; a+=c.a[mi]||0; });
+    if(!expenseRows){
+      var plan=bgtNumOrNull(getBgtPlan(venue, year, mm, 'live'));
+      t=plan!=null?Math.round(plan):0;
+    }
+    tT.push(t); tA.push(a);
+  });
+  function sum(v){ return v.reduce(function(s,x){ return s+(x||0); }, 0); }
+  var h='<div class="bgt-monthly"><div class="bgt-monthly-hd">Entertainment Spend by Category <span>Target and actual · Guest DJ from the Guest DJ Calendar, other categories from the Resident DJ Calendar</span>'
+    +'<button type="button" class="bgt-cat-add" onclick="bgtOpenResident()">Open Resident DJ Calendar</button></div>';
+  h+='<div class="bgt-monthly-grid">'+bgtMonthCellHeader();
+  var lines=[{t:'Target',cls:'bgt-row-tgt'},{t:'Actual'}];
+  function addRow(title, sub, t, a, totalCls){
+    var tv=t||mms.map(function(){ return 0; });
+    h+='<div class="bgt-monthly-cell bgt-monthly-label'+(totalCls?' '+totalCls:'')+'"><b>'+_escHtml(title)+'</b><span>'+sub+'</span><div class="bgt-legend">'
+      +lines.map(function(l){ return '<div class="bgt-legend-row'+(l.cls?' '+l.cls:'')+'">'+l.t+'</div>'; }).join('')+'</div></div>';
+    mms.forEach(function(mm, mi){ h+=bgtSpendCell(tv[mi], a[mi]); });
+    h+=bgtSpendCell(sum(tv), sum(a));
   }
-  function sumRow(name, sub, vals){
-    var yt=0;
-    h+=label(name, sub, 'bgt-total-label');
-    for(var i=1;i<=12;i++){ yt+=vals[i]||0; h+=money(vals[i]); }
-    h+=money(yt);
-    return yt;
-  }
-  var total=new Array(13).fill(0);
-  for(var ti=1;ti<=12;ti++) total[ti]=(guest[ti]||0)+(other[ti]||0);
-  sumRow('Guest DJ', 'Guest DJ calendar budget', guest);
-  var ytTotal=sumRow('Total', 'Guest DJ + expenses', total);
-  /* Budget is the same sum. Others is not shown, so it is not added again. */
-  h+=label('Budget', 'Guest DJ + expenses', 'bgt-total-label bgt-bud-label');
-  for(var bi=1;bi<=12;bi++){
-    h+='<div class="bgt-monthly-cell bgt-bud-cell"><div class="bgt-monthly-value">'+$k(total[bi]||0)+'</div></div>';
-  }
-  h+='<div class="bgt-monthly-cell bgt-bud-cell"><div class="bgt-monthly-value">'+$k(ytTotal)+'</div></div>';
+  cats.forEach(function(c){ addRow(c.label, c.t?'Budget vs Resident DJ Calendar':'Resident DJ Calendar', c.t, c.a); });
+  addRow('Guest DJ', 'Guest DJ Calendar', gT, gA);
+  addRow('Total', 'Guest DJ + all categories', tT, tA, 'bgt-total-label');
   h+='</div></div>';
   host.innerHTML=h;
 }

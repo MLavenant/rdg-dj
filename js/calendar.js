@@ -364,6 +364,13 @@ function wireCalEditClicks(){
 function initCalColResize(){
   var table=document.querySelector('#calBody .sched-tbl');
   if(!table) return;
+  /* Phone: natural column widths, no fixed layout, so long DJ names never sit on top of the date. */
+  if(document.body.classList.contains('mobile-mode')){
+    table.style.removeProperty('table-layout');
+    table.style.removeProperty('zoom');
+    table.style.removeProperty('width');
+    return;
+  }
   var heads=Array.prototype.slice.call(table.querySelectorAll('thead th'));
   if(!heads.length) return;
   var saved={};
