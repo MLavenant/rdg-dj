@@ -186,7 +186,7 @@ function renderCal(){
         /* Click opens edit. Drag-to-move uses a small grip so HTML5 drag cannot swallow the click. */
         h+='<td class="sc-dj-cell" data-show-idx="'+idx+'" data-uid="'+showUid+'" data-action="editShow" style="cursor:pointer" title="Click to edit show">'
           +'<b class="dj-clickname '+bCls+'">'+nm+'</b>'
-          +'<span class="dj-fee-inline">'+$k(fee)+'</span>'
+          +(phone?'':'<span class="dj-fee-inline">'+$k(fee)+'</span>')
           +(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')
           +'</td>';
         if(!phone) h+=_vipCellHtml(r, idx, showUid, ri===0 ? (py||pyBlank) : null);

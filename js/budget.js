@@ -409,15 +409,17 @@ function bgtLabelCell(title, sub, lines){
 }
 function bgtCompareLines(kind){
   if(kind==='year') return [{t:String(bgtYear)},{t:'Target',cls:'bgt-row-tgt'},{t:String(+bgtYear-1),cls:'bgt-row-py'}];
+  if(kind==='perf') return [{t:String(bgtYear),cls:'bgt-row-tgt'},{t:String(+bgtYear-1),cls:'bgt-row-py'}];
   return [{t:'Act'},{t:'Target',cls:'bgt-row-tgt'},{t:'Prior year',cls:'bgt-row-py'}];
 }
-function bgtCompareCell(actual, target, prior, favorableWhen, forecast, kind){
+/* noAct: the Guest DJ Performance table shows only this year's target and last year. */
+function bgtCompareCell(actual, target, prior, favorableWhen, forecast, kind, noAct){
   var fmt=kind==='pct'?function(v){ return v==null?'-':(+v).toFixed(1)+'%'; }:function(v){ return bgtMoney1(v); };
   var basis=target!=null?target:prior;
   var variance=(actual!=null&&basis!=null)?(favorableWhen==='under'?(basis-actual):(actual-basis)):null;
   var tone=variance==null?'':(variance>=0?' pos':' neg');
   return '<div class="bgt-monthly-cell bgt-trio-cell"><div class="bgt-trio">'
-    +bgtValueRow(fmt(actual), 'bgt-trio-act'+tone, '', '')
+    +(noAct?'':bgtValueRow(fmt(actual), 'bgt-trio-act'+tone, '', ''))
     +bgtValueRow(fmt(target), '', 'bgt-row-tgt', bgtMove(actual, target, favorableWhen))
     +bgtValueRow(fmt(prior), '', 'bgt-row-py', bgtMove(actual, prior, favorableWhen))
     +'</div></div>';
@@ -474,25 +476,25 @@ function renderBudgetFinancialTable(){
     h=h.replace('GUEST DJ PERFORMANCE</b>','GUEST DJ PERFORMANCE</b><span>'+openNote+'</span>');
   }
 
-  h+=bgtLabelCell('Bottle Service Sales', 'Open month through today', bgtCompareLines());
+  h+=bgtLabelCell('Bottle Service Sales', 'Open month through today', bgtCompareLines('perf'));
   months.forEach(function(row){
-    h+=bgtCompareCell(row.bs.actual, row.bs.target, row.bsPy.actual, 'over');
+    h+=bgtCompareCell(row.bs.actual, row.bs.target, row.bsPy.actual, 'over', null, null, true);
   });
-  h+=bgtCompareCell(hasBsA?bsA:null, hasBsT?bsT:null, hasBsP?bsP:null, 'over');
+  h+=bgtCompareCell(hasBsA?bsA:null, hasBsT?bsT:null, hasBsP?bsP:null, 'over', null, null, true);
 
-  h+=bgtLabelCell('Guest DJ', 'Open month through today', bgtCompareLines());
+  h+=bgtLabelCell('Guest DJ', 'Open month through today', bgtCompareLines('perf'));
   months.forEach(function(row){
-    h+=bgtCompareCell(row.guest.actual, row.guest.target, row.guestPy.actual, 'under');
+    h+=bgtCompareCell(row.guest.actual, row.guest.target, row.guestPy.actual, 'under', null, null, true);
   });
-  h+=bgtCompareCell(hasGA?gA:null, hasGT?gT:null, hasGP?gP:null, 'under');
+  h+=bgtCompareCell(hasGA?gA:null, hasGT?gT:null, hasGP?gP:null, 'under', null, null, true);
 
-  h+=bgtLabelCell('Margin', 'Played Guest DJ / Bottle Service', [{t:'Act'},{t:'Prior year',cls:'bgt-row-py'},{t:'vs prior year'}]);
+  h+=bgtLabelCell('Margin', 'Played Guest DJ / Bottle Service', [{t:String(bgtYear)},{t:String(pyYear),cls:'bgt-row-py'},{t:'vs '+pyYear}]);
   months.forEach(function(row){
     h+=bgtMarginPyCell(bgtGuestMargin(row.guest.actual, row.bs.actual), bgtGuestMargin(row.guestPy.actual, row.bsPy.actual));
   });
   h+=bgtMarginPyCell(bgtGuestMargin(hasGA?gA:null, hasBsA?bsA:null), bgtGuestMargin(hasGP?gP:null, hasBsP?bsP:null));
 
-  h+=bgtLabelCell('ROI Beat &amp; Miss', 'Open month through today', [{t:'Act'},{t:'Prior year',cls:'bgt-row-py'},{t:'Beat'}]);
+  h+=bgtLabelCell('ROI Beat &amp; Miss', 'Open month through today', [{t:String(bgtYear)},{t:String(pyYear),cls:'bgt-row-py'},{t:'Beat'}]);
   var totRoi={beats:0,misses:0,measured:0,pct:null};
   var totPy={beats:0,misses:0,measured:0,pct:null};
   months.forEach(function(row){

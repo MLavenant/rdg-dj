@@ -1979,6 +1979,7 @@ body.mobile-mode #view-calendar.cal-phone .sched-tbl td{padding:7px 6px;white-sp
 body.mobile-mode #view-calendar.cal-phone .sched-tbl thead th{position:sticky;top:0;z-index:6;background:#f3f0ea!important;font-size:9px}
 body.mobile-mode #view-calendar.cal-phone .sc-date{width:auto;min-width:64px}
 body.mobile-mode #view-calendar.cal-phone .sc-dj{min-width:120px}
+body.mobile-mode #view-calendar .dj-fee-inline{display:none!important}
 body.mobile-mode #view-calendar.cal-phone .sc-phone-status{min-width:108px}
 body.mobile-mode #view-calendar.cal-phone .sc-phone-status .acct-status-wrap{display:flex}
 body.mobile-mode #view-calendar.cal-phone .sc-phone-status .acct-status-sel,

@@ -92,7 +92,115 @@ function residentSub(col, part){
   return col.id+(part==='paid'?'Paid':'Note');
 }
 function residentHasAmt(v){ return v!=null && v!=='' && isFinite(+v); }
-/* No per-column budget is stored yet, so Budget and Var stay blank until one exists. */
+/* Which Resident DJ column feeds each Budget category. */
+var RESIDENT_BUDGET_MATCH = {
+  'Resident DJ': function(c){ return c.id==='resident_dj'; },
+  'Resident DJ Lounge': function(c){ return c.id==='resident_dj'; },
+  'Resident DJ Rooftop': function(c){ return c.id==='resident_dj_rooftop'; },
+  'Light': function(c){ return c.id==='light_jockey'; },
+  'Hotel & Ground': function(c){ return c.id==='hotel' || c.id==='ground' || /^(hotel|ground)$/i.test(String(c.label||'').trim()); },
+  'Greeters': function(c){ return c.id==='greeters'; },
+  'Performers': function(c){ return c.id==='performers'; },
+  'Kryo': function(c){ return c.id==='kryo'; }
+};
+/* Budget categories that must exist as Resident DJ columns, added once and never removed. */
+var RESIDENT_BUDGET_COLS = {
+  'Casa Neos Beach Club': [{id:'performers', label:'Performers', kind:'role', after:'kryo'}],
+  'Casa Neos Lounge': [
+    {id:'resident_dj_rooftop', label:'Resident DJ Rooftop', kind:'role', after:'resident_dj'},
+    {id:'greeters', label:'Greeters', kind:'role', after:'light_jockey'}
+  ]
+};
+var RESIDENT_BUDGET_RENAME = {'Casa Neos Lounge': {resident_dj:'Resident DJ Lounge'}};
+function residentBudgetRows(venue, fiscalYear){
+  if(typeof bgtOtherExpenseRows!=='function') return null;
+  try{ return bgtOtherExpenseRows(venue, fiscalYear); }catch(e){ return null; }
+}
+function residentBudgetCat(rows, col){
+  if(!rows || !col) return null;
+  for(var i=0;i<rows.length;i++){
+    var fn=RESIDENT_BUDGET_MATCH[rows[i].label];
+    if(fn && fn(col)) return rows[i];
+  }
+  return null;
+}
+/* Adds the missing Budget categories as columns once per location. Existing columns and data stay. */
+function residentEnsureBudgetCols(){
+  if(!window._fbDb || window._residentBudgetColsChecked) return;
+  window._residentBudgetColsChecked=true;
+  Object.keys(RESIDENT_BUDGET_COLS).forEach(function(venue){
+    var vk=residentVenueKey(venue);
+    try{
+      window._fbDb.ref('rdg/residentCols/'+vk).transaction(function(cur){
+        if(!cur || cur.budgetColsV1 || !cur.cols) return;
+        var cols=residentList(cur.cols).filter(function(c){ return c && c.id && c.label; });
+        if(!cols.length) return;
+        var rename=RESIDENT_BUDGET_RENAME[venue]||{};
+        cols=cols.map(function(c){
+          return rename[c.id] ? {id:c.id, label:rename[c.id], kind:c.kind} : c;
+        });
+        RESIDENT_BUDGET_COLS[venue].forEach(function(add){
+          if(cols.some(function(c){ return c.id===add.id; })) return;
+          var at=-1;
+          cols.forEach(function(c, i){ if(c.id===add.after) at=i; });
+          var item={id:add.id, label:add.label, kind:add.kind};
+          if(at>=0) cols.splice(at+1, 0, item); else cols.push(item);
+        });
+        cur.cols=cols;
+        cur.budgetColsV1=true;
+        return cur;
+      });
+    }catch(e){}
+  });
+}
+/* Footer row: month total per column, with the Budget page's budget and the variance.
+   Budget is other expenses only; Guest DJ is not part of it. */
+function residentFootRowHtml(venue, yr, mm, cols){
+  var h='<td class="sc-date-cell">Month</td><td></td>';
+  var budRows=residentBudgetRows(venue, yr);
+  var colTotals={}, grand=0, anyGrand=false;
+  cols.forEach(function(col){
+    var s=residentMonthTotal(venue, yr, mm, col.id);
+    colTotals[col.id]=s;
+    if(s){ grand+=s; anyGrand=true; }
+  });
+  var totalBudget=null;
+  if(budRows){
+    totalBudget=0;
+    budRows.forEach(function(r){ totalBudget+=+(r.months[mm]||0); });
+  }
+  var usedCat={};
+  for(var fi=0; fi<cols.length; fi++){
+    var fcol=cols[fi];
+    var cat=residentBudgetCat(budRows, fcol);
+    if(cat && usedCat[cat.label]) cat=null;
+    var fsum=colTotals[fcol.id]||0;
+    var fspan=fcol.kind==='role'?2:1;
+    var fbud=null;
+    if(cat){
+      usedCat[cat.label]=true;
+      fbud=+(cat.months[mm]||0);
+      /* Hotel and Ground are two columns with one budget line, so they share one footer cell. */
+      while(fi+1<cols.length && residentBudgetCat(budRows, cols[fi+1])===cat){
+        fi++;
+        fsum+=colTotals[cols[fi].id]||0;
+        fspan+=cols[fi].kind==='role'?2:1;
+      }
+    }
+    h+='<td class="res-split res-foot-cell"'+(fspan>1?' colspan="'+fspan+'"':'')+'>'+residentFootHtml(fsum, fbud)+'</td>';
+  }
+  h+='<td class="res-split">'+residentFootHtml(anyGrand?grand:0, totalBudget)+'</td>';
+  return h;
+}
+function residentPaintFoot(){
+  var body=document.getElementById('residentBody');
+  if(!body || !residentOn()) return;
+  var row=body.querySelector('tfoot tr.res-foot-row');
+  if(!row) return;
+  var here=residentHere();
+  var mm=(here.month+1<10?'0':'')+(here.month+1);
+  row.innerHTML=residentFootRowHtml(here.venue, here.year, mm, residentCols());
+}
 function residentFootHtml(sum, budget){
   var variance=budget!=null?Math.round(+budget-(+sum||0)):null;
   var cls=variance==null?'':(variance>=0?'res-var-good':'res-var-bad');
@@ -227,6 +335,7 @@ function residentEdit(el){
   }
   residentPaintCell(tr, col);
   residentPaintTotal(tr);
+  residentPaintFoot();
   residentPaintPaybar();
 }
 function residentFormatMoneyInput(el, n){
@@ -627,16 +736,7 @@ function renderResidentCalendar(){
     h+='</tr>';
   });
   var mm=(mo+1<10?'0':'')+(mo+1);
-  var grand=0, anyGrand=false;
-  h+='</tbody><tfoot><tr class="res-foot-row"><td class="sc-date-cell">Month</td><td></td>';
-  cols.forEach(function(col){
-    var sum=residentMonthTotal(here.venue, yr, mm, col.id);
-    if(sum){ grand+=sum; anyGrand=true; }
-    var cell=residentFootHtml(sum, null);
-    if(col.kind==='role') h+='<td class="res-split res-foot-cell" colspan="2">'+cell+'</td>';
-    else h+='<td class="res-split res-foot-cell">'+cell+'</td>';
-  });
-  h+='<td class="res-split">'+residentFootHtml(anyGrand?grand:0, null)+'</td></tr></tfoot></table>';
+  h+='</tbody><tfoot><tr class="res-foot-row">'+residentFootRowHtml(here.venue, yr, mm, cols)+'</tr></tfoot></table>';
   body.innerHTML=h;
   var table=body.querySelector('table');
   if(table) table.style.width=Math.max(tableW, body.clientWidth||0)+'px';
@@ -1069,6 +1169,7 @@ function residentPaintFromStore(){
     cols.forEach(function(col){ residentPaintCell(tr, col); });
     residentPaintTotal(tr);
   });
+  residentPaintFoot();
   residentPaintPaybar();
 }
 function residentColsSignature(){
@@ -1098,6 +1199,7 @@ function initResidentDj(){
   window._fbDb.ref('rdg/residentCols').on('value', function(snap){
     var before=residentColsSignature();
     RESIDENT_COLS=snap.val()||{};
+    residentEnsureBudgetCols();
     if(residentOn() && residentColsSignature()!==before){
       var ae=document.activeElement;
       var body=document.getElementById('residentBody');

@@ -2759,7 +2759,8 @@ function leaderboardSuggestedFee(avgBS, avgFeePaid, beatRatePct){
   return Math.max(floor, Math.min(paid, fair));
 }
 function setBudgetSubTab(tab){
-  budgetSubTab = tab==='planner' ? 'planner' : 'overview';
+  /* The Budget Planner tab is removed. Overview is the only Budget page. */
+  budgetSubTab = 'overview';
   var tO=document.getElementById('bgtTabOverview');
   var tP=document.getElementById('bgtTabPlanner');
   if(tO) tO.classList.toggle('on', budgetSubTab==='overview');
