@@ -1121,7 +1121,7 @@ function renderLeaderboard(){
     h+='<td style="text-align:center">'+r.n+'</td>';
     h+='<td style="text-align:center" title="'+r.beats+' beat / '+r.misses+' miss">'+r.beats+'/'+r.misses+'</td>';
     h+='<td class="'+(r.br>=60?'hit':'low')+'" style="text-align:center;font-weight:700">'+r.br+'%</td>';
-    h+='<td class="'+(r.br>=60?'hit':'low')+'" style="font-weight:700">'+r.avgROI.toFixed(2)+'x</td>';
+    h+='<td class="'+(r.br>=60?'hit':'low')+'" style="font-weight:700">'+r.avgROI.toFixed(1)+'x</td>';
     h+='<td>'+$k(r.avgBS)+'</td>';
     h+='<td style="color:var(--ink3)">'+$k(r.avgFeePaid)+'</td>';
     h+='<td class="'+fairCls+'" style="font-weight:800" title="'+suggTitle+'">'+$k(r.fairFee)+'</td>';
@@ -1213,7 +1213,7 @@ function renderDJDetail(djEnc){
   [
     {l:'Shows',v:shows.length,c:''},
     {l:'ROI score',v:roiScore==null?'-':roiScoreText(roiScore)+'/10',c:roiScore!=null&&roiScore>=6?'hit':(roiScore!=null?'low':'')},
-    {l:'Avg ROI',v:avgROI?avgROI.toFixed(2)+'x':'-',c:bCls},
+    {l:'Avg ROI',v:avgROI?avgROI.toFixed(1)+'x':'-',c:bCls},
     {l:'Beat rate',v:meas?Math.round(beats/meas*100)+'%':'-',c:bCls},
     {l:'Avg BS/show',v:$k(avgBS),c:''},
     {l:'Avg fee paid',v:$k(avgFeePaid),c:''},
@@ -4486,7 +4486,7 @@ function _sanityCalendarSheet(rows){
     });
     ['G','H'].forEach(function(col){
       var cell=ws[col+i];
-      if(cell&&typeof cell.v==='number') cell.z='0.00"x"';
+      if(cell&&typeof cell.v==='number') cell.z='0.0"x"';
     });
   }
   return ws;

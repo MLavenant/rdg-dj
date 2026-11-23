@@ -1576,7 +1576,7 @@ function renderMonthDrill(mm){
       html+='<div class="'+pyBCls+'" style="font-weight:600">'+(bpy.py_bs_a?$m(bpy.py_bs_a):'-')+'</div>';
       html+='<div class="'+roiTone(bpy.py_roi_a, bpy.py_roi_t)+'">'+(bpy.py_roi_a!=null?Number(bpy.py_roi_a).toFixed(1)+'x':'-')+'</div>';
       html+='<div class="'+pCls+'" style="font-weight:800">'+(projBSrow?$m(projBSrow):'-')+'</div>';
-      html+='<div style="color:var(--blue);font-weight:600">'+(projBSrow&&fee?+(projBSrow/fee).toFixed(2)+'x':'-')+'</div>';
+      html+='<div style="color:var(--blue);font-weight:600">'+(projBSrow&&fee?+(projBSrow/fee).toFixed(1)+'x':'-')+'</div>';
       html+='<div style="font-size:9px;color:var(--ink3)">'+(r.ev||'')+'</div>';
       html+='<div class="bgt-del" data-si="'+si+'">&#215;</div>';
       html+='</div>';

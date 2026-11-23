@@ -1594,7 +1594,7 @@ function renderKPIs() {
   var totalBS  = bsRecs.reduce(function(s,r){return s+(r.bs_a||0);},0);
   var totalBSM = bsRecs.reduce(function(s,r){return s+(r.bs_m||0);},0);
   var rois     = bsRecs.filter(function(r){return r.roi_a;}).map(function(r){return r.roi_a;});
-  var avgROI   = rois.length ? (rois.reduce(function(a,b){return a+b;},0)/rois.length).toFixed(2)+'x' : '-';
+  var avgROI   = rois.length ? (rois.reduce(function(a,b){return a+b;},0)/rois.length).toFixed(1)+'x' : '-';
   var upcoming = shows.filter(function(r){return r._s==='fut'||r._s==='tbd';}).length;
   /* "Total DJ cost"   every scheduled show's fee, matching the Budget-tab / banner definition
      exactly (SCHED-based, not limited to shows that already have BS actual data). */
@@ -1790,7 +1790,7 @@ function liveDjPerfStats(name){
   return {
     n:n, beats:beats, meas:meas,
     beat_rate: meas?Math.round(beats/meas*100):0,
-    avg_roi_a: +(rois.reduce(function(a,b){return a+b;},0)/rois.length).toFixed(2),
+    avg_roi_a: +(rois.reduce(function(a,b){return a+b;},0)/rois.length).toFixed(1),
     avg_bs: Math.round(tBS/n),
     avg_fee: Math.round(tFee/n),
     display: display||name.trim()

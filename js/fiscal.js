@@ -372,12 +372,9 @@ function rx1(n) {
   if (n == null || isNaN(+n)) return '-';
   return (Math.round(+n * 10) / 10).toFixed(1) + 'x';
 }
+/* Every ROI multiple (actual and target) shows one decimal. */
 function rx(n) {
-  if (n == null || isNaN(+n)) return '-';
-  var v = Math.round(+n * 1000) / 1000;
-  var tenth = Math.round(v * 10) / 10;
-  var s = Math.abs(v - tenth) < 0.0005 ? tenth.toFixed(1) : String(v);
-  return s + 'x';
+  return rx1(n);
 }
 /* ROI color vs target (1-decimal): above = green, equal or within 0.1 below = orange, else red */
 function roiTone(actual, target){
