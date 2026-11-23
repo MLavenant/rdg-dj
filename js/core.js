@@ -400,14 +400,14 @@ var FV_3D_TABLES = {
     {name:'SLIP',color:'rgb(96,165,250)',minimum:5000,capacity:8,tables:['D1','D2','D3']}
   ],
   /* Current waterfront plan from beachclub.casa-neos.com on Oct 17, 2026 (new.glb?v=8).
-     Live rate map: Diamond 51/52/53 · Prestige 41/47 · Platinum ×12 · Gold 19–29 · Slips D3–D5.
+     Live rate map: Diamond 51/52/53 · Prestige 41/47 · Platinum ×12 · Gold 19–27 · Slips D4–D5 (28 tables; 28, 29 and D3 removed Nov 23).
      Legend capacities are Diamond 10, Prestige 10, Platinum 8, Gold 8. */
   'casa-neos-beach-club-oct17':[
     {name:'DIAMOND',color:'rgb(3,169,244)',minimum:5000,capacity:10,tables:['51','52','53']},
     {name:'PRESTIGE',color:'rgb(139,195,74)',minimum:4000,capacity:10,tables:['41','47']},
     {name:'PLATINUM',color:'rgb(158,158,158)',minimum:3500,capacity:8,tables:['31','32','33','34','35','36','42','43','46','54','55','56']},
-    {name:'GOLD',color:'rgb(251,192,45)',minimum:3000,capacity:8,tables:['19','20','21','22','23','24','25','26','27','28','29']},
-    {name:'SLIP',color:'rgb(96,165,250)',minimum:5000,capacity:8,tables:['D3','D4','D5']}
+    {name:'GOLD',color:'rgb(251,192,45)',minimum:3000,capacity:8,tables:['19','20','21','22','23','24','25','26','27']},
+    {name:'SLIP',color:'rgb(96,165,250)',minimum:5000,capacity:8,tables:['D4','D5']}
   ],
   /* Art Basel — live casa-neos.com/casaneos-beach-club map, Fri Dec 4 – Sun Dec 6 2026 only.
      Essential×4 · Premier×10 · Grand×2 · Select×7 · Signature×15 · Reserve×5 · Slip×5.
@@ -501,14 +501,13 @@ var FV_3D_HOTSPOTS = {
     '17':[18.692,1.02,5.288],'18':[16.367,1.02,5.333],'19':[14.326,1.02,5.363],
     '20':[12.114,1.02,5.374],'21':[9.947,1.02,5.371],'22':[7.756,1.02,5.117],
     '23':[5.578,1.02,4.997],'24':[3.335,1.02,4.855],'25':[0.183,1.02,4.776],
-    '26':[-2.135,1.02,4.477],'27':[-4.332,1.02,4.322],'28':[12.273,1.02,3.594],
-    '29':[10.096,1.02,3.473],'31':[2.984,1.02,2.655],'32':[0.590,1.02,2.655],
+    '26':[-2.135,1.02,4.477],'27':[-4.332,1.02,4.322],'31':[2.984,1.02,2.655],'32':[0.590,1.02,2.655],
     '33':[0.442,1.02,0.545],'34':[0.442,1.02,-0.910],'35':[3.156,1.02,-0.875],
     '36':[3.156,1.02,0.580],'41':[6.111,1.02,1.746],'42':[5.707,1.02,-0.722],
     '43':[5.799,1.02,-3.039],'46':[-1.747,1.02,-0.722],'47':[-2.343,1.02,1.746],
     '51':[5.935,1.02,-5.933],'52':[0.251,1.02,-5.933],'53':[-2.551,1.02,-4.171],
     '54':[-3.817,1.02,-1.831],'55':[-4.948,1.02,0.159],'56':[-6.780,1.02,3.175],
-    'D3':[17.365,1.05,8.067],'D4':[7.631,1.05,7.827],'D5':[-2.134,1.05,7.269]
+    'D4':[7.631,1.05,7.827],'D5':[-2.134,1.05,7.269]
   },
   /* Art Basel — node translations from neos-big.glb?v=7. D1, D2 and P70 are on the booking map without a mesh. */
   'casa-neos-beach-club-basel':{
@@ -647,7 +646,8 @@ function ensureDefaultRoiFloorPlans(){
       var tier=(plan.tables||[]).find(function(t){ return String(t.name||'').toUpperCase()===name; });
       return (tier&&tier.tables?tier.tables:[]).map(String).sort().join(',');
     }
-    return ids('DIAMOND')==='51,52,53' && ids('PRESTIGE')==='41,47';
+    return ids('DIAMOND')==='51,52,53' && ids('PRESTIGE')==='41,47'
+      && ids('GOLD')==='19,20,21,22,23,24,25,26,27' && ids('SLIP')==='D4,D5';
   }
   if(!hasPreset('Casa Neos Beach Club','casa-neos-beach-club-oct17')){
     ROI_FLOOR_PLANS.fp_cnbc_current_20261017={

@@ -211,7 +211,7 @@ function renderCal(){
         h+='<td class="sc-num '+bCls+'"'+(tSty?' style="'+tSty+'"':'')+'><b>'+$k(r.bs_a)+'</b>'
           +(bCls?'<div class="sc-beat-icon">'+bsToneIcon(bCls)+'</div>':'')+'</td>';
         var pastRoi=typeof isPastPerformanceDate==='function' && isPastPerformanceDate(r.d);
-        h+='<td class="sc-num"'+(pastRoi?' data-action="editPastRoi" data-show-idx="'+idx+'" data-uid="'+showUid+'"':'')+'>'+rx(roiT)+'</td>';
+        h+='<td class="sc-num"'+(pastRoi?' data-action="editPastRoi" data-show-idx="'+idx+'" data-uid="'+showUid+'"':'')+'>'+rx1(roiT)+'</td>';
         h+='<td class="sc-num '+rCls+'"'+(tSty?' style="'+tSty+'"':'')+'><b>'+rx(r.roi_a)+'</b>'
           +(rCls?'<div class="sc-beat-icon">'+roiToneIcon(rCls)+'</div>':'')+'</td>';
         if(ri===0){
@@ -649,7 +649,7 @@ function openShow3dModal(idx){
     +'<div class="modal-hd"><h3>'+venue+(planLbl?' \u00b7 '+planLbl:'')+' \u00b7 3D tier pricing</h3><button class="modal-close" onclick="closeShow3dModal()">&#10005;</button></div>'
     +'<div class="modal-body">'
     +'<div style="font-size:11px;color:var(--ink2);margin-bottom:8px"><b>'+(djLabel(r.dj)||'TBD')+'</b> \u00b7 '+r.d
-      +' \u00b7 Fee <b>'+$k(fee)+'</b> \u00b7 BS Target <b>'+$k(tgt.bs_m)+'</b> \u00b7 ROI Target <b>'+rx(tgt.roi_t)+'</b>'
+      +' \u00b7 Fee <b>'+$k(fee)+'</b> \u00b7 BS Target <b>'+$k(tgt.bs_m)+'</b> \u00b7 ROI Target <b>'+rx1(tgt.roi_t)+'</b>'
       +(summer?' \u00b7 <span style="color:#0f766e">Sunset Rituals · Aug\u2013Sep only</span>':'')
       +(oct?' \u00b7 <span style="color:#b45309">Lounge Oct 1 floor</span>':'')
       +(remodel?' \u00b7 <span style="color:#7c3aed">Lounge remodel · Sep 25–30</span>':'')+'</div>'
@@ -906,7 +906,7 @@ function renderAllShows(){
     h+='<td>'+$k(fee)+'</td>';
     h+='<td>'+$k(bsM)+'</td>';
     h+='<td class="'+bCls+'"><b>'+$k(r.bs_a)+'</b></td>';
-    h+='<td>'+rx(roiT)+'</td>';
+    h+='<td>'+rx1(roiT)+'</td>';
     h+='<td class="'+rCls+'"><b>'+rx(r.roi_a)+'</b></td>';
     h+='<td><span class="pill '+stPill+'">'+stLabel+'</span></td>';
     h+='</tr>';
@@ -1256,7 +1256,7 @@ function renderDJDetail(djEnc){
     h+='<td>'+$k(r.cost)+feeFlag+'</td>';
     h+='<td>'+$k(r.bs_m)+'</td>';
     h+='<td class="'+bsCls+'"><b>'+$k(r.bs_a)+'</b></td>';
-    h+='<td>'+rx(r.roi_t)+'</td>';
+    h+='<td>'+rx1(r.roi_t)+'</td>';
     h+='<td class="'+rCls+'"><b>'+rx(r.roi_a)+'</b></td>';
     h+='<td><span class="pill '+(r.beat===1?'p-beat':r.beat===0?'p-miss':'p-nd')+'">'+(r.beat===1?'Beat':r.beat===0?'Miss':'N/A')+'</span></td>';
     h+='</tr>';

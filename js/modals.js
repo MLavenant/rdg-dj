@@ -238,7 +238,7 @@ function _renderModalPyBlock(){
   function cell(l,v){ return '<div><span>'+l+'</span><b>'+v+'</b></div>'; }
   el.innerHTML=h+'<div class="mpy-dj">'+djLabel(py.py_dj,'')+'</div>'
     +'<div class="mpy-grid">'+cell('Fee',$k(py.py_fee))+cell('BS Target',$k(py.py_bs_m))+cell('BS Actual',$k(py.py_bs_a))
-    +cell('ROI Target',rx(py.py_roi_t))+cell('ROI Actual',rx(py.py_roi_a))+'</div>';
+    +cell('ROI Target',rx1(py.py_roi_t))+cell('ROI Actual',rx(py.py_roi_a))+'</div>';
 }
 function _checkDjSuggestionNow(){
   if(document.body.classList.contains('mobile-mode')){

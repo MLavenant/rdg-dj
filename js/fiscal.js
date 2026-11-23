@@ -346,7 +346,7 @@ function _pyCellsHtml(py, rowspan){
   h+='<td class="sc-num fee-cell '+(pyFeeCls||'py-dim')+'"'+rs+'>'+$k(py.py_fee)+'</td>';
   h+='<td class="sc-num py-dim"'+rs+'>'+$k(py.py_bs_m)+'</td>';
   h+='<td class="sc-num '+pyBCls+'"'+rs+'><b>'+$k(py.py_bs_a)+'</b></td>';
-  h+='<td class="sc-num py-dim"'+rs+'>'+rx(py.py_roi_t)+'</td>';
+  h+='<td class="sc-num py-dim"'+rs+'>'+rx1(py.py_roi_t)+'</td>';
   h+='<td class="sc-num '+pyRCls+'"'+rs+'><b>'+rx(py.py_roi_a)+'</b></td>';
   return h;
 }
@@ -366,6 +366,11 @@ function $kv(n) {
   if (a >= 1e6)  return s + '$' + (a/1e6).toFixed(2) + 'M';
   if (a >= 1000) return s + '$' + (a/1000).toFixed(1).replace(/\.0$/,'') + 'K';
   return s + '$' + Math.round(a);
+}
+/* ROI target: one decimal (3.75 shows 3.8x). */
+function rx1(n) {
+  if (n == null || isNaN(+n)) return '-';
+  return (Math.round(+n * 10) / 10).toFixed(1) + 'x';
 }
 function rx(n) {
   if (n == null || isNaN(+n)) return '-';
