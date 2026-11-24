@@ -168,13 +168,13 @@ function renderAccountingGuest(yr, mo, mm, days){
     });
   });
   var summaryHtml='<div class="acct-summary">';
-  summaryHtml+='<div class="acct-sum-item'+(!_acctStatusFilter?' acct-sum-active':'')+'" data-filter="__all__"><b>'+totalShowsThisMonth+'</b><span>Shows this month</span></div>';
+  /* Top strip: TO PAY, then AP statuses that are in use (Missing Contract / Invoice and the rest). No DJ-status tiles. */
   if(+yr>=2027){
     summaryHtml+='<div class="acct-sum-item acct-sum-topay'+(_acctStatusFilter==='__topay__'?' acct-sum-active':'')+'" data-filter="__topay__" title="Finance Approved + DJ Confirmed + invoice dropped + contract dropped"><b>'+toPayCount+'</b><span>To pay'+(toPayAmt?' &middot; '+$k(toPayAmt):'')+'</span></div>';
   }
-  ACCT_STATUS_OPTIONS.concat(['Not set']).forEach(function(s){
+  ACCT_AP_STATUS.forEach(function(s){
     if(!statusCounts[s]) return;
-    var cls=acctStatusClass(s==='Not set'?null:s);
+    var cls=acctStatusClass(s);
     var active=_acctStatusFilter===s;
     summaryHtml+='<div class="acct-sum-item '+cls+(active?' acct-sum-active':'')+'" data-filter="'+s+'"><b>'+statusCounts[s]+'</b><span>'+s+'</span></div>';
   });
@@ -264,12 +264,12 @@ function renderAccountingGuest(yr, mo, mm, days){
           +(isToday?'<span class="sc-today-badge"> Today</span>':'')
           +'</td>';
       }
-      h+='<td class="sc-dj-cell"><b>'+nm+'</b>'+(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')+'</td>';
+      h+='<td class="sc-dj-cell acct-hist-cell" data-uid="'+showUid+'" data-ds="'+ds+'" title="Right-click for audit trail"><b class="acct-dj-name">'+nm+'</b>'+(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')+'</td>';
       var agencyEsc=String(r.agency||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
       h+='<td class="acct-agency-cell">'
         +'<input type="text" class="acct-agency-inp" data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="acctAgency" value="'+agencyEsc+'" placeholder="Agency" title="Agency name">'
         +'</td>';
-      h+='<td class="sc-num acct-col-fee fee-cell '+(feeCls||'')+'">'+$k(r.fee||r.cost||null)+'</td>';
+      h+='<td class="sc-num acct-col-fee fee-cell acct-hist-cell '+(feeCls||'')+'" data-uid="'+showUid+'" data-ds="'+ds+'" title="Right-click for audit trail">'+$k(r.fee||r.cost||null)+'</td>';
       var finHtml='—';
       if(tracked && typeof faFinanceSelectHtml==='function') finHtml=faFinanceSelectHtml(r, ds, idx);
       /* Finance turns green on Finance Approved. DJ Status turns green only on Confirmed, otherwise it stays red. */
@@ -278,7 +278,7 @@ function renderAccountingGuest(yr, mo, mm, days){
       if(showFin){
         h+='<td class="acct-fin-cell acct-pair '+finCls+'">'+finHtml+'</td>';
       }
-      h+='<td class="acct-dj-cell acct-pair '+djCls+'"><b>'+(djSt?_escHtml(djSt):'Not set')+'</b></td>';
+      h+='<td class="acct-dj-cell acct-hist-cell acct-pair '+djCls+'" data-uid="'+showUid+'" data-ds="'+ds+'" title="Right-click for audit trail"><b>'+(djSt?_escHtml(djSt):'Not set')+'</b></td>';
       if(ri===0){
         var docsOk=typeof acctGapStatus==='function'?!acctGapStatus(acct):false;
         var docTone=docsOk?'ok':'wait';

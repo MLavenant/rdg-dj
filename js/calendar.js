@@ -2046,7 +2046,6 @@ function showHistIsGuest(field){
   return f==='dj'||f==='dj name'||f==='guest dj'||f==='fee'||f==='finance status'||f==='finance'||f==='dj status';
 }
 function showCalHistory(uid, ds, djName){
-  if(typeof signInIsOwner!=='function' || !signInIsOwner()) return;
   var seen={};
   var list=[];
   function add(e){
@@ -2098,19 +2097,19 @@ function showCalHistory(uid, ds, djName){
 function wireShowCalHistory(){
   if(window._showCalHistBound) return;
   window._showCalHistBound=true;
+  /* Audit trail on right-click: open to every signed-in user. DJ, fee and status cells on the calendar and Accounting. */
   document.addEventListener('contextmenu',function(e){
-    if(typeof signInIsOwner!=='function' || !signInIsOwner()) return;
     var t=e.target;
     if(!t||!t.closest) return;
-    var fee=t.closest('#calBody td.fee-cell');
+    var cell=t.closest('#calBody td.fee-cell, #calBody td.sc-dj-cell, #acctBody td.acct-hist-cell');
     var status=t.closest('#calBody [data-action="djStatus"]');
-    if(!fee && !status) return;
+    if(!cell && !status) return;
     e.preventDefault();
-    var cell=fee||status.closest('td');
+    if(!cell) cell=status.closest('td');
     var tr=cell&&cell.closest?cell.closest('tr'):null;
-    var uid=fee?(fee.getAttribute('data-uid')||''):(status.getAttribute('data-uid')||'');
-    var ds=(status&&status.getAttribute('data-ds'))||(tr&&tr.getAttribute('data-cal-ds'))||'';
-    var djEl=tr&&tr.querySelector?tr.querySelector('.dj-clickname'):null;
+    var uid=(cell&&cell.getAttribute('data-uid'))||(status&&status.getAttribute('data-uid'))||'';
+    var ds=(status&&status.getAttribute('data-ds'))||(cell&&cell.getAttribute('data-ds'))||(tr&&tr.getAttribute('data-cal-ds'))||'';
+    var djEl=tr&&tr.querySelector?tr.querySelector('.dj-clickname, .acct-dj-name'):null;
     showCalHistory(uid, ds, djEl?djEl.textContent:'');
   }, true);
 }

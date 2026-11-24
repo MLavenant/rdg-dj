@@ -1110,8 +1110,9 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 #view-accounting:not(.acct-others-mode) .acct-tbl thead th{text-align:center!important;vertical-align:middle!important;padding:8px 6px!important}
 #view-accounting:not(.acct-others-mode) .acct-doc-cell{padding:0!important;position:relative}
 /* Drop zones size to their content so no PDF chip is ever clipped. The row grows with up to 5 files. */
-#view-accounting:not(.acct-others-mode) .acct-doc-cell{min-width:210px;vertical-align:middle!important}
-#view-accounting:not(.acct-others-mode) .acct-doc-drop{position:relative;inset:auto;height:auto;min-height:calc(var(--acct-guest-row-h, 48px) - 2px);overflow:visible;border-radius:0;box-sizing:border-box;justify-content:center}
+/* Invoice and Contract boxes always match: both fill the full cell height (no gap between dates). */
+#view-accounting:not(.acct-others-mode) .acct-doc-cell{min-width:210px;width:50%;height:1px;vertical-align:top!important;padding:0!important;border-bottom:0!important}
+#view-accounting:not(.acct-others-mode) .acct-doc-drop{position:relative;inset:auto;height:100%;min-height:calc(var(--acct-guest-row-h, 48px) - 1px);overflow:visible;border-radius:0;box-sizing:border-box;justify-content:center;margin:0}
 #view-accounting:not(.acct-others-mode) .acct-doc-hint{align-self:center;flex-wrap:wrap;width:max-content;max-width:calc(100% - 10px);border:1.5px solid #0b2e40;border-radius:999px;padding:4px 12px;background:#fff;cursor:pointer}
 #view-accounting:not(.acct-others-mode) .acct-doc-chip{align-items:flex-start}
 #view-accounting:not(.acct-others-mode) .acct-doc-chip a{overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;word-break:break-word;line-height:1.25}
