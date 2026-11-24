@@ -5,10 +5,10 @@ on:
     branches: [main]
   workflow_dispatch:
     inputs:
-      retry:
+      attempt:
         description: 'Set by the auto-retry job'
         required: false
-        default: 'false'
+        default: '0'
 
 permissions:
   contents: read
@@ -54,6 +54,9 @@ jobs:
         with:
           path: _site
 
+      - name: Let the uploaded artifact register
+        run: sleep 20
+
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
@@ -63,7 +66,7 @@ jobs:
   # GitHub sometimes loses the Pages artifact right after upload. One automatic fresh run fixes it.
   retry:
     needs: deploy
-    if: failure() && github.event.inputs.retry != 'true'
+    if: failure() && fromJSON(github.event.inputs.attempt || '0') < 3
     runs-on: ubuntu-latest
     permissions:
       actions: write
@@ -71,6 +74,7 @@ jobs:
       - name: Re-run deploy once
         env:
           GH_TOKEN: ${{ github.token }}
+          ATTEMPT: ${{ github.event.inputs.attempt || '0' }}
         run: |
-          sleep 90
-          gh workflow run deploy-pages.yml --repo ${{ github.repository }} --ref main -f retry=true
+          sleep 60
+          gh workflow run deploy-pages.yml --repo ${{ github.repository }} --ref main -f attempt=$((ATTEMPT + 1))
