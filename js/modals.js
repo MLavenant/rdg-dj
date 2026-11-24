@@ -442,14 +442,33 @@ function editVipNote(idx, uid){
   }catch(eLy){}
   var msg='VIP comment';
   if(ly && ly!==cur) msg+=' — last year: '+ly;
-  var next=prompt(msg, cur);
-  if(next===null) return;
-  r.vipNote=next.trim()||null;
-  try{ if(typeof inboxNotify==='function') inboxNotify(cur, r.vipNote, {kind:'VIP comment', view:'calendar', venue:r.v||r.venue, date:r.d, dj:(typeof djLabel==='function'?djLabel(r.dj):r.dj)}); }catch(eInbox){}
-  /* VIP only — never full persistSchedShow (that could rewrite fee/DJ from stale local). */
-  if(typeof persistShowVipNoteOnly==='function') persistShowVipNoteOnly(r);
-  if(typeof clearPyMapCache==='function') clearPyMapCache();
-  go();
+  /* Own small box instead of the browser prompt, so @ suggestions work here too. */
+  _vipNoteDialog(msg, cur, function(next){
+    r.vipNote=next.trim()||null;
+    try{ if(typeof inboxNotify==='function') inboxNotify(cur, r.vipNote, {kind:'VIP comment', view:'calendar', venue:r.v||r.venue, date:r.d, dj:(typeof djLabel==='function'?djLabel(r.dj):r.dj)}); }catch(eInbox){}
+    /* VIP only — never full persistSchedShow (that could rewrite fee/DJ from stale local). */
+    if(typeof persistShowVipNoteOnly==='function') persistShowVipNoteOnly(r);
+    if(typeof clearPyMapCache==='function') clearPyMapCache();
+    go();
+  });
+}
+function _vipNoteDialog(msg, cur, done){
+  var old=document.getElementById('vipNoteDlg'); if(old) old.remove();
+  var wrap=document.createElement('div');
+  wrap.id='vipNoteDlg';
+  wrap.className='vipnote-dlg';
+  wrap.innerHTML='<div class="vipnote-card"><div class="vipnote-hd">'+_escHtml(msg)+'</div>'
+    +'<textarea rows="4" placeholder="Write a comment. Tag someone with @name"></textarea>'
+    +'<div class="vipnote-acts"><button type="button" data-act="cancel">Cancel</button><button type="button" data-act="save" class="vipnote-save">Save</button></div></div>';
+  document.body.appendChild(wrap);
+  var ta=wrap.querySelector('textarea'); ta.value=cur||'';
+  function close(){ wrap.remove(); }
+  wrap.addEventListener('click', function(e){
+    var b=e.target.closest?e.target.closest('[data-act]'):null;
+    if(e.target===wrap || (b&&b.getAttribute('data-act')==='cancel')){ close(); return; }
+    if(b&&b.getAttribute('data-act')==='save'){ var v=ta.value; close(); done(v); }
+  });
+  setTimeout(function(){ ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 0);
 }
 function useSuggestedFee(fee){
   var f=getFields();

@@ -60,7 +60,6 @@ function buildSidebar() {
   }
   var inboxItem={id:'inbox', ic:'&#9993;', lb:'Inbox', bd:(typeof inboxBadgeHtml==='function'?inboxBadgeHtml():'')};
   if(signInIsApUser()){
-    section('Inbox', [inboxItem]);
     section('Calendar', [
       {id:'resident', ic:'&#9783;', lb:'Resident DJ Calendar'}
     ]);
@@ -72,10 +71,10 @@ function buildSidebar() {
         {id:'system', ic:'&#9881;', lb:'Settings'}
       ]);
     }
+    section('Inbox', [inboxItem]);
     document.getElementById('sidebar').innerHTML = html;
     return;
   }
-  section('Inbox', [inboxItem]);
   section('Calendar', [
     {id:'calendar',   ic:'&#9783;',  lb:'Guest DJ Calendar'},
     {id:'resident',   ic:'&#9783;',  lb:'Resident DJ Calendar'}
@@ -102,6 +101,7 @@ function buildSidebar() {
     adminItems.push({id:'system', ic:'&#9881;', lb:'Settings'});
   }
   section('Admin', adminItems);
+  section('Inbox', [inboxItem]);
   document.getElementById('sidebar').innerHTML = html;
 }
 

@@ -213,3 +213,93 @@ function inboxOpen(id){
     setView(m.view||'calendar');
   }catch(e){ renderInbox(); }
 }
+
+
+/* ---- @ suggestions: type @ in any note or comment box to pick a person ---- */
+/* The tag is the first name (@greg). If two people share a first name, or the first name is a single letter, it falls back to the email name. */
+function inboxHandle(p){
+  var people=(typeof signInPeople==='function')?signInPeople():[];
+  var first=inboxAlnum(String(p.name||'').split(/\s+/)[0]);
+  var same=people.filter(function(x){ return inboxAlnum(String(x.name||'').split(/\s+/)[0])===first; }).length;
+  if(first.length>=2 && same===1) return first;
+  return String(p.email||'').split('@')[0].toLowerCase();
+}
+var _mnPop=null, _mnTarget=null, _mnList=[], _mnIdx=0, _mnStart=-1;
+function mnHide(){
+  if(_mnPop) _mnPop.style.display='none';
+  _mnTarget=null; _mnList=[]; _mnStart=-1;
+}
+function mnMatches(q){
+  q=String(q||'').toLowerCase();
+  var me=inboxMyEmail();
+  var people=(typeof signInPeople==='function')?signInPeople():[];
+  return people.filter(function(p){
+    if(p.email===me) return false;
+    if(!q) return true;
+    var name=String(p.name||'').toLowerCase();
+    var local=String(p.email||'').split('@')[0].toLowerCase();
+    if(local.indexOf(q)===0 || inboxAlnum(name).indexOf(inboxAlnum(q))===0) return true;
+    return name.split(/\s+/).some(function(w){ return w.replace(/[^a-z0-9]/g,'').indexOf(inboxAlnum(q))===0 && inboxAlnum(q); });
+  }).slice(0,8);
+}
+function mnPaint(){
+  if(!_mnPop){
+    _mnPop=document.createElement('div');
+    _mnPop.id='mentionPop';
+    _mnPop.className='mn-pop';
+    _mnPop.addEventListener('mousedown', function(e){
+      e.preventDefault();
+      var it=e.target.closest?e.target.closest('.mn-item'):null;
+      if(it) mnPick(+it.getAttribute('data-i'));
+    });
+    document.body.appendChild(_mnPop);
+  }
+  _mnPop.innerHTML=_mnList.map(function(p,i){
+    return '<div class="mn-item'+(i===_mnIdx?' on':'')+'" data-i="'+i+'"><b>'+_escHtml(p.name)+'</b>'
+      +'<span>@'+_escHtml(inboxHandle(p))+'</span></div>';
+  }).join('');
+  var r=_mnTarget.getBoundingClientRect();
+  var w=Math.max(200, Math.min(300, r.width));
+  _mnPop.style.display='block';
+  _mnPop.style.width=w+'px';
+  var h=_mnPop.offsetHeight;
+  var top=r.bottom+4;
+  if(top+h>window.innerHeight-8) top=Math.max(8, r.top-h-4);
+  _mnPop.style.left=Math.max(8, Math.min(window.innerWidth-w-8, r.left))+'px';
+  _mnPop.style.top=top+'px';
+}
+function mnPick(i){
+  var ta=_mnTarget, p=_mnList[i];
+  if(!ta || !p) return;
+  var caret=ta.selectionStart;
+  var before=ta.value.slice(0,_mnStart), after=ta.value.slice(caret);
+  var tag='@'+inboxHandle(p)+' ';
+  ta.value=before+tag+after;
+  var pos=(before+tag).length;
+  ta.setSelectionRange(pos,pos);
+  mnHide();
+  ta.dispatchEvent(new Event('input',{bubbles:true}));
+  ta.focus();
+}
+document.addEventListener('input', function(e){
+  var ta=e.target;
+  if(!ta || ta.tagName!=='TEXTAREA') return;
+  var caret=ta.selectionStart;
+  var m=/(^|[\s(])@([A-Za-z0-9._-]*)$/.exec(ta.value.slice(0,caret));
+  if(!m){ if(_mnTarget===ta) mnHide(); return; }
+  var list=mnMatches(m[2]);
+  if(!list.length){ mnHide(); return; }
+  _mnTarget=ta; _mnList=list; _mnIdx=0; _mnStart=caret-m[2].length-1;
+  mnPaint();
+}, true);
+document.addEventListener('keydown', function(e){
+  if(!_mnTarget || e.target!==_mnTarget || !_mnPop || _mnPop.style.display==='none') return;
+  if(e.key==='ArrowDown'){ _mnIdx=(_mnIdx+1)%_mnList.length; mnPaint(); }
+  else if(e.key==='ArrowUp'){ _mnIdx=(_mnIdx-1+_mnList.length)%_mnList.length; mnPaint(); }
+  else if(e.key==='Enter' || e.key==='Tab'){ mnPick(_mnIdx); }
+  else if(e.key==='Escape'){ mnHide(); }
+  else return;
+  e.preventDefault(); e.stopPropagation();
+}, true);
+document.addEventListener('focusout', function(e){ if(e.target===_mnTarget) setTimeout(mnHide, 120); }, true);
+window.addEventListener('scroll', function(){ if(_mnTarget) mnHide(); }, true);

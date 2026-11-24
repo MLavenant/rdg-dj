@@ -3081,3 +3081,17 @@ body.mobile-mode #evModal .fld-row select{width:100%;min-width:0;box-sizing:bord
 .ib-acts{display:flex;flex-direction:column;gap:5px;flex:0 0 auto}
 .ib-acts button{border:1px solid #cbd5e1;background:#fff;color:var(--ink2);font-size:10.5px;font-weight:700;border-radius:7px;padding:4px 10px;cursor:pointer;font-family:inherit}
 .ib-acts .ib-open{background:var(--ink);color:#fff;border-color:var(--ink)}
+/* @ suggestions */
+.mn-pop{position:fixed;display:none;z-index:2147483000;background:#fff;border:1px solid #cbd5e1;border-radius:10px;box-shadow:0 8px 24px rgba(15,23,42,.18);padding:4px;max-height:260px;overflow:auto}
+.mn-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 10px;border-radius:7px;cursor:pointer;font-size:12.5px;color:var(--ink)}
+.mn-item span{color:var(--ink3);font-size:11.5px;font-weight:650}
+.mn-item.on,.mn-item:hover{background:var(--ink);color:#fff}
+.mn-item.on span,.mn-item:hover span{color:#cbd5e1}
+/* VIP comment box */
+.vipnote-dlg{position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center}
+.vipnote-card{background:#fff;border-radius:14px;padding:16px;width:min(420px,92vw);box-shadow:0 20px 50px rgba(15,23,42,.3)}
+.vipnote-hd{font-size:13px;font-weight:800;color:var(--ink);margin-bottom:8px;line-height:1.35}
+.vipnote-card textarea{width:100%;box-sizing:border-box;border:1.5px solid #cbd5e1;border-radius:10px;padding:8px 10px;font:inherit;font-size:13px;resize:vertical}
+.vipnote-acts{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.vipnote-acts button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:7px 14px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit}
+.vipnote-acts .vipnote-save{background:var(--ink);color:#fff;border-color:var(--ink)}
