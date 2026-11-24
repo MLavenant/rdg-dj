@@ -145,7 +145,7 @@ function buildVenTabs() {
 
 /*    Year pills                                                 */
 function buildYrPills() {
-  var yrs=[2026,2027];
+  var yrs=[2025,2026,2027];
   var html=yrs.map(function(y){
     return '<button type="button" class="yr-pill'+(y===curYr?' on':'')+'" onclick="selYr('+y+')">'+y+'</button>';
   }).join('');

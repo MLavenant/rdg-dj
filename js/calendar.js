@@ -4441,10 +4441,17 @@ function nightTableExport(r){
   }
   return {sold:sold, target:target};
 }
+/* Month tab this night sits under on the DJ Calendar (e.g. January 2027). */
+function _sanityCalMonthLabel(ds){
+  try{
+    var fi=fiscalInfoForDate(ds);
+    return MN_FULL[fi.monthIndex]+' '+fi.year;
+  }catch(e){ return ''; }
+}
 function _sanityCalendarSheetRows(year){
-  var rows=[['Venue','Date','DJ','DJ Fee','BS Target','BS Actual','ROI Target','ROI Actual','Tables Sold','Floor Plan Tables']];
+  var rows=[['Venue','Date','DJ','DJ Fee','BS Target','BS Actual','ROI Target','ROI Actual','Tables Sold','Floor Plan Tables','DJ Calendar Month']];
   (SCHED||[]).filter(function(r){
-    return r && r._s!=='empty' && r.d && String(r.d).slice(0,4)===String(year);
+    return r && r._s!=='empty' && r.d && (typeof dateInFiscalYear==='function'?dateInFiscalYear(r.d, +year):String(r.d).slice(0,4)===String(year));
   }).sort(function(a,b){
     var byDate=String(a.d).localeCompare(String(b.d));
     if(byDate) return byDate;
@@ -4469,15 +4476,16 @@ function _sanityCalendarSheetRows(year){
       roiTarget,
       roiActual,
       tables.sold,
-      tables.target
+      tables.target,
+      _sanityCalMonthLabel(r.d)
     ]);
   });
   return rows;
 }
 function _sanityCalendarSheet(rows){
   var ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[{wch:24},{wch:12},{wch:28},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:18}];
-  ws['!autofilter']={ref:'A1:J'+rows.length};
+  ws['!cols']=[{wch:24},{wch:12},{wch:28},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:14},{wch:18},{wch:22}];
+  ws['!autofilter']={ref:'A1:K'+rows.length};
   for(var i=2;i<=rows.length;i++){
     ['D','E','F'].forEach(function(col){
       var cell=ws[col+i];
