@@ -497,6 +497,7 @@ function residentOpenComment(td, x, y){
       if(replyTo && !cur.some(function(item){ return item.id===replyTo; })) replyTo='';
       cur.push({id:'c_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6), by:who.by, name:who.name, text:text, at:new Date().toISOString(), replyTo:replyTo});
       residentCommentSave(d, c, cur);
+      try{ if(typeof inboxNotify==='function') inboxNotify('', text, {kind:'Resident DJ comment ('+c.label+')', view:'resident', venue:residentHere().venue, date:d}); }catch(eInbox){}
       pop.querySelector('textarea').value='';
       pop.setAttribute('data-reply','');
       residentPaintThread(pop);

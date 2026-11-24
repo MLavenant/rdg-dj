@@ -3059,3 +3059,25 @@ body.mobile-mode #evModal .fld-row{display:grid;grid-template-columns:minmax(0,1
 body.mobile-mode #evModal .fld-row .fld{min-width:0}
 body.mobile-mode #evModal .fld-row input,
 body.mobile-mode #evModal .fld-row select{width:100%;min-width:0;box-sizing:border-box}
+
+/* Inbox: @mentions */
+.sb-badge{margin-left:auto;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#dc2626;color:#fff;font-size:10px;font-weight:800;line-height:18px;text-align:center;box-sizing:border-box}
+.ib-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;font-size:13px}
+.ib-hint{color:var(--ink3);font-size:11px;margin-left:6px}
+.ib-markall{border:1px solid #fca5a5;background:#fff;color:#b91c1c;font-weight:750;font-size:11px;border-radius:8px;padding:6px 12px;cursor:pointer;font-family:inherit}
+.ib-list{display:flex;flex-direction:column;gap:8px;max-width:820px}
+.ib-item{display:flex;align-items:flex-start;gap:12px;background:var(--card);border:1px solid #e5e7eb;border-radius:12px;padding:12px 14px;cursor:pointer;box-shadow:var(--shadow-sm)}
+.ib-item:hover{border-color:#94a3b8}
+.ib-item.ib-unread{border-color:#fca5a5;background:#fff7f7}
+.ib-dot{flex:0 0 auto;width:9px;height:9px;border-radius:50%;margin-top:5px;background:transparent}
+.ib-item.ib-unread .ib-dot{background:#dc2626}
+.ib-main{flex:1;min-width:0;font-size:12.5px;line-height:1.45;color:var(--ink2)}
+.ib-item.ib-unread .ib-line{font-weight:600;color:var(--ink)}
+.ib-where{display:inline-block;margin-left:4px;color:var(--ink3);font-size:11.5px;font-weight:600}
+.ib-says{margin-top:2px;color:var(--ink3);font-size:11px}
+.ib-quote{margin-top:3px;padding:6px 10px;border-left:3px solid #cbd5e1;background:#f8fafc;border-radius:0 8px 8px 0;color:var(--ink);white-space:pre-wrap;word-break:break-word}
+.ib-tag{color:#1d4ed8;font-weight:800}
+.ib-when{margin-top:5px;color:var(--ink3);font-size:10.5px}
+.ib-acts{display:flex;flex-direction:column;gap:5px;flex:0 0 auto}
+.ib-acts button{border:1px solid #cbd5e1;background:#fff;color:var(--ink2);font-size:10.5px;font-weight:700;border-radius:7px;padding:4px 10px;cursor:pointer;font-family:inherit}
+.ib-acts .ib-open{background:var(--ink);color:#fff;border-color:var(--ink)}

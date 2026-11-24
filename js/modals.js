@@ -445,6 +445,7 @@ function editVipNote(idx, uid){
   var next=prompt(msg, cur);
   if(next===null) return;
   r.vipNote=next.trim()||null;
+  try{ if(typeof inboxNotify==='function') inboxNotify(cur, r.vipNote, {kind:'VIP comment', view:'calendar', venue:r.v||r.venue, date:r.d, dj:(typeof djLabel==='function'?djLabel(r.dj):r.dj)}); }catch(eInbox){}
   /* VIP only — never full persistSchedShow (that could rewrite fee/DJ from stale local). */
   if(typeof persistShowVipNoteOnly==='function') persistShowVipNoteOnly(r);
   if(typeof clearPyMapCache==='function') clearPyMapCache();
@@ -1308,6 +1309,7 @@ function saveEvent(){
   if(_editUid && !rec._uid) rec._uid=_editUid;
   ensureShowUid(rec);
   rec._writeKind='modal';
+  try{ if(typeof inboxNotify==='function') inboxNotify(before&&before.note, rec.note, {kind:'Guest DJ note', view:'calendar', venue:v, date:d, dj:dj}); }catch(eInbox){}
   var prevFee=before?(before.fee!=null?before.fee:before.cost):null;
   var nextFee=rec.fee;
   var feeChanged=(prevFee==null||prevFee==='')!==(nextFee==null||nextFee==='') || (prevFee!=null && nextFee!=null && Math.round(+prevFee)!==Math.round(+nextFee));

@@ -296,7 +296,7 @@ function renderAccountingGuest(yr, mo, mm, days){
           +'<div class="acct-last-edit" data-ds="'+ds+'" data-action="acctHist" title="View edit history">'+lastHint+'</div>'
           +'</div></td>';
         h+='<td class="acct-note-cell" rowspan="'+nrows+'">'
-          +'<textarea class="acct-note-inp" data-ds="'+ds+'" data-action="acctNote" rows="2" placeholder="AP / accounting notes…">'
+          +'<textarea class="acct-note-inp" data-ds="'+ds+'" data-action="acctNote" rows="2" placeholder="AP / accounting notes… tag with @name">'
           +String(acct.note||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
           +'</textarea></td>';
       }

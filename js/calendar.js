@@ -1970,6 +1970,12 @@ function updateAcctNote(ds,val){
   _pushAcctUndo('Edit accounting note');
   acct.note=next;
   _acctPushLog(acct,'Notes',prev||'',next||'(cleared)',_acctSoftEditorName());
+  try{
+    if(typeof inboxNotify==='function'){
+      var nShow=SCHED.filter(function(x){ return x&&x.d===ds&&(x.v||x.venue)===curAcctV&&x._s!=='empty'; })[0];
+      inboxNotify(prev, next, {kind:'Accounting note', view:'accounting', venue:curAcctV, date:ds, dj:nShow?(typeof djLabel==='function'?djLabel(nShow.dj):nShow.dj):''});
+    }
+  }catch(eInbox){}
   _acctPersistDay(ds);
 }
 function updateShowAgency(uid, idx, val, ds){

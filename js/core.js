@@ -55,10 +55,12 @@ function buildSidebar() {
     html += '<div class="sb-section-lbl">'+label+'</div>';
     items.forEach(function(b){
       html += '<button class="sb-btn" data-view="'+b.id+'" onclick="setView(\''+b.id+'\')">'
-            + '<span class="sb-ic">'+b.ic+'</span>'+b.lb+'</button>';
+            + '<span class="sb-ic">'+b.ic+'</span>'+b.lb+(b.bd||'')+'</button>';
     });
   }
+  var inboxItem={id:'inbox', ic:'&#9993;', lb:'Inbox', bd:(typeof inboxBadgeHtml==='function'?inboxBadgeHtml():'')};
   if(signInIsApUser()){
+    section('Inbox', [inboxItem]);
     section('Calendar', [
       {id:'resident', ic:'&#9783;', lb:'Resident DJ Calendar'}
     ]);
@@ -73,6 +75,7 @@ function buildSidebar() {
     document.getElementById('sidebar').innerHTML = html;
     return;
   }
+  section('Inbox', [inboxItem]);
   section('Calendar', [
     {id:'calendar',   ic:'&#9783;',  lb:'Guest DJ Calendar'},
     {id:'resident',   ic:'&#9783;',  lb:'Resident DJ Calendar'}
@@ -187,7 +190,7 @@ function setView(v) {
   if(v==='ebitda' && !unlockEbitdaAccess()) return;
   if(v==='access' && (typeof signInIsOwner!=='function' || !signInIsOwner())) return;
   closeMobileNav();
-  if(signInIsApUser() && v!=='resident' && v!=='accounting' && !(v==='system' && typeof signInSettingsAlways==='function' && signInSettingsAlways())) v='resident';
+  if(signInIsApUser() && v!=='resident' && v!=='accounting' && v!=='inbox' && !(v==='system' && typeof signInSettingsAlways==='function' && signInSettingsAlways())) v='resident';
   curView = v;
   placeYearControl();
   document.body.classList.toggle('res-view', v==='resident');
@@ -195,7 +198,7 @@ function setView(v) {
   try{
     if(_presenceRef) _presenceRef.update({view:v,lastSeen:firebase.database.ServerValue.TIMESTAMP});
   }catch(ePresence){}
-  ['calendar','resident','summary','allshows','mrecap','leaderboard','budget','rolling','accounting','vip','forecast','basel','roi-rules','finance','system','ebitda','3d','access'].forEach(function(id){
+  ['calendar','resident','summary','allshows','mrecap','leaderboard','budget','rolling','accounting','vip','forecast','basel','roi-rules','finance','system','ebitda','3d','access','inbox'].forEach(function(id){
     var el = document.getElementById('view-'+id);
     if (!el) return;
     var on = id===v;
@@ -249,6 +252,11 @@ function setView(v) {
   }
   if (v === 'forecast') {
     renderForecast();
+    return;
+  }
+  if (v === 'inbox') {
+    clearGlobalCalChrome();
+    if(typeof renderInbox==='function') renderInbox();
     return;
   }
   if (v === 'access') {
