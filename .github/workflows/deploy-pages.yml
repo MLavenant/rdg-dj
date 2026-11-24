@@ -1,9 +1,14 @@
-﻿name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      retry:
+        description: 'Set by the auto-retry job'
+        required: false
+        default: 'false'
 
 permissions:
   contents: read
@@ -54,3 +59,18 @@ jobs:
         uses: actions/deploy-pages@v4
         with:
           timeout: 1800000
+
+  # GitHub sometimes loses the Pages artifact right after upload. One automatic fresh run fixes it.
+  retry:
+    needs: deploy
+    if: failure() && github.event.inputs.retry != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Re-run deploy once
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          sleep 90
+          gh workflow run deploy-pages.yml --repo ${{ github.repository }} --ref main -f retry=true
