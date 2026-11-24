@@ -1718,14 +1718,18 @@ SCHED.forEach(function(r){ ensureShowUid(r); });
   window._toastActuals = null;
   function _applyToastActuals(live){
     window._toastActuals = live || null;
-    if(!live || !live.byVenueDate) return 0;
+    /* Saved copy of posted nights sits under the live data. Live wins; if live is empty or lost, the saved copy still fills the calendar. */
+    var baked = (window.TOAST_ACTUALS_BAKED && window.TOAST_ACTUALS_BAKED.byVenueDate) || {};
+    var liveBy = (live && live.byVenueDate) || {};
+    if(!live && !Object.keys(baked).length) return 0;
     var n = 0;
     SCHED.forEach(function(r){
       if(!r || !r.d) return;
       var venue = r.venue || r.v;
-      var byDate = live.byVenueDate[venue];
-      if(!byDate || byDate[r.d] == null) return;
-      var next = byDate[r.d];
+      var byDate = liveBy[venue];
+      var next = (byDate && byDate[r.d] != null) ? byDate[r.d] : null;
+      if(next == null && baked[venue]) next = baked[venue][r.d] != null ? baked[venue][r.d] : null;
+      if(next == null) return;
       /* Don't wipe a real BS night with a stale 0 overlay (off-calendar show days). */
       if(+next === 0 && r.bs_a != null && +r.bs_a > 0) return;
       if(r.bs_a === next) return;
