@@ -264,7 +264,7 @@ function renderAccountingGuest(yr, mo, mm, days){
           +(isToday?'<span class="sc-today-badge"> Today</span>':'')
           +'</td>';
       }
-      h+='<td class="sc-dj-cell acct-hist-cell" data-uid="'+showUid+'" data-ds="'+ds+'" title="Right-click for audit trail"><b class="acct-dj-name">'+nm+'</b>'+(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')+'</td>';
+      h+='<td class="sc-dj-cell acct-hist-cell" data-uid="'+showUid+'" data-ds="'+ds+'" title="Right-click for audit trail"><b class="acct-dj-name">'+nm+'</b>'+(r.note?'<div class="dj-note-badge">&#128221; '+(typeof inboxTextHtml==='function'?inboxTextHtml(r.note):r.note.replace(/</g,'&lt;'))+'</div>':'')+'</td>';
       var agencyEsc=String(r.agency||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
       h+='<td class="acct-agency-cell">'
         +'<input type="text" class="acct-agency-inp" data-ds="'+ds+'" data-idx="'+idx+'" data-uid="'+showUid+'" data-action="acctAgency" value="'+agencyEsc+'" placeholder="Agency" title="Agency name">'
@@ -298,7 +298,9 @@ function renderAccountingGuest(yr, mo, mm, days){
         h+='<td class="acct-note-cell" rowspan="'+nrows+'">'
           +'<textarea class="acct-note-inp" data-ds="'+ds+'" data-action="acctNote" rows="2" placeholder="AP / accounting notes… tag with @name">'
           +String(acct.note||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-          +'</textarea></td>';
+          +'</textarea>'
+          +((typeof inboxTagify==='function' && /@[A-Za-z]/.test(String(acct.note||'')))?'<div class="acct-tagged">'+inboxTagify(_escHtml(String(acct.note||'').match(/@[A-Za-z][A-Za-z0-9._-]*/g).filter(function(t,i,a){ return a.indexOf(t)===i; }).join(' ')))+'</div>':'')
+          +'</td>';
       }
       h+='</tr>';
     });

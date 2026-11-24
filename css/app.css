@@ -3095,3 +3095,7 @@ body.mobile-mode #evModal .fld-row select{width:100%;min-width:0;box-sizing:bord
 .vipnote-acts{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
 .vipnote-acts button{border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:7px 14px;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit}
 .vipnote-acts .vipnote-save{background:var(--ink);color:#fff;border-color:var(--ink)}
+/* Tagged people: filled and underlined so they stand out */
+.ib-tag{background:#dbeafe;color:#1d4ed8!important;font-weight:800;border-radius:4px;padding:0 4px;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:2px}
+.acct-tagged{margin-top:3px;font-size:10px;line-height:1.5}
+.acct-tagged .ib-tag{margin-right:3px}

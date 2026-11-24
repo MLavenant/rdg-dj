@@ -410,7 +410,7 @@ function residentThreadHtml(list){
       +'<div class="res-cmt-av">'+initial+'</div>'
       +'<div class="res-cmt-body"><div class="res-cmt-meta"><b>'+residentEsc(c.name||'Note')+'</b>'
       +(c.at?'<span>'+residentEsc(residentCommentWhen(c.at))+'</span>':'')+'</div>'
-      +'<div class="res-cmt-text">'+residentEsc(c.text)+'</div>'
+      +'<div class="res-cmt-text">'+(typeof inboxTextHtml==='function'?inboxTextHtml(c.text):residentEsc(c.text))+'</div>'
       +'<div class="res-cmt-acts"><button type="button" data-act="reply" data-id="'+residentEsc(c.id)+'">Reply</button>'
       +((!c.by || c.by===who.by)?'<button type="button" data-act="delone" data-id="'+residentEsc(c.id)+'">Delete</button>':'')
       +'</div></div></div>';
@@ -1039,7 +1039,7 @@ function residentPickInit(){
     ]);
   });
   document.addEventListener('mousedown', function(e){
-    var inMenu=e.target.closest && (e.target.closest('#resMenu') || e.target.closest('#resPop'));
+    var inMenu=e.target.closest && (e.target.closest('#resMenu') || e.target.closest('#resPop') || e.target.closest('#mentionPop'));
     if(!inMenu){
       residentCloseMenus();
       var pop=document.getElementById('resPop');

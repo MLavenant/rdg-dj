@@ -187,7 +187,7 @@ function renderCal(){
         h+='<td class="sc-dj-cell" data-show-idx="'+idx+'" data-uid="'+showUid+'" data-action="editShow" style="cursor:pointer" title="Click to edit show">'
           +'<b class="dj-clickname '+bCls+'">'+nm+'</b>'
           +(phone?'':'<span class="dj-fee-inline">'+$k(fee)+'</span>')
-          +(r.note?'<div class="dj-note-badge">&#128221; '+r.note.replace(/</g,'&lt;')+'</div>':'')
+          +(r.note?'<div class="dj-note-badge">&#128221; '+(typeof inboxTextHtml==='function'?inboxTextHtml(r.note):r.note.replace(/</g,'&lt;'))+'</div>':'')
           +'</td>';
         if(!phone) h+=_vipCellHtml(r, idx, showUid, ri===0 ? (py||pyBlank) : null);
         var djSt=getShowDjStatus(r, ds)||'';
@@ -279,7 +279,7 @@ function _vipCellHtml(r, idx, uid, py){
   else if(ly) cls+=' vip-ly';
   var title=own||'Click to leave a VIP comment';
   if(ly && ly!==own) title=(own?(own+' · '):'')+'Last year: '+ly;
-  var label=shown?_vipEsc(shown):(r?'+ VIP':'');
+  var label=shown?(typeof inboxTagify==='function'?inboxTagify(_vipEsc(shown)):_vipEsc(shown)):(r?'+ VIP':'');
   var lyMark=(!own && ly)?'<span class="vip-ly-tag">LY</span> ':'';
   var click=r?(' data-action="vipNote" data-show-idx="'+(idx|0)+'" data-uid="'+_vipEsc(uid)+'"'):'';
   return '<td class="sc-vip"><span class="'+cls+'"'+click+' title="'+_vipEsc(title)+'">'+lyMark+label+'</span></td>';

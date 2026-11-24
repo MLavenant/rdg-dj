@@ -136,10 +136,14 @@ function inboxDateLabel(ds){
     return d.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
   }catch(e){ return ds; }
 }
-function inboxTextHtml(text){
-  return _escHtml(text).replace(/@([A-Za-z][A-Za-z0-9._-]*)/g, function(all, tok){
+/* Wrap real @tags in a filled, underlined chip. Input is already HTML-escaped. */
+function inboxTagify(escHtml){
+  return String(escHtml==null?'':escHtml).replace(/@([A-Za-z][A-Za-z0-9._-]*)/g, function(all, tok){
     return inboxResolve(tok)?'<span class="ib-tag">'+all+'</span>':all;
   });
+}
+function inboxTextHtml(text){
+  return inboxTagify(_escHtml(text));
 }
 function inboxItemHtml(m){
   var where=[m.venue, inboxDateLabel(m.date), m.dj].filter(Boolean).map(_escHtml).join(' &middot; ');
@@ -247,11 +251,15 @@ function mnPaint(){
     _mnPop=document.createElement('div');
     _mnPop.id='mentionPop';
     _mnPop.className='mn-pop';
+    /* Keep the click inside the popup: it must not reach "click outside closes" handlers (comment boxes, menus). */
     _mnPop.addEventListener('mousedown', function(e){
       e.preventDefault();
+      e.stopPropagation();
       var it=e.target.closest?e.target.closest('.mn-item'):null;
       if(it) mnPick(+it.getAttribute('data-i'));
     });
+    _mnPop.addEventListener('click', function(e){ e.stopPropagation(); });
+    _mnPop.addEventListener('mouseup', function(e){ e.stopPropagation(); });
     document.body.appendChild(_mnPop);
   }
   _mnPop.innerHTML=_mnList.map(function(p,i){
