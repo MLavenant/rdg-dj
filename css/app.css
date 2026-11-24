@@ -1109,8 +1109,17 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .acct-others-link:hover{color:var(--ink)}
 #view-accounting:not(.acct-others-mode) .acct-tbl thead th{text-align:center!important;vertical-align:middle!important;padding:8px 6px!important}
 #view-accounting:not(.acct-others-mode) .acct-doc-cell{padding:0!important;position:relative}
-#view-accounting:not(.acct-others-mode) .acct-doc-drop{position:absolute;inset:0;height:auto;min-height:0;border-radius:0;box-sizing:border-box}
-#view-accounting:not(.acct-others-mode) .acct-doc-hint{align-self:center;width:max-content;max-width:calc(100% - 10px);border:1.5px solid #0b2e40;border-radius:999px;padding:4px 12px;background:#fff;cursor:pointer}
+/* Drop zones size to their content so no PDF chip is ever clipped. The row grows with up to 5 files. */
+#view-accounting:not(.acct-others-mode) .acct-doc-cell{min-width:210px;vertical-align:middle!important}
+#view-accounting:not(.acct-others-mode) .acct-doc-drop{position:relative;inset:auto;height:auto;min-height:calc(var(--acct-guest-row-h, 48px) - 2px);overflow:visible;border-radius:0;box-sizing:border-box;justify-content:center}
+#view-accounting:not(.acct-others-mode) .acct-doc-hint{align-self:center;flex-wrap:wrap;width:max-content;max-width:calc(100% - 10px);border:1.5px solid #0b2e40;border-radius:999px;padding:4px 12px;background:#fff;cursor:pointer}
+#view-accounting:not(.acct-others-mode) .acct-doc-chip{align-items:flex-start}
+#view-accounting:not(.acct-others-mode) .acct-doc-chip a{overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;word-break:break-word;line-height:1.25}
+#view-accounting:not(.acct-others-mode) .acct-doc-hint b,
+#view-accounting:not(.acct-others-mode) .acct-doc-hint>span:last-child{white-space:normal}
+.acct-sum-item.acct-sum-topay{background:#dcfce7;border:1.5px solid #16a34a}
+.acct-sum-item.acct-sum-topay b{color:#166534}
+.acct-sum-item.acct-sum-topay span{color:#166534;font-weight:800}
 #view-accounting:not(.acct-others-mode) .acct-fin-cell,
 #view-accounting:not(.acct-others-mode) .acct-dj-cell{vertical-align:top!important}
 #view-accounting .acct-lock.acct-pair-ok,

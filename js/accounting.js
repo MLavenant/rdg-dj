@@ -127,6 +127,19 @@ function fitAccountingOthersRows(){
   }
 }
 
+/* DJ status as the Accounting row shows it. */
+function acctRowDjStatus(r, ds){
+  return (typeof faInScope==='function' && faInScope(r) && typeof faDjStatus==='function')?(faDjStatus(r)||''):(getShowDjStatus(r, ds)||'');
+}
+/* TO PAY = Finance Approved + DJ Confirmed + invoice dropped + contract dropped. */
+function acctShowToPay(r, ds, acct){
+  if(!(typeof faFinanceTrack==='function' && faFinanceTrack(r))) return false;
+  if(typeof faFinanceStatus!=='function' || faFinanceStatus(r)!=='Finance Approved') return false;
+  if(acctRowDjStatus(r, ds)!=='Confirmed') return false;
+  var a=acct||getAcct(ds);
+  return !!(a&&a.invoices&&a.invoices.length>0&&a.contracts&&a.contracts.length>0);
+}
+
 function renderAccountingGuest(yr, mo, mm, days){
   var fiscalDates=datesInFiscalPeriod(yr, mo);
   days=fiscalDates.length;
@@ -141,13 +154,14 @@ function renderAccountingGuest(yr, mo, mm, days){
   var statusCounts={};
   ACCT_STATUS_OPTIONS.forEach(function(s){ statusCounts[s]=0; });
   statusCounts['Not set']=0;
-  var totalShowsThisMonth=0;
+  var totalShowsThisMonth=0, toPayCount=0, toPayAmt=0;
   fiscalDates.forEach(function(tds){
     var tshows=showMap[tds]||[];
     var tacct=getAcct(tds);
     var apSt=(typeof acctShownAp==='function'?acctShownAp(tacct):tacct.apStatus)||null;
     tshows.forEach(function(r){
       totalShowsThisMonth++;
+      if(acctShowToPay(r,tds,tacct)){ toPayCount++; toPayAmt+=(r.fee||r.cost||0); }
       var djSt=getShowDjStatus(r,tds)||'Not set';
       statusCounts[djSt]=(statusCounts[djSt]||0)+1;
       if(apSt) statusCounts[apSt]=(statusCounts[apSt]||0)+1;
@@ -155,6 +169,9 @@ function renderAccountingGuest(yr, mo, mm, days){
   });
   var summaryHtml='<div class="acct-summary">';
   summaryHtml+='<div class="acct-sum-item'+(!_acctStatusFilter?' acct-sum-active':'')+'" data-filter="__all__"><b>'+totalShowsThisMonth+'</b><span>Shows this month</span></div>';
+  if(+yr>=2027){
+    summaryHtml+='<div class="acct-sum-item acct-sum-topay'+(_acctStatusFilter==='__topay__'?' acct-sum-active':'')+'" data-filter="__topay__" title="Finance Approved + DJ Confirmed + invoice dropped + contract dropped"><b>'+toPayCount+'</b><span>To pay'+(toPayAmt?' &middot; '+$k(toPayAmt):'')+'</span></div>';
+  }
   ACCT_STATUS_OPTIONS.concat(['Not set']).forEach(function(s){
     if(!statusCounts[s]) return;
     var cls=acctStatusClass(s==='Not set'?null:s);
@@ -198,7 +215,10 @@ function renderAccountingGuest(yr, mo, mm, days){
     /* DJ filters are per-show; AP filters remain date-level (docs/workflow). */
     if(_acctStatusFilter){
       var apFilter=ACCT_AP_STATUS.indexOf(_acctStatusFilter)>=0;
-      if(apFilter){
+      if(_acctStatusFilter==='__topay__'){
+        shows=shows.filter(function(r){ return acctShowToPay(r, ds, acct); });
+        if(!shows.length) continue;
+      } else if(apFilter){
         var shownAp=(typeof acctShownAp==='function'?acctShownAp(acct):acct.apStatus)||'';
         if(shownAp!==_acctStatusFilter) continue;
       } else {
@@ -252,11 +272,13 @@ function renderAccountingGuest(yr, mo, mm, days){
       h+='<td class="sc-num acct-col-fee fee-cell '+(feeCls||'')+'">'+$k(r.fee||r.cost||null)+'</td>';
       var finHtml='—';
       if(tracked && typeof faFinanceSelectHtml==='function') finHtml=faFinanceSelectHtml(r, ds, idx);
-      var pairCls=bothOk?'acct-status-ok':'acct-status-bad';
+      /* Finance turns green on Finance Approved. DJ Status turns green only on Confirmed, otherwise it stays red. */
+      var finCls=bothOk?'acct-status-ok':'acct-status-bad';
+      var djCls=djSt==='Confirmed'?'acct-status-ok':'acct-status-bad';
       if(showFin){
-        h+='<td class="acct-fin-cell acct-pair '+pairCls+'">'+finHtml+'</td>';
+        h+='<td class="acct-fin-cell acct-pair '+finCls+'">'+finHtml+'</td>';
       }
-      h+='<td class="acct-dj-cell'+(showFin?' acct-pair '+pairCls:'')+'"><b>'+(djSt?_escHtml(djSt):'Not set')+'</b></td>';
+      h+='<td class="acct-dj-cell acct-pair '+djCls+'"><b>'+(djSt?_escHtml(djSt):'Not set')+'</b></td>';
       if(ri===0){
         var docsOk=typeof acctGapStatus==='function'?!acctGapStatus(acct):false;
         var docTone=docsOk?'ok':'wait';
@@ -283,7 +305,7 @@ function renderAccountingGuest(yr, mo, mm, days){
   }
 
   if(_acctStatusFilter && !anyFilterMatch){
-    h+='<tr><td colspan="'+(showFin?10:9)+'" class="sc-empty-day" style="text-align:center;padding:16px">No shows with status "'+_acctStatusFilter+'" this month.</td></tr>';
+    h+='<tr><td colspan="'+(showFin?10:9)+'" class="sc-empty-day" style="text-align:center;padding:16px">No shows '+(_acctStatusFilter==='__topay__'?'ready to pay':'with status "'+_acctStatusFilter+'"')+' this month.</td></tr>';
   }
 
   h+='<tr class="acct-total-row">';

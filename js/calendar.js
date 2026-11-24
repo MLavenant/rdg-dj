@@ -1265,7 +1265,7 @@ function renderDJDetail(djEnc){
   document.getElementById('lbBody').innerHTML=h;
 }
 
-var ACCT_DOC_MAX=3;
+var ACCT_DOC_MAX=5;
 function _acctDocsKey(kind){ return kind==='invoice'?'invoices':'contracts'; }
 function _acctDocRoom(docs){
   return Math.max(0, ACCT_DOC_MAX-((docs&&docs.length)||0));
