@@ -817,6 +817,14 @@ body.mobile-mode .bsl-day-grid,body.mobile-mode .bsl-venue-grid{grid-template-co
 .flash-break{margin:0 0 28px}
 .flash-py{display:block;margin-top:2px;font-size:12px;font-style:normal;font-weight:700;color:#64748b;line-height:1.25}
 .flash-plan .flash-py{display:inline;margin:0 0 0 6px;background:none;color:#64748b}
+/* 2025 (last year) is a grey band with a tag, so it reads apart from this year's numbers. */
+.flash-show .flash-py{display:block;margin-top:3px;padding:2px 5px;border-radius:4px;background:#eef1f5;color:#64748b}
+.flash-py-yr,.vip-py-tag{display:inline-block;margin-right:5px;padding:0 5px;border-radius:3px;background:#cbd5e1;color:#334155;font-size:9px;font-weight:800;letter-spacing:.05em;vertical-align:1px}
+.vip-past-tbl tr.vip-py-row td{background:#eef1f5;color:#64748b;font-weight:600;border-bottom:0.5px solid var(--hair)}
+.vip-past-tbl tr.vip-py-row td.l{text-align:left}
+.vip-past-tbl tr.vip-py-row .vip-py-sub{font-size:9px;font-weight:600;color:#94a3b8}
+.vip-past-tbl tr.vip-py-row td{border-top:0}
+.vip-past-tbl tr:has(+ tr.vip-py-row) td{border-bottom:0}
 .flash-plan-sum,.flash-plan-shows{width:100%;border-collapse:collapse;margin:0 0 8px}
 .flash-plan .flash-chart,.flash-plan .flash-chart-row,.flash-plan .flash-plan-shows,.flash-plan .bp-deck-sec{width:100%;max-width:none;box-sizing:border-box}
 .flash-plan .flash-chart{margin:0}

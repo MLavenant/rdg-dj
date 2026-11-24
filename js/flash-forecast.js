@@ -8,8 +8,10 @@ function flashPyBits(venue, date){
   if(roi==null && fee>0 && bs!=null) roi=bs/fee;
   return {dj:f.py_dj, fee:fee, roi:roi, bs:bs};
 }
-function flashPyEm(text){
-  return '<em class="flash-py">'+text+'</em>';
+/* Grey prior-year line. yr adds a "2025"-style tag so last year is never mistaken for this year. */
+function flashPyEm(text, yr){
+  var tag=yr?'<span class="flash-py-yr">'+yr+'</span>':'';
+  return '<em class="flash-py">'+tag+text+'</em>';
 }
 function flashArrow(actual, prior, favorableWhen){
   if(typeof bgtMove==='function') return bgtMove(actual, prior, favorableWhen);
@@ -76,11 +78,11 @@ function flashDetailPage(p, meta){
     var py=flashPyBits(p.venue, row.d);
     h+='<tr'+(tone?' class="'+tone+'"':'')+'>'
       +'<td class="l"><b>'+_escHtml(typeof mrDayLabel==='function'?mrDayLabel(row.d):row.d)+'</b></td>'
-      +'<td class="l flash-now"><b>'+_escHtml(row.dj)+'</b>'+(py&&py.dj?flashPyEm(_escHtml(py.dj)):'')+'</td>'
-      +flashUnder(mrMoney(row.fee), py&&py.fee!=null?mrMoney(py.fee):'')
-      +flashUnder((typeof rx==='function'?rx(row.roiA):'\u2014'), py&&py.roi!=null?(typeof rx==='function'?rx(py.roi):''):'')
+      +'<td class="l flash-now"><b>'+_escHtml(row.dj)+'</b>'+(py&&py.dj?flashPyEm(_escHtml(py.dj), pyY):'')+'</td>'
+      +flashUnder(mrMoney(row.fee), py&&py.fee!=null?mrMoney(py.fee):'', undefined, undefined, undefined, pyY)
+      +flashUnder((typeof rx==='function'?rx(row.roiA):'\u2014'), py&&py.roi!=null?(typeof rx==='function'?rx(py.roi):''):'', undefined, undefined, undefined, pyY)
       +'<td class="flash-tgt">'+(typeof rx==='function'?rx(row.roiT):'\u2014')+'</td>'
-      +flashUnder(mrMoney(row.bs), py&&py.bs!=null?mrMoney(py.bs):'', row.bs, py&&py.bs, 'over')
+      +flashUnder(mrMoney(row.bs), py&&py.bs!=null?mrMoney(py.bs):'', row.bs, py&&py.bs, 'over', pyY)
       +'<td class="flash-tgt">'+mrMoney(row.bsT)+'</td></tr>';
   });
   h+='</tbody></table></div></div>';
@@ -90,9 +92,9 @@ function flashGapMark(gap){
   if(!gap || !gap.text || gap.text==='\u2014' || gap.text==='-') return '';
   return ' <i class="'+(gap.cls||'')+'">'+gap.text+'</i>';
 }
-function flashUnder(main, priorText, now, prior, favorable){
+function flashUnder(main, priorText, now, prior, favorable, yr){
   var gap=(arguments.length>2 && prior!=null && priorText && typeof mrVar==='function')?mrVar(now, prior, favorable==='under'):null;
-  var sub=priorText?flashPyEm(priorText+(gap?flashGapMark(gap):'')):'';
+  var sub=priorText?flashPyEm(priorText+(gap?flashGapMark(gap):''), yr):'';
   return '<td class="flash-now"><b>'+main+'</b>'+sub+'</td>';
 }
 function flashCompareCards(title, sub, kicker, cards){
@@ -992,6 +994,28 @@ function _vipStandingRecap(venueStats, monthLbl, yr){
   return h;
 }
 
+/* Grey 2025 line under each show: last year's show on the same date, same columns as the row above. */
+function _vipPyPerfRow(venue, dateStr){
+  var py=(typeof resolvePyFields==='function' && dateStr)?resolvePyFields(venue, dateStr):null;
+  if(!py || !py.py_dj){
+    return '<tr class="vip-py-row"><td class="l"><span class="vip-py-tag">2025</span> <span class="vip-py-sub">no show on this date</span></td><td colspan="9"></td></tr>';
+  }
+  var pyBs=py.py_bs_a!=null?+py.py_bs_a:null;
+  var pyMin=py.py_bs_m!=null?+py.py_bs_m:null;
+  var pyFee=py.py_fee!=null?+py.py_fee:null;
+  var pyVar=(pyBs!=null && pyMin!=null)?pyBs-pyMin:null;
+  var pyRoi=py.py_roi_a!=null?py.py_roi_a:((pyFee>0&&pyBs!=null)?pyBs/pyFee:null);
+  return '<tr class="vip-py-row">'
+    + '<td class="l"><span class="vip-py-tag">2025</span> <b>'+_escHtml(py.py_dj)+'</b><br><span class="vip-py-sub">last year, same date</span></td>'
+    + '<td>'+$kv(pyFee)+'</td>'
+    + '<td>'+$kv(pyBs)+'</td>'
+    + '<td>'+$kv(pyMin)+'</td>'
+    + '<td>'+_vipVarPlain(pyVar)+'</td>'
+    + '<td>'+(pyRoi!=null?rx(pyRoi):'\u2014')+'</td>'
+    + '<td>'+(py.py_roi_t!=null?rx(py.py_roi_t):'\u2014')+'</td>'
+    + '<td>\u2014</td><td>\u2014</td><td>\u2014</td>'
+    + '</tr>';
+}
 function _vipRenderPerfSummary(d){
   var h='<div class="vip-perf-block vip-venue-block" data-venue="'+String(d.venue||'').replace(/"/g,'')+'">';
   h += _vipVenueBlockHd('Performance Summary', d.venue, (d.shows&&d.shows.length)?(d.shows.length+' show'+(d.shows.length===1?'':'s')):'No shows');
@@ -1030,7 +1054,8 @@ function _vipRenderPerfSummary(d){
        + '<td>'+(sh.tablesActual!=null?sh.tablesActual:'\u2014')+'</td>'
        + '<td style="'+_TARGET_BG+'">'+(sh.tablesBudget!=null?sh.tablesBudget:'\u2014')+'</td>'
        + '<td>'+(avg?$kv(avg):'\u2014')+'</td>'
-       + '</tr>';
+       + '</tr>'
+       + _vipPyPerfRow(d.venue, sh.date);
   });
   var totAvg=totTbl?Math.round(totBS/totTbl):0;
   var totVbs=totBS-totMin;
