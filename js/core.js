@@ -220,10 +220,6 @@ function setView(v) {
     bgtVenue = curV; bgtYear = curYr; bgtMonth = null;
     if (!_budgetInited) { initBudget(); _budgetInited = true; }
     else {
-      var vs = document.getElementById('budgetVenue');
-      if (vs) vs.value = bgtVenue;
-      var ys = document.getElementById('budgetYear');
-      if (ys) ys.value = bgtYear;
       renderBudget();
     }
     return;
@@ -1557,10 +1553,6 @@ function go() {
   else if (curView==='budget'){
     /* Venue AND year pills changed while already ON the budget tab   keep them in sync live */
     bgtVenue=curV; bgtYear=curYr; bgtMonth=null;
-    var vs=document.getElementById('budgetVenue');
-    if(vs) vs.value=bgtVenue;
-    var ys=document.getElementById('budgetYear');
-    if(ys) ys.value=bgtYear;
     if(_budgetInited) renderBudget();
   }
   else if (curView==='rolling' && typeof renderBookingPlan==='function') renderBookingPlan();
@@ -2783,21 +2775,7 @@ function setBudgetSubTab(tab){
 }
 
 function initBudget(){
-  var venues=[];
-  SCHED.forEach(function(r){if(venues.indexOf(r.v)<0&&HIDE_V.indexOf(r.v)<0)venues.push(r.v);});
-  venues.sort();
-  var vs=document.getElementById('budgetVenue');
-  vs.innerHTML=venues.map(function(v){
-    return '<option value="'+v+'"'+(v===bgtVenue?' selected':'')+'>'+v+'</option>';
-  }).join('');
-  vs.onchange=function(){
-    bgtVenue=vs.value; bgtMonth=null;
-    /* Two-way sync: changing venue from inside Budget also changes it everywhere else */
-    curV=bgtVenue;
-    buildVenTabs(); buildSidebar();
-    renderBudget();
-  };
-  document.getElementById('budgetYear').onchange=function(){bgtYear=+this.value;bgtMonth=null;renderBudget();};
+  /* Venue and year come from the top venue tabs and the year pills; no local dropdowns. */
   renderBudget();
 }
 

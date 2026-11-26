@@ -375,6 +375,11 @@ function bgtMonthGuest(venue, year, mm, through){
     target:target!=null?Math.round(+target):null
   };
 }
+/* Every Guest DJ fee in the month: played plus still scheduled. */
+function bgtGuestAllFees(g){
+  if(!g||(g.actual==null&&g.forecast==null)) return null;
+  return (+g.actual||0)+(+g.forecast||0);
+}
 function bgtGuestMargin(guest, bs){
   if(guest==null||bs==null||!(+bs>0)) return null;
   return Math.round(+guest/+bs*1000)/10;
@@ -447,6 +452,7 @@ function renderBudgetFinancialTable(){
 
   var bsA=0, bsT=0, bsP=0, hasBsA=false, hasBsT=false, hasBsP=false;
   var gA=0, gT=0, gP=0, gF=0, hasGA=false, hasGT=false, hasGP=false, hasGF=false;
+  var gPAll=0, hasGPAll=false, gAAll=0, hasGAAll=false;
   var months=[];
   for(var mi=1;mi<=12;mi++){
     var mm=padMm(mi);
@@ -457,6 +463,10 @@ function renderBudgetFinancialTable(){
     var bsPy=bgtMonthBottle(bgtVenue,pyYear,mm,pyThrough);
     var guest=bgtMonthGuest(bgtVenue,bgtYear,mm,through);
     var guestPy=bgtMonthGuest(bgtVenue,pyYear,mm,pyThrough);
+    /* Guest DJ row uses the whole calendar for the month (played and still scheduled), not year-to-date. Margin keeps played-only above. */
+    var guestAll=bgtMonthGuest(bgtVenue,bgtYear,mm,null);
+    var guestPyAll=bgtMonthGuest(bgtVenue,pyYear,mm,null);
+    var gAllFees=bgtGuestAllFees(guestAll), gPyAllFees=bgtGuestAllFees(guestPyAll);
     if(cut.mode==='mtd'&&guest.target!=null&&cut.total) guest.target=Math.round(guest.target*cut.days/cut.total);
     if(cut.mode==='mtd'&&!openNote){
       var dayName=function(ds){ var d=_parseYmd(ds); return MNS[d.getMonth()]+' '+d.getDate(); };
@@ -469,9 +479,11 @@ function renderBudgetFinancialTable(){
     if(inTotal&&bsPy.actual!=null){ bsP+=bsPy.actual; hasBsP=true; }
     if(inTotal&&guest.actual!=null){ gA+=guest.actual; hasGA=true; }
     if(inTotal&&guest.forecast!=null){ gF+=guest.forecast; hasGF=true; }
-    if(inTotal&&guest.target!=null){ gT+=guest.target; hasGT=true; }
+    if(inTotal&&guestAll.target!=null){ gT+=guestAll.target; hasGT=true; }
     if(inTotal&&guestPy.actual!=null){ gP+=guestPy.actual; hasGP=true; }
-    months.push({bs:bs, bsPy:bsPy, guest:guest, guestPy:guestPy, mm:mm, cut:cut, inTotal:inTotal});
+    if(inTotal&&gPyAllFees!=null){ gPAll+=gPyAllFees; hasGPAll=true; }
+    if(inTotal&&gAllFees!=null){ gAAll+=gAllFees; hasGAAll=true; }
+    months.push({bs:bs, bsPy:bsPy, guest:guest, guestPy:guestPy, guestAll:guestAll, gPyAllFees:gPyAllFees, mm:mm, cut:cut, inTotal:inTotal});
   }
   if(openNote){
     h=h.replace('GUEST DJ PERFORMANCE</b>','GUEST DJ PERFORMANCE</b><span>'+openNote+'</span>');
@@ -483,11 +495,11 @@ function renderBudgetFinancialTable(){
   });
   h+=bgtCompareCell(hasBsA?bsA:null, hasBsT?bsT:null, hasBsP?bsP:null, 'over', null, null, true);
 
-  h+=bgtLabelCell('Guest DJ', 'Open month through today', bgtCompareLines('perf'));
+  h+=bgtLabelCell('Guest DJ', 'Full calendar, played and scheduled', bgtCompareLines('perf'));
   months.forEach(function(row){
-    h+=bgtCompareCell(row.guest.actual, row.guest.target, row.guestPy.actual, 'under', null, null, true);
+    h+=bgtCompareCell(bgtGuestAllFees(row.guestAll), row.guestAll.target, row.gPyAllFees, 'under', null, null, true);
   });
-  h+=bgtCompareCell(hasGA?gA:null, hasGT?gT:null, hasGP?gP:null, 'under', null, null, true);
+  h+=bgtCompareCell(hasGAAll?gAAll:null, hasGT?gT:null, hasGPAll?gPAll:null, 'under', null, null, true);
 
   h+=bgtLabelCell('Margin', 'Played Guest DJ / Bottle Service', [{t:String(bgtYear)},{t:String(pyYear),cls:'bgt-row-py'},{t:'vs '+pyYear}]);
   months.forEach(function(row){
