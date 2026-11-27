@@ -5106,7 +5106,9 @@ function fitBaselPage(){
   fit._bslFitTries=0;
   var needW=page.scrollWidth||1;
   var needH=page.scrollHeight||1;
-  var z=Math.min(1,(availW-2)/needW,(availH-2)/needH);
+  /* Height fit never goes below BSL_MIN_ZOOM; past that the panel scrolls so text stays readable. */
+  var BSL_MIN_ZOOM=0.66;
+  var z=Math.min(1,(availW-2)/needW,Math.max((availH-2)/needH, BSL_MIN_ZOOM));
   if(!isFinite(z)||z<=0) return;
   page.style.zoom=z<0.999?String(Math.floor(z*1000)/1000):'';
   requestAnimationFrame(function(){
@@ -5119,7 +5121,7 @@ function fitBaselPage(){
     var cap=1;
     if(r.width>box.width+1) cap=(box.width-2)/r.width*cur;
     var zH=(box.height-2)/r.height*cur;
-    var z2=Math.min(cap, zH);
+    var z2=Math.min(cap, Math.max(zH, BSL_MIN_ZOOM));
     if(!isFinite(z2)||z2<=0||Math.abs(z2-cur)<0.008) return;
     page.style.zoom=z2<0.999?String(Math.floor(z2*1000)/1000):'';
   });
@@ -5250,6 +5252,101 @@ function renderBaselTracker(targetEl, forceAll){
   (data.nights||[]).forEach(function(n){ nightsByDate[n.date] = n; });
   var refs = (data.referrers || []).slice();
   var total = +data.totalRevenue || 0;
+  /* Share to one decimal, so small channels do not round to 0% or 100%. */
+  function pct1(part, whole){ return whole>0 ? (Math.round(part/whole*1000)/10).toFixed(1)+'%' : '0.0%'; }
+  function baselDistributionHtml(){
+    var chan = data.channels || null;
+    if(!chan) return '';
+    var DEFS = [
+      {k:'pro',      label:'Referrer-led (booked in PRO)', col:'#7c3aed'},
+      {k:'direct',   label:'Direct web, no referrer',      col:'#f59e0b'},
+      {k:'webRef',   label:'Web via a referrer',           col:'#0ea5e9'},
+      {k:'proNoRef', label:'PRO, no referrer',             col:'#64748b'},
+      {k:'other',    label:'Other / unknown',              col:'#94a3b8'}
+    ];
+    var rowsC = DEFS.map(function(d){
+      var c = chan[d.k] || {};
+      return {label:d.label, col:d.col, rev:+c.revenue||0, tb:+c.bookings||0, key:d.k};
+    }).filter(function(x){ return x.rev>0 || x.tb>0; });
+    var chTotal = rowsC.reduce(function(s,x){ return s+x.rev; }, 0);
+    if(!(chTotal>0)) return '';
+    function stack(items, whole){
+      return '<div class="bsl-stack">'+items.filter(function(x){ return x.rev>0; }).map(function(x){
+        return '<span style="width:'+(x.rev/whole*100)+'%;background:'+x.col+'" title="'+esc(x.label)+'"></span>';
+      }).join('')+'</div>';
+    }
+    function line(x, whole){
+      return '<div class="bsl-dist-row"><span class="bsl-dot" style="background:'+x.col+'"></span>'
+        + '<span class="bsl-dist-name">'+esc(x.label)+'</span>'
+        + '<span class="bsl-day-ref-tb">'+x.tb+' tb</span>'
+        + '<b>'+money(x.rev)+'</b><span class="bsl-dist-pct">'+pct1(x.rev, whole)+'</span></div>';
+    }
+    var out = '<div class="bsl-section-hd">Sales distribution</div><div class="bsl-dist-grid">';
+
+    /* A. All sales by channel */
+    out += '<div class="bsl-dist-card"><div class="bsl-dist-hd">All sales by channel</div>'
+      + '<div class="bsl-dist-big">'+money(chTotal)+'</div>'
+      + stack(rowsC, chTotal);
+    rowsC.forEach(function(x){ out += line(x, chTotal); });
+    if(isAll){
+      /* Channel mix inside each venue, with the direct web share called out. */
+      out += '<div class="bsl-dist-sub2">By venue · channel mix</div>';
+      venues.forEach(function(v){
+        var vc = v.channels || {};
+        var vItems = DEFS.map(function(d){ return {label:d.label, col:d.col, rev:(vc[d.k]&&+vc[d.k].revenue)||0}; });
+        var vTot = vItems.reduce(function(s,x){ return s+x.rev; }, 0);
+        if(!(vTot>0)) return;
+        var vDirect = (vc.direct&&+vc.direct.revenue)||0;
+        out += '<div class="bsl-dist-row"><span class="bsl-dot" style="background:'+venueCol(v)+'"></span>'
+          + '<span class="bsl-dist-name bsl-dist-vname">'+esc(venueShort(v))+'</span>'
+          + '<div class="bsl-dist-mini">'+stack(vItems, vTot)+'</div>'
+          + '<b>'+money(vTot)+'</b><span class="bsl-dist-pct" title="Direct web share">'+pct1(vDirect, vTot)+'</span></div>';
+      });
+      out += '<div class="bsl-dist-key"><span class="bsl-dot" style="background:#7c3aed"></span>PRO <span class="bsl-dot" style="background:#f59e0b"></span>Direct web <span class="bsl-dot" style="background:#0ea5e9"></span>Web via referrer <span class="bsl-dist-keynote">· right column = direct web share of the venue</span></div>';
+    }
+    out += '</div>';
+
+    /* B. "No referrer" distribution */
+    var nr = refs.filter(function(r){ return r.name==='No referrer'; })[0] || null;
+    var nrRev = nr ? (+nr.totalRevenue||0) : 0;
+    out += '<div class="bsl-dist-card"><div class="bsl-dist-hd">No referrer distribution</div>';
+    if(!nr || !(nrRev>0)){
+      out += '<div class="bsl-muted" style="font-size:11px">No bookings without a referrer yet.</div>';
+    } else {
+      out += '<div class="bsl-dist-big">'+money(nrRev)+' <span class="bsl-dist-sub">'+pct1(nrRev, chTotal)+' of sales · '+(nr.bookings||0)+' tb</span></div>';
+      var direct = (chan.direct && +chan.direct.revenue)||0;
+      var proNo  = (chan.proNoRef && +chan.proNoRef.revenue)||0;
+      var otherNo = Math.max(0, nrRev - direct - proNo);
+      var srcRows = [
+        {label:'FourVenues web (guest booked online)', col:'#f59e0b', rev:direct, tb:(chan.direct&&+chan.direct.bookings)||0},
+        {label:'FourVenues PRO (team entered)',        col:'#64748b', rev:proNo,  tb:(chan.proNoRef&&+chan.proNoRef.bookings)||0},
+        {label:'Outside FourVenues / unknown',         col:'#94a3b8', rev:otherNo, tb:0}
+      ].filter(function(x, i){ return i===0 || x.rev>0; });
+      out += '<div class="bsl-dist-sub2">By source</div>' + stack(srcRows, nrRev);
+      srcRows.forEach(function(x){ out += line(x, nrRev); });
+      if(isAll){
+        out += '<div class="bsl-dist-sub2">By venue</div>';
+        var vrows = venues.map(function(v){
+          var c = nr.byVenue && nr.byVenue[v.key];
+          return {label:venueShort(v), col:venueCol(v), rev:c?+c.revenue||0:0, tb:c?+c.bookings||0:0};
+        }).filter(function(x){ return x.rev>0; }).sort(function(a,b){ return b.rev-a.rev; });
+        out += stack(vrows, nrRev);
+        vrows.forEach(function(x){ out += line(x, nrRev); });
+      }
+      out += '<div class="bsl-dist-sub2">By night</div><div class="bsl-dist-nights">';
+      dates.forEach(function(d, i){
+        var c = nr.byDate && nr.byDate[d];
+        var rev = c?+c.revenue||0:0;
+        if(!(rev>0)) return;
+        var dc = baselDayColor(d, i);
+        out += '<div class="bsl-venue-day" style="background:'+dc.soft+'"><span style="color:'+dc.ink+'">'+dayLabel(d,{weekday:'short', month:'short', day:'numeric'})+'</span>'
+          + '<b>'+money(rev)+'</b><em>'+pct1(rev, nrRev)+' · '+(c.bookings||0)+' tb</em></div>';
+      });
+      out += '</div>';
+    }
+    out += '</div></div>';
+    return out;
+  }
   var when = '';
   try{ when = new Date(raw.updatedAt).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }catch(e){}
   var refColor = {};
@@ -5308,6 +5405,9 @@ function renderBaselTracker(targetEl, forceAll){
     });
     h += '</div>';
   }
+
+  /* Sales distribution: all sales by channel, and the "No referrer" slice. */
+  h += baselDistributionHtml();
 
   h += '<div class="bsl-section-hd">By day</div>';
   h += '<div class="bsl-day-grid" style="grid-template-columns:repeat('+Math.max(dates.length,1)+',minmax(0,1fr))">';
@@ -5399,7 +5499,7 @@ function renderBaselTracker(targetEl, forceAll){
     h += '<td>'+money(total)+'</td><td>'+(data.totalBookings||0)+'</td><td class="left">100%</td></tr>';
   }
   h += '</tbody></table></div>';
-  h += '<div class="bsl-foot">Sales = FourVenues reservation price for accepted + not-completed bookings (same as Forecast). Tables = spaces on that reservation, separated by a comma. Referrer = FourVenues PPRR; “No referrer” when none is set.</div>';
+  h += '<div class="bsl-foot">Sales = FourVenues reservation price for accepted + not-completed bookings (same as Forecast). Tables = spaces on that reservation, separated by a comma. Referrer = FourVenues PPRR; “No referrer” when none is set. Channel: web = guest booked on the FourVenues page, PRO = entered inside FourVenues PRO.</div>';
   h += '</div></div>';
   el.innerHTML = h;
   if(targetEl) return;
