@@ -5289,20 +5289,19 @@ function renderBaselTracker(targetEl, forceAll){
       + stack(rowsC, chTotal);
     rowsC.forEach(function(x){ out += line(x, chTotal); });
     if(isAll){
-      /* Channel mix inside each venue, with the direct web share called out. */
+      /* Channel mix inside each venue. */
       out += '<div class="bsl-dist-sub2">By venue · channel mix</div>';
       venues.forEach(function(v){
         var vc = v.channels || {};
         var vItems = DEFS.map(function(d){ return {label:d.label, col:d.col, rev:(vc[d.k]&&+vc[d.k].revenue)||0}; });
         var vTot = vItems.reduce(function(s,x){ return s+x.rev; }, 0);
         if(!(vTot>0)) return;
-        var vDirect = (vc.direct&&+vc.direct.revenue)||0;
         out += '<div class="bsl-dist-row"><span class="bsl-dot" style="background:'+venueCol(v)+'"></span>'
           + '<span class="bsl-dist-name bsl-dist-vname">'+esc(venueShort(v))+'</span>'
           + '<div class="bsl-dist-mini">'+stack(vItems, vTot)+'</div>'
-          + '<b>'+money(vTot)+'</b><span class="bsl-dist-pct" title="Direct web share">'+pct1(vDirect, vTot)+'</span></div>';
+          + '<b>'+money(vTot)+'</b></div>';
       });
-      out += '<div class="bsl-dist-key"><span class="bsl-dot" style="background:#7c3aed"></span>PRO <span class="bsl-dot" style="background:#f59e0b"></span>Direct web <span class="bsl-dot" style="background:#0ea5e9"></span>Web via referrer <span class="bsl-dist-keynote">· right column = direct web share of the venue</span></div>';
+      out += '<div class="bsl-dist-key"><span class="bsl-dot" style="background:#7c3aed"></span>PRO <span class="bsl-dot" style="background:#f59e0b"></span>Direct web <span class="bsl-dot" style="background:#0ea5e9"></span>Web via referrer</div>';
     }
     out += '</div>';
 
